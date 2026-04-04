@@ -3,13 +3,18 @@ export const APP_THEME_STORAGE_KEY = "graffle.theme";
 export const APP_THEMES = [
   {
     id: "warm-paper",
-    label: "Sıcak Kağıt",
-    description: "Açık, sıcak ve kağıt hissi veren varsayılan tema.",
+    label: "Sicak Kagit",
+    description: "Acik, sakin ve kagit hissi veren varsayilan tema.",
   },
   {
     id: "midnight-gold",
-    label: "Gece Altını",
-    description: "Derin gece mavisi ve güneş altını vurgular.",
+    label: "Gece Altini",
+    description: "Derin gece mavisi ve gunes altini vurgular.",
+  },
+  {
+    id: "graphite-night",
+    label: "Grafit Gece",
+    description: "Notion ve Obsidian'a yakin koyu grafit arayuz.",
   },
 ] as const;
 

@@ -3047,3 +3047,270 @@ body::before {
     opacity: 1;
   }
 }
+
+/* Refinement pass */
+:root {
+  --sidebar-width: 272px;
+  --surface-glass-hover: #efefec;
+}
+
+:root[data-theme="graphite-night"] {
+  --bg-page: #191919;
+  --bg-page-deep: #151515;
+  --surface-1: #1f1f1f;
+  --surface-2: #232323;
+  --surface-3: #2a2a2a;
+  --surface-4: #323232;
+  --surface-ink: #f5f5f5;
+
+  --text-primary: #ebebea;
+  --text-secondary: #b8b8b5;
+  --text-tertiary: #8d8d89;
+  --text-muted: #666662;
+
+  --accent: #7aa2f7;
+  --accent-strong: #9abbff;
+  --accent-rgb: 122 162 247;
+  --accent-subtle: rgba(122, 162, 247, 0.12);
+  --accent-warm: #d8b36a;
+  --accent-warm-rgb: 216 179 106;
+  --accent-warm-subtle: rgba(216, 179, 106, 0.14);
+  --accent-line: rgba(122, 162, 247, 0.22);
+  --color-wikilink: #9abbff;
+  --color-success: #8dcfb7;
+  --color-warning: #dfbf75;
+  --color-error: #ef8d88;
+  --info-rgb: 122 162 247;
+  --info-ink: #9abbff;
+  --success-rgb: 141 207 183;
+  --success-ink: #8dcfb7;
+  --warning-rgb: 223 191 117;
+  --warning-ink: #dfbf75;
+  --danger-rgb: 239 141 136;
+  --danger-ink: #ef8d88;
+
+  --border-color: rgba(255, 255, 255, 0.1);
+  --border-strong: rgba(255, 255, 255, 0.14);
+  --border-soft: rgba(255, 255, 255, 0.08);
+  --surface-glass-soft: #202020;
+  --surface-glass-muted: #222222;
+  --surface-glass: #191919;
+  --surface-glass-mid: #232323;
+  --surface-highlight: #2d2d2d;
+  --surface-chip: #2d2d2d;
+  --surface-glass-strong: #252525;
+  --surface-glass-hover: #2b2b2b;
+  --surface-overlay: #191919;
+  --surface-overlay-soft: #202020;
+  --shell-main-bg: #191919;
+  --shell-sidebar-bg: #202020;
+  --surface-accent-blend: rgba(122, 162, 247, 0.1);
+  --surface-accent-blend-strong: rgba(122, 162, 247, 0.14);
+  --logo-accent-end: #4f6bbd;
+  --page-grid-rgb: 255 255 255;
+  --text-on-accent: #0f1115;
+  --heading-ink: #f5f5f5;
+  --code-block-bg-start: #111215;
+  --code-block-bg-end: #0c0d10;
+  --code-block-text: #ededed;
+  --code-inline-color: #9abbff;
+
+  --shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.22);
+  --shadow-panel: 0 12px 26px rgba(0, 0, 0, 0.22);
+  --shadow-lift: 0 20px 36px rgba(0, 0, 0, 0.28);
+}
+
+.sidebar-topbar {
+  padding: 12px 10px 6px;
+}
+
+.sidebar-inline-actions {
+  padding: 0 10px 10px;
+}
+
+.sidebar-group-head {
+  padding: 0 10px;
+}
+
+.sidebar-group-label,
+.sidebar-theme-label {
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+.sidebar-item,
+.sidebar-tag-item {
+  min-height: 30px;
+  padding-top: 5px;
+  padding-bottom: 5px;
+}
+
+.sidebar-item-icon {
+  min-width: 22px;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 10px;
+}
+
+.sidebar-item.active .sidebar-item-icon,
+.sidebar-item:hover .sidebar-item-icon {
+  background: var(--surface-highlight);
+}
+
+.sidebar-footer {
+  padding: 10px;
+}
+
+.dashboard,
+.note-page,
+.graph-page {
+  padding-left: 88px;
+  padding-right: 88px;
+}
+
+.note-page {
+  width: min(100%, 1040px);
+}
+
+.note-header,
+.note-editor-container,
+.backlinks-section {
+  max-width: 720px;
+}
+
+.note-breadcrumb-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.note-breadcrumb {
+  border: none;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1.2;
+}
+
+.note-breadcrumb:hover {
+  color: var(--text-primary);
+}
+
+.note-breadcrumb.current {
+  color: var(--text-secondary);
+}
+
+.note-breadcrumb-separator {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.note-topbar {
+  margin-bottom: 24px;
+}
+
+.note-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.note-title-row {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  align-items: flex-start;
+  gap: 18px;
+}
+
+.note-page-symbol {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border: 1px solid var(--border-soft);
+  border-radius: 16px;
+  background: var(--surface-glass);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.note-title-stack {
+  min-width: 0;
+}
+
+.note-status-row {
+  margin-bottom: 12px;
+}
+
+.note-toolbar-btn.primary {
+  border-color: transparent;
+  background: var(--accent);
+  color: var(--text-on-accent);
+}
+
+.note-toolbar-btn.primary:hover:not(:disabled) {
+  background: var(--accent-strong);
+  color: var(--text-on-accent);
+}
+
+.note-title-input {
+  font-size: clamp(2.5rem, 5vw, 3.5rem);
+}
+
+.graffle-editor-content {
+  max-width: 720px;
+}
+
+.graffle-editor-content p {
+  font-size: 16px;
+  line-height: 1.85;
+}
+
+.graffle-editor-content h1,
+.graffle-editor-content h2,
+.graffle-editor-content h3 {
+  letter-spacing: -0.04em;
+}
+
+.graffle-editor-content ul,
+.graffle-editor-content ol {
+  padding-left: 22px;
+}
+
+.graffle-editor-content li {
+  padding-left: 2px;
+}
+
+.backlinks-section {
+  max-width: 720px;
+}
+
+@media (max-width: 760px) {
+  .dashboard,
+  .note-page,
+  .graph-page {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .note-title-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .note-page-symbol {
+    width: 48px;
+    height: 48px;
+  }
+
+  .note-breadcrumb-row {
+    margin-bottom: 14px;
+  }
+}

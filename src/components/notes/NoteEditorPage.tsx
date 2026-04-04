@@ -62,6 +62,15 @@ export function NoteEditorPage({
     [folders]
   );
 
+  const currentFolderLabel = useMemo(
+    () =>
+      folderOptions.find((folder) => folder.id === currentFolderId)?.name ??
+      "Calisma alani",
+    [currentFolderId, folderOptions]
+  );
+
+  const effectiveTitle = title.trim() || DEFAULT_NOTE_TITLE;
+
   const handleTitleChange = useCallback(
     async (newTitle: string) => {
       setTitle(newTitle);
@@ -217,22 +226,48 @@ export function NoteEditorPage({
   return (
     <div className="note-page">
       <div className="note-header" onContextMenu={openContextMenuAtPointer}>
-        <div className="note-topbar">
-          <select
-            className="note-folder-select"
-            value={currentFolderId ?? ""}
-            onChange={(event) => handleFolderChange(event.target.value)}
+        <div className="note-breadcrumb-row">
+          <button
+            type="button"
+            className="note-breadcrumb"
+            onClick={() => router.push("/dashboard")}
           >
-            <option value="">Calisma alani koku</option>
-            {folderOptions.map((folder) => (
-              <option key={folder.id} value={folder.id}>
-                {folder.name}
-              </option>
-            ))}
-          </select>
+            Calisma alani
+          </button>
+          <span className="note-breadcrumb-separator">/</span>
+          {currentFolderId ? (
+            <>
+              <button
+                type="button"
+                className="note-breadcrumb"
+                onClick={() => router.push(`/folders/${currentFolderId}`)}
+              >
+                {currentFolderLabel}
+              </button>
+              <span className="note-breadcrumb-separator">/</span>
+            </>
+          ) : null}
+          <span className="note-breadcrumb current">{effectiveTitle}</span>
+        </div>
+
+        <div className="note-topbar">
+          <div className="note-topbar-left">
+            <select
+              className="note-folder-select"
+              value={currentFolderId ?? ""}
+              onChange={(event) => handleFolderChange(event.target.value)}
+            >
+              <option value="">Calisma alani koku</option>
+              {folderOptions.map((folder) => (
+                <option key={folder.id} value={folder.id}>
+                  {folder.name}
+                </option>
+              ))}
+            </select>
+          </div>
 
           <div className="note-toolbar">
-            <button className="note-toolbar-btn" onClick={handlePublishToggle}>
+            <button className="note-toolbar-btn primary" onClick={handlePublishToggle}>
               {isPublished ? "Yayindan kaldir" : "Yayinla"}
             </button>
             <button
@@ -259,35 +294,43 @@ export function NoteEditorPage({
           </div>
         </div>
 
-        <div className="note-status-row">
-          <span className={`note-status-pill ${isPublished ? "published" : "draft"}`}>
-            {isPublished ? "Yayinda" : "Taslak"}
-          </span>
-          <span className="note-status-text">Otomatik kaydetme acik</span>
-        </div>
+        <div className="note-title-row">
+          <div className="note-page-symbol">{note.icon ?? "Not"}</div>
 
-        <input
-          className="note-title-input"
-          value={title}
-          onChange={(event) => handleTitleChange(event.target.value)}
-          placeholder={DEFAULT_NOTE_TITLE}
-          spellCheck={false}
-        />
-
-        {note.tags.length > 0 ? (
-          <div className="note-tag-list">
-            {note.tags.map((tag) => (
-              <button
-                key={tag}
-                type="button"
-                className="note-tag-chip"
-                onClick={() => router.push(`/tags/${tag}`)}
+          <div className="note-title-stack">
+            <div className="note-status-row">
+              <span
+                className={`note-status-pill ${isPublished ? "published" : "draft"}`}
               >
-                #{tag}
-              </button>
-            ))}
+                {isPublished ? "Yayinda" : "Taslak"}
+              </span>
+              <span className="note-status-text">Otomatik kaydetme acik</span>
+            </div>
+
+            <input
+              className="note-title-input"
+              value={title}
+              onChange={(event) => handleTitleChange(event.target.value)}
+              placeholder={DEFAULT_NOTE_TITLE}
+              spellCheck={false}
+            />
+
+            {note.tags.length > 0 ? (
+              <div className="note-tag-list">
+                {note.tags.map((tag) => (
+                  <button
+                    key={tag}
+                    type="button"
+                    className="note-tag-chip"
+                    onClick={() => router.push(`/tags/${tag}`)}
+                  >
+                    #{tag}
+                  </button>
+                ))}
+              </div>
+            ) : null}
           </div>
-        ) : null}
+        </div>
       </div>
 
       <div className="note-editor-container">
@@ -318,7 +361,7 @@ export function NoteEditorPage({
                 onClick={() => router.push(`/notes/${backlink.sourceNoteId}`)}
               >
                 <span className="backlink-source">{backlink.sourceNoteTitle}</span>
-                <span className="backlink-target">→ {backlink.targetRaw}</span>
+                <span className="backlink-target">-&gt; {backlink.targetRaw}</span>
               </button>
             ))}
           </div>
