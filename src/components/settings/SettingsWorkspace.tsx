@@ -3,10 +3,11 @@
 import { useMemo, useState } from "react";
 import {
   APP_THEMES,
-  APP_THEME_STORAGE_KEY,
   DEFAULT_APP_THEME,
   type AppThemeId,
   isAppThemeId,
+  APP_THEME_STORAGE_KEY,
+  persistAppTheme,
 } from "@/components/theme/theme-config";
 import {
   DEFAULT_COLLAPSED_SECTIONS,
@@ -108,8 +109,7 @@ export function SettingsWorkspace({
 
   const handleThemeChange = (nextThemeId: AppThemeId) => {
     setThemeId(nextThemeId);
-    window.localStorage.setItem(APP_THEME_STORAGE_KEY, nextThemeId);
-    document.documentElement.dataset.theme = nextThemeId;
+    persistAppTheme(nextThemeId);
   };
 
   const resetPreferences = () => {
@@ -122,7 +122,7 @@ export function SettingsWorkspace({
     setSidebarWidth(DEFAULT_EXPANDED_SIDEBAR_WIDTH);
     setSidebarCompact(false);
     setSections(DEFAULT_COLLAPSED_SECTIONS);
-    document.documentElement.dataset.theme = DEFAULT_APP_THEME;
+    persistAppTheme(DEFAULT_APP_THEME);
   };
 
   const clearQueue = () => {

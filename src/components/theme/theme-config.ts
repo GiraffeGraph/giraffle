@@ -1,4 +1,5 @@
 export const APP_THEME_STORAGE_KEY = "graffle.theme";
+export const APP_THEME_COOKIE_KEY = "graffle.theme";
 
 export const APP_THEMES = [
   {
@@ -26,4 +27,14 @@ export const APP_THEME_IDS = APP_THEMES.map((theme) => theme.id);
 
 export function isAppThemeId(value: string): value is AppThemeId {
   return APP_THEME_IDS.includes(value as AppThemeId);
+}
+
+export function persistAppTheme(themeId: AppThemeId) {
+  if (typeof document === "undefined") {
+    return;
+  }
+
+  document.documentElement.dataset.theme = themeId;
+  window.localStorage.setItem(APP_THEME_STORAGE_KEY, themeId);
+  document.cookie = `${APP_THEME_COOKIE_KEY}=${themeId}; path=/; max-age=31536000; samesite=lax`;
 }

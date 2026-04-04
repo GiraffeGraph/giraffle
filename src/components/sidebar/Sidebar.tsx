@@ -21,6 +21,7 @@ import {
   DEFAULT_APP_THEME,
   type AppThemeId,
   isAppThemeId,
+  persistAppTheme,
 } from "@/components/theme/theme-config";
 import { TemplatePicker } from "@/components/templates/TemplatePicker";
 import { signOutAction } from "@/server/api/auth";
@@ -201,8 +202,7 @@ export function Sidebar({
   }, []);
 
   const applyTheme = useCallback((themeId: AppThemeId) => {
-    document.documentElement.dataset.theme = themeId;
-    localStorage.setItem(APP_THEME_STORAGE_KEY, themeId);
+    persistAppTheme(themeId);
     setActiveThemeId(themeId);
   }, []);
 
@@ -217,10 +217,9 @@ export function Sidebar({
 
       if (storedTheme && isAppThemeId(storedTheme)) {
         nextTheme = storedTheme;
-        document.documentElement.dataset.theme = storedTheme;
+        persistAppTheme(storedTheme);
       } else {
-        document.documentElement.dataset.theme = DEFAULT_APP_THEME;
-        localStorage.setItem(APP_THEME_STORAGE_KEY, DEFAULT_APP_THEME);
+        persistAppTheme(DEFAULT_APP_THEME);
       }
     }
 
