@@ -5,6 +5,7 @@ import { slugify } from "@/lib/utils";
 export interface NoteExportInput {
   id: string;
   title: string;
+  slug?: string | null;
   icon: string | null;
   folderPath: string[];
   isPublished: boolean;
@@ -25,7 +26,11 @@ export function buildNoteExportArtifact(
   note: NoteExportInput
 ): NoteExportArtifact {
   const markdown = blocksToMarkdown(note.document);
-  const publishPath = buildPublishPath(note.folderPath, note.title, note.id);
+  const publishPath = buildPublishPath(
+    note.folderPath,
+    note.slug ?? note.title,
+    note.id
+  );
   const frontmatter = [
     "---",
     `title: "${escapeFrontmatter(note.title)}"`,
@@ -49,13 +54,13 @@ export function buildNoteExportArtifact(
 
 export function buildPublishPath(
   folderPath: string[],
-  title: string,
+  slugOrTitle: string,
   noteId: string
 ): string {
   const safeFolderPath = folderPath
     .map((segment) => slugify(segment))
     .filter(Boolean);
-  const safeFileName = slugify(title) || noteId;
+  const safeFileName = slugify(slugOrTitle) || noteId;
 
   return [...safeFolderPath, `${safeFileName}.mdx`].join("/");
 }

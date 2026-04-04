@@ -4411,3 +4411,180 @@ body::before {
     display: none;
   }
 }
+
+.graph-toolbar,
+.settings-layout,
+.settings-stat-grid,
+.proposal-card-head,
+.publish-card-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.graph-toolbar,
+.settings-layout,
+.settings-stat-grid {
+  flex-wrap: wrap;
+}
+
+.settings-layout {
+  flex-direction: column;
+  margin-top: 20px;
+}
+
+.settings-helper-text,
+.proposal-card-summary,
+.settings-log-meta,
+.settings-empty,
+.note-slug-field span {
+  color: var(--text-secondary);
+}
+
+.settings-stat-card,
+.settings-log-row,
+.proposal-card,
+.sidebar-folder-dropzone,
+.graph-toolbar,
+.note-slug-input {
+  border: 1px solid var(--border-color);
+  background: var(--surface-glass);
+  border-radius: 14px;
+}
+
+.settings-stat-card,
+.settings-log-row,
+.proposal-card {
+  padding: 14px 16px;
+}
+
+.settings-stat-label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--text-tertiary);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.settings-log-list,
+.proposal-list {
+  display: grid;
+  gap: 10px;
+}
+
+.settings-log-row,
+.proposal-card-head {
+  align-items: center;
+  justify-content: space-between;
+}
+
+.settings-log-title,
+.proposal-card-title {
+  font-weight: 600;
+}
+
+.settings-log-source {
+  color: var(--text-tertiary);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.note-status-pill.pinned {
+  background: rgba(var(--accent-rgb) / 0.12);
+  color: var(--accent-strong);
+}
+
+.note-slug-field {
+  display: grid;
+  gap: 6px;
+  margin-top: 14px;
+  max-width: 340px;
+}
+
+.note-slug-input {
+  padding: 10px 12px;
+  color: var(--text-primary);
+}
+
+.editor-surface-upload {
+  margin-left: auto;
+  border: 1px solid var(--border-color);
+  background: var(--surface-glass-strong);
+  color: var(--text-primary);
+  border-radius: 999px;
+  padding: 6px 12px;
+}
+
+.editor-block-context-menu {
+  position: absolute;
+  z-index: 40;
+  display: grid;
+  gap: 6px;
+  min-width: 180px;
+  padding: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--surface-glass-strong);
+  border-radius: 16px;
+  box-shadow: var(--shadow-panel);
+}
+
+.editor-block-context-menu button {
+  border: 0;
+  background: transparent;
+  color: var(--text-primary);
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: 10px;
+}
+
+.editor-block-context-menu button:hover {
+  background: var(--accent-subtle);
+}
+
+.editor-block-context-menu button.danger {
+  color: var(--color-error);
+}
+
+.editor-block-drop-indicator {
+  position: absolute;
+  z-index: 25;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--accent);
+  pointer-events: none;
+}
+
+.sidebar-folder-dropzone {
+  margin: 6px 0 6px 12px;
+  padding: 6px 10px;
+  color: var(--text-tertiary);
+  font-size: 12px;
+  transition: var(--transition-fast);
+}
+
+.sidebar-folder-dropzone.active,
+.sidebar-folder-dropzone:hover {
+  color: var(--accent-strong);
+  border-color: var(--accent-line);
+  background: var(--accent-subtle);
+}
+
+.sidebar-folder-dropzone.root {
+  margin: 0 0 10px 0;
+}
+
+.sidebar-entity-row.drag-target .sidebar-row-main {
+  border-color: var(--accent-line);
+  background: var(--accent-subtle);
+}
+
+.graph-toolbar {
+  margin-top: 18px;
+  padding: 14px;
+}
+
+.proposal-card-actions {
+  display: flex;
+  gap: 8px;
+}

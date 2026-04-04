@@ -1,6 +1,6 @@
 # TASK-023 Settings Theme And Workspace Preferences
 
-Status: Planned
+Status: Done
 Priority: P3
 Updated: 2026-04-04
 
@@ -21,6 +21,10 @@ Centralize user-facing workspace preferences instead of scattering them across l
 - Existing preferences are not silently lost.
 - Lint, typecheck, and build pass.
 
+## Completed
+
+- Added settings surface for theme, sidebar preferences, and local sync queue visibility.
+
 ## Out of Scope
 
 - Full org-level policy management
@@ -32,4 +36,3 @@ Centralize user-facing workspace preferences instead of scattering them across l
 - `src/components/sidebar/Sidebar.tsx`
 - `src/app/(main)`
 - `src/app/globals.css`
-

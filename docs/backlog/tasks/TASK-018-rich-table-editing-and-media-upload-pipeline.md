@@ -1,6 +1,6 @@
 # TASK-018 Rich Table Editing And Media Upload Pipeline
 
-Status: Ready
+Status: Done
 Priority: P1
 Updated: 2026-04-04
 
@@ -21,6 +21,11 @@ Turn the current table and image surface from scaffold-level support into a real
 - Serialization and persistence do not break the canonical AST model.
 - Lint, typecheck, and build pass.
 
+## Completed
+
+- Replaced table scaffold with a structured `table` node and Markdown round-trip boundary.
+- Added image upload route and editor upload action tied to note context.
+
 ## Out of Scope
 
 - Full spreadsheet-grade formulas
@@ -34,4 +39,3 @@ Turn the current table and image surface from scaffold-level support into a real
 - `src/domain/note/block-tree.ts`
 - `src/domain/note/note.serializer.ts`
 - `src/server/api/notes.ts`
-

@@ -11,9 +11,11 @@ import {
   getNote,
   getNoteForExport,
   getNotes,
+  getPublicNoteBySlug,
   getPublishedNotesForExport,
   insertBlock,
   moveBlock,
+  moveNote,
   saveNoteContent,
   searchNotesByTitle,
   updateBlock,
@@ -56,6 +58,7 @@ export async function updateNoteAction(noteId: string, input: UpdateNoteInput) {
   revalidatePath("/graph");
   revalidatePath(`/notes/${noteId}`);
   revalidatePath(`/p/${noteId}`);
+  revalidatePath("/published");
 }
 
 export async function saveNoteContentAction(
@@ -76,6 +79,17 @@ export async function archiveNoteAction(noteId: string) {
   await archiveNote(userId, noteId);
   revalidatePath("/dashboard");
   revalidatePath("/graph");
+}
+
+export async function moveNoteAction(
+  noteId: string,
+  direction: "up" | "down"
+) {
+  const { userId } = await requireAuthenticatedUser();
+  await moveNote(userId, noteId, direction);
+  revalidatePath("/dashboard");
+  revalidatePath("/graph");
+  revalidatePath(`/notes/${noteId}`);
 }
 
 export async function deleteNoteAction(noteId: string) {
@@ -202,4 +216,8 @@ export async function getPublishedExportsAction() {
   const { userId } = await requireAuthenticatedUser();
   const notes = await getPublishedNotesForExport(userId);
   return notes.map(buildNoteExportArtifact);
+}
+
+export async function getPublicNoteBySlugAction(slug: string) {
+  return getPublicNoteBySlug(slug);
 }

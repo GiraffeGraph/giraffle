@@ -1,6 +1,6 @@
 # TASK-022 Publish Trees Slugs And Export Packaging
 
-Status: Planned
+Status: Done
 Priority: P2
 Updated: 2026-04-04
 
@@ -21,6 +21,11 @@ Move publish and export from first-pass note-level output to a cleaner downstrea
 - Publish behavior does not turn Markdown/MDX into the primary source of truth.
 - Lint, typecheck, and build pass.
 
+## Completed
+
+- Added persistent note slugs, slug-based published route, publish workspace, and note-level slug controls.
+- Kept Markdown/MDX downstream and note AST canonical.
+
 ## Out of Scope
 
 - Full static-site generator integration
@@ -33,4 +38,3 @@ Move publish and export from first-pass note-level output to a cleaner downstrea
 - `src/domain/note/note.service.ts`
 - `src/server/api/notes.ts`
 - `src/app/p/[noteId]`
-

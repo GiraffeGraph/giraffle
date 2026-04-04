@@ -7,12 +7,14 @@ import {
   resolveLinksForNote,
 } from "@/domain/link/link.service";
 import { syncNoteTags } from "@/domain/tag/tag.service";
+import { recordOperation } from "@/domain/sync/operation-log.service";
 import {
   createEmptyDocument,
   documentToPersistedBlocks,
 } from "@/domain/note/block-tree";
 import { DEFAULT_NOTE_TITLE } from "@/domain/note/note.types";
 import type { BlockNodeContent, TiptapNode } from "@/domain/note/note.types";
+import { slugify } from "@/lib/utils";
 import type {
   ApplyTemplateInput,
   TemplateBlock,
@@ -318,6 +320,40 @@ export async function createTemplate(input: {
   });
 }
 
+export async function updateTemplate(
+  templateId: string,
+  input: {
+    name?: string;
+    description?: string | null;
+    category?: string;
+    icon?: string | null;
+    blocks?: TemplateBlock[];
+    variables?: TemplateVariable[];
+  }
+) {
+  return db.template.update({
+    where: { id: templateId },
+    data: {
+      ...(typeof input.name === "string" ? { name: input.name } : {}),
+      ...(Object.prototype.hasOwnProperty.call(input, "description")
+        ? { description: input.description }
+        : {}),
+      ...(typeof input.category === "string" ? { category: input.category } : {}),
+      ...(Object.prototype.hasOwnProperty.call(input, "icon")
+        ? { icon: input.icon }
+        : {}),
+      ...(input.blocks ? { blocks: input.blocks as object[] } : {}),
+      ...(input.variables ? { variables: input.variables as object[] } : {}),
+    },
+  });
+}
+
+export async function deleteTemplate(templateId: string) {
+  return db.template.delete({
+    where: { id: templateId },
+  });
+}
+
 /**
  * Apply a template to create a new note.
  * Resolves template variables and creates blocks.
@@ -348,12 +384,19 @@ export async function applyTemplate(
   const variables = input.variables ?? {};
   const templateBlocks = template.blocks as unknown as TemplateBlock[];
   const resolvedBlocks = resolveTemplateVariables(templateBlocks, variables);
+  const noteTitle = input.title ?? template.name;
+  const [slug, position] = await Promise.all([
+    ensureUniqueNoteSlug(userId, noteTitle),
+    getNextNotePosition(userId, input.folderId ?? null),
+  ]);
 
   const note = await db.note.create({
     data: {
-      title: input.title ?? template.name,
+      title: noteTitle,
+      slug,
       folderId: input.folderId,
       templateId: template.id,
+      position,
       userId,
     },
   });
@@ -373,6 +416,18 @@ export async function applyTemplate(
     extractAndSaveLinks(userId, note.id),
     syncNoteTags(userId, note.id, document),
   ]);
+
+  await recordOperation({
+    userId,
+    entityType: "note",
+    entityId: note.id,
+    actionType: "create-from-template",
+    payload: {
+      templateId: template.id,
+      slug,
+      position,
+    },
+  });
 
   return note.id;
 }
@@ -534,4 +589,50 @@ function toAttributes(value: unknown): Record<string, unknown> {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
+}
+
+async function ensureUniqueNoteSlug(
+  userId: string,
+  input: string,
+  noteIdToExclude?: string
+) {
+  const baseSlug = slugify(input) || slugify(DEFAULT_NOTE_TITLE) || "note";
+  let candidateSlug = baseSlug;
+  let suffix = 2;
+
+  while (true) {
+    const existingNote = await db.note.findFirst({
+      where: {
+        userId,
+        slug: candidateSlug,
+        ...(noteIdToExclude ? { id: { not: noteIdToExclude } } : {}),
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!existingNote) {
+      return candidateSlug;
+    }
+
+    candidateSlug = `${baseSlug}-${suffix}`;
+    suffix += 1;
+  }
+}
+
+async function getNextNotePosition(userId: string, folderId: string | null) {
+  const lastNote = await db.note.findFirst({
+    where: {
+      userId,
+      folderId,
+      isArchived: false,
+    },
+    orderBy: [{ position: "desc" }, { createdAt: "desc" }],
+    select: {
+      position: true,
+    },
+  });
+
+  return typeof lastNote?.position === "number" ? lastNote.position + 1 : 0;
 }

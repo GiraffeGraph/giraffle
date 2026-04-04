@@ -21,6 +21,10 @@ model User {
   sessions Session[]
   notes    Note[]
   folders  Folder[]
+  assets   MediaAsset[]
+  passwordResetTokens PasswordResetToken[]
+  proposals NoteProposal[]
+  operationLogs OperationLog[]
 }
 
 model Account {
@@ -81,6 +85,7 @@ model Folder {
 model Note {
   id          String   @id @default(uuid())
   title       String   @default("Untitled")
+  slug        String?  @unique
   icon        String?
   coverImage  String?
   folderId    String?
@@ -88,6 +93,8 @@ model Note {
   templateId  String?
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  position    Int      @default(0)
+  isPinned    Boolean  @default(false)
   isArchived  Boolean  @default(false)
   isPublished Boolean  @default(false)
   createdAt   DateTime @default(now())
@@ -97,10 +104,14 @@ model Note {
   tags         NoteTag[]
   outgoingLinks Link[]   @relation("OutgoingLinks")
   incomingLinks Link[]   @relation("IncomingLinks")
+  assets       MediaAsset[]
+  proposals    NoteProposal[]
 
   @@index([folderId])
   @@index([userId])
+  @@index([position])
   @@index([isArchived])
+  @@index([isPinned])
   @@index([updatedAt])
 }
 
@@ -172,4 +183,69 @@ model Template {
   updatedAt   DateTime @updatedAt
 
   @@index([category])
+}
+
+model MediaAsset {
+  id          String   @id @default(uuid())
+  noteId      String?
+  note        Note?    @relation(fields: [noteId], references: [id], onDelete: SetNull)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fileName    String
+  mimeType    String
+  sizeBytes   Int
+  storagePath String
+  altText     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([noteId])
+}
+
+model PasswordResetToken {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token      String   @unique
+  expires    DateTime
+  consumedAt DateTime?
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+}
+
+model NoteProposal {
+  id         String   @id @default(uuid())
+  noteId     String
+  note       Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title      String
+  summary    String?
+  status     String   @default("pending")
+  patch      Json     @default("{}")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  reviewedAt DateTime?
+
+  @@index([noteId])
+  @@index([userId])
+  @@index([status])
+}
+
+model OperationLog {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  entityType String
+  entityId   String
+  actionType String
+  payload    Json     @default("{}")
+  source     String   @default("server")
+  createdAt  DateTime @default(now())
+  appliedAt  DateTime?
+
+  @@index([userId, createdAt])
+  @@index([entityType, entityId])
 }

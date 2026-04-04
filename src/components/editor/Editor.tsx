@@ -13,8 +13,10 @@ import {
   insertBlockInDocument,
   moveBlockInDocument,
   removeBlockFromDocument,
+  updateBlockInDocument,
 } from "@/domain/note/block-tree";
 import type {
+  BlockAttributes,
   BlockNodeContent,
   NoteReference,
   TiptapDocument,
@@ -24,6 +26,7 @@ import {
   BlockIdExtension,
   CalloutNode,
   defaultSlashCommands,
+  TableBlockNode,
   ToggleNode,
   WikilinkMark,
 } from "./extensions";
@@ -70,7 +73,16 @@ interface BlockToolbarState {
   };
 }
 
+interface BlockDropIndicatorState {
+  top: number;
+  left: number;
+  width: number;
+  targetBlockId: string;
+  mode: "before" | "after";
+}
+
 interface EditorProps {
+  noteId?: string;
   initialContent?: TiptapDocument;
   onSave?: (content: TiptapDocument) => void;
   editable?: boolean;
@@ -81,6 +93,7 @@ interface EditorProps {
 }
 
 export function Editor({
+  noteId,
   initialContent,
   onSave,
   editable = true,
@@ -91,6 +104,7 @@ export function Editor({
 }: EditorProps) {
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const editorRootRef = useRef<HTMLDivElement | null>(null);
+  const imageInputRef = useRef<HTMLInputElement | null>(null);
   const [slashMenu, setSlashMenu] = useState<SlashMenuState | null>(null);
   const [wikilinkMenu, setWikilinkMenu] = useState<WikilinkMenuState | null>(
     null
@@ -99,6 +113,11 @@ export function Editor({
   const [blockToolbar, setBlockToolbar] = useState<BlockToolbarState | null>(
     null
   );
+  const [isBlockMenuOpen, setIsBlockMenuOpen] = useState(false);
+  const [draggedBlockId, setDraggedBlockId] = useState<string | null>(null);
+  const [blockDropIndicator, setBlockDropIndicator] =
+    useState<BlockDropIndicatorState | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   const updateSlashMenu = useCallback(
     (instance: TiptapEditor) => {
@@ -279,6 +298,7 @@ export function Editor({
       }),
       BlockIdExtension,
       CalloutNode,
+      TableBlockNode,
       ToggleNode,
       WikilinkMark,
     ],
@@ -629,6 +649,253 @@ export function Editor({
     }, null);
   }, [applyDocumentMutation, blockToolbar]);
 
+  const handleDuplicateBlock = useCallback(() => {
+    if (!blockToolbar) {
+      return;
+    }
+
+    applyDocumentMutation((document) => {
+      const location = findBlockLocation(document.content, blockToolbar.blockId);
+
+      if (!location) {
+        return document;
+      }
+
+      const clonedBlock = cloneBlockTree(location.block);
+      return insertBlockInDocument(document, clonedBlock, {
+        parentBlockId: location.parentBlockId,
+        afterBlockId: blockToolbar.blockId,
+      });
+    });
+  }, [applyDocumentMutation, blockToolbar]);
+
+  const handleTransformBlock = useCallback(
+    (nextType: "paragraph" | "heading" | "callout" | "toggle") => {
+      if (!blockToolbar) {
+        return;
+      }
+
+      applyDocumentMutation((document) => {
+        const location = findBlockLocation(document.content, blockToolbar.blockId);
+
+        if (!location) {
+          return document;
+        }
+
+        const nextAttrs: BlockAttributes = {
+          ...(location.block.attrs ?? {}),
+          blockId: blockToolbar.blockId,
+        };
+
+        if (nextType === "heading") {
+          nextAttrs.level = 2;
+        }
+
+        if (nextType === "callout") {
+          nextAttrs.tone =
+            typeof nextAttrs.tone === "string" ? nextAttrs.tone : "info";
+          nextAttrs.title =
+            typeof nextAttrs.title === "string" ? nextAttrs.title : "Vurgu";
+        }
+
+        if (nextType === "toggle") {
+          nextAttrs.summary =
+            typeof nextAttrs.summary === "string"
+              ? nextAttrs.summary
+              : "Ayrintilar";
+        }
+
+        if (nextType === "paragraph") {
+          delete nextAttrs.level;
+          delete nextAttrs.tone;
+          delete nextAttrs.title;
+          delete nextAttrs.summary;
+        }
+
+        return updateBlockInDocument(document, blockToolbar.blockId, {
+          type: nextType,
+          attrs: nextAttrs,
+        });
+      });
+      setIsBlockMenuOpen(false);
+    },
+    [applyDocumentMutation, blockToolbar]
+  );
+
+  const handleEditTableBlock = useCallback(() => {
+    if (!blockToolbar) {
+      return;
+    }
+
+    applyDocumentMutation((document) => {
+      const location = findBlockLocation(document.content, blockToolbar.blockId);
+
+      if (!location || location.block.type !== "table") {
+        return document;
+      }
+
+      const currentRows = getTableRows(location.block);
+      const initialValue = currentRows
+        .map((row) => row.join(" | "))
+        .join("\n");
+      const nextValue = window.prompt(
+        "Tablo satirlarini duzenle. Her satir yeni satir, hucreler | ile ayrilir.",
+        initialValue
+      );
+
+      if (nextValue === null) {
+        return document;
+      }
+
+      const nextRows = parseTableRows(nextValue);
+      const nextCaption = window.prompt(
+        "Tablo basligi/caption",
+        typeof location.block.attrs?.caption === "string"
+          ? location.block.attrs.caption
+          : ""
+      );
+
+      return updateBlockInDocument(document, blockToolbar.blockId, {
+        attrs: {
+          ...(location.block.attrs ?? {}),
+          blockId: blockToolbar.blockId,
+          rows: nextRows,
+          caption: nextCaption?.trim() || null,
+        },
+      });
+    });
+    setIsBlockMenuOpen(false);
+  }, [applyDocumentMutation, blockToolbar]);
+
+  const handleImageUpload = useCallback(async () => {
+    imageInputRef.current?.click();
+  }, []);
+
+  const handleImageFileChange = useCallback(
+    async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+
+      if (!file || !editable) {
+        return;
+      }
+
+      setIsUploadingImage(true);
+
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        if (noteId) {
+          formData.append("noteId", noteId);
+        }
+
+        const response = await fetch("/api/uploads", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error("Gorsel yuklenemedi");
+        }
+
+        const payload = (await response.json()) as {
+          src: string;
+          alt?: string;
+        };
+
+        editor
+          ?.chain()
+          .focus()
+          .setImage({
+            src: payload.src,
+            alt: payload.alt ?? file.name,
+          })
+          .run();
+      } finally {
+        event.target.value = "";
+        setIsUploadingImage(false);
+      }
+    },
+    [editable, editor, noteId]
+  );
+
+  const handleBlockDragOver = useCallback(
+    (event: React.DragEvent<HTMLDivElement>) => {
+      if (!editable || !draggedBlockId || !editorRootRef.current) {
+        return;
+      }
+
+      const target = event.target as HTMLElement;
+      const blockElement = getClosestBlockElement(target, editorRootRef.current);
+
+      if (!blockElement) {
+        setBlockDropIndicator(null);
+        return;
+      }
+
+      const targetBlockId = blockElement.dataset.blockId;
+
+      if (!targetBlockId || targetBlockId === draggedBlockId) {
+        setBlockDropIndicator(null);
+        return;
+      }
+
+      event.preventDefault();
+      const rootRect = editorRootRef.current.getBoundingClientRect();
+      const blockRect = blockElement.getBoundingClientRect();
+      const mode =
+        event.clientY < blockRect.top + blockRect.height / 2 ? "before" : "after";
+
+      setBlockDropIndicator({
+        top:
+          (mode === "before" ? blockRect.top : blockRect.bottom) -
+          rootRect.top -
+          1,
+        left: blockRect.left - rootRect.left,
+        width: blockRect.width,
+        targetBlockId,
+        mode,
+      });
+    },
+    [draggedBlockId, editable]
+  );
+
+  const handleBlockDrop = useCallback(
+    (event: React.DragEvent<HTMLDivElement>) => {
+      if (!draggedBlockId || !blockDropIndicator) {
+        return;
+      }
+
+      event.preventDefault();
+      applyDocumentMutation((document) => {
+        const location = findBlockLocation(
+          document.content,
+          blockDropIndicator.targetBlockId
+        );
+
+        if (!location) {
+          return document;
+        }
+
+        const afterBlockId =
+          blockDropIndicator.mode === "before"
+            ? location.index > 0
+              ? getBlockId(location.siblings[location.index - 1])
+              : null
+            : blockDropIndicator.targetBlockId;
+
+        return moveBlockInDocument(document, draggedBlockId, {
+          parentBlockId: location.parentBlockId,
+          afterBlockId,
+        });
+      }, draggedBlockId);
+
+      setDraggedBlockId(null);
+      setBlockDropIndicator(null);
+    },
+    [applyDocumentMutation, blockDropIndicator, draggedBlockId]
+  );
+
   if (!editor) {
     return (
       <div className="editor-loading">
@@ -646,7 +913,21 @@ export function Editor({
       onClick={handleClick}
       onMouseMove={handleBlockToolbarMouseMove}
       onMouseLeave={handleBlockToolbarLeave}
+      onDragOver={handleBlockDragOver}
+      onDrop={handleBlockDrop}
+      onDragEnd={() => {
+        setDraggedBlockId(null);
+        setBlockDropIndicator(null);
+      }}
     >
+      <input
+        ref={imageInputRef}
+        type="file"
+        accept="image/*"
+        hidden
+        onChange={handleImageFileChange}
+      />
+
       {editable ? (
         <div className="editor-surface-bar">
           <span className="editor-surface-hint">/ ile blok ekle</span>
@@ -656,6 +937,13 @@ export function Editor({
           <span className="editor-surface-meta">
             Metin secince hizli bicimlendirme acilir
           </span>
+          <button
+            type="button"
+            className="editor-surface-upload"
+            onClick={() => void handleImageUpload()}
+          >
+            {isUploadingImage ? "Yukleniyor..." : "Gorsel yukle"}
+          </button>
         </div>
       ) : null}
 
@@ -667,6 +955,18 @@ export function Editor({
             left: blockToolbar.position.left,
           }}
         >
+          <button
+            type="button"
+            className="editor-block-button"
+            draggable
+            onDragStart={() => {
+              setDraggedBlockId(blockToolbar.blockId);
+              setIsBlockMenuOpen(false);
+            }}
+            aria-label="Bloku surukle"
+          >
+            ::
+          </button>
           <button
             type="button"
             className="editor-block-button"
@@ -702,6 +1002,17 @@ export function Editor({
           </button>
           <button
             type="button"
+            className="editor-block-button"
+            onMouseDown={(event) => {
+              event.preventDefault();
+              setIsBlockMenuOpen((currentValue) => !currentValue);
+            }}
+            aria-label="Blok menusunu ac"
+          >
+            ...
+          </button>
+          <button
+            type="button"
             className="editor-block-button danger"
             onMouseDown={(event) => {
               event.preventDefault();
@@ -710,6 +1021,63 @@ export function Editor({
             aria-label="Bloku sil"
           >
             x
+          </button>
+        </div>
+      ) : null}
+
+      {editable && blockToolbar && isBlockMenuOpen ? (
+        <div
+          className="editor-block-context-menu"
+          style={{
+            top: blockToolbar.position.top + 40,
+            left: blockToolbar.position.left,
+          }}
+        >
+          <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={handleDuplicateBlock}>
+            Kopyasini olustur
+          </button>
+          <button
+            type="button"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => handleTransformBlock("paragraph")}
+          >
+            Paragrafa donustur
+          </button>
+          <button
+            type="button"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => handleTransformBlock("heading")}
+          >
+            Basliga donustur
+          </button>
+          <button
+            type="button"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => handleTransformBlock("callout")}
+          >
+            Callout yap
+          </button>
+          <button
+            type="button"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => handleTransformBlock("toggle")}
+          >
+            Toggle yap
+          </button>
+          <button
+            type="button"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={handleEditTableBlock}
+          >
+            Tabloyu duzenle
+          </button>
+          <button
+            type="button"
+            className="danger"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={handleDeleteBlock}
+          >
+            Sil
           </button>
         </div>
       ) : null}
@@ -821,6 +1189,17 @@ export function Editor({
       ) : null}
 
       <EditorContent editor={editor} />
+
+      {blockDropIndicator ? (
+        <div
+          className="editor-block-drop-indicator"
+          style={{
+            top: blockDropIndicator.top,
+            left: blockDropIndicator.left,
+            width: blockDropIndicator.width,
+          }}
+        />
+      ) : null}
 
       {wikilinkMenu && wikilinkItems.length > 0 ? (
         <SlashCommandMenu
@@ -934,4 +1313,53 @@ function getChildBlocks(node: BlockNodeContent) {
   return (node.content ?? []).filter(
     (child): child is BlockNodeContent => child.type !== "text"
   );
+}
+
+function cloneBlockTree(block: BlockNodeContent): BlockNodeContent {
+  const nextBlockId = generateId();
+
+  return {
+    ...block,
+    attrs: {
+      ...(block.attrs ?? {}),
+      blockId: nextBlockId,
+    },
+    content: (block.content ?? []).map((child) =>
+      child.type === "text" ? { ...child } : cloneBlockTree(child)
+    ),
+  };
+}
+
+function getTableRows(block: BlockNodeContent): string[][] {
+  const rows = block.attrs?.rows;
+
+  if (!Array.isArray(rows)) {
+    return [
+      ["Sutun 1", "Sutun 2"],
+      ["Deger", "Deger"],
+    ];
+  }
+
+  return rows.map((row) =>
+    Array.isArray(row) ? row.map((cell) => String(cell ?? "")) : [String(row)]
+  );
+}
+
+function parseTableRows(value: string): string[][] {
+  const rows = value
+    .split("\n")
+    .map((line) =>
+      line
+        .split("|")
+        .map((cell) => cell.trim())
+        .filter((cell, index, cells) => cell.length > 0 || cells.length === 1)
+    )
+    .filter((row) => row.length > 0);
+
+  return rows.length > 0
+    ? rows
+    : [
+        ["Sutun 1", "Sutun 2"],
+        ["Deger", "Deger"],
+      ];
 }

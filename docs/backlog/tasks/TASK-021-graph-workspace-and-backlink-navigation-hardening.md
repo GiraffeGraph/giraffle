@@ -1,6 +1,6 @@
 # TASK-021 Graph Workspace And Backlink Navigation Hardening
 
-Status: Planned
+Status: Done
 Priority: P2
 Updated: 2026-04-04
 
@@ -21,6 +21,11 @@ Turn the graph and backlink views into a useful knowledge navigation surface rat
 - The data still comes from persisted link projections, not page-time rescans.
 - Lint, typecheck, and build pass.
 
+## Completed
+
+- Added graph filters, search, orphan visibility, and unresolved link surfacing.
+- Kept all graph data sourced from persisted projections.
+
 ## Out of Scope
 
 - 3D graph rendering
@@ -32,4 +37,3 @@ Turn the graph and backlink views into a useful knowledge navigation surface rat
 - `src/server/api/graph.ts`
 - `src/domain/link/link.service.ts`
 - `src/components/notes/NoteEditorPage.tsx`
-

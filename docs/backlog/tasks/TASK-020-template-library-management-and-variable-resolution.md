@@ -1,6 +1,6 @@
 # TASK-020 Template Library Management And Variable Resolution
 
-Status: Planned
+Status: Done
 Priority: P2
 Updated: 2026-04-04
 
@@ -21,6 +21,11 @@ Make templates a first-class workspace area rather than only a creation shortcut
 - Template application still produces canonical note documents.
 - Lint, typecheck, and build pass.
 
+## Completed
+
+- Added template library route with create, update, delete, Markdown seed content, and JSON variable editing.
+- Kept template application on canonical note document output.
+
 ## Out of Scope
 
 - Marketplace-style template sharing
@@ -32,4 +37,3 @@ Make templates a first-class workspace area rather than only a creation shortcut
 - `src/server/api/templates.ts`
 - `src/components/templates/TemplatePicker.tsx`
 - `src/app/(main)`
-

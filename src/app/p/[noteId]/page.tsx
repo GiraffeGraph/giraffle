@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { Editor } from "@/components/editor/Editor";
 import { getPublicNote } from "@/domain/note/note.service";
 
@@ -14,6 +14,10 @@ export default async function PublishedNotePage({
 
   if (!note) {
     notFound();
+  }
+
+  if (note.slug) {
+    redirect(`/published/${note.slug}`);
   }
 
   return (

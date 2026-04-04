@@ -5,7 +5,9 @@ import { db } from "@/lib/db";
 import { extractAndSaveLinks, resolveLinksForNote } from "@/domain/link/link.service";
 import { normalizeWikilinkTarget } from "@/domain/link/wikilink.parser";
 import { getAllFolders } from "@/domain/folder/folder.service";
+import { recordOperation } from "@/domain/sync/operation-log.service";
 import { syncNoteTags } from "@/domain/tag/tag.service";
+import { slugify } from "@/lib/utils";
 import {
   DEFAULT_NOTE_TITLE,
 } from "./note.types";
@@ -30,7 +32,7 @@ import {
 async function assertOwnedNote(noteId: string, userId: string) {
   const note = await db.note.findFirst({
     where: { id: noteId, userId },
-    select: { id: true, title: true },
+    select: { id: true, title: true, folderId: true, slug: true, isPinned: true },
   });
 
   if (!note) {
@@ -62,13 +64,21 @@ export async function createNote(
     await assertOwnedFolder(input.folderId, userId);
   }
 
+  const nextTitle = input.title ?? DEFAULT_NOTE_TITLE;
+  const [slug, nextPosition] = await Promise.all([
+    ensureUniqueNoteSlug(userId, nextTitle),
+    getNextNotePosition(userId, input.folderId ?? null),
+  ]);
+
   const note = await db.$transaction(async (tx) => {
     const createdNote = await tx.note.create({
       data: {
-        title: input.title ?? DEFAULT_NOTE_TITLE,
+        title: nextTitle,
+        slug,
         icon: input.icon,
         folderId: input.folderId,
         templateId: input.templateId,
+        position: nextPosition,
         userId,
       },
     });
@@ -81,6 +91,18 @@ export async function createNote(
   if (note.title !== DEFAULT_NOTE_TITLE) {
     await resolveLinksForNote(userId, note.id, note.title);
   }
+
+  await recordOperation({
+    userId,
+    entityType: "note",
+    entityId: note.id,
+    actionType: "create",
+    payload: {
+      title: note.title,
+      folderId: note.folderId,
+      slug: note.slug,
+    },
+  });
 
   return note.id;
 }
@@ -129,12 +151,15 @@ export async function getNote(userId: string, noteId: string) {
 export async function getNotes(userId: string) {
   return db.note.findMany({
     where: { userId, isArchived: false },
-    orderBy: { updatedAt: "desc" },
+    orderBy: [{ isPinned: "desc" }, { position: "asc" }, { updatedAt: "desc" }],
     select: {
       id: true,
       title: true,
+      slug: true,
       icon: true,
       folderId: true,
+      position: true,
+      isPinned: true,
       updatedAt: true,
       createdAt: true,
     },
@@ -166,6 +191,7 @@ export async function searchNotesByTitle(
     select: {
       id: true,
       title: true,
+      slug: true,
       folderId: true,
       updatedAt: true,
     },
@@ -215,6 +241,7 @@ export async function findNoteByTitle(
     select: {
       id: true,
       title: true,
+      slug: true,
       folderId: true,
     },
   });
@@ -234,14 +261,55 @@ export async function updateNote(
     await assertOwnedFolder(input.folderId, userId);
   }
 
+  const updateData: UpdateNoteInput = { ...input };
+
+  if (typeof input.title === "string" && input.title.trim()) {
+    updateData.slug = await ensureUniqueNoteSlug(
+      userId,
+      input.title,
+      noteId,
+      input.slug ?? oldNote.slug ?? undefined
+    );
+  } else if (typeof input.slug === "string") {
+    updateData.slug = await ensureUniqueNoteSlug(userId, input.slug, noteId);
+  }
+
+  if (
+    Object.prototype.hasOwnProperty.call(input, "folderId") &&
+    input.folderId !== oldNote.folderId &&
+    typeof input.position !== "number"
+  ) {
+    updateData.position = await getNextNotePosition(
+      userId,
+      input.folderId ?? null
+    );
+  }
+
+  if (input.isPublished && !updateData.slug) {
+    updateData.slug = await ensureUniqueNoteSlug(
+      userId,
+      input.title ?? oldNote.title,
+      noteId,
+      oldNote.slug ?? undefined
+    );
+  }
+
   await db.note.update({
     where: { id: noteId },
-    data: input,
+    data: updateData,
   });
 
   if (input.title && input.title !== oldNote.title) {
     await resolveLinksForNote(userId, noteId, input.title);
   }
+
+  await recordOperation({
+    userId,
+    entityType: "note",
+    entityId: noteId,
+    actionType: "update",
+    payload: updateData,
+  });
 }
 
 /**
@@ -279,6 +347,16 @@ export async function saveNoteContent(
     extractAndSaveLinks(userId, noteId),
     syncNoteTags(userId, noteId, document),
   ]);
+
+  await recordOperation({
+    userId,
+    entityType: "note",
+    entityId: noteId,
+    actionType: "save-content",
+    payload: {
+      blockCount: document.content.length,
+    },
+  });
 }
 
 /**
@@ -293,6 +371,13 @@ export async function archiveNote(
   await db.note.update({
     where: { id: noteId },
     data: { isArchived: true },
+  });
+
+  await recordOperation({
+    userId,
+    entityType: "note",
+    entityId: noteId,
+    actionType: "archive",
   });
 }
 
@@ -309,6 +394,13 @@ export async function restoreNote(
     where: { id: noteId },
     data: { isArchived: false },
   });
+
+  await recordOperation({
+    userId,
+    entityType: "note",
+    entityId: noteId,
+    actionType: "restore",
+  });
 }
 
 /**
@@ -320,6 +412,13 @@ export async function deleteNote(
 ): Promise<void> {
   await assertOwnedNote(noteId, userId);
   await db.note.delete({ where: { id: noteId } });
+
+  await recordOperation({
+    userId,
+    entityType: "note",
+    entityId: noteId,
+    actionType: "delete",
+  });
 }
 
 export async function getPublicNote(noteId: string) {
@@ -361,6 +460,52 @@ export async function getPublicNote(noteId: string) {
   };
 }
 
+export async function getPublicNoteBySlug(slug: string) {
+  return db.note.findFirst({
+    where: {
+      slug,
+      isPublished: true,
+      isArchived: false,
+    },
+    include: {
+      blocks: {
+        orderBy: [{ position: "asc" }, { createdAt: "asc" }],
+      },
+      tags: {
+        include: {
+          tag: true,
+        },
+      },
+      folder: {
+        select: {
+          id: true,
+          name: true,
+          parentId: true,
+        },
+      },
+    },
+  }).then((note) => {
+    if (!note) {
+      return null;
+    }
+
+    return {
+      ...note,
+      tags: note.tags.map((noteTag) => noteTag.tag.name),
+      document: persistedBlocksToDocument(
+        note.blocks.map((block) => ({
+          id: block.id,
+          type: block.type,
+          content: block.content,
+          attributes: block.attributes,
+          parentId: block.parentId,
+          position: block.position,
+        }))
+      ),
+    };
+  });
+}
+
 export async function getNoteForExport(userId: string, noteId: string) {
   const note = await getNote(userId, noteId);
 
@@ -373,6 +518,7 @@ export async function getNoteForExport(userId: string, noteId: string) {
   return {
     id: note.id,
     title: note.title,
+    slug: note.slug,
     icon: note.icon,
     folderPath: buildFolderPath(folders, note.folderId),
     isPublished: note.isPublished,
@@ -408,6 +554,7 @@ export async function getPublishedNotesForExport(userId: string) {
   return notes.map((note) => ({
     id: note.id,
     title: note.title,
+    slug: note.slug,
     icon: note.icon,
     folderPath: buildFolderPath(folders, note.folderId),
     isPublished: note.isPublished,
@@ -481,6 +628,95 @@ export async function deleteBlock(
 
   await saveNoteContent(userId, noteId, nextDocument);
   return nextDocument;
+}
+
+export async function moveNote(
+  userId: string,
+  noteId: string,
+  direction: "up" | "down"
+): Promise<void> {
+  await db.$transaction(async (tx) => {
+    const note = await tx.note.findFirst({
+      where: {
+        id: noteId,
+        userId,
+        isArchived: false,
+      },
+      select: {
+        id: true,
+        folderId: true,
+      },
+    });
+
+    if (!note) {
+      throw new Error("Note not found");
+    }
+
+    const siblings = await tx.note.findMany({
+      where: {
+        userId,
+        folderId: note.folderId,
+        isArchived: false,
+      },
+      orderBy: [
+        { isPinned: "desc" },
+        { position: "asc" },
+        { createdAt: "asc" },
+      ],
+      select: {
+        id: true,
+        isPinned: true,
+      },
+    });
+
+    const currentIndex = siblings.findIndex((candidate) => candidate.id === noteId);
+
+    if (currentIndex === -1) {
+      throw new Error("Note not found");
+    }
+
+    const targetIndex =
+      direction === "up" ? currentIndex - 1 : currentIndex + 1;
+
+    if (targetIndex < 0 || targetIndex >= siblings.length) {
+      return;
+    }
+
+    const currentNote = siblings[currentIndex];
+    const targetNote = siblings[targetIndex];
+
+    if (!currentNote || !targetNote || currentNote.isPinned !== targetNote.isPinned) {
+      return;
+    }
+
+    const reorderedNotes = [...siblings];
+    const [removedNote] = reorderedNotes.splice(currentIndex, 1);
+    reorderedNotes.splice(targetIndex, 0, removedNote);
+
+    let nextPosition = 0;
+
+    for (const sibling of reorderedNotes) {
+      if (sibling.isPinned !== currentNote.isPinned) {
+        continue;
+      }
+
+      await tx.note.update({
+        where: { id: sibling.id },
+        data: {
+          position: nextPosition,
+        },
+      });
+
+      nextPosition += 1;
+    }
+  });
+
+  await recordOperation({
+    userId,
+    entityType: "note",
+    entityId: noteId,
+    actionType: `move-${direction}`,
+  });
 }
 
 type NoteMutationClient = Pick<Prisma.TransactionClient, "block" | "note">;
@@ -679,6 +915,52 @@ async function getOwnedNoteDocument(userId: string, noteId: string) {
   }
 
   return note;
+}
+
+async function ensureUniqueNoteSlug(
+  userId: string,
+  input: string,
+  noteIdToExclude?: string,
+  preferredSlug?: string
+) {
+  const baseSlug =
+    slugify(preferredSlug ?? input) || slugify(DEFAULT_NOTE_TITLE) || "note";
+  let candidateSlug = baseSlug;
+  let suffix = 2;
+
+  while (true) {
+    const existingNote = await db.note.findFirst({
+      where: {
+        userId,
+        slug: candidateSlug,
+        ...(noteIdToExclude ? { id: { not: noteIdToExclude } } : {}),
+      },
+      select: { id: true },
+    });
+
+    if (!existingNote) {
+      return candidateSlug;
+    }
+
+    candidateSlug = `${baseSlug}-${suffix}`;
+    suffix += 1;
+  }
+}
+
+async function getNextNotePosition(userId: string, folderId: string | null) {
+  const lastNote = await db.note.findFirst({
+    where: {
+      userId,
+      folderId,
+      isArchived: false,
+    },
+    orderBy: [{ position: "desc" }, { createdAt: "desc" }],
+    select: {
+      position: true,
+    },
+  });
+
+  return typeof lastNote?.position === "number" ? lastNote.position + 1 : 0;
 }
 
 function buildFolderPath(

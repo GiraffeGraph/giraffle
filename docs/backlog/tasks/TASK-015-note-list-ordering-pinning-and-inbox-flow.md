@@ -1,6 +1,6 @@
 # TASK-015 Note List Ordering Pinning And Inbox Flow
 
-Status: Ready
+Status: Done
 Priority: P1
 Updated: 2026-04-04
 
@@ -21,6 +21,12 @@ Stop treating every note list as purely `updatedAt`-sorted so Graffle can suppor
 - Sidebar and folder views do not fight each other over note ordering semantics.
 - Lint, typecheck, and build pass.
 
+## Completed
+
+- Added persistent note `position`, `isPinned`, and `slug` flows to note services and server actions.
+- Added inbox route and UI surfaces for root-level notes.
+- Added pin and move controls to note and sidebar workflows.
+
 ## Out of Scope
 
 - Full kanban or board views
@@ -33,4 +39,3 @@ Stop treating every note list as purely `updatedAt`-sorted so Graffle can suppor
 - `src/server/api/notes.ts`
 - `src/components/sidebar/Sidebar.tsx`
 - `src/app/(main)/folders/[folderId]/page.tsx`
-

@@ -9,21 +9,29 @@ import type { BacklinkResult } from "@/domain/link/link.types";
 import { DEFAULT_NOTE_TITLE } from "@/domain/note/note.types";
 import type { NoteReference, TiptapDocument } from "@/domain/note/note.types";
 import {
+  moveNoteAction,
   archiveNoteAction,
+  updateNoteAction,
   createNoteFromWikilinkAction,
   findNoteByTitleAction,
   getNoteExportAction,
   saveNoteContentAction,
   searchNotesByTitleAction,
-  updateNoteAction,
 } from "@/server/api/notes";
+import {
+  applyProposalAction,
+  rejectProposalAction,
+} from "@/server/api/proposals";
+import { queueLocalMutation, resolveLocalMutation } from "@/lib/local-sync";
 
 interface NoteEditorPageProps {
   note: {
     id: string;
     title: string;
+    slug: string | null;
     icon: string | null;
     folderId: string | null;
+    isPinned: boolean;
     isPublished: boolean;
     tags: string[];
     document: TiptapDocument;
@@ -34,17 +42,27 @@ interface NoteEditorPageProps {
     parentId: string | null;
   }>;
   backlinks: BacklinkResult[];
+  proposals: Array<{
+    id: string;
+    title: string;
+    summary: string | null;
+    status: string;
+    createdAt: string;
+  }>;
 }
 
 export function NoteEditorPage({
   note,
   folders,
   backlinks,
+  proposals,
 }: NoteEditorPageProps) {
   const [title, setTitle] = useState(note.title);
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(
     note.folderId
   );
+  const [slug, setSlug] = useState(note.slug);
+  const [isPinned, setIsPinned] = useState(note.isPinned);
   const [isPublished, setIsPublished] = useState(note.isPublished);
   const [contextMenuPosition, setContextMenuPosition] = useState<{
     x: number;
@@ -74,7 +92,14 @@ export function NoteEditorPage({
   const handleTitleChange = useCallback(
     async (newTitle: string) => {
       setTitle(newTitle);
+      const mutationId = queueLocalMutation({
+        entityType: "note",
+        entityId: note.id,
+        actionType: "update-title",
+        payload: { title: newTitle || DEFAULT_NOTE_TITLE },
+      });
       await updateNoteAction(note.id, { title: newTitle || DEFAULT_NOTE_TITLE });
+      resolveLocalMutation(mutationId);
     },
     [note.id]
   );
@@ -83,7 +108,14 @@ export function NoteEditorPage({
     async (nextFolderId: string) => {
       const normalizedFolderId = nextFolderId || null;
       setCurrentFolderId(normalizedFolderId);
+      const mutationId = queueLocalMutation({
+        entityType: "note",
+        entityId: note.id,
+        actionType: "move-folder",
+        payload: { folderId: normalizedFolderId },
+      });
       await updateNoteAction(note.id, { folderId: normalizedFolderId });
+      resolveLocalMutation(mutationId);
     },
     [note.id]
   );
@@ -91,8 +123,75 @@ export function NoteEditorPage({
   const handlePublishToggle = useCallback(async () => {
     const nextValue = !isPublished;
     setIsPublished(nextValue);
+    const mutationId = queueLocalMutation({
+      entityType: "note",
+      entityId: note.id,
+      actionType: nextValue ? "publish" : "unpublish",
+    });
     await updateNoteAction(note.id, { isPublished: nextValue });
-  }, [isPublished, note.id]);
+    resolveLocalMutation(mutationId);
+    router.refresh();
+  }, [isPublished, note.id, router]);
+
+  const handlePinToggle = useCallback(async () => {
+    const nextValue = !isPinned;
+    setIsPinned(nextValue);
+    const mutationId = queueLocalMutation({
+      entityType: "note",
+      entityId: note.id,
+      actionType: nextValue ? "pin" : "unpin",
+    });
+    await updateNoteAction(note.id, { isPinned: nextValue });
+    resolveLocalMutation(mutationId);
+    router.refresh();
+  }, [isPinned, note.id, router]);
+
+  const handleMoveNote = useCallback(
+    async (direction: "up" | "down") => {
+      const mutationId = queueLocalMutation({
+        entityType: "note",
+        entityId: note.id,
+        actionType: `move-${direction}`,
+      });
+      await moveNoteAction(note.id, direction);
+      resolveLocalMutation(mutationId);
+      router.refresh();
+    },
+    [note.id, router]
+  );
+
+  const handleSlugChange = useCallback(
+    async (nextSlug: string) => {
+      const normalizedSlug = nextSlug.trim() || null;
+      setSlug(normalizedSlug);
+      const mutationId = queueLocalMutation({
+        entityType: "note",
+        entityId: note.id,
+        actionType: "update-slug",
+        payload: { slug: normalizedSlug },
+      });
+      await updateNoteAction(note.id, { slug: normalizedSlug });
+      resolveLocalMutation(mutationId);
+      router.refresh();
+    },
+    [note.id, router]
+  );
+
+  const handleApplyProposal = useCallback(
+    async (proposalId: string) => {
+      await applyProposalAction(proposalId, note.id);
+      router.refresh();
+    },
+    [note.id, router]
+  );
+
+  const handleRejectProposal = useCallback(
+    async (proposalId: string) => {
+      await rejectProposalAction(proposalId, note.id);
+      router.refresh();
+    },
+    [note.id, router]
+  );
 
   const handleCopyExport = useCallback(
     (format: "markdown" | "mdx") => {
@@ -105,12 +204,12 @@ export function NoteEditorPage({
   );
 
   const handleOpenPublishedPage = useCallback(() => {
-    if (!isPublished) {
+    if (!isPublished || !slug) {
       return;
     }
 
-    window.open(`/p/${note.id}`, "_blank", "noopener,noreferrer");
-  }, [isPublished, note.id]);
+    window.open(`/published/${slug}`, "_blank", "noopener,noreferrer");
+  }, [isPublished, slug]);
 
   const handleCopyNoteLink = useCallback(async () => {
     await navigator.clipboard.writeText(`${window.location.origin}/notes/${note.id}`);
@@ -123,7 +222,16 @@ export function NoteEditorPage({
 
   const handleSave = useCallback(
     async (content: TiptapDocument) => {
+      const mutationId = queueLocalMutation({
+        entityType: "note",
+        entityId: note.id,
+        actionType: "save-document",
+        payload: {
+          blockCount: content.content.length,
+        },
+      });
       await saveNoteContentAction(note.id, content);
+      resolveLocalMutation(mutationId);
     },
     [note.id]
   );
@@ -181,9 +289,24 @@ export function NoteEditorPage({
   const noteContextItems = useMemo<ContextMenuItem[]>(
     () => [
       {
+        label: isPinned ? "Sabitlemeyi kaldir" : "Sabitle",
+        hint: "Not sirasinda ustte tut veya serbest birak",
+        onSelect: handlePinToggle,
+      },
+      {
         label: isPublished ? "Yayindan kaldir" : "Yayinla",
         hint: "Notun yayin durumunu degistir",
         onSelect: handlePublishToggle,
+      },
+      {
+        label: "Yukari tasi",
+        hint: "Bulundugu listede bir adim yukari al",
+        onSelect: () => handleMoveNote("up"),
+      },
+      {
+        label: "Asagi tasi",
+        hint: "Bulundugu listede bir adim asagi al",
+        onSelect: () => handleMoveNote("down"),
       },
       {
         label: "Not baglantisini kopyala",
@@ -217,8 +340,11 @@ export function NoteEditorPage({
       handleArchiveNote,
       handleCopyExport,
       handleCopyNoteLink,
+      handleMoveNote,
       handleOpenPublishedPage,
+      handlePinToggle,
       handlePublishToggle,
+      isPinned,
       isPublished,
     ]
   );
@@ -270,6 +396,21 @@ export function NoteEditorPage({
             <button className="note-toolbar-btn primary" onClick={handlePublishToggle}>
               {isPublished ? "Yayindan kaldir" : "Yayinla"}
             </button>
+            <button className="note-toolbar-btn" onClick={handlePinToggle}>
+              {isPinned ? "Pini kaldir" : "Sabitle"}
+            </button>
+            <button
+              className="note-toolbar-btn"
+              onClick={() => handleMoveNote("up")}
+            >
+              Yukari
+            </button>
+            <button
+              className="note-toolbar-btn"
+              onClick={() => handleMoveNote("down")}
+            >
+              Asagi
+            </button>
             <button
               className="note-toolbar-btn"
               disabled={isExportPending}
@@ -304,6 +445,9 @@ export function NoteEditorPage({
               >
                 {isPublished ? "Yayinda" : "Taslak"}
               </span>
+              {isPinned ? (
+                <span className="note-status-pill pinned">Pinli</span>
+              ) : null}
               <span className="note-status-text">Otomatik kaydetme acik</span>
             </div>
 
@@ -329,12 +473,25 @@ export function NoteEditorPage({
                 ))}
               </div>
             ) : null}
+
+            <label className="note-slug-field">
+              <span>Yayin slug</span>
+              <input
+                className="note-slug-input"
+                value={slug ?? ""}
+                onChange={(event) => setSlug(event.target.value)}
+                onBlur={(event) => void handleSlugChange(event.target.value)}
+                placeholder="yayin-slug"
+                spellCheck={false}
+              />
+            </label>
           </div>
         </div>
       </div>
 
       <div className="note-editor-container">
         <Editor
+          noteId={note.id}
           initialContent={note.document}
           onSave={handleSave}
           searchWikilinkNotes={handleSearchWikilinks}
@@ -363,6 +520,55 @@ export function NoteEditorPage({
                 <span className="backlink-source">{backlink.sourceNoteTitle}</span>
                 <span className="backlink-target">-&gt; {backlink.targetRaw}</span>
               </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {proposals.length > 0 ? (
+        <div className="backlinks-section">
+          <div className="backlinks-header">
+            <span className="backlinks-icon">AI</span>
+            <span className="backlinks-title">
+              Bekleyen oneriler ({proposals.length})
+            </span>
+          </div>
+          <div className="proposal-list">
+            {proposals.map((proposal) => (
+              <div key={proposal.id} className="proposal-card">
+                <div className="proposal-card-head">
+                  <div>
+                    <div className="proposal-card-title">{proposal.title}</div>
+                    <div className="proposal-card-meta">
+                      {proposal.status} ·{" "}
+                      {new Date(proposal.createdAt).toLocaleString("tr-TR")}
+                    </div>
+                  </div>
+                  <div className="proposal-card-actions">
+                    {proposal.status === "pending" ? (
+                      <>
+                        <button
+                          type="button"
+                          className="note-toolbar-btn"
+                          onClick={() => void handleApplyProposal(proposal.id)}
+                        >
+                          Uygula
+                        </button>
+                        <button
+                          type="button"
+                          className="note-toolbar-btn"
+                          onClick={() => void handleRejectProposal(proposal.id)}
+                        >
+                          Reddet
+                        </button>
+                      </>
+                    ) : null}
+                  </div>
+                </div>
+                {proposal.summary ? (
+                  <div className="proposal-card-summary">{proposal.summary}</div>
+                ) : null}
+              </div>
             ))}
           </div>
         </div>

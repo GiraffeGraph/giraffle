@@ -1,6 +1,6 @@
 # TASK-024 Auth Production Workflows And Account Management
 
-Status: Planned
+Status: Done
 Priority: P2
 Updated: 2026-04-04
 
@@ -21,6 +21,10 @@ Raise auth from baseline credentials protection to a product-safe account system
 - The app remains deployable without inventing unnecessary infrastructure.
 - Lint, typecheck, and build pass.
 
+## Completed
+
+- Added account page, password change, password reset request, reset token validation, and reset completion flow.
+
 ## Out of Scope
 
 - SSO suites with every enterprise provider
@@ -33,4 +37,3 @@ Raise auth from baseline credentials protection to a product-safe account system
 - `src/lib/rate-limit.ts`
 - `src/app/login`
 - `src/app/register`
-

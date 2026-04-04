@@ -1,6 +1,6 @@
 # TASK-017 Block Drag Handles And Contextual Block Menu
 
-Status: Ready
+Status: Done
 Priority: P1
 Updated: 2026-04-04
 
@@ -21,6 +21,11 @@ Move the editor from simple hover controls to a clearer block-based interaction 
 - Nested block structures remain valid after movement.
 - Lint, typecheck, and build pass.
 
+## Completed
+
+- Added draggable block handle with drop indicator.
+- Added contextual block menu for duplicate, transform, table edit, and delete.
+
 ## Out of Scope
 
 - Realtime collaborative cursor handling
@@ -32,4 +37,3 @@ Move the editor from simple hover controls to a clearer block-based interaction 
 - `src/domain/note/block-tree.ts`
 - `src/server/api/notes.ts`
 - `src/app/globals.css`
-

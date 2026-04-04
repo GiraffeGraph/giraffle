@@ -24,14 +24,38 @@ import {
 } from "@/components/theme/theme-config";
 import { TemplatePicker } from "@/components/templates/TemplatePicker";
 import { signOutAction } from "@/server/api/auth";
-import { createFolderAction, moveFolderAction } from "@/server/api/folders";
-import { archiveNoteAction, createNoteAction } from "@/server/api/notes";
+import {
+  createFolderAction,
+  moveFolderAction,
+  relocateFolderAction,
+} from "@/server/api/folders";
+import {
+  archiveNoteAction,
+  createNoteAction,
+  moveNoteAction,
+  updateNoteAction,
+} from "@/server/api/notes";
 import type { TemplateVariable } from "@/domain/template/template.types";
+import {
+  DEFAULT_COLLAPSED_SECTIONS,
+  DEFAULT_EXPANDED_SIDEBAR_WIDTH,
+  SIDEBAR_COLLAPSE_STORAGE_KEY,
+  SIDEBAR_COMPACT_STORAGE_KEY,
+  SIDEBAR_COMPACT_WIDTH,
+  SIDEBAR_MAX_WIDTH,
+  SIDEBAR_MIN_WIDTH,
+  SIDEBAR_WIDTH_STORAGE_KEY,
+  type SidebarCollapseState,
+} from "@/lib/workspace-preferences";
 
 interface SidebarNote {
   id: string;
   title: string;
+  slug?: string | null;
   icon: string | null;
+  folderId?: string | null;
+  position?: number;
+  isPinned?: boolean;
   updatedAt: Date;
 }
 
@@ -39,6 +63,8 @@ interface SidebarFolder {
   id: string;
   name: string;
   icon: string | null;
+  parentId?: string | null;
+  position?: number;
   children?: SidebarFolder[];
   _count?: {
     notes: number;
@@ -80,28 +106,12 @@ interface SidebarMenuState {
   items: ContextMenuItem[];
 }
 
-type SidebarSectionKey = "folders" | "tags" | "recentNotes";
-
-interface SidebarCollapseState {
-  folders: boolean;
-  tags: boolean;
-  recentNotes: boolean;
+interface FolderDropTarget {
+  folderId: string;
+  mode: "inside" | "after";
 }
 
-const SIDEBAR_COLLAPSE_STORAGE_KEY = "graffle.sidebar.sections";
-const SIDEBAR_WIDTH_STORAGE_KEY = "graffle.sidebar.width";
-const SIDEBAR_COMPACT_STORAGE_KEY = "graffle.sidebar.compact";
-
-const DEFAULT_EXPANDED_SIDEBAR_WIDTH = 272;
-const SIDEBAR_MIN_WIDTH = 240;
-const SIDEBAR_MAX_WIDTH = 420;
-const SIDEBAR_COMPACT_WIDTH = 68;
-
-const DEFAULT_COLLAPSED_SECTIONS: SidebarCollapseState = {
-  folders: false,
-  tags: false,
-  recentNotes: false,
-};
+type SidebarSectionKey = "folders" | "tags" | "recentNotes";
 
 export function Sidebar({
   notes,
@@ -119,6 +129,9 @@ export function Sidebar({
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
   const [paletteQuery, setPaletteQuery] = useState("");
   const [templatePickerOpenSignal, setTemplatePickerOpenSignal] = useState(0);
+  const [draggedFolderId, setDraggedFolderId] = useState<string | null>(null);
+  const [folderDropTarget, setFolderDropTarget] =
+    useState<FolderDropTarget | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeThemeId, setActiveThemeId] =
     useState<AppThemeId>(DEFAULT_APP_THEME);
@@ -394,6 +407,22 @@ export function Sidebar({
     [router]
   );
 
+  const handleRelocateFolder = useCallback(
+    async (
+      folderId: string,
+      placement: {
+        parentId?: string | null;
+        afterFolderId?: string | null;
+      }
+    ) => {
+      await relocateFolderAction(folderId, placement);
+      setFolderDropTarget(null);
+      setDraggedFolderId(null);
+      router.refresh();
+    },
+    [router]
+  );
+
   const handleCommandSubmit = useCallback(() => {
     if (!commandMatch) {
       return;
@@ -464,6 +493,32 @@ export function Sidebar({
         onSelect: () => router.push(`/notes/${sidebarNote.id}`),
       },
       {
+        label: sidebarNote.isPinned ? "Sabitlemeyi kaldir" : "Sabitle",
+        hint: "Notu sirali listelerde ustte tut veya birak",
+        onSelect: async () => {
+          await updateNoteAction(sidebarNote.id, {
+            isPinned: !sidebarNote.isPinned,
+          });
+          router.refresh();
+        },
+      },
+      {
+        label: "Yukari tasi",
+        hint: "Not sirasini bir adim yukari al",
+        onSelect: async () => {
+          await moveNoteAction(sidebarNote.id, "up");
+          router.refresh();
+        },
+      },
+      {
+        label: "Asagi tasi",
+        hint: "Not sirasini bir adim asagi al",
+        onSelect: async () => {
+          await moveNoteAction(sidebarNote.id, "down");
+          router.refresh();
+        },
+      },
+      {
         label: "Not baglantisini kopyala",
         hint: "Dahili not adresini panoya kopyala",
         onSelect: () => copyInternalLink(`/notes/${sidebarNote.id}`),
@@ -477,6 +532,7 @@ export function Sidebar({
           if (currentNoteId === sidebarNote.id) {
             router.push("/dashboard");
           }
+          router.refresh();
         },
       },
     ],
@@ -592,6 +648,76 @@ export function Sidebar({
           router.push("/graph");
         },
       },
+      {
+        id: "action-inbox",
+        group: "Gecisler",
+        title: "Gelen kutusuna git",
+        description: "Klasorsuz notlari ac",
+        icon: "In",
+        onSelect: async () => {
+          router.push("/inbox");
+        },
+      },
+      {
+        id: "action-search",
+        group: "Gecisler",
+        title: "Arama calisma alanini ac",
+        description: "Filtreli arama sayfasi",
+        icon: "Ara",
+        onSelect: async () => {
+          router.push("/search");
+        },
+      },
+      {
+        id: "action-templates",
+        group: "Gecisler",
+        title: "Sablon kutuphanesi",
+        description: "Template yonetim alanini ac",
+        icon: "Tpl",
+        onSelect: async () => {
+          router.push("/templates");
+        },
+      },
+      {
+        id: "action-publish",
+        group: "Gecisler",
+        title: "Publish alani",
+        description: "Yayindaki notlari ve exportleri gor",
+        icon: "Pub",
+        onSelect: async () => {
+          router.push("/publish");
+        },
+      },
+      {
+        id: "action-proposals",
+        group: "Gecisler",
+        title: "Oneri kuyrugu",
+        description: "AI proposal review alanini ac",
+        icon: "AI",
+        onSelect: async () => {
+          router.push("/proposals");
+        },
+      },
+      {
+        id: "action-settings",
+        group: "Gecisler",
+        title: "Ayarlar",
+        description: "Tema, local queue ve tercihleri ac",
+        icon: "Ay",
+        onSelect: async () => {
+          router.push("/settings");
+        },
+      },
+      {
+        id: "action-account",
+        group: "Gecisler",
+        title: "Hesap",
+        description: "Profil ve sifre islemleri",
+        icon: "Hs",
+        onSelect: async () => {
+          router.push("/account");
+        },
+      },
     ];
 
     const noteItems = notes
@@ -648,8 +774,34 @@ export function Sidebar({
         },
       }));
 
+    const templateItems = templates
+      .filter((template) =>
+        normalizedPaletteQuery
+          ? `${template.name} ${template.description ?? ""}`
+              .toLowerCase()
+              .includes(normalizedPaletteQuery)
+          : true
+      )
+      .slice(0, normalizedPaletteQuery ? 6 : 4)
+      .map<CommandPaletteItem>((template) => ({
+        id: `template-${template.id}`,
+        group: "Sablonlar",
+        title: template.name,
+        description: template.description ?? `${template.category} sablonu`,
+        icon: template.icon ?? "Tpl",
+        onSelect: async () => {
+          router.push(`/templates?selected=${template.id}`);
+        },
+      }));
+
     if (!normalizedPaletteQuery) {
-      return [...actionItems, ...noteItems, ...folderItems, ...tagItems];
+      return [
+        ...actionItems,
+        ...noteItems,
+        ...folderItems,
+        ...tagItems,
+        ...templateItems,
+      ];
     }
 
     const filteredActions = actionItems.filter((item) => {
@@ -657,8 +809,14 @@ export function Sidebar({
       return haystack.includes(normalizedPaletteQuery);
     });
 
-    return [...filteredActions, ...noteItems, ...folderItems, ...tagItems];
-  }, [flattenedFolders, normalizedPaletteQuery, notes, router, tags]);
+    return [
+      ...filteredActions,
+      ...noteItems,
+      ...folderItems,
+      ...tagItems,
+      ...templateItems,
+    ];
+  }, [flattenedFolders, normalizedPaletteQuery, notes, router, tags, templates]);
 
   const isFoldersCollapsed = hasQuery ? false : collapsedSections.folders;
   const isTagsCollapsed = hasQuery ? false : collapsedSections.tags;
@@ -856,12 +1014,75 @@ export function Sidebar({
                 </button>
                 <button
                   className={`sidebar-item ${
+                    pathname === "/inbox" ? "active" : ""
+                  }`}
+                  onClick={() => router.push("/inbox")}
+                >
+                  <span className="sidebar-item-icon">In</span>
+                  <span className="sidebar-item-label">Gelen kutusu</span>
+                </button>
+                <button
+                  className={`sidebar-item ${
+                    pathname === "/search" ? "active" : ""
+                  }`}
+                  onClick={() => router.push("/search")}
+                >
+                  <span className="sidebar-item-icon">Ara</span>
+                  <span className="sidebar-item-label">Arama</span>
+                </button>
+                <button
+                  className={`sidebar-item ${
                     pathname === "/graph" ? "active" : ""
                   }`}
                   onClick={() => router.push("/graph")}
                 >
                   <span className="sidebar-item-icon">Ag</span>
                   <span className="sidebar-item-label">Baglanti agi</span>
+                </button>
+                <button
+                  className={`sidebar-item ${
+                    pathname === "/templates" ? "active" : ""
+                  }`}
+                  onClick={() => router.push("/templates")}
+                >
+                  <span className="sidebar-item-icon">Tpl</span>
+                  <span className="sidebar-item-label">Sablonlar</span>
+                </button>
+                <button
+                  className={`sidebar-item ${
+                    pathname === "/publish" ? "active" : ""
+                  }`}
+                  onClick={() => router.push("/publish")}
+                >
+                  <span className="sidebar-item-icon">Pub</span>
+                  <span className="sidebar-item-label">Publish</span>
+                </button>
+                <button
+                  className={`sidebar-item ${
+                    pathname === "/proposals" ? "active" : ""
+                  }`}
+                  onClick={() => router.push("/proposals")}
+                >
+                  <span className="sidebar-item-icon">AI</span>
+                  <span className="sidebar-item-label">Oneriler</span>
+                </button>
+                <button
+                  className={`sidebar-item ${
+                    pathname === "/settings" ? "active" : ""
+                  }`}
+                  onClick={() => router.push("/settings")}
+                >
+                  <span className="sidebar-item-icon">Ay</span>
+                  <span className="sidebar-item-label">Ayarlar</span>
+                </button>
+                <button
+                  className={`sidebar-item ${
+                    pathname === "/account" ? "active" : ""
+                  }`}
+                  onClick={() => router.push("/account")}
+                >
+                  <span className="sidebar-item-icon">Hs</span>
+                  <span className="sidebar-item-label">Hesap</span>
                 </button>
               </nav>
             </SidebarGroup>
@@ -877,6 +1098,33 @@ export function Sidebar({
               onToggle={() => toggleSection("folders")}
             >
               <div className="sidebar-folder-tree">
+                {draggedFolderId ? (
+                  <div
+                    className={`sidebar-folder-dropzone root${
+                      folderDropTarget?.folderId === "__root__" ? " active" : ""
+                    }`}
+                    onDragOver={(event) => {
+                      event.preventDefault();
+                      setFolderDropTarget({
+                        folderId: "__root__",
+                        mode: "after",
+                      });
+                    }}
+                    onDrop={(event) => {
+                      event.preventDefault();
+                      if (!draggedFolderId) {
+                        return;
+                      }
+
+                      void handleRelocateFolder(draggedFolderId, {
+                        parentId: null,
+                        afterFolderId: null,
+                      });
+                    }}
+                  >
+                    Koke tasi
+                  </div>
+                ) : null}
                 {filteredFolders.length === 0 ? (
                   <div className="sidebar-empty">
                     {hasQuery ? "Eslesen klasor yok." : "Henuz klasor yok."}
@@ -889,6 +1137,7 @@ export function Sidebar({
                       pathname={pathname}
                       onOpen={(folderId) => router.push(`/folders/${folderId}`)}
                       onMoveFolder={handleMoveFolder}
+                      onRelocateFolder={handleRelocateFolder}
                       onQuickCreate={handleCreateNoteInFolder}
                       onContextMenuOpen={(event, currentFolder) =>
                         openContextMenuAtPointer(
@@ -902,6 +1151,10 @@ export function Sidebar({
                           buildFolderMenu(currentFolder)
                         )
                       }
+                      draggedFolderId={draggedFolderId}
+                      folderDropTarget={folderDropTarget}
+                      onDragFolderChange={setDraggedFolderId}
+                      onDropTargetChange={setFolderDropTarget}
                     />
                   ))
                 )}
@@ -1129,7 +1382,10 @@ function SidebarNoteRow({
         onContextMenu={(event) => onContextMenuOpen(event, note)}
       >
         <span className="sidebar-item-icon">{note.icon ?? "Not"}</span>
-        <span className="sidebar-item-label">{note.title}</span>
+        <span className="sidebar-item-label">
+          {note.title}
+          {note.isPinned ? " *" : ""}
+        </span>
       </button>
       <div className="sidebar-row-actions">
         <button
@@ -1150,9 +1406,14 @@ function SidebarFolderItem({
   pathname,
   onOpen,
   onMoveFolder,
+  onRelocateFolder,
   onQuickCreate,
   onContextMenuOpen,
   onTriggerMenuOpen,
+  draggedFolderId,
+  folderDropTarget,
+  onDragFolderChange,
+  onDropTargetChange,
   depth = 0,
 }: {
   folder: SidebarFolder;
@@ -1161,6 +1422,13 @@ function SidebarFolderItem({
   onMoveFolder: (
     folderId: string,
     direction: "up" | "down"
+  ) => void | Promise<void>;
+  onRelocateFolder: (
+    folderId: string,
+    placement: {
+      parentId?: string | null;
+      afterFolderId?: string | null;
+    }
   ) => void | Promise<void>;
   onQuickCreate: (folderId: string) => void | Promise<void>;
   onContextMenuOpen: (
@@ -1171,19 +1439,59 @@ function SidebarFolderItem({
     event: ReactMouseEvent<HTMLButtonElement>,
     folder: SidebarFolder
   ) => void;
+  draggedFolderId: string | null;
+  folderDropTarget: FolderDropTarget | null;
+  onDragFolderChange: (folderId: string | null) => void;
+  onDropTargetChange: (target: FolderDropTarget | null) => void;
   depth?: number;
 }) {
   const isActive = pathname === `/folders/${folder.id}`;
+  const isInsideDropTarget =
+    folderDropTarget?.folderId === folder.id && folderDropTarget.mode === "inside";
+  const isAfterDropTarget =
+    folderDropTarget?.folderId === folder.id && folderDropTarget.mode === "after";
 
   return (
     <div className="sidebar-folder-node">
-      <div className={`sidebar-entity-row ${isActive ? "active" : ""}`}>
+      <div
+        className={`sidebar-entity-row ${isActive ? "active" : ""}${
+          isInsideDropTarget ? " drag-target" : ""
+        }`}
+      >
         <button
           type="button"
           className={`sidebar-item sidebar-row-main ${isActive ? "active" : ""}`}
           style={{ paddingLeft: `${12 + depth * 16}px` }}
           onClick={() => onOpen(folder.id)}
           onContextMenu={(event) => onContextMenuOpen(event, folder)}
+          draggable
+          onDragStart={() => onDragFolderChange(folder.id)}
+          onDragEnd={() => {
+            onDragFolderChange(null);
+            onDropTargetChange(null);
+          }}
+          onDragOver={(event) => {
+            event.preventDefault();
+            if (draggedFolderId === folder.id) {
+              return;
+            }
+
+            onDropTargetChange({
+              folderId: folder.id,
+              mode: "inside",
+            });
+          }}
+          onDrop={(event) => {
+            event.preventDefault();
+            if (!draggedFolderId || draggedFolderId === folder.id) {
+              return;
+            }
+
+            void onRelocateFolder(draggedFolderId, {
+              parentId: folder.id,
+              afterFolderId: null,
+            });
+          }}
         >
           <span className="sidebar-item-icon">{folder.icon ?? "Kls"}</span>
           <span className="sidebar-item-label">{folder.name}</span>
@@ -1237,6 +1545,29 @@ function SidebarFolderItem({
         </div>
       </div>
 
+      {draggedFolderId && draggedFolderId !== folder.id ? (
+        <div
+          className={`sidebar-folder-dropzone${isAfterDropTarget ? " active" : ""}`}
+          style={{ marginLeft: `${12 + depth * 16}px` }}
+          onDragOver={(event) => {
+            event.preventDefault();
+            onDropTargetChange({
+              folderId: folder.id,
+              mode: "after",
+            });
+          }}
+          onDrop={(event) => {
+            event.preventDefault();
+            void onRelocateFolder(draggedFolderId, {
+              parentId: folder.parentId ?? null,
+              afterFolderId: folder.id,
+            });
+          }}
+        >
+          {isInsideDropTarget ? "Icine birak" : "Altina birak"}
+        </div>
+      ) : null}
+
       {(folder.children ?? []).length > 0 ? (
         <div className="sidebar-folder-children">
           {(folder.children ?? []).map((childFolder) => (
@@ -1246,9 +1577,14 @@ function SidebarFolderItem({
               pathname={pathname}
               onOpen={onOpen}
               onMoveFolder={onMoveFolder}
+              onRelocateFolder={onRelocateFolder}
               onQuickCreate={onQuickCreate}
               onContextMenuOpen={onContextMenuOpen}
               onTriggerMenuOpen={onTriggerMenuOpen}
+              draggedFolderId={draggedFolderId}
+              folderDropTarget={folderDropTarget}
+              onDragFolderChange={onDragFolderChange}
+              onDropTargetChange={onDropTargetChange}
               depth={depth + 1}
             />
           ))}

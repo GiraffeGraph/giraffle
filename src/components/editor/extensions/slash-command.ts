@@ -182,24 +182,18 @@ export const defaultSlashCommands: SlashCommandItem[] = [
     },
   },
   {
-    title: "Tablo Iskeleti",
-    description: "Zengin tablo gelene kadar Markdown tablo ekle",
+    title: "Tablo",
+    description: "Yapisal tablo blogu ekle",
     icon: "TB",
     shortcut: "/table",
     command: (editor) => {
       editor
         .chain()
         .focus()
-        .insertContent({
-          type: "codeBlock",
-          attrs: {
-            language: "md",
-          },
-          content: [
-            {
-              type: "text",
-              text: "| Sutun 1 | Sutun 2 |\n| --- | --- |\n| Deger | Deger |",
-            },
+        .insertTableBlock({
+          rows: [
+            ["Sutun 1", "Sutun 2"],
+            ["Deger", "Deger"],
           ],
         })
         .run();

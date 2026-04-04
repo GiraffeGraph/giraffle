@@ -8,6 +8,7 @@ import {
   getFolder,
   getFolders,
   moveFolder,
+  relocateFolder,
   updateFolder,
 } from "@/domain/folder/folder.service";
 import type {
@@ -59,6 +60,19 @@ export async function moveFolderAction(
 ) {
   const { userId } = await requireAuthenticatedUser();
   await moveFolder(userId, folderId, direction);
+  revalidatePath("/dashboard");
+  revalidatePath("/graph");
+}
+
+export async function relocateFolderAction(
+  folderId: string,
+  placement: {
+    parentId?: string | null;
+    afterFolderId?: string | null;
+  }
+) {
+  const { userId } = await requireAuthenticatedUser();
+  await relocateFolder(userId, folderId, placement);
   revalidatePath("/dashboard");
   revalidatePath("/graph");
 }

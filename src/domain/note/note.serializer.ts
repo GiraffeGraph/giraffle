@@ -6,10 +6,7 @@ import type { BlockNodeContent, TiptapDocument, TiptapNode } from "./note.types"
  *
  * Supported block types:
  * - paragraph, heading, bulletList, orderedList, codeBlock, blockquote
- * - callout, toggle, image, horizontalRule
- *
- * Rich table nodes are intentionally deferred until a dedicated table schema lands.
- * The current editor inserts a Markdown table scaffold instead of a structured table node.
+ * - callout, toggle, image, horizontalRule, table
  */
 export function blocksToMarkdown(doc: TiptapDocument): string {
   if (!doc.content || doc.content.length === 0) {
@@ -84,6 +81,22 @@ function nodeToMarkdown(node: BlockNodeContent): string {
       const src = String(node.attrs?.src ?? "");
       const alt = String(node.attrs?.alt ?? "");
       return `![${alt}](${src})`;
+    }
+
+    case "table": {
+      const rows = toTableRows(node.attrs?.rows);
+      const [header, ...body] = rows;
+      const headerLine = `| ${header.join(" | ")} |`;
+      const dividerLine = `| ${header.map(() => "---").join(" | ")} |`;
+      const bodyLines = body.map((row) => `| ${row.join(" | ")} |`).join("\n");
+      const caption =
+        typeof node.attrs?.caption === "string" && node.attrs.caption.trim()
+          ? `\n\n> ${node.attrs.caption}`
+          : "";
+
+      return `${headerLine}\n${dividerLine}${
+        bodyLines ? `\n${bodyLines}` : ""
+      }${caption}`;
     }
 
     default:
@@ -323,6 +336,40 @@ export function markdownToBlocks(markdown: string): TiptapDocument {
       continue;
     }
 
+    const looksLikeTable =
+      line.includes("|") &&
+      index + 1 < lines.length &&
+      /^\|\s*[-: ]+\|/.test(lines[index + 1].trim());
+
+    if (looksLikeTable) {
+      const rows: string[][] = [
+        line
+          .split("|")
+          .map((cell) => cell.trim())
+          .filter(Boolean),
+      ];
+
+      index += 2;
+
+      while (index < lines.length && lines[index].includes("|")) {
+        rows.push(
+          lines[index]
+            .split("|")
+            .map((cell) => cell.trim())
+            .filter(Boolean)
+        );
+        index++;
+      }
+
+      content.push({
+        type: "table",
+        attrs: {
+          rows: rows.length > 0 ? rows : toTableRows(undefined),
+        },
+      });
+      continue;
+    }
+
     content.push({
       type: "paragraph",
       content: [{ type: "text", text: line }],
@@ -331,6 +378,19 @@ export function markdownToBlocks(markdown: string): TiptapDocument {
   }
 
   return { type: "doc", content };
+}
+
+function toTableRows(value: unknown): string[][] {
+  if (!Array.isArray(value)) {
+    return [
+      ["Sutun 1", "Sutun 2"],
+      ["Deger", "Deger"],
+    ];
+  }
+
+  return value.map((row) =>
+    Array.isArray(row) ? row.map((cell) => String(cell ?? "")) : [String(row)]
+  );
 }
 
 function escapeHtml(value: string): string {

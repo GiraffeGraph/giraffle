@@ -1,6 +1,6 @@
 # TASK-025 Local First Operation Log And Sync Boundary
 
-Status: Planned
+Status: Done
 Priority: P2
 Updated: 2026-04-04
 
@@ -21,6 +21,11 @@ Create the first structurally correct boundary for later offline and sync behavi
 - The design does not lock the product out of later local-first sync.
 - Lint, typecheck, and build pass.
 
+## Completed
+
+- Added server-side operation log persistence.
+- Added client-side local sync queue boundary and settings visibility for queued mutations.
+
 ## Out of Scope
 
 - Full CRDT implementation
@@ -33,4 +38,3 @@ Create the first structurally correct boundary for later offline and sync behavi
 - `src/server/api/notes.ts`
 - `src/server/api/folders.ts`
 - `src/lib`
-

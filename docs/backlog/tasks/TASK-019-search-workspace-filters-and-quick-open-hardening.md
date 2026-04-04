@@ -1,6 +1,6 @@
 # TASK-019 Search Workspace Filters And Quick Open Hardening
 
-Status: Planned
+Status: Done
 Priority: P2
 Updated: 2026-04-04
 
@@ -21,6 +21,11 @@ Promote search from a helpful command palette to a real product surface.
 - Search results can open the right workspace surface directly.
 - Lint, typecheck, and build pass.
 
+## Completed
+
+- Added dedicated search workspace with scope filters.
+- Expanded command palette routing for workspace surfaces and templates.
+
 ## Out of Scope
 
 - Embedding-based semantic retrieval
@@ -33,4 +38,3 @@ Promote search from a helpful command palette to a real product surface.
 - `src/domain/note/note.service.ts`
 - `src/domain/link/link.service.ts`
 - `src/app/(main)`
-

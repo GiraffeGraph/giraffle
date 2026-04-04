@@ -1,6 +1,6 @@
 # TASK-027 Production Deploy Hardening And Observability
 
-Status: Planned
+Status: Done
 Priority: P3
 Updated: 2026-04-04
 
@@ -21,6 +21,10 @@ Take the current deploy baseline to a safer self-hosted production posture.
 - Deploy instructions are realistic for a small self-hosted setup.
 - Lint, typecheck, and build pass when code changes are involved.
 
+## Completed
+
+- Added `/api/health`, container health checks, and updated production deployment docs.
+
 ## Out of Scope
 
 - Kubernetes-first infrastructure
@@ -33,4 +37,3 @@ Take the current deploy baseline to a safer self-hosted production posture.
 - `README.md`
 - `next.config.ts`
 - `src/app`
-

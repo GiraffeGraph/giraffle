@@ -63,7 +63,15 @@ Set `AUTH_SECRET` in `.env` to a long random value before logging in.
 - `/folders/[folderId]` folder-scoped note listing
 - `/tags/[tagName]` indexed tag browsing
 - `/graph` link graph over persisted projections
+- `/inbox` default landing area for notes without folders
+- `/search` filterable workspace search
+- `/templates` template library management
+- `/publish` publish/export workspace
+- `/proposals` review-first proposal queue
+- `/settings` theme, sidebar, and local sync preferences
+- `/account` account and password maintenance
 - `/p/[noteId]` public published note surface
+- `/published/[...slugParts]` slug-based public published route
 
 ## Export And Publish
 
@@ -84,6 +92,7 @@ The production container:
 - builds Next.js in `standalone` mode
 - runs `prisma migrate deploy` on startup
 - starts the Next.js server on port `3000`
+- exposes `/api/health` for container health checks
 
 ### Required Environment Variables
 

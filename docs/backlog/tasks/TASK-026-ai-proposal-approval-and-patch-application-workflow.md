@@ -1,6 +1,6 @@
 # TASK-026 AI Proposal Approval And Patch Application Workflow
 
-Status: Planned
+Status: Done
 Priority: P2
 Updated: 2026-04-04
 
@@ -21,6 +21,10 @@ Add the first explicit product boundary for AI-assisted note changes without let
 - The design supports both tiny edits and larger review-first changes.
 - Lint, typecheck, and build pass.
 
+## Completed
+
+- Added proposal domain, proposal pages, create/apply/reject actions, and note-level review UI.
+
 ## Out of Scope
 
 - Autonomous long-running agent orchestration
@@ -32,4 +36,3 @@ Add the first explicit product boundary for AI-assisted note changes without let
 - `src/server/api/notes.ts`
 - `src/components/notes`
 - `src/app/(main)`
-

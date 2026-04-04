@@ -58,10 +58,13 @@ export interface Block {
 export interface Note {
   id: string;
   title: string;
+  slug: string | null;
   icon: string | null;
   coverImage: string | null;
   folderId: string | null;
   templateId: string | null;
+  position: number;
+  isPinned: boolean;
   isArchived: boolean;
   isPublished: boolean;
   createdAt: Date;
@@ -74,6 +77,7 @@ export interface NoteReference {
   id: string;
   title: string;
   folderId: string | null;
+  slug?: string | null;
   updatedAt?: Date;
 }
 
@@ -86,9 +90,12 @@ export interface CreateNoteInput {
 
 export interface UpdateNoteInput {
   title?: string;
+  slug?: string | null;
   icon?: string | null;
   coverImage?: string | null;
   folderId?: string | null;
+  position?: number;
+  isPinned?: boolean;
   isArchived?: boolean;
   isPublished?: boolean;
 }

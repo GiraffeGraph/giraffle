@@ -1,7 +1,22 @@
 "use server";
 
+import { recordOperation } from "@/domain/sync/operation-log.service";
 import { db } from "@/lib/db";
 import type { CreateFolderInput, UpdateFolderInput } from "./folder.types";
+
+interface FolderTreeNode {
+  id: string;
+  name: string;
+  icon: string | null;
+  parentId: string | null;
+  position: number;
+  createdAt: Date;
+  updatedAt: Date;
+  _count: {
+    notes: number;
+  };
+  children: FolderTreeNode[];
+}
 
 async function assertOwnedFolder(folderId: string, userId: string) {
   const folder = await db.folder.findFirst({
@@ -18,20 +33,30 @@ async function assertOwnedFolder(folderId: string, userId: string) {
  * Get all root-level folders with note counts.
  */
 export async function getFolders(userId: string) {
-  return db.folder.findMany({
-    where: { parentId: null, userId },
-    orderBy: { position: "asc" },
-    include: {
-      children: {
-        where: { userId },
-        orderBy: { position: "asc" },
-        include: {
-          _count: { select: { notes: true } },
+  const folders = await db.folder.findMany({
+    where: { userId },
+    orderBy: [{ position: "asc" }, { createdAt: "asc" }],
+    select: {
+      id: true,
+      name: true,
+      icon: true,
+      parentId: true,
+      position: true,
+      createdAt: true,
+      updatedAt: true,
+      _count: {
+        select: {
+          notes: {
+            where: {
+              isArchived: false,
+            },
+          },
         },
       },
-      _count: { select: { notes: true } },
     },
   });
+
+  return buildFolderTree(folders);
 }
 
 export async function getAllFolders(userId: string) {
@@ -61,8 +86,16 @@ export async function getFolder(userId: string, folderId: string) {
       },
       notes: {
         where: { isArchived: false, userId },
-        orderBy: { updatedAt: "desc" },
-        select: { id: true, title: true, icon: true, updatedAt: true },
+        orderBy: [{ isPinned: "desc" }, { position: "asc" }, { updatedAt: "desc" }],
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          icon: true,
+          isPinned: true,
+          position: true,
+          updatedAt: true,
+        },
       },
     },
   });
@@ -91,6 +124,18 @@ export async function createFolder(
     },
   });
 
+  await recordOperation({
+    userId,
+    entityType: "folder",
+    entityId: folder.id,
+    actionType: "create",
+    payload: {
+      name: folder.name,
+      parentId: folder.parentId,
+      position: folder.position,
+    },
+  });
+
   return folder.id;
 }
 
@@ -108,9 +153,21 @@ export async function updateFolder(
     await assertOwnedFolder(input.parentId, userId);
   }
 
+  if (input.parentId === folderId) {
+    throw new Error("A folder cannot be its own parent");
+  }
+
   await db.folder.update({
     where: { id: folderId },
     data: input,
+  });
+
+  await recordOperation({
+    userId,
+    entityType: "folder",
+    entityId: folderId,
+    actionType: "update",
+    payload: input,
   });
 }
 
@@ -170,6 +227,13 @@ export async function moveFolder(
       )
     );
   });
+
+  await recordOperation({
+    userId,
+    entityType: "folder",
+    entityId: folderId,
+    actionType: `move-${direction}`,
+  });
 }
 
 /**
@@ -181,6 +245,99 @@ export async function deleteFolder(
 ): Promise<void> {
   await assertOwnedFolder(folderId, userId);
   await db.folder.delete({ where: { id: folderId } });
+
+  await recordOperation({
+    userId,
+    entityType: "folder",
+    entityId: folderId,
+    actionType: "delete",
+  });
+}
+
+export async function relocateFolder(
+  userId: string,
+  folderId: string,
+  placement: {
+    parentId?: string | null;
+    afterFolderId?: string | null;
+  }
+) {
+  await db.$transaction(async (tx) => {
+    const folder = await tx.folder.findFirst({
+      where: { id: folderId, userId },
+      select: {
+        id: true,
+        parentId: true,
+      },
+    });
+
+    if (!folder) {
+      throw new Error("Folder not found");
+    }
+
+    const nextParentId =
+      Object.prototype.hasOwnProperty.call(placement, "parentId")
+        ? placement.parentId ?? null
+        : folder.parentId;
+
+    if (nextParentId === folderId) {
+      throw new Error("A folder cannot be its own parent");
+    }
+
+    if (nextParentId) {
+      await assertOwnedFolder(nextParentId, userId);
+      await assertFolderNotDescendant(tx, userId, folderId, nextParentId);
+    }
+
+    const siblings = await tx.folder.findMany({
+      where: {
+        userId,
+        parentId: nextParentId,
+        id: {
+          not: folderId,
+        },
+      },
+      orderBy: [{ position: "asc" }, { createdAt: "asc" }],
+      select: {
+        id: true,
+      },
+    });
+
+    const insertIndex = placement.afterFolderId
+      ? siblings.findIndex((candidate) => candidate.id === placement.afterFolderId) + 1
+      : 0;
+    const normalizedInsertIndex =
+      insertIndex <= 0 ? 0 : Math.min(insertIndex, siblings.length);
+    const reorderedSiblings = [...siblings];
+
+    reorderedSiblings.splice(normalizedInsertIndex, 0, { id: folderId });
+
+    await tx.folder.update({
+      where: { id: folderId },
+      data: {
+        parentId: nextParentId,
+      },
+    });
+
+    await Promise.all(
+      reorderedSiblings.map((sibling, index) =>
+        tx.folder.update({
+          where: { id: sibling.id },
+          data: {
+            position: index,
+          },
+        })
+      )
+    );
+  });
+
+  await recordOperation({
+    userId,
+    entityType: "folder",
+    entityId: folderId,
+    actionType: "relocate",
+    payload: placement,
+  });
 }
 
 async function getNextFolderPosition(
@@ -201,4 +358,90 @@ async function getNextFolderPosition(
   return typeof lastSibling?.position === "number"
     ? lastSibling.position + 1
     : 0;
+}
+
+async function assertFolderNotDescendant(
+  client: Pick<typeof db, "folder">,
+  userId: string,
+  folderId: string,
+  targetParentId: string
+) {
+  let currentId: string | null = targetParentId;
+
+  while (currentId) {
+    if (currentId === folderId) {
+      throw new Error("Cannot move a folder into its own descendant");
+    }
+
+    const currentFolder: { parentId: string | null } | null =
+      await client.folder.findFirst({
+      where: {
+        id: currentId,
+        userId,
+      },
+      select: {
+        parentId: true,
+      },
+      });
+
+    currentId = currentFolder?.parentId ?? null;
+  }
+}
+
+function buildFolderTree(
+  folders: Array<{
+    id: string;
+    name: string;
+    icon: string | null;
+    parentId: string | null;
+    position: number;
+    createdAt: Date;
+    updatedAt: Date;
+    _count: {
+      notes: number;
+    };
+  }>
+) {
+  const foldersById = new Map<string, FolderTreeNode>(
+    folders.map((folder) => [
+      folder.id,
+      {
+        ...folder,
+        children: [],
+      },
+    ])
+  );
+  const rootFolders: FolderTreeNode[] = [];
+
+  for (const folder of folders) {
+    const nextFolder = foldersById.get(folder.id);
+
+    if (!nextFolder) {
+      continue;
+    }
+
+    if (!folder.parentId) {
+      rootFolders.push(nextFolder);
+      continue;
+    }
+
+    const parentFolder = foldersById.get(folder.parentId);
+
+    if (!parentFolder) {
+      rootFolders.push(nextFolder);
+      continue;
+    }
+
+    parentFolder.children.push(nextFolder);
+  }
+
+  const sortTree = (nodes: FolderTreeNode[]): FolderTreeNode[] =>
+    nodes
+      .sort((left, right) => left.position - right.position)
+      .map((node) => ({
+        ...node,
+        children: sortTree(node.children),
+      }));
+
+  return sortTree(rootFolders);
 }
