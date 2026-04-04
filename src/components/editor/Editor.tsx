@@ -5,6 +5,7 @@ import CodeBlock from "@tiptap/extension-code-block";
 import Image from "@tiptap/extension-image";
 import Placeholder from "@tiptap/extension-placeholder";
 import { EditorContent, useEditor } from "@tiptap/react";
+import { BubbleMenu } from "@tiptap/react/menus";
 import StarterKit from "@tiptap/starter-kit";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { NoteReference, TiptapDocument } from "@/domain/note/note.types";
@@ -121,7 +122,7 @@ export function Editor({
           to: selection.from,
         },
         position: {
-          top: containerRect ? caretRect.bottom - containerRect.top + 8 : 0,
+          top: containerRect ? caretRect.bottom - containerRect.top + 10 : 0,
           left: containerRect ? caretRect.left - containerRect.left : 0,
         },
       });
@@ -170,7 +171,7 @@ export function Editor({
           to: selection.from,
         },
         position: {
-          top: containerRect ? caretRect.bottom - containerRect.top + 8 : 0,
+          top: containerRect ? caretRect.bottom - containerRect.top + 10 : 0,
           left: containerRect ? caretRect.left - containerRect.left : 0,
         },
       });
@@ -206,7 +207,7 @@ export function Editor({
       const normalizedTarget = currentTarget.toLowerCase();
       const items: WikilinkMenuItem[] = matchingNotes.map((note) => ({
         title: note.title,
-        description: "Var olan nota bağlan",
+        description: "Var olan nota baglan",
         icon: "[[",
         note,
       }));
@@ -219,8 +220,8 @@ export function Editor({
         )
       ) {
         items.push({
-          title: `"${currentTarget}" notunu oluştur`,
-          description: "Not oluştur ve çözümlenmiş wikilink ekle",
+          title: `"${currentTarget}" notunu olustur`,
+          description: "Not olustur ve cozumlenmis wikilink ekle",
           icon: "+",
           createTarget: currentTarget,
         });
@@ -251,7 +252,7 @@ export function Editor({
         allowBase64: false,
       }),
       Placeholder.configure({
-        placeholder: 'Komutlar için "/" yaz ya da notunu yazmaya başla...',
+        placeholder: 'Komutlar icin "/" yaz ya da notunu yazmaya basla...',
         emptyEditorClass: "is-editor-empty",
       }),
       BlockIdExtension,
@@ -317,10 +318,11 @@ export function Editor({
   }, [slashMenu, wikilinkMenu]);
 
   const handleClick = useCallback(
-    async (e: React.MouseEvent) => {
-      const target = e.target as HTMLElement;
+    async (event: React.MouseEvent) => {
+      const target = event.target as HTMLElement;
+
       if (target.dataset.type === "wikilink" && target.dataset.target) {
-        e.preventDefault();
+        event.preventDefault();
 
         const targetNoteId = target.dataset.noteId ?? null;
         const wikilinkTarget = target.dataset.target;
@@ -342,7 +344,7 @@ export function Editor({
         }
 
         const shouldCreate = window.confirm(
-          `Bu wikilinkten "${wikilinkTarget}" notu oluşturulsun mu?`
+          `Bu wikilinkten "${wikilinkTarget}" notu olusturulsun mu?`
         );
 
         if (!shouldCreate) {
@@ -425,6 +427,17 @@ export function Editor({
     [createWikilinkNote, insertResolvedWikilink, wikilinkMenu]
   );
 
+  const handleBubbleAction = useCallback(
+    (runAction: (instance: TiptapEditor) => void) => {
+      if (!editor) {
+        return;
+      }
+
+      runAction(editor);
+    },
+    [editor]
+  );
+
   if (!editor) {
     return (
       <div className="editor-loading">
@@ -436,22 +449,150 @@ export function Editor({
   }
 
   return (
-    <div ref={editorRootRef} className="graffle-editor" onClick={handleClick}>
+    <div
+      ref={editorRootRef}
+      className={`graffle-editor ${editable ? "editable" : "readonly"}`}
+      onClick={handleClick}
+    >
+      {editable ? (
+        <div className="editor-surface-bar">
+          <span className="editor-surface-hint">/ ile blok ekle</span>
+          <span className="editor-surface-divider" />
+          <span className="editor-surface-hint">[[ ile baglanti olustur</span>
+          <span className="editor-surface-divider" />
+          <span className="editor-surface-meta">
+            Metin secince hizli bicimlendirme acilir
+          </span>
+        </div>
+      ) : null}
+
+      {editable ? (
+        <BubbleMenu
+          editor={editor}
+          className="editor-bubble-menu"
+          options={{
+            placement: "top",
+          }}
+          shouldShow={({ editor: currentEditor, from, to }) => {
+            if (!editable || !currentEditor.isFocused || from === to) {
+              return false;
+            }
+
+            const selectedText = currentEditor.state.doc
+              .textBetween(from, to, " ")
+              .trim();
+
+            return selectedText.length > 0;
+          }}
+        >
+          <button
+            type="button"
+            className={`editor-bubble-button ${
+              editor.isActive("bold") ? "active" : ""
+            }`}
+            onMouseDown={(event) => {
+              event.preventDefault();
+              handleBubbleAction((instance) => {
+                instance.chain().focus().toggleBold().run();
+              });
+            }}
+          >
+            B
+          </button>
+          <button
+            type="button"
+            className={`editor-bubble-button ${
+              editor.isActive("italic") ? "active" : ""
+            }`}
+            onMouseDown={(event) => {
+              event.preventDefault();
+              handleBubbleAction((instance) => {
+                instance.chain().focus().toggleItalic().run();
+              });
+            }}
+          >
+            I
+          </button>
+          <button
+            type="button"
+            className={`editor-bubble-button ${
+              editor.isActive("code") ? "active" : ""
+            }`}
+            onMouseDown={(event) => {
+              event.preventDefault();
+              handleBubbleAction((instance) => {
+                instance.chain().focus().toggleCode().run();
+              });
+            }}
+          >
+            {"</>"}
+          </button>
+          <button
+            type="button"
+            className={`editor-bubble-button ${
+              editor.isActive("heading", { level: 2 }) ? "active" : ""
+            }`}
+            onMouseDown={(event) => {
+              event.preventDefault();
+              handleBubbleAction((instance) => {
+                instance.chain().focus().toggleHeading({ level: 2 }).run();
+              });
+            }}
+          >
+            H2
+          </button>
+          <button
+            type="button"
+            className={`editor-bubble-button ${
+              editor.isActive("bulletList") ? "active" : ""
+            }`}
+            onMouseDown={(event) => {
+              event.preventDefault();
+              handleBubbleAction((instance) => {
+                instance.chain().focus().toggleBulletList().run();
+              });
+            }}
+          >
+            UL
+          </button>
+          <button
+            type="button"
+            className={`editor-bubble-button ${
+              editor.isActive("blockquote") ? "active" : ""
+            }`}
+            onMouseDown={(event) => {
+              event.preventDefault();
+              handleBubbleAction((instance) => {
+                instance.chain().focus().toggleBlockquote().run();
+              });
+            }}
+          >
+            QT
+          </button>
+        </BubbleMenu>
+      ) : null}
+
       <EditorContent editor={editor} />
+
       {wikilinkMenu && wikilinkItems.length > 0 ? (
         <SlashCommandMenu
           items={wikilinkItems}
           command={handleWikilinkCommand}
+          title="Wikilinkler"
+          subtitle="Var olan notu sec veya yeni not olustur"
           style={{
             top: wikilinkMenu.position.top,
             left: wikilinkMenu.position.left,
           }}
         />
       ) : null}
+
       {slashMenu && slashItems.length > 0 && !wikilinkMenu ? (
         <SlashCommandMenu
           items={slashItems}
           command={handleSlashCommand}
+          title="Blok komutlari"
+          subtitle="Yon tuslari ile gezin, Enter ile ekle"
           style={{
             top: slashMenu.position.top,
             left: slashMenu.position.left,
