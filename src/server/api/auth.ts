@@ -9,18 +9,34 @@ import {
   LEGACY_BOOTSTRAP_USER_ID,
 } from "@/lib/auth-session";
 import { db } from "@/lib/db";
+import { consumeRateLimit, resetRateLimit } from "@/lib/rate-limit";
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function registerAction(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
+  const rateLimit = consumeRateLimit(`register:${email || "anonymous"}`, {
+    limit: 3,
+    windowMs: 15 * 60 * 1000,
+    blockMs: 30 * 60 * 1000,
+  });
+
+  if (!rateLimit.allowed) {
+    return { error: "Too many registration attempts. Try again later." };
+  }
 
   if (!email || !password) {
     return { error: "Email and password are required" };
   }
 
-  if (password.length < 6) {
-    return { error: "Password must be at least 6 characters" };
+  if (!EMAIL_PATTERN.test(email)) {
+    return { error: "Enter a valid email address" };
+  }
+
+  if (password.length < 8) {
+    return { error: "Password must be at least 8 characters" };
   }
 
   const existingUser = await db.user.findUnique({
@@ -51,6 +67,7 @@ export async function registerAction(formData: FormData) {
       password,
       redirectTo: "/dashboard",
     });
+    resetRateLimit(`register:${email}`);
   } catch (error) {
     if (error instanceof AuthError) {
       return { error: "Failed to sign in after registration" };
@@ -62,6 +79,15 @@ export async function registerAction(formData: FormData) {
 export async function loginAction(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
+  const rateLimit = consumeRateLimit(`login:${email || "anonymous"}`, {
+    limit: 5,
+    windowMs: 10 * 60 * 1000,
+    blockMs: 15 * 60 * 1000,
+  });
+
+  if (!rateLimit.allowed) {
+    return { error: "Too many login attempts. Try again later." };
+  }
 
   if (!email || !password) {
     return { error: "Email and password are required" };
@@ -73,6 +99,7 @@ export async function loginAction(formData: FormData) {
       password,
       redirectTo: "/dashboard",
     });
+    resetRateLimit(`login:${email}`);
   } catch (error) {
     if (error instanceof AuthError) {
       switch (error.type) {

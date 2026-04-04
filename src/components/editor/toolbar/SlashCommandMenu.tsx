@@ -2,19 +2,24 @@
 
 import { useState, useEffect, useCallback } from "react";
 import type { CSSProperties } from "react";
-import type { SlashCommandItem } from "../extensions/slash-command";
 
-interface SlashCommandMenuProps {
-  items: SlashCommandItem[];
-  command: (item: SlashCommandItem) => void;
+export interface CommandMenuItem {
+  title: string;
+  description: string;
+  icon: string;
+}
+
+interface SlashCommandMenuProps<T extends CommandMenuItem> {
+  items: T[];
+  command: (item: T) => void;
   style?: CSSProperties;
 }
 
-export function SlashCommandMenu({
+export function SlashCommandMenu<T extends CommandMenuItem>({
   items,
   command,
   style,
-}: SlashCommandMenuProps) {
+}: SlashCommandMenuProps<T>) {
   const itemsKey = items.map((item) => item.title).join("|");
   const [selection, setSelection] = useState({ itemsKey, index: 0 });
   const selectedIndex =

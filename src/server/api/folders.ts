@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import {
   createFolder,
   deleteFolder,
+  getAllFolders,
+  getFolder,
   getFolders,
   updateFolder,
 } from "@/domain/folder/folder.service";
@@ -16,6 +18,16 @@ import { requireAuthenticatedUser } from "@/lib/auth-session";
 export async function getFoldersAction() {
   const { userId } = await requireAuthenticatedUser();
   return getFolders(userId);
+}
+
+export async function getAllFoldersAction() {
+  const { userId } = await requireAuthenticatedUser();
+  return getAllFolders(userId);
+}
+
+export async function getFolderAction(folderId: string) {
+  const { userId } = await requireAuthenticatedUser();
+  return getFolder(userId, folderId);
 }
 
 export async function createFolderAction(input: CreateFolderInput) {

@@ -7,6 +7,8 @@ export const BLOCK_TYPES = [
   "listItem",
   "codeBlock",
   "blockquote",
+  "callout",
+  "toggle",
   "image",
   "horizontalRule",
   "table",
@@ -64,6 +66,14 @@ export interface Note {
   createdAt: Date;
   updatedAt: Date;
   blocks?: Block[];
+  tags?: string[];
+}
+
+export interface NoteReference {
+  id: string;
+  title: string;
+  folderId: string | null;
+  updatedAt?: Date;
 }
 
 export interface CreateNoteInput {
@@ -80,6 +90,21 @@ export interface UpdateNoteInput {
   folderId?: string | null;
   isArchived?: boolean;
   isPublished?: boolean;
+}
+
+export interface BlockPlacementInput {
+  parentBlockId?: string | null;
+  afterBlockId?: string | null;
+}
+
+export interface InsertBlockInput extends BlockPlacementInput {
+  block: BlockNodeContent;
+}
+
+export interface UpdateBlockInput {
+  type?: string;
+  attrs?: BlockAttributes;
+  content?: TiptapNode[];
 }
 
 // ─── Tiptap Document JSON (canonical AST format) ─────────────

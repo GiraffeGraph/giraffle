@@ -1,89 +1,123 @@
-# Graffle 🦒
+# Graffle
 
-A block-based knowledge editor with linked notes, wikilinks, and graph structure.
+Graffle is a block-based knowledge editor that combines:
 
-Graffle combines Notion-like block editing with Obsidian-like linked knowledge, built for local-first architecture and future AI agent integration.
+- Notion-like block editing
+- Obsidian-like wikilinks and backlinks
+- PostgreSQL-backed canonical note storage
+- Markdown and MDX as derived export formats
+- self-hosted deployment discipline
+
+## Current Foundation
+
+- Tiptap editor with custom `callout`, `toggle`, `wikilink`, `image`, and slash-command support
+- Canonical AST persistence into `Note` and `Block` tables
+- Patch-aware note saves plus explicit block mutation service APIs
+- Persisted wikilink index, backlinks, unresolved links, and graph projection
+- Tag extraction and persistence into `Tag` and `NoteTag`
+- Seeded daily, meeting, and project templates with variable filling
+- Folder navigation, note move flow, publish toggle, Markdown/MDX export, and public note pages
 
 ## Architecture
 
-- **Editor**: Tiptap (ProseMirror) with custom wikilink mark + slash commands
-- **Canonical data**: Block/AST JSON (Tiptap document format)
-- **Markdown/MDX**: Derived file representation, not primary source of truth
-- **Database**: PostgreSQL via Prisma 7 with pg adapter
-- **Framework**: Next.js 16 (App Router) + React + TypeScript
+- Editor engine: Tiptap
+- Canonical source of truth: block AST JSON
+- Derived formats: Markdown and MDX
+- Database: PostgreSQL via Prisma
+- Framework: Next.js App Router with TypeScript
 
-## Domain Model
+## Core Domains
 
-| Entity    | Purpose |
-|-----------|---------|
-| Note      | Primary document unit |
-| Block     | Content node within a note (paragraph, heading, list, etc.) |
-| Link      | Wikilink/URL connection between notes |
-| Tag       | Note-level labels |
-| Template  | Reusable note structures with variable support |
-| Folder    | Hierarchical organization |
+| Domain | Responsibility |
+| --- | --- |
+| Note | metadata, canonical document, publish state |
+| Block | stable block IDs, ordering, parent-child nesting |
+| Link | wikilinks, resolved note targets, backlinks, graph edges |
+| Tag | extracted note tags with indexed browsing |
+| Template | seeded and custom note starters |
+| Folder | hierarchical organization and publish path segments |
 
-## Getting Started
+## Local Development
 
 ### Prerequisites
 
-- Node.js 18+
-- Docker (for PostgreSQL)
+- Node.js 20+
+- Docker
 
 ### Setup
 
 ```bash
-# Clone and install
-git clone https://github.com/GiraffeGraph/giraffle.git
-cd giraffle
 npm install
-
-# Start PostgreSQL
 docker compose up -d
-
-# Create .env file
 cp .env.example .env
-
-# Set a strong auth secret
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-
-# Paste the generated value into AUTH_SECRET in .env
-
-# Run migrations
 npx prisma migrate dev
-
-# Start dev server
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to start.
+Set `AUTH_SECRET` in `.env` to a long random value before logging in.
+
+## Routes
+
+- `/dashboard` workspace overview
+- `/notes/[noteId]` editable note view
+- `/folders/[folderId]` folder-scoped note listing
+- `/tags/[tagName]` indexed tag browsing
+- `/graph` link graph over persisted projections
+- `/p/[noteId]` public published note surface
+
+## Export And Publish
+
+- Notes stay canonical in block AST form.
+- Markdown and MDX are derived through `src/domain/note/note.serializer.ts` and `src/domain/note/note.export.ts`.
+- Publish file paths are derived from folder lineage plus slugified note titles.
+
+## Production Deployment
+
+### Container Build
+
+```bash
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+The production container:
+
+- builds Next.js in `standalone` mode
+- runs `prisma migrate deploy` on startup
+- starts the Next.js server on port `3000`
+
+### Required Environment Variables
+
+- `DATABASE_URL`
+- `AUTH_SECRET`
+- `NEXTAUTH_URL`
+- `POSTGRES_USER`
+- `POSTGRES_PASSWORD`
+- `POSTGRES_DB`
+
+## Auth Baseline
+
+- credential login with bcrypt password hashes
+- production secret requirement
+- secure cookies in production
+- basic login and registration rate limiting
 
 ## Project Structure
 
-```
+```text
 src/
-├── app/              # Next.js App Router pages
-├── components/       # React components
-│   ├── editor/       # Tiptap editor shell + extensions
-│   ├── notes/        # Note display components
-│   └── sidebar/      # Navigation sidebar
-├── domain/           # Business logic (pure domain layer)
-│   ├── note/         # Note & Block types, service, serializer
-│   ├── link/         # Wikilink parser, link indexing, backlinks
-│   ├── template/     # Template types & application
-│   └── folder/       # Folder hierarchy
-├── lib/              # Shared utilities (DB client, helpers)
-└── server/           # Server actions (API layer)
+  app/
+  components/
+    editor/
+    graph/
+    notes/
+    sidebar/
+    templates/
+  domain/
+    folder/
+    link/
+    note/
+    tag/
+    template/
+  lib/
+  server/
 ```
-
-## Key Design Decisions
-
-- **AST is canonical**: Editor content is stored as block JSON, not Markdown
-- **Links are indexed**: Wikilinks are extracted and persisted on save, not computed at render
-- **Templates are a domain**: Not editor hacks — separate entity with variable support
-- **Backlinks are pre-computed**: Queried from Link table, not full-text scanned
-- **Markdown is derived**: `blocksToMarkdown()` / `markdownToBlocks()` for export/import
-
-## License
-
-MIT

@@ -2,7 +2,11 @@
 
 import { db } from "@/lib/db";
 import { extractWikilinksFromContent } from "./wikilink.parser";
-import type { BacklinkResult, UnresolvedLink } from "./link.types";
+import type {
+  BacklinkResult,
+  GraphProjection,
+  UnresolvedLink,
+} from "./link.types";
 
 /**
  * Extract links from a note's blocks and persist them.
@@ -171,4 +175,75 @@ export async function resolveLinksForNote(
   });
 
   return result.count;
+}
+
+export async function getGraphProjection(
+  userId: string
+): Promise<GraphProjection> {
+  const [notes, links] = await Promise.all([
+    db.note.findMany({
+      where: {
+        userId,
+        isArchived: false,
+      },
+      select: {
+        id: true,
+        title: true,
+        icon: true,
+        isPublished: true,
+      },
+      orderBy: {
+        updatedAt: "desc",
+      },
+    }),
+    db.link.findMany({
+      where: {
+        sourceNote: {
+          userId,
+          isArchived: false,
+        },
+        targetNoteId: {
+          not: null,
+        },
+      },
+      select: {
+        sourceNoteId: true,
+        targetNoteId: true,
+        targetRaw: true,
+      },
+    }),
+  ]);
+
+  const degreeByNoteId = new Map<string, number>();
+
+  for (const link of links) {
+    degreeByNoteId.set(
+      link.sourceNoteId,
+      (degreeByNoteId.get(link.sourceNoteId) ?? 0) + 1
+    );
+
+    if (link.targetNoteId) {
+      degreeByNoteId.set(
+        link.targetNoteId,
+        (degreeByNoteId.get(link.targetNoteId) ?? 0) + 1
+      );
+    }
+  }
+
+  return {
+    nodes: notes.map((note) => ({
+      id: note.id,
+      title: note.title,
+      icon: note.icon,
+      degree: degreeByNoteId.get(note.id) ?? 0,
+      isPublished: note.isPublished,
+    })),
+    edges: links
+      .filter((link) => typeof link.targetNoteId === "string")
+      .map((link) => ({
+        source: link.sourceNoteId,
+        target: link.targetNoteId as string,
+        label: link.targetRaw,
+      })),
+  };
 }

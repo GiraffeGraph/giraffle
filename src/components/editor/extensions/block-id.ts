@@ -10,6 +10,9 @@ const BLOCK_NODE_TYPES = [
   "listItem",
   "codeBlock",
   "blockquote",
+  "callout",
+  "toggle",
+  "image",
   "horizontalRule",
 ] as const;
 

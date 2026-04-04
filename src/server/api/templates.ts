@@ -13,5 +13,8 @@ export async function applyTemplateAction(input: ApplyTemplateInput) {
   const { userId } = await requireAuthenticatedUser();
   const noteId = await applyTemplate(userId, input);
   revalidatePath("/dashboard");
+  revalidatePath("/graph");
+  revalidatePath("/tags");
+  revalidatePath(`/notes/${noteId}`);
   return noteId;
 }

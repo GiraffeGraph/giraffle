@@ -6,17 +6,273 @@ import {
   extractAndSaveLinks,
   resolveLinksForNote,
 } from "@/domain/link/link.service";
+import { syncNoteTags } from "@/domain/tag/tag.service";
 import {
   createEmptyDocument,
   documentToPersistedBlocks,
 } from "@/domain/note/block-tree";
 import type { BlockNodeContent, TiptapNode } from "@/domain/note/note.types";
-import type { ApplyTemplateInput, TemplateBlock } from "./template.types";
+import type {
+  ApplyTemplateInput,
+  TemplateBlock,
+  TemplateVariable,
+} from "./template.types";
+
+const DEFAULT_TEMPLATES: Array<{
+  name: string;
+  description: string;
+  category: string;
+  icon: string;
+  blocks: TemplateBlock[];
+  variables?: TemplateVariable[];
+}> = [
+  {
+    name: "Daily Log",
+    description: "A daily workspace note for focus, wins, and follow-ups.",
+    category: "daily",
+    icon: "Calendar",
+    variables: [
+      {
+        name: "focus",
+        label: "Main focus",
+        type: "text",
+        defaultValue: "What matters most today?",
+      },
+    ],
+    blocks: [
+      {
+        type: "heading",
+        attributes: { level: 1 },
+        content: {
+          content: [{ type: "text", text: "Daily Log {{date}}" }],
+        },
+      },
+      {
+        type: "callout",
+        attributes: { tone: "info", title: "Focus" },
+        content: {},
+        children: [
+          {
+            type: "paragraph",
+            content: {
+              content: [{ type: "text", text: "{{focus}}" }],
+            },
+          },
+        ],
+      },
+      {
+        type: "heading",
+        attributes: { level: 2 },
+        content: {
+          content: [{ type: "text", text: "Wins" }],
+        },
+      },
+      {
+        type: "bulletList",
+        content: {},
+        children: [
+          {
+            type: "listItem",
+            content: {},
+            children: [
+              {
+                type: "paragraph",
+                content: {
+                  content: [{ type: "text", text: "Shipped" }],
+                },
+              },
+            ],
+          },
+        ],
+      },
+      {
+        type: "heading",
+        attributes: { level: 2 },
+        content: {
+          content: [{ type: "text", text: "Notes" }],
+        },
+      },
+      {
+        type: "paragraph",
+        content: {
+          content: [{ type: "text", text: "#daily" }],
+        },
+      },
+    ],
+  },
+  {
+    name: "Meeting Notes",
+    description: "Agenda, decisions, follow-ups, and linked actions.",
+    category: "meeting",
+    icon: "Meeting",
+    variables: [
+      {
+        name: "meeting_name",
+        label: "Meeting name",
+        type: "text",
+        defaultValue: "Weekly sync",
+      },
+      {
+        name: "attendees",
+        label: "Attendees",
+        type: "text",
+        defaultValue: "Name A, Name B",
+      },
+    ],
+    blocks: [
+      {
+        type: "heading",
+        attributes: { level: 1 },
+        content: {
+          content: [{ type: "text", text: "{{meeting_name}}" }],
+        },
+      },
+      {
+        type: "paragraph",
+        content: {
+          content: [{ type: "text", text: "Attendees: {{attendees}}" }],
+        },
+      },
+      {
+        type: "callout",
+        attributes: { tone: "warning", title: "Decisions" },
+        content: {},
+        children: [
+          {
+            type: "paragraph",
+            content: {
+              content: [{ type: "text", text: "Capture the key outcome here." }],
+            },
+          },
+        ],
+      },
+      {
+        type: "toggle",
+        attributes: { summary: "Agenda" },
+        content: {},
+        children: [
+          {
+            type: "bulletList",
+            content: {},
+            children: [
+              {
+                type: "listItem",
+                content: {},
+                children: [
+                  {
+                    type: "paragraph",
+                    content: {
+                      content: [{ type: "text", text: "Topic 1" }],
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        type: "paragraph",
+        content: {
+          content: [{ type: "text", text: "#meeting" }],
+        },
+      },
+    ],
+  },
+  {
+    name: "Project Brief",
+    description: "A kickoff note for goals, scope, risks, and open questions.",
+    category: "project",
+    icon: "Project",
+    variables: [
+      {
+        name: "project_name",
+        label: "Project name",
+        type: "text",
+        defaultValue: "Untitled Project",
+      },
+      {
+        name: "owner",
+        label: "Owner",
+        type: "text",
+        defaultValue: "Owner name",
+      },
+    ],
+    blocks: [
+      {
+        type: "heading",
+        attributes: { level: 1 },
+        content: {
+          content: [{ type: "text", text: "{{project_name}}" }],
+        },
+      },
+      {
+        type: "callout",
+        attributes: { tone: "tip", title: "Owner" },
+        content: {},
+        children: [
+          {
+            type: "paragraph",
+            content: {
+              content: [{ type: "text", text: "{{owner}}" }],
+            },
+          },
+        ],
+      },
+      {
+        type: "heading",
+        attributes: { level: 2 },
+        content: {
+          content: [{ type: "text", text: "Goals" }],
+        },
+      },
+      {
+        type: "bulletList",
+        content: {},
+        children: [
+          {
+            type: "listItem",
+            content: {},
+            children: [
+              {
+                type: "paragraph",
+                content: {
+                  content: [{ type: "text", text: "Primary outcome" }],
+                },
+              },
+            ],
+          },
+        ],
+      },
+      {
+        type: "toggle",
+        attributes: { summary: "Open questions" },
+        content: {},
+        children: [
+          {
+            type: "paragraph",
+            content: {
+              content: [{ type: "text", text: "What still needs to be answered?" }],
+            },
+          },
+        ],
+      },
+      {
+        type: "paragraph",
+        content: {
+          content: [{ type: "text", text: "#project" }],
+        },
+      },
+    ],
+  },
+];
 
 /**
  * Get all templates, optionally filtered by category.
  */
 export async function getTemplates(category?: string) {
+  await ensureDefaultTemplates();
+
   return db.template.findMany({
     where: category ? { category } : undefined,
     orderBy: { name: "asc" },
@@ -27,6 +283,8 @@ export async function getTemplates(category?: string) {
  * Get a single template by ID.
  */
 export async function getTemplate(templateId: string) {
+  await ensureDefaultTemplates();
+
   return db.template.findUnique({
     where: { id: templateId },
   });
@@ -106,9 +364,44 @@ export async function applyTemplate(
     await resolveLinksForNote(userId, note.id, note.title);
   }
 
-  await extractAndSaveLinks(userId, note.id);
+  await Promise.all([
+    extractAndSaveLinks(userId, note.id),
+    syncNoteTags(userId, note.id, document),
+  ]);
 
   return note.id;
+}
+
+export async function ensureDefaultTemplates() {
+  const existingTemplates = await db.template.findMany({
+    where: {
+      name: {
+        in: DEFAULT_TEMPLATES.map((template) => template.name),
+      },
+    },
+    select: {
+      name: true,
+    },
+  });
+
+  const existingNames = new Set(existingTemplates.map((template) => template.name));
+
+  for (const template of DEFAULT_TEMPLATES) {
+    if (existingNames.has(template.name)) {
+      continue;
+    }
+
+    await db.template.create({
+      data: {
+        name: template.name,
+        description: template.description,
+        category: template.category,
+        icon: template.icon,
+        blocks: template.blocks as object[],
+        variables: (template.variables ?? []) as object[],
+      },
+    });
+  }
 }
 
 /**
@@ -204,7 +497,20 @@ function toTemplateNodes(value: unknown): TiptapNode[] {
 function isTemplateChildBlock(node: TiptapNode): node is BlockNodeContent {
   return (
     node.type !== "text" &&
-    ["paragraph", "heading", "bulletList", "orderedList", "listItem", "codeBlock", "blockquote", "image", "horizontalRule", "table"].includes(node.type)
+    [
+      "paragraph",
+      "heading",
+      "bulletList",
+      "orderedList",
+      "listItem",
+      "codeBlock",
+      "blockquote",
+      "callout",
+      "toggle",
+      "image",
+      "horizontalRule",
+      "table",
+    ].includes(node.type)
   );
 }
 

@@ -33,3 +33,22 @@ export interface UnresolvedLink {
   sourceNoteIds: string[];
   count: number;
 }
+
+export interface GraphNode {
+  id: string;
+  title: string;
+  icon: string | null;
+  degree: number;
+  isPublished: boolean;
+}
+
+export interface GraphEdge {
+  source: string;
+  target: string;
+  label: string;
+}
+
+export interface GraphProjection {
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+}

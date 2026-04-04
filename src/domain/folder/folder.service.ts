@@ -25,8 +25,25 @@ export async function getFolders(userId: string) {
       children: {
         where: { userId },
         orderBy: { position: "asc" },
+        include: {
+          _count: { select: { notes: true } },
+        },
       },
       _count: { select: { notes: true } },
+    },
+  });
+}
+
+export async function getAllFolders(userId: string) {
+  return db.folder.findMany({
+    where: { userId },
+    orderBy: [{ position: "asc" }, { name: "asc" }],
+    select: {
+      id: true,
+      name: true,
+      icon: true,
+      parentId: true,
+      position: true,
     },
   });
 }
