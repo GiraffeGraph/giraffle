@@ -10,6 +10,10 @@ import {
   useState,
 } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import {
+  CommandPalette,
+  type CommandPaletteItem,
+} from "@/components/sidebar/CommandPalette";
 import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 import {
   APP_THEMES,
@@ -104,6 +108,9 @@ export function Sidebar({
   const router = useRouter();
   const commandInputRef = useRef<HTMLInputElement | null>(null);
   const [contextMenu, setContextMenu] = useState<SidebarMenuState | null>(null);
+  const [isPaletteOpen, setIsPaletteOpen] = useState(false);
+  const [paletteQuery, setPaletteQuery] = useState("");
+  const [templatePickerOpenSignal, setTemplatePickerOpenSignal] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeThemeId, setActiveThemeId] =
     useState<AppThemeId>(DEFAULT_APP_THEME);
@@ -115,9 +122,20 @@ export function Sidebar({
     activeNoteId ?? extractActiveNoteId(pathname) ?? undefined;
   const normalizedQuery = deferredSearchQuery.trim().toLowerCase();
   const hasQuery = normalizedQuery.length > 0;
+  const normalizedPaletteQuery = paletteQuery.trim().toLowerCase();
 
   const closeContextMenu = useCallback(() => {
     setContextMenu(null);
+  }, []);
+
+  const openPalette = useCallback((initialQuery = "") => {
+    setPaletteQuery(initialQuery);
+    setIsPaletteOpen(true);
+  }, []);
+
+  const closePalette = useCallback(() => {
+    setIsPaletteOpen(false);
+    setPaletteQuery("");
   }, []);
 
   const openContextMenuAtPointer = useCallback(
@@ -204,12 +222,12 @@ export function Sidebar({
     const handleGlobalKeyDown = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
-        commandInputRef.current?.focus();
-        commandInputRef.current?.select();
+        openPalette(searchQuery);
       }
 
       if (
         event.key === "Escape" &&
+        !isPaletteOpen &&
         document.activeElement === commandInputRef.current &&
         searchQuery
       ) {
@@ -220,7 +238,7 @@ export function Sidebar({
 
     document.addEventListener("keydown", handleGlobalKeyDown);
     return () => document.removeEventListener("keydown", handleGlobalKeyDown);
-  }, [searchQuery]);
+  }, [isPaletteOpen, openPalette, searchQuery]);
 
   const activeTheme = useMemo(
     () =>
@@ -290,6 +308,8 @@ export function Sidebar({
 
     return null;
   }, [filteredFolders, filteredNotes, filteredTags]);
+
+  const flattenedFolders = useMemo(() => flattenFolderTree(folders), [folders]);
 
   const handleCreateNote = async () => {
     const noteId = await createNoteAction();
@@ -387,6 +407,138 @@ export function Sidebar({
     [activeThemeId, applyTheme]
   );
 
+  const paletteItems = useMemo<CommandPaletteItem[]>(() => {
+    const actionItems: CommandPaletteItem[] = [
+      {
+        id: "action-new-note",
+        group: "Hizli islemler",
+        title: "Yeni not olustur",
+        description: "Bos bir not ac",
+        icon: "+",
+        hint: "Enter",
+        onSelect: async () => {
+          const noteId = await createNoteAction();
+          router.push(`/notes/${noteId}`);
+        },
+      },
+      {
+        id: "action-new-folder",
+        group: "Hizli islemler",
+        title: "Yeni klasor olustur",
+        description: "Calisma alanina yeni klasor ekle",
+        icon: "K",
+        onSelect: async () => {
+          const folderName = window.prompt("Klasor adi", "Yeni Klasor")?.trim();
+
+          if (!folderName) {
+            return;
+          }
+
+          const folderId = await createFolderAction({
+            name: folderName,
+          });
+
+          router.push(`/folders/${folderId}`);
+        },
+      },
+      {
+        id: "action-template-note",
+        group: "Hizli islemler",
+        title: "Sablondan not olustur",
+        description: "Template picker ac",
+        icon: "T",
+        onSelect: async () => {
+          setTemplatePickerOpenSignal((currentValue) => currentValue + 1);
+        },
+      },
+      {
+        id: "action-dashboard",
+        group: "Gecisler",
+        title: "Panoya git",
+        description: "Ana calisma alani gorunumu",
+        icon: "Ana",
+        onSelect: async () => {
+          router.push("/dashboard");
+        },
+      },
+      {
+        id: "action-graph",
+        group: "Gecisler",
+        title: "Baglanti agina git",
+        description: "Not graph gorunumu",
+        icon: "Ag",
+        onSelect: async () => {
+          router.push("/graph");
+        },
+      },
+    ];
+
+    const noteItems = notes
+      .filter((note) =>
+        normalizedPaletteQuery
+          ? note.title.toLowerCase().includes(normalizedPaletteQuery)
+          : true
+      )
+      .slice(0, normalizedPaletteQuery ? 8 : 5)
+      .map<CommandPaletteItem>((note) => ({
+        id: `note-${note.id}`,
+        group: "Notlar",
+        title: note.title,
+        description: "Notu duzenleyicide ac",
+        icon: note.icon ?? "Not",
+        onSelect: async () => {
+          router.push(`/notes/${note.id}`);
+        },
+      }));
+
+    const folderItems = flattenedFolders
+      .filter((folder) =>
+        normalizedPaletteQuery
+          ? folder.name.toLowerCase().includes(normalizedPaletteQuery)
+          : true
+      )
+      .slice(0, normalizedPaletteQuery ? 8 : 5)
+      .map<CommandPaletteItem>((folder) => ({
+        id: `folder-${folder.id}`,
+        group: "Klasorler",
+        title: folder.name,
+        description: "Klasor gorunumunu ac",
+        icon: folder.icon ?? "Kls",
+        onSelect: async () => {
+          router.push(`/folders/${folder.id}`);
+        },
+      }));
+
+    const tagItems = tags
+      .filter((tag) =>
+        normalizedPaletteQuery
+          ? tag.name.toLowerCase().includes(normalizedPaletteQuery)
+          : true
+      )
+      .slice(0, normalizedPaletteQuery ? 8 : 5)
+      .map<CommandPaletteItem>((tag) => ({
+        id: `tag-${tag.id}`,
+        group: "Etiketler",
+        title: `#${tag.name}`,
+        description: `${tag.noteCount} not iceren etiket`,
+        icon: "#",
+        onSelect: async () => {
+          router.push(`/tags/${tag.name}`);
+        },
+      }));
+
+    if (!normalizedPaletteQuery) {
+      return [...actionItems, ...noteItems, ...folderItems, ...tagItems];
+    }
+
+    const filteredActions = actionItems.filter((item) => {
+      const haystack = `${item.title} ${item.description}`.toLowerCase();
+      return haystack.includes(normalizedPaletteQuery);
+    });
+
+    return [...filteredActions, ...noteItems, ...folderItems, ...tagItems];
+  }, [flattenedFolders, normalizedPaletteQuery, notes, router, tags]);
+
   const isFoldersCollapsed = hasQuery ? false : collapsedSections.folders;
   const isTagsCollapsed = hasQuery ? false : collapsedSections.tags;
   const isRecentNotesCollapsed = hasQuery
@@ -437,10 +589,7 @@ export function Sidebar({
           <button
             type="button"
             className="sidebar-command-shortcut"
-            onClick={() => {
-              commandInputRef.current?.focus();
-              commandInputRef.current?.select();
-            }}
+            onClick={() => openPalette(searchQuery)}
             aria-label="Arama kisayolu"
           >
             Ctrl K
@@ -474,6 +623,7 @@ export function Sidebar({
           templates={templates}
           buttonLabel="Sablon"
           buttonClassName="sidebar-inline-action"
+          openSignal={templatePickerOpenSignal}
         />
         <button
           type="button"
@@ -642,6 +792,13 @@ export function Sidebar({
         items={contextMenu?.items ?? []}
         position={contextMenu?.position ?? null}
         onClose={closeContextMenu}
+      />
+      <CommandPalette
+        open={isPaletteOpen}
+        query={paletteQuery}
+        items={paletteItems}
+        onQueryChange={setPaletteQuery}
+        onClose={closePalette}
       />
     </aside>
   );
@@ -883,4 +1040,11 @@ function findFolderById(
   }
 
   return null;
+}
+
+function flattenFolderTree(folderTree: SidebarFolder[]): SidebarFolder[] {
+  return folderTree.flatMap((folder) => [
+    folder,
+    ...flattenFolderTree(folder.children ?? []),
+  ]);
 }

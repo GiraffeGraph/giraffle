@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { applyTemplateAction } from "@/server/api/templates";
 import type { TemplateVariable } from "@/domain/template/template.types";
@@ -19,6 +19,7 @@ interface TemplatePickerProps {
   folderId?: string | null;
   buttonLabel: string;
   buttonClassName?: string;
+  openSignal?: number;
 }
 
 export function TemplatePicker({
@@ -26,6 +27,7 @@ export function TemplatePicker({
   folderId,
   buttonLabel,
   buttonClassName,
+  openSignal = 0,
 }: TemplatePickerProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -43,10 +45,22 @@ export function TemplatePicker({
     [selectedTemplateId, templates]
   );
 
-  const openPicker = () => {
+  const openPicker = useCallback(() => {
     setSelectedTemplateId((currentValue) => currentValue ?? templates[0]?.id ?? null);
     setIsOpen(true);
-  };
+  }, [templates]);
+
+  useEffect(() => {
+    if (openSignal <= 0) {
+      return;
+    }
+
+    const frameId = window.requestAnimationFrame(() => {
+      openPicker();
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [openPicker, openSignal]);
 
   const closePicker = () => {
     setIsOpen(false);
