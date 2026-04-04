@@ -1,7 +1,14 @@
 "use client";
 
 import type { MouseEvent as ReactMouseEvent } from "react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 import {
@@ -69,6 +76,22 @@ interface SidebarMenuState {
   items: ContextMenuItem[];
 }
 
+type SidebarSectionKey = "folders" | "tags" | "recentNotes";
+
+interface SidebarCollapseState {
+  folders: boolean;
+  tags: boolean;
+  recentNotes: boolean;
+}
+
+const SIDEBAR_COLLAPSE_STORAGE_KEY = "graffle.sidebar.sections";
+
+const DEFAULT_COLLAPSED_SECTIONS: SidebarCollapseState = {
+  folders: false,
+  tags: false,
+  recentNotes: false,
+};
+
 export function Sidebar({
   notes,
   folders,
@@ -79,14 +102,19 @@ export function Sidebar({
 }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const commandInputRef = useRef<HTMLInputElement | null>(null);
   const [contextMenu, setContextMenu] = useState<SidebarMenuState | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const [activeThemeId, setActiveThemeId] =
     useState<AppThemeId>(DEFAULT_APP_THEME);
+  const [collapsedSections, setCollapsedSections] =
+    useState<SidebarCollapseState>(() => loadSidebarCollapseState());
+  const deferredSearchQuery = useDeferredValue(searchQuery);
 
   const currentNoteId =
     activeNoteId ?? extractActiveNoteId(pathname) ?? undefined;
-  const recentNotes = notes.slice(0, 8);
-  const visibleTags = tags.slice(0, 8);
+  const normalizedQuery = deferredSearchQuery.trim().toLowerCase();
+  const hasQuery = normalizedQuery.length > 0;
 
   const closeContextMenu = useCallback(() => {
     setContextMenu(null);
@@ -161,11 +189,107 @@ export function Sidebar({
     return () => window.cancelAnimationFrame(frameId);
   }, [activeThemeId]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    localStorage.setItem(
+      SIDEBAR_COLLAPSE_STORAGE_KEY,
+      JSON.stringify(collapsedSections)
+    );
+  }, [collapsedSections]);
+
+  useEffect(() => {
+    const handleGlobalKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        commandInputRef.current?.focus();
+        commandInputRef.current?.select();
+      }
+
+      if (
+        event.key === "Escape" &&
+        document.activeElement === commandInputRef.current &&
+        searchQuery
+      ) {
+        event.preventDefault();
+        setSearchQuery("");
+      }
+    };
+
+    document.addEventListener("keydown", handleGlobalKeyDown);
+    return () => document.removeEventListener("keydown", handleGlobalKeyDown);
+  }, [searchQuery]);
+
   const activeTheme = useMemo(
     () =>
       APP_THEMES.find((theme) => theme.id === activeThemeId) ?? APP_THEMES[0],
     [activeThemeId]
   );
+
+  const filteredFolders = useMemo(() => {
+    if (!hasQuery) {
+      return folders;
+    }
+
+    return filterFolderTree(folders, normalizedQuery);
+  }, [folders, hasQuery, normalizedQuery]);
+
+  const filteredTags = useMemo(() => {
+    const source = hasQuery
+      ? tags.filter((tag) => tag.name.toLowerCase().includes(normalizedQuery))
+      : tags.slice(0, 8);
+
+    return source.slice(0, 10);
+  }, [hasQuery, normalizedQuery, tags]);
+
+  const filteredNotes = useMemo(() => {
+    const source = hasQuery
+      ? notes.filter((note) => note.title.toLowerCase().includes(normalizedQuery))
+      : notes.slice(0, 8);
+
+    return source.slice(0, hasQuery ? 12 : 8);
+  }, [hasQuery, normalizedQuery, notes]);
+
+  const visibleFolderCount = useMemo(
+    () => countFolders(filteredFolders),
+    [filteredFolders]
+  );
+
+  const commandMatch = useMemo(() => {
+    if (filteredNotes.length > 0) {
+      return {
+        type: "note" as const,
+        label: filteredNotes[0].title,
+        href: `/notes/${filteredNotes[0].id}`,
+      };
+    }
+
+    const firstFolderId = getFirstFolderId(filteredFolders);
+
+    if (firstFolderId) {
+      const firstFolder = findFolderById(filteredFolders, firstFolderId);
+
+      if (firstFolder) {
+        return {
+          type: "folder" as const,
+          label: firstFolder.name,
+          href: `/folders/${firstFolder.id}`,
+        };
+      }
+    }
+
+    if (filteredTags.length > 0) {
+      return {
+        type: "tag" as const,
+        label: `#${filteredTags[0].name}`,
+        href: `/tags/${filteredTags[0].name}`,
+      };
+    }
+
+    return null;
+  }, [filteredFolders, filteredNotes, filteredTags]);
 
   const handleCreateNote = async () => {
     const noteId = await createNoteAction();
@@ -185,6 +309,21 @@ export function Sidebar({
 
     router.push(`/folders/${folderId}`);
   };
+
+  const handleCommandSubmit = useCallback(() => {
+    if (!commandMatch) {
+      return;
+    }
+
+    router.push(commandMatch.href);
+  }, [commandMatch, router]);
+
+  const toggleSection = useCallback((section: SidebarSectionKey) => {
+    setCollapsedSections((current) => ({
+      ...current,
+      [section]: !current[section],
+    }));
+  }, []);
 
   const buildNoteMenu = useCallback(
     (sidebarNote: SidebarNote): ContextMenuItem[] => [
@@ -248,6 +387,12 @@ export function Sidebar({
     [activeThemeId, applyTheme]
   );
 
+  const isFoldersCollapsed = hasQuery ? false : collapsedSections.folders;
+  const isTagsCollapsed = hasQuery ? false : collapsedSections.tags;
+  const isRecentNotesCollapsed = hasQuery
+    ? false
+    : collapsedSections.recentNotes;
+
   return (
     <aside className="sidebar">
       <div className="sidebar-topbar">
@@ -272,6 +417,58 @@ export function Sidebar({
         </button>
       </div>
 
+      <div className="sidebar-command-shell">
+        <div className="sidebar-command">
+          <input
+            ref={commandInputRef}
+            type="text"
+            className="sidebar-command-input"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                handleCommandSubmit();
+              }
+            }}
+            placeholder="Ara, filtrele veya git..."
+            spellCheck={false}
+          />
+          <button
+            type="button"
+            className="sidebar-command-shortcut"
+            onClick={() => {
+              commandInputRef.current?.focus();
+              commandInputRef.current?.select();
+            }}
+            aria-label="Arama kisayolu"
+          >
+            Ctrl K
+          </button>
+        </div>
+
+        <div className="sidebar-command-summary">
+          {hasQuery ? (
+            commandMatch ? (
+              <button
+                type="button"
+                className="sidebar-command-result"
+                onClick={handleCommandSubmit}
+              >
+                <span>Enter ile ac</span>
+                <span>{commandMatch.label}</span>
+              </button>
+            ) : (
+              <span className="sidebar-command-empty">Eslesen sonuc yok.</span>
+            )
+          ) : (
+            <span className="sidebar-command-hint">
+              Notlar, klasorler ve etiketler burada filtrelenir.
+            </span>
+          )}
+        </div>
+      </div>
+
       <div className="sidebar-inline-actions">
         <TemplatePicker
           templates={templates}
@@ -288,10 +485,11 @@ export function Sidebar({
       </div>
 
       <div className="sidebar-section">
-        <section className="sidebar-group">
-          <div className="sidebar-group-head">
-            <span className="sidebar-group-label">Calisma alani</span>
-          </div>
+        <SidebarGroup
+          label="Calisma alani"
+          meta={hasQuery ? "Sabit" : undefined}
+          collapsible={false}
+        >
           <nav className="sidebar-nav">
             <button
               className={`sidebar-item ${pathname === "/dashboard" ? "active" : ""}`}
@@ -308,18 +506,21 @@ export function Sidebar({
               <span className="sidebar-item-label">Baglanti agi</span>
             </button>
           </nav>
-        </section>
+        </SidebarGroup>
 
-        <section className="sidebar-group">
-          <div className="sidebar-group-head">
-            <span className="sidebar-group-label">Klasorler</span>
-            <span className="sidebar-group-meta">{folders.length}</span>
-          </div>
+        <SidebarGroup
+          label="Klasorler"
+          meta={hasQuery ? `${visibleFolderCount}/${countFolders(folders)}` : `${countFolders(folders)}`}
+          collapsed={isFoldersCollapsed}
+          onToggle={() => toggleSection("folders")}
+        >
           <div className="sidebar-folder-tree">
-            {folders.length === 0 ? (
-              <div className="sidebar-empty">Henuz klasor yok.</div>
+            {filteredFolders.length === 0 ? (
+              <div className="sidebar-empty">
+                {hasQuery ? "Eslesen klasor yok." : "Henuz klasor yok."}
+              </div>
             ) : (
-              folders.map((folder) => (
+              filteredFolders.map((folder) => (
                 <SidebarFolderItem
                   key={folder.id}
                   folder={folder}
@@ -335,18 +536,23 @@ export function Sidebar({
               ))
             )}
           </div>
-        </section>
+        </SidebarGroup>
 
-        <section className="sidebar-group">
-          <div className="sidebar-group-head">
-            <span className="sidebar-group-label">Etiketler</span>
-            <span className="sidebar-group-meta">{tags.length}</span>
-          </div>
+        <SidebarGroup
+          label="Etiketler"
+          meta={hasQuery ? `${filteredTags.length}/${tags.length}` : `${tags.length}`}
+          collapsed={isTagsCollapsed}
+          onToggle={() => toggleSection("tags")}
+        >
           <div className="sidebar-tag-list">
-            {tags.length === 0 ? (
-              <div className="sidebar-empty">Henuz indekslenmis etiket yok.</div>
+            {filteredTags.length === 0 ? (
+              <div className="sidebar-empty">
+                {hasQuery
+                  ? "Eslesen etiket yok."
+                  : "Henuz indekslenmis etiket yok."}
+              </div>
             ) : (
-              visibleTags.map((tag) => (
+              filteredTags.map((tag) => (
                 <button
                   key={tag.id}
                   className={`sidebar-tag-item ${
@@ -360,18 +566,23 @@ export function Sidebar({
               ))
             )}
           </div>
-        </section>
+        </SidebarGroup>
 
-        <section className="sidebar-group">
-          <div className="sidebar-group-head">
-            <span className="sidebar-group-label">Son notlar</span>
-            <span className="sidebar-group-meta">{notes.length}</span>
-          </div>
+        <SidebarGroup
+          label={hasQuery ? "Not eslesmeleri" : "Son notlar"}
+          meta={hasQuery ? `${filteredNotes.length}/${notes.length}` : `${notes.length}`}
+          collapsed={isRecentNotesCollapsed}
+          onToggle={() => toggleSection("recentNotes")}
+        >
           <nav className="sidebar-nav">
-            {notes.length === 0 ? (
-              <div className="sidebar-empty">Henuz not yok. Ilk notunu olustur.</div>
+            {filteredNotes.length === 0 ? (
+              <div className="sidebar-empty">
+                {hasQuery
+                  ? "Eslesen not yok."
+                  : "Henuz not yok. Ilk notunu olustur."}
+              </div>
             ) : (
-              recentNotes.map((sidebarNote) => (
+              filteredNotes.map((sidebarNote) => (
                 <SidebarNoteRow
                   key={sidebarNote.id}
                   note={sidebarNote}
@@ -387,7 +598,7 @@ export function Sidebar({
               ))
             )}
           </nav>
-        </section>
+        </SidebarGroup>
       </div>
 
       <div className="sidebar-footer">
@@ -433,6 +644,48 @@ export function Sidebar({
         onClose={closeContextMenu}
       />
     </aside>
+  );
+}
+
+function SidebarGroup({
+  label,
+  meta,
+  collapsed = false,
+  collapsible = true,
+  onToggle,
+  children,
+}: {
+  label: string;
+  meta?: string;
+  collapsed?: boolean;
+  collapsible?: boolean;
+  onToggle?: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className={`sidebar-group ${collapsed ? "collapsed" : ""}`}>
+      <div className="sidebar-group-head">
+        {collapsible ? (
+          <button
+            type="button"
+            className="sidebar-group-toggle"
+            onClick={onToggle}
+            aria-expanded={!collapsed}
+          >
+            <span className={`sidebar-group-caret ${collapsed ? "collapsed" : ""}`}>
+              ▾
+            </span>
+            <span className="sidebar-group-label">{label}</span>
+          </button>
+        ) : (
+          <div className="sidebar-group-title">
+            <span className="sidebar-group-label">{label}</span>
+          </div>
+        )}
+        {meta ? <span className="sidebar-group-meta">{meta}</span> : null}
+      </div>
+      {!collapsed ? <div className="sidebar-group-body">{children}</div> : null}
+    </section>
   );
 }
 
@@ -551,4 +804,83 @@ function extractActiveNoteId(pathname: string | null) {
 
   const [, , noteId] = pathname.split("/");
   return noteId ?? null;
+}
+
+function loadSidebarCollapseState(): SidebarCollapseState {
+  if (typeof window === "undefined") {
+    return DEFAULT_COLLAPSED_SECTIONS;
+  }
+
+  try {
+    const storedValue = localStorage.getItem(SIDEBAR_COLLAPSE_STORAGE_KEY);
+
+    if (!storedValue) {
+      return DEFAULT_COLLAPSED_SECTIONS;
+    }
+
+    const parsedValue = JSON.parse(storedValue) as Partial<SidebarCollapseState>;
+
+    return {
+      folders: Boolean(parsedValue.folders),
+      tags: Boolean(parsedValue.tags),
+      recentNotes: Boolean(parsedValue.recentNotes),
+    };
+  } catch {
+    return DEFAULT_COLLAPSED_SECTIONS;
+  }
+}
+
+function filterFolderTree(
+  folderTree: SidebarFolder[],
+  query: string
+): SidebarFolder[] {
+  return folderTree.flatMap((folder) => {
+    const filteredChildren = filterFolderTree(folder.children ?? [], query);
+    const matchesSelf = folder.name.toLowerCase().includes(query);
+
+    if (!matchesSelf && filteredChildren.length === 0) {
+      return [];
+    }
+
+    return [
+      {
+        ...folder,
+        children: matchesSelf ? folder.children ?? [] : filteredChildren,
+      },
+    ];
+  });
+}
+
+function countFolders(folderTree: SidebarFolder[]): number {
+  return folderTree.reduce(
+    (total, folder) => total + 1 + countFolders(folder.children ?? []),
+    0
+  );
+}
+
+function getFirstFolderId(folderTree: SidebarFolder[]): string | null {
+  if (folderTree.length === 0) {
+    return null;
+  }
+
+  return folderTree[0]?.id ?? null;
+}
+
+function findFolderById(
+  folderTree: SidebarFolder[],
+  folderId: string
+): SidebarFolder | null {
+  for (const folder of folderTree) {
+    if (folder.id === folderId) {
+      return folder;
+    }
+
+    const childMatch = findFolderById(folder.children ?? [], folderId);
+
+    if (childMatch) {
+      return childMatch;
+    }
+  }
+
+  return null;
 }
