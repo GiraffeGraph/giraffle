@@ -1,6 +1,6 @@
 # TASK-013 Context Menus For Note And Sidebar Surfaces
 
-Status: Ready
+Status: Done
 Priority: P1
 Updated: 2026-04-04
 
@@ -33,3 +33,9 @@ Add proper right-click interaction to key Graffle surfaces so actions are discov
 - `src/app/globals.css`
 - `src/server/api/notes.ts`
 - `src/server/api/folders.ts`
+
+## Completed
+
+- Added a reusable context menu primitive with outside-click and keyboard dismissal.
+- Wired right-click and visible trigger menus into sidebar note rows, sidebar folder rows, and note-level actions.
+- Kept actions discoverable without duplicating the full toolbar surface.
