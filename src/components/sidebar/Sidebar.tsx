@@ -1,9 +1,16 @@
 "use client";
 
 import type { MouseEvent as ReactMouseEvent } from "react";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
+import {
+  APP_THEMES,
+  APP_THEME_STORAGE_KEY,
+  DEFAULT_APP_THEME,
+  type AppThemeId,
+  isAppThemeId,
+} from "@/components/theme/theme-config";
 import { TemplatePicker } from "@/components/templates/TemplatePicker";
 import { signOutAction } from "@/server/api/auth";
 import { createFolderAction } from "@/server/api/folders";
@@ -73,6 +80,8 @@ export function Sidebar({
   const pathname = usePathname();
   const router = useRouter();
   const [contextMenu, setContextMenu] = useState<SidebarMenuState | null>(null);
+  const [activeThemeId, setActiveThemeId] =
+    useState<AppThemeId>(DEFAULT_APP_THEME);
   const recentNotes = notes.slice(0, 7);
   const visibleTags = tags.slice(0, 6);
 
@@ -113,6 +122,47 @@ export function Sidebar({
   const copyInternalLink = useCallback(async (path: string) => {
     await navigator.clipboard.writeText(`${window.location.origin}${path}`);
   }, []);
+
+  const applyTheme = useCallback((themeId: AppThemeId) => {
+    document.documentElement.dataset.theme = themeId;
+    localStorage.setItem(APP_THEME_STORAGE_KEY, themeId);
+    setActiveThemeId(themeId);
+  }, []);
+
+  useEffect(() => {
+    const currentTheme = document.documentElement.dataset.theme;
+    let nextTheme = DEFAULT_APP_THEME;
+
+    if (currentTheme && isAppThemeId(currentTheme)) {
+      nextTheme = currentTheme;
+    } else {
+      const storedTheme = localStorage.getItem(APP_THEME_STORAGE_KEY);
+
+      if (storedTheme && isAppThemeId(storedTheme)) {
+        nextTheme = storedTheme;
+        document.documentElement.dataset.theme = storedTheme;
+      } else {
+        document.documentElement.dataset.theme = DEFAULT_APP_THEME;
+        localStorage.setItem(APP_THEME_STORAGE_KEY, DEFAULT_APP_THEME);
+      }
+    }
+
+    if (nextTheme === activeThemeId) {
+      return;
+    }
+
+    const frameId = window.requestAnimationFrame(() => {
+      setActiveThemeId(nextTheme);
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [activeThemeId]);
+
+  const activeTheme = useMemo(
+    () =>
+      APP_THEMES.find((theme) => theme.id === activeThemeId) ?? APP_THEMES[0],
+    [activeThemeId]
+  );
 
   const handleCreateNote = async () => {
     const noteId = await createNoteAction();
@@ -182,6 +232,17 @@ export function Sidebar({
       },
     ],
     [copyInternalLink, router]
+  );
+
+  const themeMenuItems = useMemo<ContextMenuItem[]>(
+    () =>
+      APP_THEMES.map((theme) => ({
+        label: theme.label,
+        hint:
+          theme.id === activeThemeId ? "Şu an seçili tema" : theme.description,
+        onSelect: () => applyTheme(theme.id),
+      })),
+    [activeThemeId, applyTheme]
   );
 
   return (
@@ -334,6 +395,19 @@ export function Sidebar({
           {user.email ? (
             <div className="sidebar-user-email">{user.email}</div>
           ) : null}
+          <div className="sidebar-user-actions">
+            <button
+              type="button"
+              className="sidebar-theme-button"
+              onClick={(event) =>
+                openContextMenuFromTrigger(event, themeMenuItems)
+              }
+              aria-label="Tema seç"
+            >
+              <span className="sidebar-theme-label">Tema</span>
+              <span className="sidebar-theme-value">{activeTheme.label}</span>
+            </button>
+          </div>
         </div>
 
         <form action={signOutAction}>
