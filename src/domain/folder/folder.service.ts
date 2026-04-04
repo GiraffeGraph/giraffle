@@ -79,11 +79,14 @@ export async function createFolder(
     await assertOwnedFolder(input.parentId, userId);
   }
 
+  const nextPosition = await getNextFolderPosition(userId, input.parentId ?? null);
+
   const folder = await db.folder.create({
     data: {
       name: input.name,
       icon: input.icon,
       parentId: input.parentId,
+      position: nextPosition,
       userId,
     },
   });
@@ -111,6 +114,64 @@ export async function updateFolder(
   });
 }
 
+export async function moveFolder(
+  userId: string,
+  folderId: string,
+  direction: "up" | "down"
+): Promise<void> {
+  await db.$transaction(async (tx) => {
+    const folder = await tx.folder.findFirst({
+      where: { id: folderId, userId },
+      select: {
+        id: true,
+        parentId: true,
+      },
+    });
+
+    if (!folder) {
+      throw new Error("Folder not found");
+    }
+
+    const siblings = await tx.folder.findMany({
+      where: {
+        userId,
+        parentId: folder.parentId,
+      },
+      orderBy: [{ position: "asc" }, { createdAt: "asc" }],
+      select: {
+        id: true,
+      },
+    });
+
+    const currentIndex = siblings.findIndex((candidate) => candidate.id === folderId);
+
+    if (currentIndex === -1) {
+      throw new Error("Folder not found");
+    }
+
+    const targetIndex =
+      direction === "up" ? currentIndex - 1 : currentIndex + 1;
+
+    if (targetIndex < 0 || targetIndex >= siblings.length) {
+      return;
+    }
+
+    const reorderedSiblings = [...siblings];
+    const [currentFolder] = reorderedSiblings.splice(currentIndex, 1);
+
+    reorderedSiblings.splice(targetIndex, 0, currentFolder);
+
+    await Promise.all(
+      reorderedSiblings.map((sibling, index) =>
+        tx.folder.update({
+          where: { id: sibling.id },
+          data: { position: index },
+        })
+      )
+    );
+  });
+}
+
 /**
  * Delete a folder and cascade to children.
  */
@@ -120,4 +181,24 @@ export async function deleteFolder(
 ): Promise<void> {
   await assertOwnedFolder(folderId, userId);
   await db.folder.delete({ where: { id: folderId } });
+}
+
+async function getNextFolderPosition(
+  userId: string,
+  parentId: string | null
+) {
+  const lastSibling = await db.folder.findFirst({
+    where: {
+      userId,
+      parentId,
+    },
+    orderBy: [{ position: "desc" }, { createdAt: "desc" }],
+    select: {
+      position: true,
+    },
+  });
+
+  return typeof lastSibling?.position === "number"
+    ? lastSibling.position + 1
+    : 0;
 }

@@ -4349,3 +4349,65 @@ body::before {
     grid-template-columns: 1fr 1fr;
   }
 }
+
+/* Ordering and block controls */
+.sidebar-row-actions {
+  gap: 2px;
+}
+
+.sidebar-row-action {
+  min-width: 24px;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.editor-block-toolbar {
+  position: absolute;
+  z-index: 22;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  background: var(--surface-glass-strong);
+  box-shadow: var(--shadow-soft);
+}
+
+.editor-block-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 800;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.editor-block-button:hover {
+  background: var(--surface-glass-hover);
+  border-color: var(--border-soft);
+  color: var(--text-primary);
+}
+
+.editor-block-button.danger:hover {
+  color: var(--danger-ink);
+}
+
+@media (max-width: 760px) {
+  .editor-block-toolbar {
+    display: none;
+  }
+}

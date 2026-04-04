@@ -8,7 +8,18 @@ import { EditorContent, useEditor } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
 import StarterKit from "@tiptap/starter-kit";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { NoteReference, TiptapDocument } from "@/domain/note/note.types";
+import {
+  createEmptyDocument,
+  insertBlockInDocument,
+  moveBlockInDocument,
+  removeBlockFromDocument,
+} from "@/domain/note/block-tree";
+import type {
+  BlockNodeContent,
+  NoteReference,
+  TiptapDocument,
+} from "@/domain/note/note.types";
+import { generateId } from "@/lib/utils";
 import {
   BlockIdExtension,
   CalloutNode,
@@ -51,6 +62,14 @@ interface WikilinkMenuItem {
   createTarget?: string;
 }
 
+interface BlockToolbarState {
+  blockId: string;
+  position: {
+    top: number;
+    left: number;
+  };
+}
+
 interface EditorProps {
   initialContent?: TiptapDocument;
   onSave?: (content: TiptapDocument) => void;
@@ -77,6 +96,9 @@ export function Editor({
     null
   );
   const [wikilinkItems, setWikilinkItems] = useState<WikilinkMenuItem[]>([]);
+  const [blockToolbar, setBlockToolbar] = useState<BlockToolbarState | null>(
+    null
+  );
 
   const updateSlashMenu = useCallback(
     (instance: TiptapEditor) => {
@@ -438,6 +460,175 @@ export function Editor({
     [editor]
   );
 
+  const applyDocumentMutation = useCallback(
+    (
+      mutate: (document: TiptapDocument) => TiptapDocument,
+      focusBlockId?: string | null
+    ) => {
+      if (!editor) {
+        return;
+      }
+
+      const currentDocument = JSON.parse(
+        JSON.stringify(editor.getJSON())
+      ) as TiptapDocument;
+      const nextDocument = mutate(currentDocument);
+
+      editor.commands.setContent(nextDocument, {
+        emitUpdate: true,
+      });
+
+      const nextFocusBlockId = focusBlockId ?? blockToolbar?.blockId ?? null;
+
+      window.requestAnimationFrame(() => {
+        if (nextFocusBlockId) {
+          focusBlockById(editor, nextFocusBlockId);
+        } else {
+          editor.commands.focus("end");
+        }
+      });
+    },
+    [blockToolbar?.blockId, editor]
+  );
+
+  const handleBlockToolbarMouseMove = useCallback(
+    (event: React.MouseEvent<HTMLDivElement>) => {
+      if (!editable || !editorRootRef.current) {
+        return;
+      }
+
+      const target = event.target as HTMLElement;
+
+      if (target.closest(".editor-block-toolbar")) {
+        return;
+      }
+
+      const blockElement = getClosestBlockElement(target, editorRootRef.current);
+
+      if (!blockElement) {
+        if (blockToolbar) {
+          setBlockToolbar(null);
+        }
+
+        return;
+      }
+
+      const blockId = blockElement.dataset.blockId;
+
+      if (!blockId) {
+        return;
+      }
+
+      const rootRect = editorRootRef.current.getBoundingClientRect();
+      const blockRect = blockElement.getBoundingClientRect();
+      const nextToolbar = {
+        blockId,
+        position: {
+          top: blockRect.top - rootRect.top + 2,
+          left: Math.max(0, blockRect.left - rootRect.left - 56),
+        },
+      } satisfies BlockToolbarState;
+
+      setBlockToolbar((currentValue) => {
+        if (
+          currentValue?.blockId === nextToolbar.blockId &&
+          currentValue.position.top === nextToolbar.position.top &&
+          currentValue.position.left === nextToolbar.position.left
+        ) {
+          return currentValue;
+        }
+
+        return nextToolbar;
+      });
+    },
+    [blockToolbar, editable]
+  );
+
+  const handleBlockToolbarLeave = useCallback(() => {
+    setBlockToolbar(null);
+  }, []);
+
+  const handleInsertBlockBelow = useCallback(() => {
+    if (!blockToolbar) {
+      return;
+    }
+
+    const nextBlockId = generateId();
+    const nextBlock: BlockNodeContent = {
+      type: "paragraph",
+      attrs: {
+        blockId: nextBlockId,
+      },
+      content: [],
+    };
+
+    applyDocumentMutation(
+      (document) => {
+        const location = findBlockLocation(document.content, blockToolbar.blockId);
+
+        if (!location) {
+          return document;
+        }
+
+        return insertBlockInDocument(document, nextBlock, {
+          parentBlockId: location.parentBlockId,
+          afterBlockId: blockToolbar.blockId,
+        });
+      },
+      nextBlockId
+    );
+  }, [applyDocumentMutation, blockToolbar]);
+
+  const handleMoveBlock = useCallback(
+    (direction: "up" | "down") => {
+      if (!blockToolbar) {
+        return;
+      }
+
+      applyDocumentMutation((document) => {
+        const location = findBlockLocation(document.content, blockToolbar.blockId);
+
+        if (!location) {
+          return document;
+        }
+
+        const targetIndex =
+          direction === "up" ? location.index - 1 : location.index + 1;
+
+        if (targetIndex < 0 || targetIndex >= location.siblings.length) {
+          return document;
+        }
+
+        const afterBlockId =
+          direction === "up"
+            ? targetIndex === 0
+              ? null
+              : getBlockId(location.siblings[targetIndex - 1])
+            : getBlockId(location.siblings[targetIndex]);
+
+        return moveBlockInDocument(document, blockToolbar.blockId, {
+          parentBlockId: location.parentBlockId,
+          afterBlockId,
+        });
+      });
+    },
+    [applyDocumentMutation, blockToolbar]
+  );
+
+  const handleDeleteBlock = useCallback(() => {
+    if (!blockToolbar) {
+      return;
+    }
+
+    applyDocumentMutation((document) => {
+      const result = removeBlockFromDocument(document, blockToolbar.blockId);
+      const nextDocument =
+        result.document.content.length > 0 ? result.document : createEmptyDocument();
+
+      return nextDocument;
+    }, null);
+  }, [applyDocumentMutation, blockToolbar]);
+
   if (!editor) {
     return (
       <div className="editor-loading">
@@ -453,6 +644,8 @@ export function Editor({
       ref={editorRootRef}
       className={`graffle-editor ${editable ? "editable" : "readonly"}`}
       onClick={handleClick}
+      onMouseMove={handleBlockToolbarMouseMove}
+      onMouseLeave={handleBlockToolbarLeave}
     >
       {editable ? (
         <div className="editor-surface-bar">
@@ -463,6 +656,61 @@ export function Editor({
           <span className="editor-surface-meta">
             Metin secince hizli bicimlendirme acilir
           </span>
+        </div>
+      ) : null}
+
+      {editable && blockToolbar ? (
+        <div
+          className="editor-block-toolbar"
+          style={{
+            top: blockToolbar.position.top,
+            left: blockToolbar.position.left,
+          }}
+        >
+          <button
+            type="button"
+            className="editor-block-button"
+            onMouseDown={(event) => {
+              event.preventDefault();
+              handleInsertBlockBelow();
+            }}
+            aria-label="Alta yeni blok ekle"
+          >
+            +
+          </button>
+          <button
+            type="button"
+            className="editor-block-button"
+            onMouseDown={(event) => {
+              event.preventDefault();
+              handleMoveBlock("up");
+            }}
+            aria-label="Bloku yukari tasi"
+          >
+            ^
+          </button>
+          <button
+            type="button"
+            className="editor-block-button"
+            onMouseDown={(event) => {
+              event.preventDefault();
+              handleMoveBlock("down");
+            }}
+            aria-label="Bloku asagi tasi"
+          >
+            v
+          </button>
+          <button
+            type="button"
+            className="editor-block-button danger"
+            onMouseDown={(event) => {
+              event.preventDefault();
+              handleDeleteBlock();
+            }}
+            aria-label="Bloku sil"
+          >
+            x
+          </button>
         </div>
       ) : null}
 
@@ -600,5 +848,90 @@ export function Editor({
         />
       ) : null}
     </div>
+  );
+}
+
+function getClosestBlockElement(
+  target: HTMLElement,
+  rootElement: HTMLElement
+): HTMLElement | null {
+  const blockElement = target.closest("[data-block-id]");
+
+  if (!(blockElement instanceof HTMLElement)) {
+    return null;
+  }
+
+  if (!rootElement.contains(blockElement)) {
+    return null;
+  }
+
+  return blockElement;
+}
+
+function focusBlockById(editor: TiptapEditor, blockId: string) {
+  const blockElement = document.querySelector(
+    `[data-block-id="${blockId}"]`
+  );
+
+  if (!(blockElement instanceof HTMLElement)) {
+    editor.commands.focus("end");
+    return;
+  }
+
+  try {
+    const position = editor.view.posAtDOM(blockElement, 0);
+    editor.chain().focus().setTextSelection(position + 1).run();
+  } catch {
+    editor.commands.focus("end");
+  }
+}
+
+function findBlockLocation(
+  blocks: BlockNodeContent[],
+  blockId: string,
+  parentBlockId: string | null = null
+): {
+  block: BlockNodeContent;
+  parentBlockId: string | null;
+  siblings: BlockNodeContent[];
+  index: number;
+} | null {
+  for (const [index, block] of blocks.entries()) {
+    if (getBlockId(block) === blockId) {
+      return {
+        block,
+        parentBlockId,
+        siblings: blocks,
+        index,
+      };
+    }
+
+    const childBlocks = getChildBlocks(block);
+
+    if (childBlocks.length === 0) {
+      continue;
+    }
+
+    const nestedResult = findBlockLocation(
+      childBlocks,
+      blockId,
+      getBlockId(block) ?? null
+    );
+
+    if (nestedResult) {
+      return nestedResult;
+    }
+  }
+
+  return null;
+}
+
+function getBlockId(block: BlockNodeContent) {
+  return typeof block.attrs?.blockId === "string" ? block.attrs.blockId : null;
+}
+
+function getChildBlocks(node: BlockNodeContent) {
+  return (node.content ?? []).filter(
+    (child): child is BlockNodeContent => child.type !== "text"
   );
 }

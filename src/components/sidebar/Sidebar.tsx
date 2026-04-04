@@ -24,7 +24,7 @@ import {
 } from "@/components/theme/theme-config";
 import { TemplatePicker } from "@/components/templates/TemplatePicker";
 import { signOutAction } from "@/server/api/auth";
-import { createFolderAction } from "@/server/api/folders";
+import { createFolderAction, moveFolderAction } from "@/server/api/folders";
 import { archiveNoteAction, createNoteAction } from "@/server/api/notes";
 import type { TemplateVariable } from "@/domain/template/template.types";
 
@@ -386,6 +386,14 @@ export function Sidebar({
     [router]
   );
 
+  const handleMoveFolder = useCallback(
+    async (folderId: string, direction: "up" | "down") => {
+      await moveFolderAction(folderId, direction);
+      router.refresh();
+    },
+    [router]
+  );
+
   const handleCommandSubmit = useCallback(() => {
     if (!commandMatch) {
       return;
@@ -495,8 +503,18 @@ export function Sidebar({
         hint: "Klasor adresini panoya kopyala",
         onSelect: () => copyInternalLink(`/folders/${folder.id}`),
       },
+      {
+        label: "Yukari tasi",
+        hint: "Klasor sirasini bir adim yukari al",
+        onSelect: () => handleMoveFolder(folder.id, "up"),
+      },
+      {
+        label: "Asagi tasi",
+        hint: "Klasor sirasini bir adim asagi al",
+        onSelect: () => handleMoveFolder(folder.id, "down"),
+      },
     ],
-    [copyInternalLink, router]
+    [copyInternalLink, handleMoveFolder, router]
   );
 
   const themeMenuItems = useMemo<ContextMenuItem[]>(
@@ -870,6 +888,7 @@ export function Sidebar({
                       folder={folder}
                       pathname={pathname}
                       onOpen={(folderId) => router.push(`/folders/${folderId}`)}
+                      onMoveFolder={handleMoveFolder}
                       onQuickCreate={handleCreateNoteInFolder}
                       onContextMenuOpen={(event, currentFolder) =>
                         openContextMenuAtPointer(
@@ -1130,6 +1149,7 @@ function SidebarFolderItem({
   folder,
   pathname,
   onOpen,
+  onMoveFolder,
   onQuickCreate,
   onContextMenuOpen,
   onTriggerMenuOpen,
@@ -1138,6 +1158,10 @@ function SidebarFolderItem({
   folder: SidebarFolder;
   pathname: string;
   onOpen: (folderId: string) => void;
+  onMoveFolder: (
+    folderId: string,
+    direction: "up" | "down"
+  ) => void | Promise<void>;
   onQuickCreate: (folderId: string) => void | Promise<void>;
   onContextMenuOpen: (
     event: ReactMouseEvent<HTMLElement>,
@@ -1172,6 +1196,30 @@ function SidebarFolderItem({
             onClick={(event) => {
               event.preventDefault();
               event.stopPropagation();
+              void onMoveFolder(folder.id, "up");
+            }}
+            aria-label={`${folder.name} klasorunu yukari tasi`}
+          >
+            ^
+          </button>
+          <button
+            type="button"
+            className="context-trigger sidebar-row-action"
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              void onMoveFolder(folder.id, "down");
+            }}
+            aria-label={`${folder.name} klasorunu asagi tasi`}
+          >
+            v
+          </button>
+          <button
+            type="button"
+            className="context-trigger sidebar-row-action"
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
               void onQuickCreate(folder.id);
             }}
             aria-label={`${folder.name} icine not olustur`}
@@ -1197,6 +1245,7 @@ function SidebarFolderItem({
               folder={childFolder}
               pathname={pathname}
               onOpen={onOpen}
+              onMoveFolder={onMoveFolder}
               onQuickCreate={onQuickCreate}
               onContextMenuOpen={onContextMenuOpen}
               onTriggerMenuOpen={onTriggerMenuOpen}

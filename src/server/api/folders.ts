@@ -7,6 +7,7 @@ import {
   getAllFolders,
   getFolder,
   getFolders,
+  moveFolder,
   updateFolder,
 } from "@/domain/folder/folder.service";
 import type {
@@ -50,4 +51,14 @@ export async function deleteFolderAction(folderId: string) {
   const { userId } = await requireAuthenticatedUser();
   await deleteFolder(userId, folderId);
   revalidatePath("/dashboard");
+}
+
+export async function moveFolderAction(
+  folderId: string,
+  direction: "up" | "down"
+) {
+  const { userId } = await requireAuthenticatedUser();
+  await moveFolder(userId, folderId, direction);
+  revalidatePath("/dashboard");
+  revalidatePath("/graph");
 }
