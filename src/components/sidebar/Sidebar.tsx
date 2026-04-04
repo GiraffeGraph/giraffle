@@ -89,6 +89,13 @@ interface SidebarCollapseState {
 }
 
 const SIDEBAR_COLLAPSE_STORAGE_KEY = "graffle.sidebar.sections";
+const SIDEBAR_WIDTH_STORAGE_KEY = "graffle.sidebar.width";
+const SIDEBAR_COMPACT_STORAGE_KEY = "graffle.sidebar.compact";
+
+const DEFAULT_EXPANDED_SIDEBAR_WIDTH = 272;
+const SIDEBAR_MIN_WIDTH = 240;
+const SIDEBAR_MAX_WIDTH = 420;
+const SIDEBAR_COMPACT_WIDTH = 68;
 
 const DEFAULT_COLLAPSED_SECTIONS: SidebarCollapseState = {
   folders: false,
@@ -107,6 +114,7 @@ export function Sidebar({
   const pathname = usePathname();
   const router = useRouter();
   const commandInputRef = useRef<HTMLInputElement | null>(null);
+  const teardownResizeRef = useRef<(() => void) | null>(null);
   const [contextMenu, setContextMenu] = useState<SidebarMenuState | null>(null);
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
   const [paletteQuery, setPaletteQuery] = useState("");
@@ -114,6 +122,13 @@ export function Sidebar({
   const [searchQuery, setSearchQuery] = useState("");
   const [activeThemeId, setActiveThemeId] =
     useState<AppThemeId>(DEFAULT_APP_THEME);
+  const [sidebarWidth, setSidebarWidth] = useState<number>(() =>
+    loadSidebarWidth()
+  );
+  const [isSidebarCompact, setIsSidebarCompact] = useState<boolean>(() =>
+    loadSidebarCompactState()
+  );
+  const [isSidebarResizing, setIsSidebarResizing] = useState(false);
   const [collapsedSections, setCollapsedSections] =
     useState<SidebarCollapseState>(() => loadSidebarCollapseState());
   const deferredSearchQuery = useDeferredValue(searchQuery);
@@ -217,6 +232,39 @@ export function Sidebar({
       JSON.stringify(collapsedSections)
     );
   }, [collapsedSections]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    localStorage.setItem(SIDEBAR_WIDTH_STORAGE_KEY, String(sidebarWidth));
+  }, [sidebarWidth]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    localStorage.setItem(
+      SIDEBAR_COMPACT_STORAGE_KEY,
+      JSON.stringify(isSidebarCompact)
+    );
+  }, [isSidebarCompact]);
+
+  useEffect(() => {
+    document.documentElement.style.setProperty(
+      "--sidebar-width",
+      `${isSidebarCompact ? SIDEBAR_COMPACT_WIDTH : sidebarWidth}px`
+    );
+  }, [isSidebarCompact, sidebarWidth]);
+
+  useEffect(
+    () => () => {
+      teardownResizeRef.current?.();
+    },
+    []
+  );
 
   useEffect(() => {
     const handleGlobalKeyDown = (event: KeyboardEvent) => {
@@ -330,6 +378,14 @@ export function Sidebar({
     router.push(`/folders/${folderId}`);
   };
 
+  const handleCreateNoteInFolder = useCallback(
+    async (folderId: string) => {
+      const noteId = await createNoteAction({ folderId });
+      router.push(`/notes/${noteId}`);
+    },
+    [router]
+  );
+
   const handleCommandSubmit = useCallback(() => {
     if (!commandMatch) {
       return;
@@ -344,6 +400,53 @@ export function Sidebar({
       [section]: !current[section],
     }));
   }, []);
+
+  const toggleSidebarCompact = useCallback(() => {
+    setIsSidebarCompact((currentValue) => !currentValue);
+  }, []);
+
+  const handleSidebarResizeStart = useCallback(
+    (event: ReactMouseEvent<HTMLDivElement>) => {
+      event.preventDefault();
+
+      if (typeof window === "undefined") {
+        return;
+      }
+
+      const startX = event.clientX;
+      const initialWidth = sidebarWidth;
+
+      if (isSidebarCompact) {
+        setIsSidebarCompact(false);
+      }
+
+      setIsSidebarResizing(true);
+
+      const handlePointerMove = (moveEvent: MouseEvent) => {
+        const nextWidth = clampSidebarWidth(
+          initialWidth + (moveEvent.clientX - startX)
+        );
+
+        setSidebarWidth(nextWidth);
+      };
+
+      const handlePointerUp = () => {
+        setIsSidebarResizing(false);
+        teardownResizeRef.current = null;
+        window.removeEventListener("mousemove", handlePointerMove);
+        window.removeEventListener("mouseup", handlePointerUp);
+      };
+
+      teardownResizeRef.current = () => {
+        window.removeEventListener("mousemove", handlePointerMove);
+        window.removeEventListener("mouseup", handlePointerUp);
+      };
+
+      window.addEventListener("mousemove", handlePointerMove);
+      window.addEventListener("mouseup", handlePointerUp);
+    },
+    [isSidebarCompact, sidebarWidth]
+  );
 
   const buildNoteMenu = useCallback(
     (sidebarNote: SidebarNote): ContextMenuItem[] => [
@@ -546,247 +649,380 @@ export function Sidebar({
     : collapsedSections.recentNotes;
 
   return (
-    <aside className="sidebar">
-      <div className="sidebar-topbar">
-        <button
-          type="button"
-          className="sidebar-workspace-card"
-          onClick={() => router.push("/dashboard")}
-        >
-          <span className="sidebar-workspace-logo">G</span>
-          <span className="sidebar-workspace-copy">
-            <span className="sidebar-workspace-name">Graffle</span>
-            <span className="sidebar-workspace-meta">Kisisel bilgi alani</span>
-          </span>
-        </button>
-        <button
-          type="button"
-          className="sidebar-quick-create"
-          onClick={handleCreateNote}
-          aria-label="Yeni not olustur"
-        >
-          +
-        </button>
-      </div>
-
-      <div className="sidebar-command-shell">
-        <div className="sidebar-command">
-          <input
-            ref={commandInputRef}
-            type="text"
-            className="sidebar-command-input"
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                event.preventDefault();
-                handleCommandSubmit();
-              }
-            }}
-            placeholder="Ara, filtrele veya git..."
-            spellCheck={false}
-          />
-          <button
-            type="button"
-            className="sidebar-command-shortcut"
-            onClick={() => openPalette(searchQuery)}
-            aria-label="Arama kisayolu"
-          >
-            Ctrl K
-          </button>
-        </div>
-
-        <div className="sidebar-command-summary">
-          {hasQuery ? (
-            commandMatch ? (
-              <button
-                type="button"
-                className="sidebar-command-result"
-                onClick={handleCommandSubmit}
-              >
-                <span>Enter ile ac</span>
-                <span>{commandMatch.label}</span>
-              </button>
-            ) : (
-              <span className="sidebar-command-empty">Eslesen sonuc yok.</span>
-            )
-          ) : (
-            <span className="sidebar-command-hint">
-              Notlar, klasorler ve etiketler burada filtrelenir.
-            </span>
-          )}
-        </div>
-      </div>
-
-      <div className="sidebar-inline-actions">
-        <TemplatePicker
-          templates={templates}
-          buttonLabel="Sablon"
-          buttonClassName="sidebar-inline-action"
-          openSignal={templatePickerOpenSignal}
-        />
-        <button
-          type="button"
-          className="sidebar-inline-action"
-          onClick={handleCreateFolder}
-        >
-          Klasor
-        </button>
-      </div>
-
-      <div className="sidebar-section">
-        <SidebarGroup
-          label="Calisma alani"
-          meta={hasQuery ? "Sabit" : undefined}
-          collapsible={false}
-        >
-          <nav className="sidebar-nav">
-            <button
-              className={`sidebar-item ${pathname === "/dashboard" ? "active" : ""}`}
-              onClick={() => router.push("/dashboard")}
-            >
-              <span className="sidebar-item-icon">Ana</span>
-              <span className="sidebar-item-label">Pano</span>
-            </button>
-            <button
-              className={`sidebar-item ${pathname === "/graph" ? "active" : ""}`}
-              onClick={() => router.push("/graph")}
-            >
-              <span className="sidebar-item-icon">Ag</span>
-              <span className="sidebar-item-label">Baglanti agi</span>
-            </button>
-          </nav>
-        </SidebarGroup>
-
-        <SidebarGroup
-          label="Klasorler"
-          meta={hasQuery ? `${visibleFolderCount}/${countFolders(folders)}` : `${countFolders(folders)}`}
-          collapsed={isFoldersCollapsed}
-          onToggle={() => toggleSection("folders")}
-        >
-          <div className="sidebar-folder-tree">
-            {filteredFolders.length === 0 ? (
-              <div className="sidebar-empty">
-                {hasQuery ? "Eslesen klasor yok." : "Henuz klasor yok."}
-              </div>
-            ) : (
-              filteredFolders.map((folder) => (
-                <SidebarFolderItem
-                  key={folder.id}
-                  folder={folder}
-                  pathname={pathname}
-                  onOpen={(folderId) => router.push(`/folders/${folderId}`)}
-                  onContextMenuOpen={(event, currentFolder) =>
-                    openContextMenuAtPointer(event, buildFolderMenu(currentFolder))
-                  }
-                  onTriggerMenuOpen={(event, currentFolder) =>
-                    openContextMenuFromTrigger(event, buildFolderMenu(currentFolder))
-                  }
-                />
-              ))
-            )}
-          </div>
-        </SidebarGroup>
-
-        <SidebarGroup
-          label="Etiketler"
-          meta={hasQuery ? `${filteredTags.length}/${tags.length}` : `${tags.length}`}
-          collapsed={isTagsCollapsed}
-          onToggle={() => toggleSection("tags")}
-        >
-          <div className="sidebar-tag-list">
-            {filteredTags.length === 0 ? (
-              <div className="sidebar-empty">
-                {hasQuery
-                  ? "Eslesen etiket yok."
-                  : "Henuz indekslenmis etiket yok."}
-              </div>
-            ) : (
-              filteredTags.map((tag) => (
-                <button
-                  key={tag.id}
-                  className={`sidebar-tag-item ${
-                    pathname === `/tags/${tag.name}` ? "active" : ""
-                  }`}
-                  onClick={() => router.push(`/tags/${tag.name}`)}
-                >
-                  <span className="sidebar-tag-label">#{tag.name}</span>
-                  <span className="sidebar-tag-count">{tag.noteCount}</span>
-                </button>
-              ))
-            )}
-          </div>
-        </SidebarGroup>
-
-        <SidebarGroup
-          label={hasQuery ? "Not eslesmeleri" : "Son notlar"}
-          meta={hasQuery ? `${filteredNotes.length}/${notes.length}` : `${notes.length}`}
-          collapsed={isRecentNotesCollapsed}
-          onToggle={() => toggleSection("recentNotes")}
-        >
-          <nav className="sidebar-nav">
-            {filteredNotes.length === 0 ? (
-              <div className="sidebar-empty">
-                {hasQuery
-                  ? "Eslesen not yok."
-                  : "Henuz not yok. Ilk notunu olustur."}
-              </div>
-            ) : (
-              filteredNotes.map((sidebarNote) => (
-                <SidebarNoteRow
-                  key={sidebarNote.id}
-                  note={sidebarNote}
-                  active={sidebarNote.id === currentNoteId}
-                  onOpen={(noteId) => router.push(`/notes/${noteId}`)}
-                  onContextMenuOpen={(event, currentNote) =>
-                    openContextMenuAtPointer(event, buildNoteMenu(currentNote))
-                  }
-                  onTriggerMenuOpen={(event, currentNote) =>
-                    openContextMenuFromTrigger(event, buildNoteMenu(currentNote))
-                  }
-                />
-              ))
-            )}
-          </nav>
-        </SidebarGroup>
-      </div>
-
-      <div className="sidebar-footer">
-        <div className="sidebar-user-card">
-          <div className="sidebar-user-meta">
-            <span className="sidebar-user-avatar">
-              {(user.name ?? user.email ?? "G").slice(0, 1).toUpperCase()}
-            </span>
-            <div className="sidebar-user-copy">
-              <div className="sidebar-user-name">
-                {user.name ?? user.email ?? "Graffle Kullanici"}
-              </div>
-              {user.email ? (
-                <div className="sidebar-user-email">{user.email}</div>
-              ) : null}
-            </div>
-          </div>
-          <div className="sidebar-user-actions">
+    <aside
+      className={`sidebar${isSidebarCompact ? " compact" : ""}${
+        isSidebarResizing ? " resizing" : ""
+      }`}
+    >
+      {isSidebarCompact ? (
+        <div className="sidebar-compact-shell">
+          <div className="sidebar-compact-stack">
             <button
               type="button"
-              className="sidebar-theme-button"
+              className="sidebar-compact-button sidebar-compact-brand"
+              onClick={() => router.push("/dashboard")}
+              aria-label="Panoya git"
+            >
+              G
+            </button>
+            <button
+              type="button"
+              className="sidebar-compact-button"
+              onClick={() => openPalette(searchQuery)}
+              aria-label="Komut paletini ac"
+            >
+              Ara
+            </button>
+            <button
+              type="button"
+              className="sidebar-compact-button"
+              onClick={handleCreateNote}
+              aria-label="Yeni not olustur"
+            >
+              +
+            </button>
+            <button
+              type="button"
+              className={`sidebar-compact-button ${
+                pathname === "/graph" ? "active" : ""
+              }`}
+              onClick={() => router.push("/graph")}
+              aria-label="Baglanti agina git"
+            >
+              Ag
+            </button>
+          </div>
+
+          <div className="sidebar-compact-footer">
+            <button
+              type="button"
+              className="sidebar-compact-button"
+              onClick={toggleSidebarCompact}
+              aria-label="Sidebari genislet"
+            >
+              {">"}
+            </button>
+            <button
+              type="button"
+              className="sidebar-compact-avatar"
               onClick={(event) =>
                 openContextMenuFromTrigger(event, themeMenuItems)
               }
               aria-label="Tema sec"
             >
-              <span className="sidebar-theme-label">Tema</span>
-              <span className="sidebar-theme-value">{activeTheme.label}</span>
+              {(user.name ?? user.email ?? "G").slice(0, 1).toUpperCase()}
             </button>
           </div>
         </div>
+      ) : (
+        <>
+          <div className="sidebar-topbar">
+            <button
+              type="button"
+              className="sidebar-workspace-card"
+              onClick={() => router.push("/dashboard")}
+            >
+              <span className="sidebar-workspace-logo">G</span>
+              <span className="sidebar-workspace-copy">
+                <span className="sidebar-workspace-name">Graffle</span>
+                <span className="sidebar-workspace-meta">
+                  Kisisel bilgi alani
+                </span>
+              </span>
+            </button>
+            <div className="sidebar-topbar-actions">
+              <button
+                type="button"
+                className="sidebar-icon-button"
+                onClick={handleCreateNote}
+                aria-label="Yeni not olustur"
+              >
+                +
+              </button>
+              <button
+                type="button"
+                className="sidebar-icon-button sidebar-collapse-button"
+                onClick={toggleSidebarCompact}
+                aria-label="Sidebari daralt"
+              >
+                {"<"}
+              </button>
+            </div>
+          </div>
 
-        <form action={signOutAction}>
-          <button type="submit" className="sidebar-sign-out">
-            Cikis yap
-          </button>
-        </form>
+          <div className="sidebar-command-shell">
+            <div className="sidebar-command">
+              <input
+                ref={commandInputRef}
+                type="text"
+                className="sidebar-command-input"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    handleCommandSubmit();
+                  }
+                }}
+                placeholder="Ara veya komut calistir..."
+                spellCheck={false}
+              />
+              <button
+                type="button"
+                className="sidebar-command-shortcut"
+                onClick={() => openPalette(searchQuery)}
+                aria-label="Arama kisayolu"
+              >
+                Ctrl K
+              </button>
+            </div>
+
+            <div className="sidebar-command-summary">
+              {hasQuery ? (
+                commandMatch ? (
+                  <button
+                    type="button"
+                    className="sidebar-command-result"
+                    onClick={handleCommandSubmit}
+                  >
+                    <span>Enter ile ac</span>
+                    <span>{commandMatch.label}</span>
+                  </button>
+                ) : (
+                  <span className="sidebar-command-empty">
+                    Eslesen sonuc yok.
+                  </span>
+                )
+              ) : (
+                <span className="sidebar-command-hint">
+                  Notlar, klasorler ve etiketler burada filtrelenir.
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="sidebar-inline-actions">
+            <button
+              type="button"
+              className="sidebar-inline-action"
+              onClick={() =>
+                setTemplatePickerOpenSignal((currentValue) => currentValue + 1)
+              }
+            >
+              Sablon
+            </button>
+            <button
+              type="button"
+              className="sidebar-inline-action"
+              onClick={handleCreateFolder}
+            >
+              Klasor
+            </button>
+          </div>
+
+          <div className="sidebar-section">
+            <SidebarGroup
+              label="Calisma alani"
+              meta={hasQuery ? "Sabit" : undefined}
+              collapsible={false}
+            >
+              <nav className="sidebar-nav">
+                <button
+                  className={`sidebar-item ${
+                    pathname === "/dashboard" ? "active" : ""
+                  }`}
+                  onClick={() => router.push("/dashboard")}
+                >
+                  <span className="sidebar-item-icon">Ana</span>
+                  <span className="sidebar-item-label">Pano</span>
+                </button>
+                <button
+                  className={`sidebar-item ${
+                    pathname === "/graph" ? "active" : ""
+                  }`}
+                  onClick={() => router.push("/graph")}
+                >
+                  <span className="sidebar-item-icon">Ag</span>
+                  <span className="sidebar-item-label">Baglanti agi</span>
+                </button>
+              </nav>
+            </SidebarGroup>
+
+            <SidebarGroup
+              label="Klasorler"
+              meta={
+                hasQuery
+                  ? `${visibleFolderCount}/${countFolders(folders)}`
+                  : `${countFolders(folders)}`
+              }
+              collapsed={isFoldersCollapsed}
+              onToggle={() => toggleSection("folders")}
+            >
+              <div className="sidebar-folder-tree">
+                {filteredFolders.length === 0 ? (
+                  <div className="sidebar-empty">
+                    {hasQuery ? "Eslesen klasor yok." : "Henuz klasor yok."}
+                  </div>
+                ) : (
+                  filteredFolders.map((folder) => (
+                    <SidebarFolderItem
+                      key={folder.id}
+                      folder={folder}
+                      pathname={pathname}
+                      onOpen={(folderId) => router.push(`/folders/${folderId}`)}
+                      onQuickCreate={handleCreateNoteInFolder}
+                      onContextMenuOpen={(event, currentFolder) =>
+                        openContextMenuAtPointer(
+                          event,
+                          buildFolderMenu(currentFolder)
+                        )
+                      }
+                      onTriggerMenuOpen={(event, currentFolder) =>
+                        openContextMenuFromTrigger(
+                          event,
+                          buildFolderMenu(currentFolder)
+                        )
+                      }
+                    />
+                  ))
+                )}
+              </div>
+            </SidebarGroup>
+
+            <SidebarGroup
+              label="Etiketler"
+              meta={
+                hasQuery
+                  ? `${filteredTags.length}/${tags.length}`
+                  : `${tags.length}`
+              }
+              collapsed={isTagsCollapsed}
+              onToggle={() => toggleSection("tags")}
+            >
+              <div className="sidebar-tag-list">
+                {filteredTags.length === 0 ? (
+                  <div className="sidebar-empty">
+                    {hasQuery
+                      ? "Eslesen etiket yok."
+                      : "Henuz indekslenmis etiket yok."}
+                  </div>
+                ) : (
+                  filteredTags.map((tag) => (
+                    <button
+                      key={tag.id}
+                      className={`sidebar-tag-item ${
+                        pathname === `/tags/${tag.name}` ? "active" : ""
+                      }`}
+                      onClick={() => router.push(`/tags/${tag.name}`)}
+                    >
+                      <span className="sidebar-tag-label">#{tag.name}</span>
+                      <span className="sidebar-tag-count">{tag.noteCount}</span>
+                    </button>
+                  ))
+                )}
+              </div>
+            </SidebarGroup>
+
+            <SidebarGroup
+              label={hasQuery ? "Not eslesmeleri" : "Son notlar"}
+              meta={
+                hasQuery
+                  ? `${filteredNotes.length}/${notes.length}`
+                  : `${notes.length}`
+              }
+              collapsed={isRecentNotesCollapsed}
+              onToggle={() => toggleSection("recentNotes")}
+            >
+              <nav className="sidebar-nav">
+                {filteredNotes.length === 0 ? (
+                  <div className="sidebar-empty">
+                    {hasQuery
+                      ? "Eslesen not yok."
+                      : "Henuz not yok. Ilk notunu olustur."}
+                  </div>
+                ) : (
+                  filteredNotes.map((sidebarNote) => (
+                    <SidebarNoteRow
+                      key={sidebarNote.id}
+                      note={sidebarNote}
+                      active={sidebarNote.id === currentNoteId}
+                      onOpen={(noteId) => router.push(`/notes/${noteId}`)}
+                      onContextMenuOpen={(event, currentNote) =>
+                        openContextMenuAtPointer(
+                          event,
+                          buildNoteMenu(currentNote)
+                        )
+                      }
+                      onTriggerMenuOpen={(event, currentNote) =>
+                        openContextMenuFromTrigger(
+                          event,
+                          buildNoteMenu(currentNote)
+                        )
+                      }
+                    />
+                  ))
+                )}
+              </nav>
+            </SidebarGroup>
+          </div>
+
+          <div className="sidebar-footer">
+            <div className="sidebar-user-card">
+              <div className="sidebar-user-meta">
+                <span className="sidebar-user-avatar">
+                  {(user.name ?? user.email ?? "G").slice(0, 1).toUpperCase()}
+                </span>
+                <div className="sidebar-user-copy">
+                  <div className="sidebar-user-name">
+                    {user.name ?? user.email ?? "Graffle Kullanici"}
+                  </div>
+                  {user.email ? (
+                    <div className="sidebar-user-email">{user.email}</div>
+                  ) : null}
+                </div>
+              </div>
+              <div className="sidebar-user-actions">
+                <button
+                  type="button"
+                  className="sidebar-theme-button"
+                  onClick={(event) =>
+                    openContextMenuFromTrigger(event, themeMenuItems)
+                  }
+                  aria-label="Tema sec"
+                >
+                  <span className="sidebar-theme-label">Tema</span>
+                  <span className="sidebar-theme-value">{activeTheme.label}</span>
+                </button>
+              </div>
+            </div>
+
+            <form action={signOutAction}>
+              <button type="submit" className="sidebar-sign-out">
+                Cikis yap
+              </button>
+            </form>
+          </div>
+        </>
+      )}
+
+      <div className="sidebar-template-host" aria-hidden="true">
+        <TemplatePicker
+          templates={templates}
+          buttonLabel="Sablon"
+          buttonClassName="sidebar-template-host-button"
+          openSignal={templatePickerOpenSignal}
+        />
       </div>
+
+      {!isSidebarCompact ? (
+        <div
+          className="sidebar-resize-handle"
+          onMouseDown={handleSidebarResizeStart}
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Sidebar genisligini degistir"
+        />
+      ) : null}
 
       <ContextMenu
         items={contextMenu?.items ?? []}
@@ -876,14 +1112,16 @@ function SidebarNoteRow({
         <span className="sidebar-item-icon">{note.icon ?? "Not"}</span>
         <span className="sidebar-item-label">{note.title}</span>
       </button>
-      <button
-        type="button"
-        className="context-trigger sidebar-row-trigger"
-        onClick={(event) => onTriggerMenuOpen(event, note)}
-        aria-label={`${note.title} menusunu ac`}
-      >
-        ...
-      </button>
+      <div className="sidebar-row-actions">
+        <button
+          type="button"
+          className="context-trigger sidebar-row-action"
+          onClick={(event) => onTriggerMenuOpen(event, note)}
+          aria-label={`${note.title} menusunu ac`}
+        >
+          ...
+        </button>
+      </div>
     </div>
   );
 }
@@ -892,6 +1130,7 @@ function SidebarFolderItem({
   folder,
   pathname,
   onOpen,
+  onQuickCreate,
   onContextMenuOpen,
   onTriggerMenuOpen,
   depth = 0,
@@ -899,6 +1138,7 @@ function SidebarFolderItem({
   folder: SidebarFolder;
   pathname: string;
   onOpen: (folderId: string) => void;
+  onQuickCreate: (folderId: string) => void | Promise<void>;
   onContextMenuOpen: (
     event: ReactMouseEvent<HTMLElement>,
     folder: SidebarFolder
@@ -925,14 +1165,28 @@ function SidebarFolderItem({
           <span className="sidebar-item-label">{folder.name}</span>
           <span className="sidebar-folder-count">{folder._count?.notes ?? 0}</span>
         </button>
-        <button
-          type="button"
-          className="context-trigger sidebar-row-trigger"
-          onClick={(event) => onTriggerMenuOpen(event, folder)}
-          aria-label={`${folder.name} menusunu ac`}
-        >
-          ...
-        </button>
+        <div className="sidebar-row-actions">
+          <button
+            type="button"
+            className="context-trigger sidebar-row-action"
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              void onQuickCreate(folder.id);
+            }}
+            aria-label={`${folder.name} icine not olustur`}
+          >
+            +
+          </button>
+          <button
+            type="button"
+            className="context-trigger sidebar-row-action"
+            onClick={(event) => onTriggerMenuOpen(event, folder)}
+            aria-label={`${folder.name} menusunu ac`}
+          >
+            ...
+          </button>
+        </div>
       </div>
 
       {(folder.children ?? []).length > 0 ? (
@@ -943,6 +1197,7 @@ function SidebarFolderItem({
               folder={childFolder}
               pathname={pathname}
               onOpen={onOpen}
+              onQuickCreate={onQuickCreate}
               onContextMenuOpen={onContextMenuOpen}
               onTriggerMenuOpen={onTriggerMenuOpen}
               depth={depth + 1}
@@ -985,6 +1240,39 @@ function loadSidebarCollapseState(): SidebarCollapseState {
   } catch {
     return DEFAULT_COLLAPSED_SECTIONS;
   }
+}
+
+function loadSidebarWidth(): number {
+  if (typeof window === "undefined") {
+    return DEFAULT_EXPANDED_SIDEBAR_WIDTH;
+  }
+
+  const storedValue = window.localStorage.getItem(SIDEBAR_WIDTH_STORAGE_KEY);
+  const parsedValue = storedValue ? Number.parseInt(storedValue, 10) : NaN;
+
+  if (Number.isNaN(parsedValue)) {
+    return DEFAULT_EXPANDED_SIDEBAR_WIDTH;
+  }
+
+  return clampSidebarWidth(parsedValue);
+}
+
+function loadSidebarCompactState(): boolean {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  try {
+    return JSON.parse(
+      window.localStorage.getItem(SIDEBAR_COMPACT_STORAGE_KEY) ?? "false"
+    ) as boolean;
+  } catch {
+    return false;
+  }
+}
+
+function clampSidebarWidth(width: number) {
+  return Math.min(Math.max(width, SIDEBAR_MIN_WIDTH), SIDEBAR_MAX_WIDTH);
 }
 
 function filterFolderTree(
