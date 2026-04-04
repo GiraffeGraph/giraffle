@@ -20,9 +20,7 @@ export default async function NotePage({ params }: NotePageProps) {
     id: note.id,
     title: note.title,
     icon: note.icon,
-    blocks: note.blocks.map((b) => ({
-      content: b.content as Record<string, unknown>,
-    })),
+    document: note.document,
   };
 
   return (

@@ -9,17 +9,22 @@ import type { BacklinkResult, UnresolvedLink } from "./link.types";
  * Called on every note save to keep the link index up to date.
  * Replaces all existing links for the note (full reindex per save).
  */
-export async function extractAndSaveLinks(noteId: string): Promise<void> {
-  // Get all blocks for this note
+export async function extractAndSaveLinks(
+  userId: string,
+  noteId: string
+): Promise<void> {
   const blocks = await db.block.findMany({
-    where: { noteId },
+    where: {
+      noteId,
+      note: {
+        userId,
+      },
+    },
     select: { id: true, content: true },
   });
 
-  // Delete existing links for this note
   await db.link.deleteMany({ where: { sourceNoteId: noteId } });
 
-  // Extract wikilinks from each block
   const linksToCreate: {
     sourceNoteId: string;
     sourceBlockId: string;
@@ -31,56 +36,66 @@ export async function extractAndSaveLinks(noteId: string): Promise<void> {
     const content = block.content as Record<string, unknown>;
     const wikilinks = extractWikilinksFromContent(content);
 
-    for (const wl of wikilinks) {
-      // Deduplicate within same block
+    for (const wikilink of wikilinks) {
       const exists = linksToCreate.some(
-        (l) => l.sourceBlockId === block.id && l.targetRaw === wl.target
+        (link) =>
+          link.sourceBlockId === block.id && link.targetRaw === wikilink.target
       );
+
       if (!exists) {
         linksToCreate.push({
           sourceNoteId: noteId,
           sourceBlockId: block.id,
-          targetRaw: wl.target,
+          targetRaw: wikilink.target,
           linkType: "wikilink",
         });
       }
     }
   }
 
-  // Try to resolve targets to existing note IDs
-  if (linksToCreate.length > 0) {
-    const targetNames = [...new Set(linksToCreate.map((l) => l.targetRaw))];
-
-    const matchingNotes = await db.note.findMany({
-      where: {
-        title: { in: targetNames, mode: "insensitive" },
-        isArchived: false,
-      },
-      select: { id: true, title: true },
-    });
-
-    const titleToId = new Map<string, string>();
-    for (const note of matchingNotes) {
-      titleToId.set(note.title.toLowerCase(), note.id);
-    }
-
-    await db.link.createMany({
-      data: linksToCreate.map((l) => ({
-        ...l,
-        targetNoteId: titleToId.get(l.targetRaw.toLowerCase()) ?? null,
-      })),
-      skipDuplicates: true,
-    });
+  if (linksToCreate.length === 0) {
+    return;
   }
+
+  const targetNames = [...new Set(linksToCreate.map((link) => link.targetRaw))];
+
+  const matchingNotes = await db.note.findMany({
+    where: {
+      userId,
+      title: { in: targetNames, mode: "insensitive" },
+      isArchived: false,
+    },
+    select: { id: true, title: true },
+  });
+
+  const titleToId = new Map<string, string>();
+  for (const note of matchingNotes) {
+    titleToId.set(note.title.toLowerCase(), note.id);
+  }
+
+  await db.link.createMany({
+    data: linksToCreate.map((link) => ({
+      ...link,
+      targetNoteId: titleToId.get(link.targetRaw.toLowerCase()) ?? null,
+    })),
+    skipDuplicates: true,
+  });
 }
 
 /**
  * Get all backlinks pointing to a specific note.
  * Uses the pre-computed link index, not full-text scan.
  */
-export async function getBacklinks(noteId: string): Promise<BacklinkResult[]> {
+export async function getBacklinks(
+  userId: string,
+  noteId: string
+): Promise<BacklinkResult[]> {
   const links = await db.link.findMany({
-    where: { targetNoteId: noteId },
+    where: {
+      targetNoteId: noteId,
+      sourceNote: { userId },
+      targetNote: { userId },
+    },
     include: {
       sourceNote: { select: { id: true, title: true } },
     },
@@ -99,13 +114,17 @@ export async function getBacklinks(noteId: string): Promise<BacklinkResult[]> {
  * Get all unresolved links across the workspace.
  * These are wikilinks that don't match any existing note title.
  */
-export async function getUnresolvedLinks(): Promise<UnresolvedLink[]> {
+export async function getUnresolvedLinks(
+  userId: string
+): Promise<UnresolvedLink[]> {
   const unresolvedLinks = await db.link.findMany({
-    where: { targetNoteId: null },
+    where: {
+      targetNoteId: null,
+      sourceNote: { userId },
+    },
     select: { targetRaw: true, sourceNoteId: true },
   });
 
-  // Group by target
   const grouped = new Map<string, Set<string>>();
   for (const link of unresolvedLinks) {
     const existing = grouped.get(link.targetRaw) ?? new Set();
@@ -125,13 +144,28 @@ export async function getUnresolvedLinks(): Promise<UnresolvedLink[]> {
  * Updates any unresolved links that now match the note title.
  */
 export async function resolveLinksForNote(
+  userId: string,
   noteId: string,
   noteTitle: string
 ): Promise<number> {
-  const result = await db.link.updateMany({
+  const matchingLinks = await db.link.findMany({
     where: {
       targetRaw: { equals: noteTitle, mode: "insensitive" },
       targetNoteId: null,
+      sourceNote: { userId },
+    },
+    select: { id: true },
+  });
+
+  if (matchingLinks.length === 0) {
+    return 0;
+  }
+
+  const result = await db.link.updateMany({
+    where: {
+      id: {
+        in: matchingLinks.map((link) => link.id),
+      },
     },
     data: { targetNoteId: noteId },
   });

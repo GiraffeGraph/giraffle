@@ -11,22 +11,13 @@ interface NoteEditorPageProps {
     id: string;
     title: string;
     icon: string | null;
-    blocks: { content: object }[];
+    document: TiptapDocument;
   };
   backlinks: BacklinkResult[];
 }
 
 export function NoteEditorPage({ note, backlinks }: NoteEditorPageProps) {
   const [title, setTitle] = useState(note.title);
-
-  // Build initial Tiptap document from blocks
-  const initialContent: TiptapDocument = {
-    type: "doc",
-    content:
-      note.blocks.length > 0
-        ? note.blocks.map((b) => b.content as TiptapDocument["content"][number])
-        : [{ type: "paragraph" }],
-  };
 
   const handleTitleChange = useCallback(
     async (newTitle: string) => {
@@ -56,7 +47,7 @@ export function NoteEditorPage({ note, backlinks }: NoteEditorPageProps) {
       </div>
 
       <div className="note-editor-container">
-        <Editor initialContent={initialContent} onSave={handleSave} />
+        <Editor initialContent={note.document} onSave={handleSave} />
       </div>
 
       {backlinks.length > 0 && (

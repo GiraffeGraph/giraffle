@@ -3,15 +3,27 @@
 import { db } from "@/lib/db";
 import type { CreateFolderInput, UpdateFolderInput } from "./folder.types";
 
+async function assertOwnedFolder(folderId: string, userId: string) {
+  const folder = await db.folder.findFirst({
+    where: { id: folderId, userId },
+    select: { id: true },
+  });
+
+  if (!folder) {
+    throw new Error("Folder not found");
+  }
+}
+
 /**
  * Get all root-level folders with note counts.
  */
-export async function getFolders() {
+export async function getFolders(userId: string) {
   return db.folder.findMany({
-    where: { parentId: null },
+    where: { parentId: null, userId },
     orderBy: { position: "asc" },
     include: {
       children: {
+        where: { userId },
         orderBy: { position: "asc" },
       },
       _count: { select: { notes: true } },
@@ -22,13 +34,16 @@ export async function getFolders() {
 /**
  * Get a folder with its children and notes.
  */
-export async function getFolder(folderId: string) {
-  return db.folder.findUnique({
-    where: { id: folderId },
+export async function getFolder(userId: string, folderId: string) {
+  return db.folder.findFirst({
+    where: { id: folderId, userId },
     include: {
-      children: { orderBy: { position: "asc" } },
+      children: {
+        where: { userId },
+        orderBy: { position: "asc" },
+      },
       notes: {
-        where: { isArchived: false },
+        where: { isArchived: false, userId },
         orderBy: { updatedAt: "desc" },
         select: { id: true, title: true, icon: true, updatedAt: true },
       },
@@ -39,14 +54,23 @@ export async function getFolder(folderId: string) {
 /**
  * Create a new folder.
  */
-export async function createFolder(input: CreateFolderInput): Promise<string> {
+export async function createFolder(
+  userId: string,
+  input: CreateFolderInput
+): Promise<string> {
+  if (input.parentId) {
+    await assertOwnedFolder(input.parentId, userId);
+  }
+
   const folder = await db.folder.create({
     data: {
       name: input.name,
       icon: input.icon,
       parentId: input.parentId,
+      userId,
     },
   });
+
   return folder.id;
 }
 
@@ -54,9 +78,16 @@ export async function createFolder(input: CreateFolderInput): Promise<string> {
  * Update a folder.
  */
 export async function updateFolder(
+  userId: string,
   folderId: string,
   input: UpdateFolderInput
 ): Promise<void> {
+  await assertOwnedFolder(folderId, userId);
+
+  if (typeof input.parentId === "string") {
+    await assertOwnedFolder(input.parentId, userId);
+  }
+
   await db.folder.update({
     where: { id: folderId },
     data: input,
@@ -66,6 +97,10 @@ export async function updateFolder(
 /**
  * Delete a folder and cascade to children.
  */
-export async function deleteFolder(folderId: string): Promise<void> {
+export async function deleteFolder(
+  userId: string,
+  folderId: string
+): Promise<void> {
+  await assertOwnedFolder(folderId, userId);
   await db.folder.delete({ where: { id: folderId } });
 }

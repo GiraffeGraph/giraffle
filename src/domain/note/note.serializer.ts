@@ -1,4 +1,4 @@
-import type { TiptapDocument, BlockNodeContent } from "./note.types";
+import type { TiptapDocument, BlockNodeContent, TiptapNode } from "./note.types";
 
 /**
  * Convert a Tiptap JSON document to Markdown.
@@ -63,7 +63,7 @@ function nodeToMarkdown(node: BlockNodeContent): string {
 }
 
 function inlineToMarkdown(
-  content?: (BlockNodeContent)[]
+  content?: TiptapNode[]
 ): string {
   if (!content) return "";
 

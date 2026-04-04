@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { signOutAction } from "@/server/api/auth";
 import { createNoteAction } from "@/server/api/notes";
 
 interface SidebarNote {
@@ -12,10 +13,14 @@ interface SidebarNote {
 
 interface SidebarProps {
   notes: SidebarNote[];
+  user: {
+    name: string | null;
+    email: string | null;
+  };
   activeNoteId?: string;
 }
 
-export function Sidebar({ notes, activeNoteId }: SidebarProps) {
+export function Sidebar({ notes, user, activeNoteId }: SidebarProps) {
   const router = useRouter();
 
   const handleCreateNote = async () => {
@@ -63,6 +68,23 @@ export function Sidebar({ notes, activeNoteId }: SidebarProps) {
             ))
           )}
         </nav>
+      </div>
+
+      <div className="sidebar-footer">
+        <div className="sidebar-user-card">
+          <div className="sidebar-user-name">
+            {user.name ?? user.email ?? "Graffle User"}
+          </div>
+          {user.email ? (
+            <div className="sidebar-user-email">{user.email}</div>
+          ) : null}
+        </div>
+
+        <form action={signOutAction}>
+          <button type="submit" className="sidebar-sign-out">
+            Sign out
+          </button>
+        </form>
       </div>
     </aside>
   );

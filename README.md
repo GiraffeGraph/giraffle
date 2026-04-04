@@ -42,7 +42,12 @@ npm install
 docker compose up -d
 
 # Create .env file
-echo 'DATABASE_URL="postgresql://giraffle:giraffle_dev_2024@localhost:5432/giraffle?schema=public"' > .env
+cp .env.example .env
+
+# Set a strong auth secret
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+
+# Paste the generated value into AUTH_SECRET in .env
 
 # Run migrations
 npx prisma migrate dev

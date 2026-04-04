@@ -1,25 +1,41 @@
 "use server";
 
-import { getFolders, createFolder, updateFolder, deleteFolder } from "@/domain/folder/folder.service";
-import type { CreateFolderInput, UpdateFolderInput } from "@/domain/folder/folder.types";
 import { revalidatePath } from "next/cache";
+import {
+  createFolder,
+  deleteFolder,
+  getFolders,
+  updateFolder,
+} from "@/domain/folder/folder.service";
+import type {
+  CreateFolderInput,
+  UpdateFolderInput,
+} from "@/domain/folder/folder.types";
+import { requireAuthenticatedUser } from "@/lib/auth-session";
 
 export async function getFoldersAction() {
-  return getFolders();
+  const { userId } = await requireAuthenticatedUser();
+  return getFolders(userId);
 }
 
 export async function createFolderAction(input: CreateFolderInput) {
-  const folderId = await createFolder(input);
-  revalidatePath("/");
+  const { userId } = await requireAuthenticatedUser();
+  const folderId = await createFolder(userId, input);
+  revalidatePath("/dashboard");
   return folderId;
 }
 
-export async function updateFolderAction(folderId: string, input: UpdateFolderInput) {
-  await updateFolder(folderId, input);
-  revalidatePath("/");
+export async function updateFolderAction(
+  folderId: string,
+  input: UpdateFolderInput
+) {
+  const { userId } = await requireAuthenticatedUser();
+  await updateFolder(userId, folderId, input);
+  revalidatePath("/dashboard");
 }
 
 export async function deleteFolderAction(folderId: string) {
-  await deleteFolder(folderId);
-  revalidatePath("/");
+  const { userId } = await requireAuthenticatedUser();
+  await deleteFolder(userId, folderId);
+  revalidatePath("/dashboard");
 }

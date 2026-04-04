@@ -20,6 +20,10 @@ export interface BlockMark {
   attrs?: Record<string, unknown>;
 }
 
+export interface BlockAttributes extends Record<string, unknown> {
+  blockId?: string;
+}
+
 export interface BlockTextContent {
   type: "text";
   text: string;
@@ -28,10 +32,12 @@ export interface BlockTextContent {
 
 export interface BlockNodeContent {
   type: string;
-  attrs?: Record<string, unknown>;
-  content?: (BlockTextContent | BlockNodeContent)[];
+  attrs?: BlockAttributes;
+  content?: TiptapNode[];
   marks?: BlockMark[];
 }
+
+export type TiptapNode = BlockTextContent | BlockNodeContent;
 
 // ─── Block ────────────────────────────────────────────────────
 export interface Block {
