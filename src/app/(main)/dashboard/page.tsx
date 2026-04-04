@@ -10,8 +10,6 @@ export default async function DashboardPage() {
     getNotesAction(),
     getTemplatesAction(),
   ]);
-  const noteCount = notes.length;
-  const templateCount = templates.length;
 
   async function handleCreateNote() {
     "use server";
@@ -38,32 +36,33 @@ export default async function DashboardPage() {
     <div className="dashboard">
       <section className="dashboard-hero">
         <div className="dashboard-header">
-          <h1 className="dashboard-title">Notların</h1>
+          <div className="dashboard-kicker">Calisma alani</div>
+          <h1 className="dashboard-title">Notlar</h1>
           <p className="dashboard-subtitle">
-            Bilgi ağını oluştur, bağla, yayımla ve düzenle.
+            Notlarini klasorler, etiketler ve baglantilar etrafinda duzenle.
           </p>
         </div>
 
         <div className="dashboard-stat-row">
           <div className="dashboard-stat-card">
-            <span className="dashboard-stat-value">{noteCount}</span>
-            <span className="dashboard-stat-label">toplam not</span>
+            <span className="dashboard-stat-value">{notes.length}</span>
+            <span className="dashboard-stat-label">not</span>
           </div>
           <div className="dashboard-stat-card">
-            <span className="dashboard-stat-value">{templateCount}</span>
-            <span className="dashboard-stat-label">hazır şablon</span>
+            <span className="dashboard-stat-value">{templates.length}</span>
+            <span className="dashboard-stat-label">sablon</span>
           </div>
         </div>
 
         <div className="dashboard-quick-actions">
           <form action={handleCreateNote}>
             <button type="submit" className="dashboard-empty-btn">
-              <span>+</span> Boş Not
+              Yeni not
             </button>
           </form>
           <TemplatePicker
             templates={templateSummaries}
-            buttonLabel="Şablondan Oluştur"
+            buttonLabel="Sablondan olustur"
             buttonClassName="dashboard-secondary-btn"
           />
         </div>
@@ -71,30 +70,32 @@ export default async function DashboardPage() {
 
       {notes.length === 0 ? (
         <div className="dashboard-empty">
-          <div className="dashboard-empty-icon">Başla</div>
+          <div className="dashboard-empty-icon">Bos</div>
           <p className="dashboard-empty-text">
-            Henüz not yok. Boş bir not oluştur ya da hazır bir şablon seç.
+            Henuz not yok. Bos bir not olustur ya da hazir bir sablon sec.
           </p>
         </div>
       ) : (
         <>
           <div className="dashboard-section-head">
-            <span className="dashboard-section-kicker">Son Güncellenenler</span>
+            <span className="dashboard-section-kicker">Son guncellenenler</span>
           </div>
           <div className="dashboard-grid">
-          {notes.map((note) => (
-            <Link
-              key={note.id}
-              href={`/notes/${note.id}`}
-              className="dashboard-note-card"
-            >
-              <div className="dashboard-note-card-icon">{note.icon ?? "Not"}</div>
-              <div className="dashboard-note-card-title">{note.title}</div>
-              <div className="dashboard-note-card-date">
-                {formatDate(new Date(note.updatedAt))}
-              </div>
-            </Link>
-          ))}
+            {notes.map((note) => (
+              <Link
+                key={note.id}
+                href={`/notes/${note.id}`}
+                className="dashboard-note-card"
+              >
+                <div className="dashboard-note-card-icon">{note.icon ?? "Not"}</div>
+                <div className="dashboard-note-card-body">
+                  <div className="dashboard-note-card-title">{note.title}</div>
+                  <div className="dashboard-note-card-date">
+                    {formatDate(new Date(note.updatedAt))}
+                  </div>
+                </div>
+              </Link>
+            ))}
           </div>
         </>
       )}

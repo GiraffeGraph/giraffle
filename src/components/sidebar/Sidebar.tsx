@@ -82,8 +82,11 @@ export function Sidebar({
   const [contextMenu, setContextMenu] = useState<SidebarMenuState | null>(null);
   const [activeThemeId, setActiveThemeId] =
     useState<AppThemeId>(DEFAULT_APP_THEME);
-  const recentNotes = notes.slice(0, 7);
-  const visibleTags = tags.slice(0, 6);
+
+  const currentNoteId =
+    activeNoteId ?? extractActiveNoteId(pathname) ?? undefined;
+  const recentNotes = notes.slice(0, 8);
+  const visibleTags = tags.slice(0, 8);
 
   const closeContextMenu = useCallback(() => {
     setContextMenu(null);
@@ -170,7 +173,7 @@ export function Sidebar({
   };
 
   const handleCreateFolder = async () => {
-    const folderName = window.prompt("Klasör adı", "Yeni Klasör")?.trim();
+    const folderName = window.prompt("Klasor adi", "Yeni Klasor")?.trim();
 
     if (!folderName) {
       return;
@@ -186,48 +189,48 @@ export function Sidebar({
   const buildNoteMenu = useCallback(
     (sidebarNote: SidebarNote): ContextMenuItem[] => [
       {
-        label: "Notu Aç",
-        hint: "Seçili notu düzenleyicide aç",
+        label: "Notu ac",
+        hint: "Secili notu duzenleyicide ac",
         onSelect: () => router.push(`/notes/${sidebarNote.id}`),
       },
       {
-        label: "Not Bağlantısını Kopyala",
+        label: "Not baglantisini kopyala",
         hint: "Dahili not adresini panoya kopyala",
         onSelect: () => copyInternalLink(`/notes/${sidebarNote.id}`),
       },
       {
-        label: "Arşive Taşı",
-        hint: "Notu aktif listelerden kaldır",
+        label: "Arsive tasi",
+        hint: "Notu aktif listelerden kaldir",
         tone: "danger",
         onSelect: async () => {
           await archiveNoteAction(sidebarNote.id);
-          if (activeNoteId === sidebarNote.id) {
+          if (currentNoteId === sidebarNote.id) {
             router.push("/dashboard");
           }
         },
       },
     ],
-    [activeNoteId, copyInternalLink, router]
+    [copyInternalLink, currentNoteId, router]
   );
 
   const buildFolderMenu = useCallback(
     (folder: SidebarFolder): ContextMenuItem[] => [
       {
-        label: "Klasörü Aç",
-        hint: "Klasördeki notları görüntüle",
+        label: "Klasoru ac",
+        hint: "Klasordeki notlari goruntule",
         onSelect: () => router.push(`/folders/${folder.id}`),
       },
       {
-        label: "Bu Klasöre Not Oluştur",
-        hint: "Yeni notu doğrudan bu klasöre ekle",
+        label: "Bu klasore not olustur",
+        hint: "Yeni notu dogrudan bu klasore ekle",
         onSelect: async () => {
           const noteId = await createNoteAction({ folderId: folder.id });
           router.push(`/notes/${noteId}`);
         },
       },
       {
-        label: "Klasör Bağlantısını Kopyala",
-        hint: "Klasör adresini panoya kopyala",
+        label: "Klasor baglantisini kopyala",
+        hint: "Klasor adresini panoya kopyala",
         onSelect: () => copyInternalLink(`/folders/${folder.id}`),
       },
     ],
@@ -239,7 +242,7 @@ export function Sidebar({
       APP_THEMES.map((theme) => ({
         label: theme.label,
         hint:
-          theme.id === activeThemeId ? "Şu an seçili tema" : theme.description,
+          theme.id === activeThemeId ? "Su an secili tema" : theme.description,
         onSelect: () => applyTheme(theme.id),
       })),
     [activeThemeId, applyTheme]
@@ -247,80 +250,80 @@ export function Sidebar({
 
   return (
     <aside className="sidebar">
-      <div className="sidebar-header">
-        <div className="sidebar-logo">
-          <span className="sidebar-logo-icon">G</span>
-          <div className="sidebar-logo-copy">
-            <span className="sidebar-logo-text">Graffle</span>
-            <span className="sidebar-logo-subtitle">Kişisel bilgi ağı</span>
-          </div>
-        </div>
+      <div className="sidebar-topbar">
+        <button
+          type="button"
+          className="sidebar-workspace-card"
+          onClick={() => router.push("/dashboard")}
+        >
+          <span className="sidebar-workspace-logo">G</span>
+          <span className="sidebar-workspace-copy">
+            <span className="sidebar-workspace-name">Graffle</span>
+            <span className="sidebar-workspace-meta">Kisisel bilgi alani</span>
+          </span>
+        </button>
+        <button
+          type="button"
+          className="sidebar-quick-create"
+          onClick={handleCreateNote}
+          aria-label="Yeni not olustur"
+        >
+          +
+        </button>
       </div>
 
-      <div className="sidebar-actions">
-        <button className="sidebar-new-note" onClick={handleCreateNote}>
-          <span className="sidebar-new-icon">+</span>
-          <span>Yeni Not</span>
-        </button>
+      <div className="sidebar-inline-actions">
         <TemplatePicker
           templates={templates}
-          buttonLabel="Şablon Kullan"
-          buttonClassName="sidebar-secondary-action"
+          buttonLabel="Sablon"
+          buttonClassName="sidebar-inline-action"
         />
-        <button className="sidebar-secondary-action" onClick={handleCreateFolder}>
-          Yeni Klasör
+        <button
+          type="button"
+          className="sidebar-inline-action"
+          onClick={handleCreateFolder}
+        >
+          Klasor
         </button>
-      </div>
-
-      <div className="sidebar-overview">
-        <div className="sidebar-overview-card">
-          <div className="sidebar-overview-eyebrow">Çalışma Alanı</div>
-          <div className="sidebar-overview-title">Yerel bilgi ağın hazır</div>
-          <div className="sidebar-overview-meta">
-            {notes.length} not · {folders.length} klasör · {tags.length} etiket
-          </div>
-        </div>
       </div>
 
       <div className="sidebar-section">
-        <section className="sidebar-panel">
-          <div className="sidebar-panel-head">
-            <div className="sidebar-panel-title">Gezin</div>
-            <div className="sidebar-panel-meta">Hızlı erişim</div>
+        <section className="sidebar-group">
+          <div className="sidebar-group-head">
+            <span className="sidebar-group-label">Calisma alani</span>
           </div>
           <nav className="sidebar-nav">
             <button
-              className={`sidebar-note-item ${
-                pathname === "/dashboard" ? "active" : ""
-              }`}
+              className={`sidebar-item ${pathname === "/dashboard" ? "active" : ""}`}
               onClick={() => router.push("/dashboard")}
             >
-              <span className="sidebar-note-icon">Ana</span>
-              <span className="sidebar-note-title">Pano</span>
+              <span className="sidebar-item-icon">Ana</span>
+              <span className="sidebar-item-label">Pano</span>
             </button>
             <button
-              className={`sidebar-note-item ${pathname === "/graph" ? "active" : ""}`}
+              className={`sidebar-item ${pathname === "/graph" ? "active" : ""}`}
               onClick={() => router.push("/graph")}
             >
-              <span className="sidebar-note-icon">Ağ</span>
-              <span className="sidebar-note-title">Bağlantı Ağı</span>
+              <span className="sidebar-item-icon">Ag</span>
+              <span className="sidebar-item-label">Baglanti agi</span>
             </button>
           </nav>
         </section>
 
-        <section className="sidebar-panel">
-          <div className="sidebar-panel-head">
-            <div className="sidebar-panel-title">Klasörler</div>
-            <div className="sidebar-panel-meta">{folders.length}</div>
+        <section className="sidebar-group">
+          <div className="sidebar-group-head">
+            <span className="sidebar-group-label">Klasorler</span>
+            <span className="sidebar-group-meta">{folders.length}</span>
           </div>
           <div className="sidebar-folder-tree">
             {folders.length === 0 ? (
-              <div className="sidebar-empty">Henüz klasör yok.</div>
+              <div className="sidebar-empty">Henuz klasor yok.</div>
             ) : (
               folders.map((folder) => (
                 <SidebarFolderItem
                   key={folder.id}
                   folder={folder}
+                  pathname={pathname}
                   onOpen={(folderId) => router.push(`/folders/${folderId}`)}
                   onContextMenuOpen={(event, currentFolder) =>
                     openContextMenuAtPointer(event, buildFolderMenu(currentFolder))
@@ -334,45 +337,45 @@ export function Sidebar({
           </div>
         </section>
 
-        <section className="sidebar-panel">
-          <div className="sidebar-panel-head">
-            <div className="sidebar-panel-title">Etiketler</div>
-            <div className="sidebar-panel-meta">{tags.length}</div>
+        <section className="sidebar-group">
+          <div className="sidebar-group-head">
+            <span className="sidebar-group-label">Etiketler</span>
+            <span className="sidebar-group-meta">{tags.length}</span>
           </div>
           <div className="sidebar-tag-list">
             {tags.length === 0 ? (
-              <div className="sidebar-empty">Henüz indekslenmiş etiket yok.</div>
+              <div className="sidebar-empty">Henuz indekslenmis etiket yok.</div>
             ) : (
               visibleTags.map((tag) => (
                 <button
                   key={tag.id}
-                  className="sidebar-tag-pill"
+                  className={`sidebar-tag-item ${
+                    pathname === `/tags/${tag.name}` ? "active" : ""
+                  }`}
                   onClick={() => router.push(`/tags/${tag.name}`)}
                 >
-                  <span>#{tag.name}</span>
-                  <span>{tag.noteCount}</span>
+                  <span className="sidebar-tag-label">#{tag.name}</span>
+                  <span className="sidebar-tag-count">{tag.noteCount}</span>
                 </button>
               ))
             )}
           </div>
         </section>
 
-        <section className="sidebar-panel">
-          <div className="sidebar-panel-head">
-            <div className="sidebar-panel-title">Son Notlar</div>
-            <div className="sidebar-panel-meta">{notes.length}</div>
+        <section className="sidebar-group">
+          <div className="sidebar-group-head">
+            <span className="sidebar-group-label">Son notlar</span>
+            <span className="sidebar-group-meta">{notes.length}</span>
           </div>
           <nav className="sidebar-nav">
             {notes.length === 0 ? (
-              <div className="sidebar-empty">
-                Henüz not yok. İlk notunu oluştur.
-              </div>
+              <div className="sidebar-empty">Henuz not yok. Ilk notunu olustur.</div>
             ) : (
               recentNotes.map((sidebarNote) => (
                 <SidebarNoteRow
                   key={sidebarNote.id}
                   note={sidebarNote}
-                  active={sidebarNote.id === activeNoteId}
+                  active={sidebarNote.id === currentNoteId}
                   onOpen={(noteId) => router.push(`/notes/${noteId}`)}
                   onContextMenuOpen={(event, currentNote) =>
                     openContextMenuAtPointer(event, buildNoteMenu(currentNote))
@@ -389,12 +392,19 @@ export function Sidebar({
 
       <div className="sidebar-footer">
         <div className="sidebar-user-card">
-          <div className="sidebar-user-name">
-            {user.name ?? user.email ?? "Graffle Kullanıcısı"}
+          <div className="sidebar-user-meta">
+            <span className="sidebar-user-avatar">
+              {(user.name ?? user.email ?? "G").slice(0, 1).toUpperCase()}
+            </span>
+            <div className="sidebar-user-copy">
+              <div className="sidebar-user-name">
+                {user.name ?? user.email ?? "Graffle Kullanici"}
+              </div>
+              {user.email ? (
+                <div className="sidebar-user-email">{user.email}</div>
+              ) : null}
+            </div>
           </div>
-          {user.email ? (
-            <div className="sidebar-user-email">{user.email}</div>
-          ) : null}
           <div className="sidebar-user-actions">
             <button
               type="button"
@@ -402,7 +412,7 @@ export function Sidebar({
               onClick={(event) =>
                 openContextMenuFromTrigger(event, themeMenuItems)
               }
-              aria-label="Tema seç"
+              aria-label="Tema sec"
             >
               <span className="sidebar-theme-label">Tema</span>
               <span className="sidebar-theme-value">{activeTheme.label}</span>
@@ -412,7 +422,7 @@ export function Sidebar({
 
         <form action={signOutAction}>
           <button type="submit" className="sidebar-sign-out">
-            Çıkış Yap
+            Cikis yap
           </button>
         </form>
       </div>
@@ -449,20 +459,20 @@ function SidebarNoteRow({
     <div className={`sidebar-entity-row ${active ? "active" : ""}`}>
       <button
         type="button"
-        className={`sidebar-note-item sidebar-row-main ${active ? "active" : ""}`}
+        className={`sidebar-item sidebar-row-main ${active ? "active" : ""}`}
         onClick={() => onOpen(note.id)}
         onContextMenu={(event) => onContextMenuOpen(event, note)}
       >
-        <span className="sidebar-note-icon">{note.icon ?? "Not"}</span>
-        <span className="sidebar-note-title">{note.title}</span>
+        <span className="sidebar-item-icon">{note.icon ?? "Not"}</span>
+        <span className="sidebar-item-label">{note.title}</span>
       </button>
       <button
         type="button"
         className="context-trigger sidebar-row-trigger"
         onClick={(event) => onTriggerMenuOpen(event, note)}
-        aria-label={`${note.title} menüsünü aç`}
+        aria-label={`${note.title} menusunu ac`}
       >
-        •••
+        ...
       </button>
     </div>
   );
@@ -470,12 +480,14 @@ function SidebarNoteRow({
 
 function SidebarFolderItem({
   folder,
+  pathname,
   onOpen,
   onContextMenuOpen,
   onTriggerMenuOpen,
   depth = 0,
 }: {
   folder: SidebarFolder;
+  pathname: string;
   onOpen: (folderId: string) => void;
   onContextMenuOpen: (
     event: ReactMouseEvent<HTMLElement>,
@@ -487,27 +499,29 @@ function SidebarFolderItem({
   ) => void;
   depth?: number;
 }) {
+  const isActive = pathname === `/folders/${folder.id}`;
+
   return (
     <div className="sidebar-folder-node">
-      <div className="sidebar-entity-row">
+      <div className={`sidebar-entity-row ${isActive ? "active" : ""}`}>
         <button
           type="button"
-          className="sidebar-folder-item sidebar-row-main"
-          style={{ paddingLeft: `${16 + depth * 14}px` }}
+          className={`sidebar-item sidebar-row-main ${isActive ? "active" : ""}`}
+          style={{ paddingLeft: `${12 + depth * 16}px` }}
           onClick={() => onOpen(folder.id)}
           onContextMenu={(event) => onContextMenuOpen(event, folder)}
         >
-          <span className="sidebar-note-icon">{folder.icon ?? "Kls"}</span>
-          <span className="sidebar-note-title">{folder.name}</span>
+          <span className="sidebar-item-icon">{folder.icon ?? "Kls"}</span>
+          <span className="sidebar-item-label">{folder.name}</span>
           <span className="sidebar-folder-count">{folder._count?.notes ?? 0}</span>
         </button>
         <button
           type="button"
           className="context-trigger sidebar-row-trigger"
           onClick={(event) => onTriggerMenuOpen(event, folder)}
-          aria-label={`${folder.name} menüsünü aç`}
+          aria-label={`${folder.name} menusunu ac`}
         >
-          •••
+          ...
         </button>
       </div>
 
@@ -517,6 +531,7 @@ function SidebarFolderItem({
             <SidebarFolderItem
               key={childFolder.id}
               folder={childFolder}
+              pathname={pathname}
               onOpen={onOpen}
               onContextMenuOpen={onContextMenuOpen}
               onTriggerMenuOpen={onTriggerMenuOpen}
@@ -527,4 +542,13 @@ function SidebarFolderItem({
       ) : null}
     </div>
   );
+}
+
+function extractActiveNoteId(pathname: string | null) {
+  if (!pathname?.startsWith("/notes/")) {
+    return null;
+  }
+
+  const [, , noteId] = pathname.split("/");
+  return noteId ?? null;
 }

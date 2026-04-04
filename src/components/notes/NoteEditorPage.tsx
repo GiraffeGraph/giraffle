@@ -172,34 +172,34 @@ export function NoteEditorPage({
   const noteContextItems = useMemo<ContextMenuItem[]>(
     () => [
       {
-        label: isPublished ? "Yayından Kaldır" : "Yayınla",
-        hint: "Notun yayın durumunu değiştir",
+        label: isPublished ? "Yayindan kaldir" : "Yayinla",
+        hint: "Notun yayin durumunu degistir",
         onSelect: handlePublishToggle,
       },
       {
-        label: "Not Bağlantısını Kopyala",
+        label: "Not baglantisini kopyala",
         hint: "Dahili not adresini panoya kopyala",
         onSelect: handleCopyNoteLink,
       },
       {
-        label: "Markdown Kopyala",
-        hint: "Dışa aktarılan Markdown sürümünü kopyala",
+        label: "Markdown kopyala",
+        hint: "Disa aktarilan Markdown surumunu kopyala",
         onSelect: () => handleCopyExport("markdown"),
       },
       {
-        label: "MDX Kopyala",
-        hint: "Dışa aktarılan MDX sürümünü kopyala",
+        label: "MDX kopyala",
+        hint: "Disa aktarilan MDX surumunu kopyala",
         onSelect: () => handleCopyExport("mdx"),
       },
       {
-        label: "Yayındaki Sayfayı Aç",
-        hint: "Genel görünümü yeni sekmede aç",
+        label: "Yayindaki sayfayi ac",
+        hint: "Genel gorunumu yeni sekmede ac",
         disabled: !isPublished,
         onSelect: handleOpenPublishedPage,
       },
       {
-        label: "Arşive Taşı",
-        hint: "Notu aktif listelerden kaldır",
+        label: "Arsive tasi",
+        hint: "Notu aktif listelerden kaldir",
         tone: "danger",
         onSelect: handleArchiveNote,
       },
@@ -217,27 +217,13 @@ export function NoteEditorPage({
   return (
     <div className="note-page">
       <div className="note-header" onContextMenu={openContextMenuAtPointer}>
-        <div className="note-status-row">
-          <span className={`note-status-pill ${isPublished ? "published" : "draft"}`}>
-            {isPublished ? "Yayında" : "Taslak"}
-          </span>
-          <span className="note-status-text">Otomatik kaydetme açık</span>
-          <button
-            type="button"
-            className="context-trigger"
-            onClick={openContextMenuFromTrigger}
-            aria-label="Not menüsünü aç"
-          >
-            •••
-          </button>
-        </div>
-        <div className="note-toolbar">
+        <div className="note-topbar">
           <select
             className="note-folder-select"
             value={currentFolderId ?? ""}
             onChange={(event) => handleFolderChange(event.target.value)}
           >
-            <option value="">Çalışma alanı kökü</option>
+            <option value="">Calisma alani koku</option>
             {folderOptions.map((folder) => (
               <option key={folder.id} value={folder.id}>
                 {folder.name}
@@ -245,30 +231,39 @@ export function NoteEditorPage({
             ))}
           </select>
 
-          <button className="note-toolbar-btn" onClick={handlePublishToggle}>
-            {isPublished ? "Yayından Kaldır" : "Yayınla"}
-          </button>
-          <button
-            className="note-toolbar-btn"
-            disabled={isExportPending}
-            onClick={() => handleCopyExport("markdown")}
-          >
-            Markdown Kopyala
-          </button>
-          <button
-            className="note-toolbar-btn"
-            disabled={isExportPending}
-            onClick={() => handleCopyExport("mdx")}
-          >
-            MDX Kopyala
-          </button>
-          <button
-            className="note-toolbar-btn"
-            disabled={!isPublished}
-            onClick={handleOpenPublishedPage}
-          >
-            Yayındaki Sayfayı Aç
-          </button>
+          <div className="note-toolbar">
+            <button className="note-toolbar-btn" onClick={handlePublishToggle}>
+              {isPublished ? "Yayindan kaldir" : "Yayinla"}
+            </button>
+            <button
+              className="note-toolbar-btn"
+              disabled={isExportPending}
+              onClick={() => handleCopyExport("markdown")}
+            >
+              Markdown
+            </button>
+            <button
+              className="note-toolbar-btn"
+              disabled={isExportPending}
+              onClick={() => handleCopyExport("mdx")}
+            >
+              MDX
+            </button>
+            <button
+              className="context-trigger"
+              onClick={openContextMenuFromTrigger}
+              aria-label="Not menusunu ac"
+            >
+              ...
+            </button>
+          </div>
+        </div>
+
+        <div className="note-status-row">
+          <span className={`note-status-pill ${isPublished ? "published" : "draft"}`}>
+            {isPublished ? "Yayinda" : "Taslak"}
+          </span>
+          <span className="note-status-text">Otomatik kaydetme acik</span>
         </div>
 
         <input
@@ -309,9 +304,9 @@ export function NoteEditorPage({
       {backlinks.length > 0 ? (
         <div className="backlinks-section">
           <div className="backlinks-header">
-            <span className="backlinks-icon">Bağ</span>
+            <span className="backlinks-icon">Bag</span>
             <span className="backlinks-title">
-              Geri Bağlantılar ({backlinks.length})
+              Geri baglantilar ({backlinks.length})
             </span>
           </div>
           <div className="backlinks-list">
