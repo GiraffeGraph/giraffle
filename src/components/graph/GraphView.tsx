@@ -43,10 +43,20 @@ export function GraphView({ graph }: GraphViewProps) {
   return (
     <div className="graph-page">
       <div className="graph-header">
-        <h1 className="graph-title">Graph View</h1>
+        <h1 className="graph-title">Bağlantı Ağı</h1>
         <p className="graph-subtitle">
-          Persisted wikilinks projected as nodes and edges.
+          Kaydedilmiş wikilink ilişkileri düğüm ve kenar olarak gösterilir.
         </p>
+        <div className="graph-stat-row">
+          <div className="graph-stat-chip">
+            <span className="graph-stat-number">{graph.nodes.length}</span>
+            <span className="graph-stat-label">not</span>
+          </div>
+          <div className="graph-stat-chip">
+            <span className="graph-stat-number">{graph.edges.length}</span>
+            <span className="graph-stat-label">bağ</span>
+          </div>
+        </div>
       </div>
 
       <div className="graph-layout">
@@ -116,13 +126,15 @@ export function GraphView({ graph }: GraphViewProps) {
             <>
               <div className="graph-panel-title">{activeNode.title}</div>
               <div className="graph-panel-meta">
-                Degree {activeNode.degree} •{" "}
-                {activeNode.isPublished ? "Published" : "Private"}
+                Bağ sayısı {activeNode.degree} ·{" "}
+                {activeNode.isPublished ? "Yayında" : "Özel"}
               </div>
-              <div className="graph-panel-section-title">Connections</div>
+              <div className="graph-panel-section-title">Bağlantılar</div>
               <div className="graph-panel-list">
                 {activeEdges.length === 0 ? (
-                  <div className="graph-panel-empty">No resolved links yet.</div>
+                  <div className="graph-panel-empty">
+                    Henüz çözümlenmiş bağlantı yok.
+                  </div>
                 ) : (
                   activeEdges.map((edge) => (
                     <button
@@ -145,7 +157,7 @@ export function GraphView({ graph }: GraphViewProps) {
             </>
           ) : (
             <div className="graph-panel-empty">
-              Notes and links will appear here after the first save.
+              İlk kayıttan sonra notlar ve bağlantılar burada görünür.
             </div>
           )}
         </div>

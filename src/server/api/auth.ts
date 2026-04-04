@@ -24,19 +24,19 @@ export async function registerAction(formData: FormData) {
   });
 
   if (!rateLimit.allowed) {
-    return { error: "Too many registration attempts. Try again later." };
+    return { error: "Çok fazla kayıt denemesi yapıldı. Daha sonra tekrar deneyin." };
   }
 
   if (!email || !password) {
-    return { error: "Email and password are required" };
+    return { error: "E-posta ve şifre zorunludur." };
   }
 
   if (!EMAIL_PATTERN.test(email)) {
-    return { error: "Enter a valid email address" };
+    return { error: "Geçerli bir e-posta adresi girin." };
   }
 
   if (password.length < 8) {
-    return { error: "Password must be at least 8 characters" };
+    return { error: "Şifre en az 8 karakter olmalıdır." };
   }
 
   const existingUser = await db.user.findUnique({
@@ -44,7 +44,7 @@ export async function registerAction(formData: FormData) {
   });
 
   if (existingUser) {
-    return { error: "An account with this email already exists" };
+    return { error: "Bu e-posta ile kayıtlı bir hesap zaten var." };
   }
 
   const hashedPassword = await bcrypt.hash(password, 12);
@@ -70,7 +70,7 @@ export async function registerAction(formData: FormData) {
     resetRateLimit(`register:${email}`);
   } catch (error) {
     if (error instanceof AuthError) {
-      return { error: "Failed to sign in after registration" };
+      return { error: "Kayıt sonrası giriş yapılamadı." };
     }
     throw error;
   }
@@ -86,11 +86,11 @@ export async function loginAction(formData: FormData) {
   });
 
   if (!rateLimit.allowed) {
-    return { error: "Too many login attempts. Try again later." };
+    return { error: "Çok fazla giriş denemesi yapıldı. Daha sonra tekrar deneyin." };
   }
 
   if (!email || !password) {
-    return { error: "Email and password are required" };
+    return { error: "E-posta ve şifre zorunludur." };
   }
 
   try {
@@ -104,9 +104,9 @@ export async function loginAction(formData: FormData) {
     if (error instanceof AuthError) {
       switch (error.type) {
         case "CredentialsSignin":
-          return { error: "Invalid email or password" };
+          return { error: "E-posta veya şifre hatalı." };
         default:
-          return { error: "Something went wrong" };
+          return { error: "Bir hata oluştu." };
       }
     }
     throw error;

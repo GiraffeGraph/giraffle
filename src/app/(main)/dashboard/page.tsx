@@ -3,12 +3,15 @@ import { redirect } from "next/navigation";
 import { TemplatePicker } from "@/components/templates/TemplatePicker";
 import { createNoteAction, getNotesAction } from "@/server/api/notes";
 import { getTemplatesAction } from "@/server/api/templates";
+import { formatDate } from "@/lib/utils";
 
 export default async function DashboardPage() {
   const [notes, templates] = await Promise.all([
     getNotesAction(),
     getTemplatesAction(),
   ]);
+  const noteCount = notes.length;
+  const templateCount = templates.length;
 
   async function handleCreateNote() {
     "use server";
@@ -33,52 +36,67 @@ export default async function DashboardPage() {
 
   return (
     <div className="dashboard">
-      <div className="dashboard-header">
-        <h1 className="dashboard-title">Your Notes</h1>
-        <p className="dashboard-subtitle">
-          Create, link, publish, and organize your knowledge graph.
-        </p>
-      </div>
+      <section className="dashboard-hero">
+        <div className="dashboard-header">
+          <h1 className="dashboard-title">Notların</h1>
+          <p className="dashboard-subtitle">
+            Bilgi ağını oluştur, bağla, yayımla ve düzenle.
+          </p>
+        </div>
 
-      <div className="dashboard-quick-actions">
-        <form action={handleCreateNote}>
-          <button type="submit" className="dashboard-empty-btn">
-            <span>+</span> Blank Note
-          </button>
-        </form>
-        <TemplatePicker
-          templates={templateSummaries}
-          buttonLabel="Create From Template"
-          buttonClassName="dashboard-secondary-btn"
-        />
-      </div>
+        <div className="dashboard-stat-row">
+          <div className="dashboard-stat-card">
+            <span className="dashboard-stat-value">{noteCount}</span>
+            <span className="dashboard-stat-label">toplam not</span>
+          </div>
+          <div className="dashboard-stat-card">
+            <span className="dashboard-stat-value">{templateCount}</span>
+            <span className="dashboard-stat-label">hazır şablon</span>
+          </div>
+        </div>
+
+        <div className="dashboard-quick-actions">
+          <form action={handleCreateNote}>
+            <button type="submit" className="dashboard-empty-btn">
+              <span>+</span> Boş Not
+            </button>
+          </form>
+          <TemplatePicker
+            templates={templateSummaries}
+            buttonLabel="Şablondan Oluştur"
+            buttonClassName="dashboard-secondary-btn"
+          />
+        </div>
+      </section>
 
       {notes.length === 0 ? (
         <div className="dashboard-empty">
-          <div className="dashboard-empty-icon">Start</div>
+          <div className="dashboard-empty-icon">Başla</div>
           <p className="dashboard-empty-text">
-            No notes yet. Create a blank note or use a seeded template.
+            Henüz not yok. Boş bir not oluştur ya da hazır bir şablon seç.
           </p>
         </div>
       ) : (
-        <div className="dashboard-grid">
+        <>
+          <div className="dashboard-section-head">
+            <span className="dashboard-section-kicker">Son Güncellenenler</span>
+          </div>
+          <div className="dashboard-grid">
           {notes.map((note) => (
             <Link
               key={note.id}
               href={`/notes/${note.id}`}
               className="dashboard-note-card"
             >
-              <div className="dashboard-note-card-icon">{note.icon ?? "Note"}</div>
+              <div className="dashboard-note-card-icon">{note.icon ?? "Not"}</div>
               <div className="dashboard-note-card-title">{note.title}</div>
               <div className="dashboard-note-card-date">
-                {new Date(note.updatedAt).toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                })}
+                {formatDate(new Date(note.updatedAt))}
               </div>
             </Link>
           ))}
-        </div>
+          </div>
+        </>
       )}
     </div>
   );

@@ -18,7 +18,7 @@ export function slugify(text: string): string {
 }
 
 export function formatDate(date: Date): string {
-  return new Intl.DateTimeFormat("en-US", {
+  return new Intl.DateTimeFormat("tr-TR", {
     month: "short",
     day: "numeric",
     year: "numeric",

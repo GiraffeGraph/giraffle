@@ -20,7 +20,7 @@ export default async function PublishedNotePage({
     <div className="published-page">
       <div className="published-shell">
         <div className="published-meta">
-          <div className="published-label">Published Note</div>
+          <div className="published-label">Yayımlanan Not</div>
           <h1 className="published-title">{note.title}</h1>
           {note.tags.length > 0 ? (
             <div className="published-tags">

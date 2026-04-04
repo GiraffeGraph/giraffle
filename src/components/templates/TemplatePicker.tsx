@@ -78,11 +78,7 @@ export function TemplatePicker({
 
   return (
     <>
-      <button
-        type="button"
-        className={buttonClassName}
-        onClick={openPicker}
-      >
+      <button type="button" className={buttonClassName} onClick={openPicker}>
         {buttonLabel}
       </button>
 
@@ -94,9 +90,9 @@ export function TemplatePicker({
           >
             <div className="template-picker-header">
               <div>
-                <h2 className="template-picker-title">Create From Template</h2>
+                <h2 className="template-picker-title">Şablondan Oluştur</h2>
                 <p className="template-picker-subtitle">
-                  Start from a structured note instead of a blank page.
+                  Boş bir sayfa yerine hazır bir yapı ile başla.
                 </p>
               </div>
               <button
@@ -104,7 +100,7 @@ export function TemplatePicker({
                 className="template-picker-close"
                 onClick={closePicker}
               >
-                Close
+                Kapat
               </button>
             </div>
 
@@ -127,7 +123,7 @@ export function TemplatePicker({
                         {template.name}
                       </span>
                       <span className="template-picker-item-description">
-                        {template.description ?? "Structured starter template"}
+                        {template.description ?? "Hazır başlangıç şablonu"}
                       </span>
                     </span>
                   </button>
@@ -146,14 +142,13 @@ export function TemplatePicker({
                         {selectedTemplate.name}
                       </div>
                       <div className="template-picker-panel-description">
-                        {selectedTemplate.description ??
-                          "Structured starter template"}
+                        {selectedTemplate.description ?? "Hazır başlangıç şablonu"}
                       </div>
                     </div>
                   </div>
 
                   <label className="template-picker-field">
-                    <span>Note title</span>
+                    <span>Not başlığı</span>
                     <input
                       value={title}
                       onChange={(event) => setTitle(event.target.value)}
@@ -162,10 +157,7 @@ export function TemplatePicker({
                   </label>
 
                   {selectedTemplate.variables.map((variable) => (
-                    <label
-                      key={variable.name}
-                      className="template-picker-field"
-                    >
+                    <label key={variable.name} className="template-picker-field">
                       <span>{variable.label}</span>
                       <input
                         value={variableValues[variable.name] ?? ""}
@@ -186,7 +178,7 @@ export function TemplatePicker({
                     disabled={isPending}
                     onClick={handleCreateNote}
                   >
-                    {isPending ? "Creating..." : "Create Note"}
+                    {isPending ? "Oluşturuluyor..." : "Not Oluştur"}
                   </button>
                 </div>
               ) : null}

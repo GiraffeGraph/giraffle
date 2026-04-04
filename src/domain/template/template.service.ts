@@ -11,6 +11,7 @@ import {
   createEmptyDocument,
   documentToPersistedBlocks,
 } from "@/domain/note/block-tree";
+import { DEFAULT_NOTE_TITLE } from "@/domain/note/note.types";
 import type { BlockNodeContent, TiptapNode } from "@/domain/note/note.types";
 import type {
   ApplyTemplateInput,
@@ -25,18 +26,20 @@ const DEFAULT_TEMPLATES: Array<{
   icon: string;
   blocks: TemplateBlock[];
   variables?: TemplateVariable[];
+  legacyNames?: string[];
 }> = [
   {
-    name: "Daily Log",
-    description: "A daily workspace note for focus, wins, and follow-ups.",
+    name: "Günlük Not",
+    description: "Odak, kazanımlar ve takip maddeleri için günlük çalışma alanı notu.",
     category: "daily",
     icon: "Calendar",
+    legacyNames: ["Daily Log"],
     variables: [
       {
         name: "focus",
-        label: "Main focus",
+        label: "Ana odak",
         type: "text",
-        defaultValue: "What matters most today?",
+        defaultValue: "Bugün en önemli konu ne?",
       },
     ],
     blocks: [
@@ -44,12 +47,12 @@ const DEFAULT_TEMPLATES: Array<{
         type: "heading",
         attributes: { level: 1 },
         content: {
-          content: [{ type: "text", text: "Daily Log {{date}}" }],
+          content: [{ type: "text", text: "Günlük Not {{date}}" }],
         },
       },
       {
         type: "callout",
-        attributes: { tone: "info", title: "Focus" },
+        attributes: { tone: "info", title: "Odak" },
         content: {},
         children: [
           {
@@ -64,7 +67,7 @@ const DEFAULT_TEMPLATES: Array<{
         type: "heading",
         attributes: { level: 2 },
         content: {
-          content: [{ type: "text", text: "Wins" }],
+          content: [{ type: "text", text: "Bugünün Kazanımları" }],
         },
       },
       {
@@ -78,7 +81,7 @@ const DEFAULT_TEMPLATES: Array<{
               {
                 type: "paragraph",
                 content: {
-                  content: [{ type: "text", text: "Shipped" }],
+                  content: [{ type: "text", text: "Tamamlanan is" }],
                 },
               },
             ],
@@ -89,34 +92,35 @@ const DEFAULT_TEMPLATES: Array<{
         type: "heading",
         attributes: { level: 2 },
         content: {
-          content: [{ type: "text", text: "Notes" }],
+          content: [{ type: "text", text: "Notlar" }],
         },
       },
       {
         type: "paragraph",
         content: {
-          content: [{ type: "text", text: "#daily" }],
+          content: [{ type: "text", text: "#gunluk" }],
         },
       },
     ],
   },
   {
-    name: "Meeting Notes",
-    description: "Agenda, decisions, follow-ups, and linked actions.",
+    name: "Toplantı Notu",
+    description: "Gündem, kararlar, takip maddeleri ve bağlantılı aksiyonlar.",
     category: "meeting",
     icon: "Meeting",
+    legacyNames: ["Meeting Notes"],
     variables: [
       {
         name: "meeting_name",
-        label: "Meeting name",
+        label: "Toplantı adı",
         type: "text",
-        defaultValue: "Weekly sync",
+        defaultValue: "Haftalık durum toplantısı",
       },
       {
         name: "attendees",
-        label: "Attendees",
+        label: "Katılımcılar",
         type: "text",
-        defaultValue: "Name A, Name B",
+        defaultValue: "Kisi A, Kisi B",
       },
     ],
     blocks: [
@@ -130,25 +134,25 @@ const DEFAULT_TEMPLATES: Array<{
       {
         type: "paragraph",
         content: {
-          content: [{ type: "text", text: "Attendees: {{attendees}}" }],
+          content: [{ type: "text", text: "Katılımcılar: {{attendees}}" }],
         },
       },
       {
         type: "callout",
-        attributes: { tone: "warning", title: "Decisions" },
+        attributes: { tone: "warning", title: "Kararlar" },
         content: {},
         children: [
           {
             type: "paragraph",
             content: {
-              content: [{ type: "text", text: "Capture the key outcome here." }],
+              content: [{ type: "text", text: "Ana sonucu buraya yazın." }],
             },
           },
         ],
       },
       {
         type: "toggle",
-        attributes: { summary: "Agenda" },
+        attributes: { summary: "Gündem" },
         content: {},
         children: [
           {
@@ -162,7 +166,7 @@ const DEFAULT_TEMPLATES: Array<{
                   {
                     type: "paragraph",
                     content: {
-                      content: [{ type: "text", text: "Topic 1" }],
+                      content: [{ type: "text", text: "Gündem maddesi 1" }],
                     },
                   },
                 ],
@@ -174,28 +178,29 @@ const DEFAULT_TEMPLATES: Array<{
       {
         type: "paragraph",
         content: {
-          content: [{ type: "text", text: "#meeting" }],
+          content: [{ type: "text", text: "#toplanti" }],
         },
       },
     ],
   },
   {
-    name: "Project Brief",
-    description: "A kickoff note for goals, scope, risks, and open questions.",
+    name: "Proje Özeti",
+    description: "Hedefler, kapsam, riskler ve açık sorular için başlangıç notu.",
     category: "project",
     icon: "Project",
+    legacyNames: ["Project Brief"],
     variables: [
       {
         name: "project_name",
-        label: "Project name",
+        label: "Proje adı",
         type: "text",
-        defaultValue: "Untitled Project",
+        defaultValue: "Adsız Proje",
       },
       {
         name: "owner",
-        label: "Owner",
+        label: "Sahip",
         type: "text",
-        defaultValue: "Owner name",
+        defaultValue: "Sorumlu kisi",
       },
     ],
     blocks: [
@@ -208,7 +213,7 @@ const DEFAULT_TEMPLATES: Array<{
       },
       {
         type: "callout",
-        attributes: { tone: "tip", title: "Owner" },
+        attributes: { tone: "tip", title: "Sahip" },
         content: {},
         children: [
           {
@@ -223,7 +228,7 @@ const DEFAULT_TEMPLATES: Array<{
         type: "heading",
         attributes: { level: 2 },
         content: {
-          content: [{ type: "text", text: "Goals" }],
+          content: [{ type: "text", text: "Hedefler" }],
         },
       },
       {
@@ -237,7 +242,7 @@ const DEFAULT_TEMPLATES: Array<{
               {
                 type: "paragraph",
                 content: {
-                  content: [{ type: "text", text: "Primary outcome" }],
+                  content: [{ type: "text", text: "Ana hedef" }],
                 },
               },
             ],
@@ -246,13 +251,13 @@ const DEFAULT_TEMPLATES: Array<{
       },
       {
         type: "toggle",
-        attributes: { summary: "Open questions" },
+        attributes: { summary: "Açık sorular" },
         content: {},
         children: [
           {
             type: "paragraph",
             content: {
-              content: [{ type: "text", text: "What still needs to be answered?" }],
+              content: [{ type: "text", text: "Hangi sorular hâlâ cevap bekliyor?" }],
             },
           },
         ],
@@ -260,7 +265,7 @@ const DEFAULT_TEMPLATES: Array<{
       {
         type: "paragraph",
         content: {
-          content: [{ type: "text", text: "#project" }],
+          content: [{ type: "text", text: "#proje" }],
         },
       },
     ],
@@ -360,7 +365,7 @@ export async function applyTemplate(
 
   await createTemplateBlocks(db, note.id, document);
 
-  if (note.title !== "Untitled") {
+  if (note.title !== DEFAULT_NOTE_TITLE) {
     await resolveLinksForNote(userId, note.id, note.title);
   }
 
@@ -373,34 +378,39 @@ export async function applyTemplate(
 }
 
 export async function ensureDefaultTemplates() {
-  const existingTemplates = await db.template.findMany({
-    where: {
-      name: {
-        in: DEFAULT_TEMPLATES.map((template) => template.name),
-      },
-    },
-    select: {
-      name: true,
-    },
-  });
-
-  const existingNames = new Set(existingTemplates.map((template) => template.name));
-
   for (const template of DEFAULT_TEMPLATES) {
-    if (existingNames.has(template.name)) {
+    const existingTemplate = await db.template.findFirst({
+      where: {
+        OR: [
+          { name: template.name },
+          ...(template.legacyNames ?? []).map((legacyName) => ({
+            name: legacyName,
+          })),
+        ],
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    const data = {
+      name: template.name,
+      description: template.description,
+      category: template.category,
+      icon: template.icon,
+      blocks: template.blocks as object[],
+      variables: (template.variables ?? []) as object[],
+    };
+
+    if (existingTemplate) {
+      await db.template.update({
+        where: { id: existingTemplate.id },
+        data,
+      });
       continue;
     }
 
-    await db.template.create({
-      data: {
-        name: template.name,
-        description: template.description,
-        category: template.category,
-        icon: template.icon,
-        blocks: template.blocks as object[],
-        variables: (template.variables ?? []) as object[],
-      },
-    });
+    await db.template.create({ data });
   }
 }
 

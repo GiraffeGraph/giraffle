@@ -15,6 +15,7 @@ export const BLOCK_TYPES = [
 ] as const;
 
 export type BlockType = (typeof BLOCK_TYPES)[number];
+export const DEFAULT_NOTE_TITLE = "Adsız";
 
 // ─── Block Content (Tiptap JSON-compatible) ───────────────────
 export interface BlockMark {

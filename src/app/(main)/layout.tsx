@@ -43,7 +43,9 @@ export default async function MainLayout({
           email: session?.user?.email ?? null,
         }}
       />
-      <main className="main-content">{children}</main>
+      <main className="main-content">
+        <div className="main-content-inner">{children}</div>
+      </main>
     </div>
   );
 }

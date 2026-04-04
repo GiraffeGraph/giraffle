@@ -1,24 +1,21 @@
 "use client";
 
 import type { Editor as TiptapEditor } from "@tiptap/core";
-import Image from "@tiptap/extension-image";
-import { useEditor, EditorContent } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import Placeholder from "@tiptap/extension-placeholder";
 import CodeBlock from "@tiptap/extension-code-block";
+import Image from "@tiptap/extension-image";
+import Placeholder from "@tiptap/extension-placeholder";
+import { EditorContent, useEditor } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { NoteReference, TiptapDocument } from "@/domain/note/note.types";
 import {
   BlockIdExtension,
   CalloutNode,
+  defaultSlashCommands,
   ToggleNode,
   WikilinkMark,
-  defaultSlashCommands,
 } from "./extensions";
 import { SlashCommandMenu } from "./toolbar/SlashCommandMenu";
-import type {
-  NoteReference,
-  TiptapDocument,
-} from "@/domain/note/note.types";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 interface SlashMenuState {
   query: string;
@@ -80,54 +77,57 @@ export function Editor({
   );
   const [wikilinkItems, setWikilinkItems] = useState<WikilinkMenuItem[]>([]);
 
-  const updateSlashMenu = useCallback((instance: TiptapEditor) => {
-    if (!editable) {
-      setSlashMenu(null);
-      return;
-    }
+  const updateSlashMenu = useCallback(
+    (instance: TiptapEditor) => {
+      if (!editable) {
+        setSlashMenu(null);
+        return;
+      }
 
-    const { state, view } = instance;
-    const { selection } = state;
+      const { state, view } = instance;
+      const { selection } = state;
 
-    if (!selection.empty) {
-      setSlashMenu(null);
-      return;
-    }
+      if (!selection.empty) {
+        setSlashMenu(null);
+        return;
+      }
 
-    const { $from } = selection;
-    const textBefore = $from.parent.textBetween(0, $from.parentOffset, "", "");
-    const match = /\/([^\s/]*)$/.exec(textBefore);
+      const { $from } = selection;
+      const textBefore = $from.parent.textBetween(0, $from.parentOffset, "", "");
+      const match = /\/([^\s/]*)$/.exec(textBefore);
 
-    if (!match) {
-      setSlashMenu(null);
-      return;
-    }
+      if (!match) {
+        setSlashMenu(null);
+        return;
+      }
 
-    const query = match[1] ?? "";
-    const matchingItems = defaultSlashCommands.filter((item) =>
-      item.title.toLowerCase().includes(query.toLowerCase())
-    );
+      const query = match[1] ?? "";
+      const matchingItems = defaultSlashCommands.filter((item) =>
+        item.title.toLowerCase().includes(query.toLowerCase())
+      );
 
-    if (matchingItems.length === 0) {
-      setSlashMenu(null);
-      return;
-    }
+      if (matchingItems.length === 0) {
+        setSlashMenu(null);
+        return;
+      }
 
-    const containerRect = editorRootRef.current?.getBoundingClientRect();
-    const caretRect = view.coordsAtPos(selection.from);
+      const containerRect = editorRootRef.current?.getBoundingClientRect();
+      const caretRect = view.coordsAtPos(selection.from);
 
-    setSlashMenu({
-      query,
-      range: {
-        from: selection.from - match[0].length,
-        to: selection.from,
-      },
-      position: {
-        top: containerRect ? caretRect.bottom - containerRect.top + 8 : 0,
-        left: containerRect ? caretRect.left - containerRect.left : 0,
-      },
-    });
-  }, [editable]);
+      setSlashMenu({
+        query,
+        range: {
+          from: selection.from - match[0].length,
+          to: selection.from,
+        },
+        position: {
+          top: containerRect ? caretRect.bottom - containerRect.top + 8 : 0,
+          left: containerRect ? caretRect.left - containerRect.left : 0,
+        },
+      });
+    },
+    [editable]
+  );
 
   const updateWikilinkMenu = useCallback(
     (instance: TiptapEditor) => {
@@ -206,7 +206,7 @@ export function Editor({
       const normalizedTarget = currentTarget.toLowerCase();
       const items: WikilinkMenuItem[] = matchingNotes.map((note) => ({
         title: note.title,
-        description: "Link existing note",
+        description: "Var olan nota bağlan",
         icon: "[[",
         note,
       }));
@@ -219,8 +219,8 @@ export function Editor({
         )
       ) {
         items.push({
-          title: `Create "${currentTarget}"`,
-          description: "Create note and insert resolved wikilink",
+          title: `"${currentTarget}" notunu oluştur`,
+          description: "Not oluştur ve çözümlenmiş wikilink ekle",
           icon: "+",
           createTarget: currentTarget,
         });
@@ -251,7 +251,7 @@ export function Editor({
         allowBase64: false,
       }),
       Placeholder.configure({
-        placeholder: 'Type "/" for commands, or start writing...',
+        placeholder: 'Komutlar için "/" yaz ya da notunu yazmaya başla...',
         emptyEditorClass: "is-editor-empty",
       }),
       BlockIdExtension,
@@ -273,14 +273,12 @@ export function Editor({
       updateSlashMenu(editor);
       updateWikilinkMenu(editor);
 
-      // Debounced auto-save
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
+
       saveTimeoutRef.current = setTimeout(() => {
-        const json = JSON.parse(
-          JSON.stringify(editor.getJSON())
-        ) as TiptapDocument;
+        const json = JSON.parse(JSON.stringify(editor.getJSON())) as TiptapDocument;
         onSave?.(json);
       }, 1000);
     },
@@ -294,7 +292,6 @@ export function Editor({
     },
   });
 
-  // Cleanup timeout on unmount
   useEffect(() => {
     return () => {
       if (saveTimeoutRef.current) {
@@ -319,7 +316,6 @@ export function Editor({
     return () => document.removeEventListener("keydown", handleEscape);
   }, [slashMenu, wikilinkMenu]);
 
-  // Handle wikilink clicks
   const handleClick = useCallback(
     async (e: React.MouseEvent) => {
       const target = e.target as HTMLElement;
@@ -346,7 +342,7 @@ export function Editor({
         }
 
         const shouldCreate = window.confirm(
-          `Create note "${wikilinkTarget}" from this wikilink?`
+          `Bu wikilinkten "${wikilinkTarget}" notu oluşturulsun mu?`
         );
 
         if (!shouldCreate) {
@@ -366,12 +362,7 @@ export function Editor({
         return;
       }
 
-      editor
-        .chain()
-        .focus()
-        .deleteRange(slashMenu.range)
-        .run();
-
+      editor.chain().focus().deleteRange(slashMenu.range).run();
       commandItem.command(editor);
       setSlashMenu(null);
     },
@@ -445,11 +436,7 @@ export function Editor({
   }
 
   return (
-    <div
-      ref={editorRootRef}
-      className="graffle-editor"
-      onClick={handleClick}
-    >
+    <div ref={editorRootRef} className="graffle-editor" onClick={handleClick}>
       <EditorContent editor={editor} />
       {wikilinkMenu && wikilinkItems.length > 0 ? (
         <SlashCommandMenu

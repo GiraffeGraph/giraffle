@@ -22,27 +22,27 @@ export default function RegisterPage() {
     <div className="auth-page">
       <div className="auth-card">
         <div className="auth-header">
-          <span className="auth-logo">🦒</span>
-          <h1 className="auth-title">Create your account</h1>
-          <p className="auth-subtitle">Start building your knowledge graph</p>
+          <span className="auth-logo">G</span>
+          <h1 className="auth-title">Hesabını oluştur</h1>
+          <p className="auth-subtitle">Bilgi ağını kurmaya başla</p>
         </div>
 
         <form action={handleSubmit} className="auth-form">
           {error && <div className="auth-error">{error}</div>}
 
           <div className="auth-field">
-            <label htmlFor="name">Name</label>
+            <label htmlFor="name">Ad</label>
             <input
               id="name"
               name="name"
               type="text"
-              placeholder="Your name"
+              placeholder="Adın"
               autoFocus
             />
           </div>
 
           <div className="auth-field">
-            <label htmlFor="email">Email</label>
+            <label htmlFor="email">E-posta</label>
             <input
               id="email"
               name="email"
@@ -53,26 +53,26 @@ export default function RegisterPage() {
           </div>
 
           <div className="auth-field">
-            <label htmlFor="password">Password</label>
+            <label htmlFor="password">Şifre</label>
             <input
               id="password"
               name="password"
               type="password"
-              placeholder="Min 6 characters"
+              placeholder="En az 8 karakter"
               required
-              minLength={6}
+              minLength={8}
             />
           </div>
 
           <button type="submit" className="auth-submit" disabled={isLoading}>
-            {isLoading ? "Creating account..." : "Create Account"}
+            {isLoading ? "Hesap oluşturuluyor..." : "Hesap Oluştur"}
           </button>
         </form>
 
         <div className="auth-footer">
-          <span>Already have an account?</span>
+          <span>Zaten hesabın var mı?</span>
           <Link href="/login" className="auth-link">
-            Sign in
+            Giriş yap
           </Link>
         </div>
       </div>

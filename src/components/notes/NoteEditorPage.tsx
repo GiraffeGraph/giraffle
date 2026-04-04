@@ -1,9 +1,15 @@
 "use client";
 
+import type { MouseEvent as ReactMouseEvent } from "react";
 import { useCallback, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Editor } from "@/components/editor/Editor";
+import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
+import type { BacklinkResult } from "@/domain/link/link.types";
+import { DEFAULT_NOTE_TITLE } from "@/domain/note/note.types";
+import type { NoteReference, TiptapDocument } from "@/domain/note/note.types";
 import {
+  archiveNoteAction,
   createNoteFromWikilinkAction,
   findNoteByTitleAction,
   getNoteExportAction,
@@ -11,8 +17,6 @@ import {
   searchNotesByTitleAction,
   updateNoteAction,
 } from "@/server/api/notes";
-import type { NoteReference, TiptapDocument } from "@/domain/note/note.types";
-import type { BacklinkResult } from "@/domain/link/link.types";
 
 interface NoteEditorPageProps {
   note: {
@@ -42,6 +46,10 @@ export function NoteEditorPage({
     note.folderId
   );
   const [isPublished, setIsPublished] = useState(note.isPublished);
+  const [contextMenuPosition, setContextMenuPosition] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
   const [isExportPending, startExportTransition] = useTransition();
   const router = useRouter();
 
@@ -57,7 +65,7 @@ export function NoteEditorPage({
   const handleTitleChange = useCallback(
     async (newTitle: string) => {
       setTitle(newTitle);
-      await updateNoteAction(note.id, { title: newTitle || "Untitled" });
+      await updateNoteAction(note.id, { title: newTitle || DEFAULT_NOTE_TITLE });
     },
     [note.id]
   );
@@ -95,6 +103,15 @@ export function NoteEditorPage({
     window.open(`/p/${note.id}`, "_blank", "noopener,noreferrer");
   }, [isPublished, note.id]);
 
+  const handleCopyNoteLink = useCallback(async () => {
+    await navigator.clipboard.writeText(`${window.location.origin}/notes/${note.id}`);
+  }, [note.id]);
+
+  const handleArchiveNote = useCallback(async () => {
+    await archiveNoteAction(note.id);
+    router.push("/dashboard");
+  }, [note.id, router]);
+
   const handleSave = useCallback(
     async (content: TiptapDocument) => {
       await saveNoteContentAction(note.id, content);
@@ -124,16 +141,103 @@ export function NoteEditorPage({
     [router]
   );
 
+  const closeContextMenu = useCallback(() => {
+    setContextMenuPosition(null);
+  }, []);
+
+  const openContextMenuAtPointer = useCallback(
+    (event: ReactMouseEvent<HTMLElement>) => {
+      event.preventDefault();
+      setContextMenuPosition({
+        x: event.clientX,
+        y: event.clientY,
+      });
+    },
+    []
+  );
+
+  const openContextMenuFromTrigger = useCallback(
+    (event: ReactMouseEvent<HTMLButtonElement>) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const rect = event.currentTarget.getBoundingClientRect();
+      setContextMenuPosition({
+        x: rect.right - 14,
+        y: rect.bottom + 8,
+      });
+    },
+    []
+  );
+
+  const noteContextItems = useMemo<ContextMenuItem[]>(
+    () => [
+      {
+        label: isPublished ? "Yayından Kaldır" : "Yayınla",
+        hint: "Notun yayın durumunu değiştir",
+        onSelect: handlePublishToggle,
+      },
+      {
+        label: "Not Bağlantısını Kopyala",
+        hint: "Dahili not adresini panoya kopyala",
+        onSelect: handleCopyNoteLink,
+      },
+      {
+        label: "Markdown Kopyala",
+        hint: "Dışa aktarılan Markdown sürümünü kopyala",
+        onSelect: () => handleCopyExport("markdown"),
+      },
+      {
+        label: "MDX Kopyala",
+        hint: "Dışa aktarılan MDX sürümünü kopyala",
+        onSelect: () => handleCopyExport("mdx"),
+      },
+      {
+        label: "Yayındaki Sayfayı Aç",
+        hint: "Genel görünümü yeni sekmede aç",
+        disabled: !isPublished,
+        onSelect: handleOpenPublishedPage,
+      },
+      {
+        label: "Arşive Taşı",
+        hint: "Notu aktif listelerden kaldır",
+        tone: "danger",
+        onSelect: handleArchiveNote,
+      },
+    ],
+    [
+      handleArchiveNote,
+      handleCopyExport,
+      handleCopyNoteLink,
+      handleOpenPublishedPage,
+      handlePublishToggle,
+      isPublished,
+    ]
+  );
+
   return (
     <div className="note-page">
-      <div className="note-header">
+      <div className="note-header" onContextMenu={openContextMenuAtPointer}>
+        <div className="note-status-row">
+          <span className={`note-status-pill ${isPublished ? "published" : "draft"}`}>
+            {isPublished ? "Yayında" : "Taslak"}
+          </span>
+          <span className="note-status-text">Otomatik kaydetme açık</span>
+          <button
+            type="button"
+            className="context-trigger"
+            onClick={openContextMenuFromTrigger}
+            aria-label="Not menüsünü aç"
+          >
+            •••
+          </button>
+        </div>
         <div className="note-toolbar">
           <select
             className="note-folder-select"
             value={currentFolderId ?? ""}
             onChange={(event) => handleFolderChange(event.target.value)}
           >
-            <option value="">Workspace root</option>
+            <option value="">Çalışma alanı kökü</option>
             {folderOptions.map((folder) => (
               <option key={folder.id} value={folder.id}>
                 {folder.name}
@@ -142,28 +246,28 @@ export function NoteEditorPage({
           </select>
 
           <button className="note-toolbar-btn" onClick={handlePublishToggle}>
-            {isPublished ? "Unpublish" : "Publish"}
+            {isPublished ? "Yayından Kaldır" : "Yayınla"}
           </button>
           <button
             className="note-toolbar-btn"
             disabled={isExportPending}
             onClick={() => handleCopyExport("markdown")}
           >
-            Copy Markdown
+            Markdown Kopyala
           </button>
           <button
             className="note-toolbar-btn"
             disabled={isExportPending}
             onClick={() => handleCopyExport("mdx")}
           >
-            Copy MDX
+            MDX Kopyala
           </button>
           <button
             className="note-toolbar-btn"
             disabled={!isPublished}
             onClick={handleOpenPublishedPage}
           >
-            Open Published
+            Yayındaki Sayfayı Aç
           </button>
         </div>
 
@@ -171,7 +275,7 @@ export function NoteEditorPage({
           className="note-title-input"
           value={title}
           onChange={(event) => handleTitleChange(event.target.value)}
-          placeholder="Untitled"
+          placeholder={DEFAULT_NOTE_TITLE}
           spellCheck={false}
         />
 
@@ -205,9 +309,9 @@ export function NoteEditorPage({
       {backlinks.length > 0 ? (
         <div className="backlinks-section">
           <div className="backlinks-header">
-            <span className="backlinks-icon">Link</span>
+            <span className="backlinks-icon">Bağ</span>
             <span className="backlinks-title">
-              Backlinks ({backlinks.length})
+              Geri Bağlantılar ({backlinks.length})
             </span>
           </div>
           <div className="backlinks-list">
@@ -225,6 +329,12 @@ export function NoteEditorPage({
           </div>
         </div>
       ) : null}
+
+      <ContextMenu
+        items={noteContextItems}
+        position={contextMenuPosition}
+        onClose={closeContextMenu}
+      />
     </div>
   );
 }
@@ -233,7 +343,9 @@ function buildFolderLabel(
   folder: { id: string; name: string; parentId: string | null },
   folders: Array<{ id: string; name: string; parentId: string | null }>
 ) {
-  const foldersById = new Map(folders.map((candidate) => [candidate.id, candidate]));
+  const foldersById = new Map(
+    folders.map((candidate) => [candidate.id, candidate])
+  );
   const labels = [folder.name];
   let currentParentId = folder.parentId;
 

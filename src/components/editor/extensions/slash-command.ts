@@ -12,94 +12,93 @@ export interface SlashCommandItem {
 
 export const defaultSlashCommands: SlashCommandItem[] = [
   {
-    title: "Text",
-    description: "Plain text block",
+    title: "Metin",
+    description: "Düz metin bloğu",
     icon: "TXT",
     command: (editor) => {
       editor.chain().focus().setParagraph().run();
     },
   },
   {
-    title: "Heading 1",
-    description: "Large section heading",
+    title: "Başlık 1",
+    description: "Büyük bölüm başlığı",
     icon: "H1",
     command: (editor) => {
       editor.chain().focus().toggleHeading({ level: 1 }).run();
     },
   },
   {
-    title: "Heading 2",
-    description: "Medium section heading",
+    title: "Başlık 2",
+    description: "Orta bölüm başlığı",
     icon: "H2",
     command: (editor) => {
       editor.chain().focus().toggleHeading({ level: 2 }).run();
     },
   },
   {
-    title: "Heading 3",
-    description: "Small section heading",
+    title: "Başlık 3",
+    description: "Küçük bölüm başlığı",
     icon: "H3",
     command: (editor) => {
       editor.chain().focus().toggleHeading({ level: 3 }).run();
     },
   },
   {
-    title: "Bullet List",
-    description: "Unordered list",
+    title: "Madde Listesi",
+    description: "Sırasız liste",
     icon: "UL",
     command: (editor) => {
       editor.chain().focus().toggleBulletList().run();
     },
   },
   {
-    title: "Numbered List",
-    description: "Ordered list",
+    title: "Numaralı Liste",
+    description: "Sıralı liste",
     icon: "1.",
     command: (editor) => {
       editor.chain().focus().toggleOrderedList().run();
     },
   },
   {
-    title: "Code Block",
-    description: "Code snippet",
+    title: "Kod Bloğu",
+    description: "Kod parçası",
     icon: "</>",
     command: (editor) => {
       editor.chain().focus().toggleCodeBlock().run();
     },
   },
   {
-    title: "Quote",
-    description: "Blockquote",
+    title: "Alıntı",
+    description: "Alıntı bloğu",
     icon: "QT",
     command: (editor) => {
       editor.chain().focus().toggleBlockquote().run();
     },
   },
   {
-    title: "Divider",
-    description: "Horizontal rule",
+    title: "Ayraç",
+    description: "Yatay çizgi",
     icon: "---",
     command: (editor) => {
       editor.chain().focus().setHorizontalRule().run();
     },
   },
   {
-    title: "Callout",
-    description: "Highlighted note block",
+    title: "Vurgu Kutusu",
+    description: "Öne çıkan not bloğu",
     icon: "!",
     command: (editor) => {
       const tone =
         typeof window === "undefined"
           ? "info"
           : window
-              .prompt("Callout tone (info, tip, warning, danger)", "info")
+              .prompt("Vurgu tonu (info, tip, warning, danger)", "info")
               ?.trim()
               .toLowerCase() || "info";
       const title =
         typeof window === "undefined"
-          ? "Callout"
-          : window.prompt("Callout title", "Key takeaway")?.trim() ||
-            "Callout";
+          ? "Vurgu"
+          : window.prompt("Vurgu başlığı", "Önemli nokta")?.trim() || "Vurgu";
 
       editor
         .chain()
@@ -120,14 +119,15 @@ export const defaultSlashCommands: SlashCommandItem[] = [
     },
   },
   {
-    title: "Toggle",
-    description: "Collapsible nested block",
+    title: "Açılır Blok",
+    description: "Açılıp kapanan iç içe blok",
     icon: "+/-",
     command: (editor) => {
       const summary =
         typeof window === "undefined"
-          ? "Toggle"
-          : window.prompt("Toggle summary", "Details")?.trim() || "Toggle";
+          ? "Açılır Blok"
+          : window.prompt("Açılır blok özeti", "Ayrıntılar")?.trim() ||
+            "Açılır Blok";
 
       editor
         .chain()
@@ -147,14 +147,14 @@ export const defaultSlashCommands: SlashCommandItem[] = [
     },
   },
   {
-    title: "Image",
-    description: "Embed an image by URL",
+    title: "Görsel",
+    description: "URL ile görsel ekle",
     icon: "IMG",
     command: (editor) => {
       const src =
         typeof window === "undefined"
           ? ""
-          : window.prompt("Image URL", "https://")?.trim() || "";
+          : window.prompt("Görsel URL'si", "https://")?.trim() || "";
 
       if (!src) {
         return;
@@ -163,14 +163,14 @@ export const defaultSlashCommands: SlashCommandItem[] = [
       const alt =
         typeof window === "undefined"
           ? ""
-          : window.prompt("Alt text", "")?.trim() || "";
+          : window.prompt("Alt metin", "")?.trim() || "";
 
       editor.chain().focus().setImage({ src, alt }).run();
     },
   },
   {
-    title: "Table Scaffold",
-    description: "Insert Markdown table content while rich tables are deferred",
+    title: "Tablo İskeleti",
+    description: "Zengin tablo gelene kadar Markdown tablo ekle",
     icon: "TB",
     command: (editor) => {
       editor
@@ -184,7 +184,7 @@ export const defaultSlashCommands: SlashCommandItem[] = [
           content: [
             {
               type: "text",
-              text: "| Column 1 | Column 2 |\n| --- | --- |\n| Value | Value |",
+              text: "| Sütun 1 | Sütun 2 |\n| --- | --- |\n| Değer | Değer |",
             },
           ],
         })

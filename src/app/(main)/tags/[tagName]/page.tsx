@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getNotesForTagAction } from "@/server/api/tags";
+import { formatDate } from "@/lib/utils";
 
 interface TagPageProps {
   params: Promise<{ tagName: string }>;
@@ -13,14 +14,12 @@ export default async function TagPage({ params }: TagPageProps) {
     <div className="dashboard">
       <div className="dashboard-header">
         <h1 className="dashboard-title">#{tagName}</h1>
-        <p className="dashboard-subtitle">
-          Indexed notes using this tag.
-        </p>
+        <p className="dashboard-subtitle">Bu etiketi kullanan indekslenmiş notlar.</p>
       </div>
 
       {notes.length === 0 ? (
         <div className="dashboard-empty">
-          <p className="dashboard-empty-text">No notes found for this tag.</p>
+          <p className="dashboard-empty-text">Bu etiket için not bulunamadı.</p>
         </div>
       ) : (
         <div className="dashboard-grid">
@@ -30,13 +29,10 @@ export default async function TagPage({ params }: TagPageProps) {
               href={`/notes/${note.id}`}
               className="dashboard-note-card"
             >
-              <div className="dashboard-note-card-icon">{note.icon ?? "Note"}</div>
+              <div className="dashboard-note-card-icon">{note.icon ?? "Not"}</div>
               <div className="dashboard-note-card-title">{note.title}</div>
               <div className="dashboard-note-card-date">
-                {new Date(note.updatedAt).toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                })}
+                {formatDate(new Date(note.updatedAt))}
               </div>
             </Link>
           ))}

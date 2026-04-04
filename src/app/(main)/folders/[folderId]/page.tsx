@@ -4,6 +4,7 @@ import { TemplatePicker } from "@/components/templates/TemplatePicker";
 import { getFolderAction } from "@/server/api/folders";
 import { createNoteAction } from "@/server/api/notes";
 import { getTemplatesAction } from "@/server/api/templates";
+import { formatDate } from "@/lib/utils";
 
 interface FolderPageProps {
   params: Promise<{ folderId: string }>;
@@ -50,20 +51,21 @@ export default async function FolderPage({ params }: FolderPageProps) {
       <div className="dashboard-header">
         <h1 className="dashboard-title">{resolvedFolder.name}</h1>
         <p className="dashboard-subtitle">
-          {resolvedFolder.notes.length} notes • {resolvedFolder.children.length} child folders
+          {resolvedFolder.notes.length} not · {resolvedFolder.children.length} alt
+          klasör
         </p>
       </div>
 
       <div className="dashboard-quick-actions">
         <form action={handleCreateNote}>
           <button type="submit" className="dashboard-empty-btn">
-            <span>+</span> New Note Here
+            <span>+</span> Burada Yeni Not
           </button>
         </form>
         <TemplatePicker
           templates={templateSummaries}
           folderId={resolvedFolder.id}
-          buttonLabel="Template In Folder"
+          buttonLabel="Bu Klasörde Şablon"
           buttonClassName="dashboard-secondary-btn"
         />
       </div>
@@ -76,9 +78,7 @@ export default async function FolderPage({ params }: FolderPageProps) {
               href={`/folders/${childFolder.id}`}
               className="dashboard-note-card"
             >
-              <div className="dashboard-note-card-icon">
-                {childFolder.icon ?? "Dir"}
-              </div>
+              <div className="dashboard-note-card-icon">{childFolder.icon ?? "Kls"}</div>
               <div className="dashboard-note-card-title">{childFolder.name}</div>
             </Link>
           ))}
@@ -87,9 +87,7 @@ export default async function FolderPage({ params }: FolderPageProps) {
 
       {resolvedFolder.notes.length === 0 ? (
         <div className="dashboard-empty">
-          <p className="dashboard-empty-text">
-            This folder does not have any notes yet.
-          </p>
+          <p className="dashboard-empty-text">Bu klasörde henüz not yok.</p>
         </div>
       ) : (
         <div className="dashboard-grid">
@@ -99,13 +97,10 @@ export default async function FolderPage({ params }: FolderPageProps) {
               href={`/notes/${note.id}`}
               className="dashboard-note-card"
             >
-              <div className="dashboard-note-card-icon">{note.icon ?? "Note"}</div>
+              <div className="dashboard-note-card-icon">{note.icon ?? "Not"}</div>
               <div className="dashboard-note-card-title">{note.title}</div>
               <div className="dashboard-note-card-date">
-                {new Date(note.updatedAt).toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                })}
+                {formatDate(new Date(note.updatedAt))}
               </div>
             </Link>
           ))}

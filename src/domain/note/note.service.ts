@@ -6,6 +6,9 @@ import { extractAndSaveLinks, resolveLinksForNote } from "@/domain/link/link.ser
 import { normalizeWikilinkTarget } from "@/domain/link/wikilink.parser";
 import { getAllFolders } from "@/domain/folder/folder.service";
 import { syncNoteTags } from "@/domain/tag/tag.service";
+import {
+  DEFAULT_NOTE_TITLE,
+} from "./note.types";
 import type {
   CreateNoteInput,
   InsertBlockInput,
@@ -62,7 +65,7 @@ export async function createNote(
   const note = await db.$transaction(async (tx) => {
     const createdNote = await tx.note.create({
       data: {
-        title: input.title ?? "Untitled",
+        title: input.title ?? DEFAULT_NOTE_TITLE,
         icon: input.icon,
         folderId: input.folderId,
         templateId: input.templateId,
@@ -75,7 +78,7 @@ export async function createNote(
     return createdNote;
   });
 
-  if (note.title !== "Untitled") {
+  if (note.title !== DEFAULT_NOTE_TITLE) {
     await resolveLinksForNote(userId, note.id, note.title);
   }
 
