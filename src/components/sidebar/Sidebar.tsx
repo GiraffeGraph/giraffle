@@ -149,6 +149,8 @@ export function Sidebar({
   const [navModal, setNavModal] = useState<{
     key: string;
     label: string;
+    x: number;
+    y: number;
     info?: string;
     isSearch?: boolean;
     actions?: Array<{ label: string; onClick: () => void; primary?: boolean }>;
@@ -183,7 +185,8 @@ export function Sidebar({
         setNavModal(null);
         return;
       }
-      setNavModal({ key, label, ...extra });
+      const rect = event.currentTarget.getBoundingClientRect();
+      setNavModal({ key, label, x: rect.right + 6, y: rect.top, ...extra });
     },
     [navModal]
   );
@@ -1367,6 +1370,7 @@ export function Sidebar({
         <div className="sidebar-nav-modal-overlay" onClick={closeNavModal}>
           <div
             className="sidebar-nav-modal"
+            style={{ left: navModal.x, top: navModal.y }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="sidebar-nav-modal-header">

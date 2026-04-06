@@ -5388,8 +5388,19 @@ body::before {
 
 .sidebar-item.active,
 .sidebar-tag-item.active {
-  background: var(--surface-accent-blend);
+  background: transparent;
   color: var(--text-primary);
+}
+
+.sidebar-item.active::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 20%;
+  height: 60%;
+  width: 2px;
+  border-radius: 999px;
+  background: var(--accent);
 }
 
 /* Icon */
@@ -5643,60 +5654,55 @@ body::before {
   position: fixed;
   inset: 0;
   z-index: 9998;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(2px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
+  background: transparent;
 }
 
 .sidebar-nav-modal {
-  width: 100%;
-  max-width: 340px;
-  border-radius: 14px;
+  position: fixed;
+  width: 220px;
+  border-radius: 10px;
   background: var(--surface-glass-strong);
   border: 1px solid var(--border-soft);
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
   backdrop-filter: blur(20px);
   overflow: hidden;
 }
 
 .sidebar-nav-modal-header {
-  padding: 16px 16px 12px;
+  padding: 10px 12px 8px;
   border-bottom: 1px solid var(--border-soft);
 }
 
 .sidebar-nav-modal-title {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--text-primary);
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
 
 .sidebar-nav-modal-desc {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-muted);
   line-height: 1.4;
 }
 
 .sidebar-nav-modal-body {
-  padding: 8px;
+  padding: 4px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
 }
 
 .sidebar-nav-modal-btn {
   display: flex;
   align-items: center;
   width: 100%;
-  padding: 9px 10px;
+  padding: 6px 8px;
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   background: transparent;
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 400;
   cursor: pointer;
   text-align: left;
@@ -5714,17 +5720,17 @@ body::before {
 }
 
 .sidebar-nav-modal-search {
-  padding: 8px 8px 4px;
+  padding: 4px 4px 2px;
 }
 
 .sidebar-nav-modal-input {
   width: 100%;
-  padding: 9px 12px;
+  padding: 7px 10px;
   border: 1px solid var(--border-soft);
-  border-radius: 8px;
+  border-radius: 6px;
   background: var(--surface-highlight);
   color: var(--text-primary);
-  font-size: 13px;
+  font-size: 12px;
   outline: none;
 }
 
