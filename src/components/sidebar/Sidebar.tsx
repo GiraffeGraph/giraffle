@@ -146,13 +146,11 @@ export function Sidebar({
   const [isSidebarResizing, setIsSidebarResizing] = useState(false);
   const [collapsedSections, setCollapsedSections] =
     useState<SidebarCollapseState>(() => loadSidebarCollapseState());
-  const [navActionPopover, setNavActionPopover] = useState<{
+  const [navModal, setNavModal] = useState<{
     key: string;
-    x: number;
-    y: number;
+    label: string;
     info?: string;
     isSearch?: boolean;
-    hasActions?: boolean;
     actions?: Array<{ label: string; onClick: () => void; primary?: boolean }>;
   } | null>(null);
   const deferredSearchQuery = useDeferredValue(searchQuery);
@@ -169,9 +167,10 @@ export function Sidebar({
     persistAppTheme(DEFAULT_APP_THEME);
   }, []);
 
-  const toggleNavActionPopover = useCallback(
+  const openNavModal = useCallback(
     (
       key: string,
+      label: string,
       event: ReactMouseEvent<HTMLButtonElement>,
       extra?: {
         info?: string;
@@ -180,17 +179,16 @@ export function Sidebar({
       }
     ) => {
       event.stopPropagation();
-      if (navActionPopover?.key === key) {
-        setNavActionPopover(null);
+      if (navModal?.key === key) {
+        setNavModal(null);
         return;
       }
-      const rect = event.currentTarget.getBoundingClientRect();
-      setNavActionPopover({ key, x: rect.right + 8, y: rect.top, ...extra });
+      setNavModal({ key, label, ...extra });
     },
-    [navActionPopover]
+    [navModal]
   );
 
-  const closeNavActionPopover = useCallback(() => setNavActionPopover(null), []);
+  const closeNavModal = useCallback(() => setNavModal(null), []);
 
   const currentNoteId =
     activeNoteId ?? extractActiveNoteId(pathname) ?? undefined;
@@ -1126,15 +1124,15 @@ export function Sidebar({
                   <div key={path} className="sidebar-nav-item-row">
                     <button
                       className={`sidebar-item ${pathname === path ? "active" : ""}`}
-                      onClick={() => { closeNavActionPopover(); router.push(path); }}
+                      onClick={() => { closeNavModal(); router.push(path); }}
                     >
                       <span className="sidebar-item-icon">{icon}</span>
                       <span className="sidebar-item-label">{label}</span>
                     </button>
                     <button
                       type="button"
-                      className={`sidebar-nav-menu${navActionPopover?.key === path ? " active" : ""}`}
-                      onClick={(e) => toggleNavActionPopover(path, e, { info, isSearch: searchAction, actions })}
+                      className={`sidebar-nav-menu${navModal?.key === path ? " active" : ""}`}
+                      onClick={(e) => openNavModal(path, label, e, { info, isSearch: searchAction, actions })}
                       aria-label={`${label} menüsü`}
                     >
                       ···
@@ -1365,59 +1363,52 @@ export function Sidebar({
         onQueryChange={setPaletteQuery}
         onClose={closePalette}
       />
-      {navActionPopover ? (() => {
-        const { info, isSearch, actions: navActions } = navActionPopover;
-        return (
-          <>
-            <div
-              className="sidebar-nav-popover-backdrop"
-              style={{ position: "fixed", inset: 0, zIndex: 9998 }}
-              onClick={closeNavActionPopover}
-            />
-            <div
-              className="sidebar-nav-action-popover"
-              style={{
-                position: "fixed",
-                left: navActionPopover.x,
-                top: navActionPopover.y,
-                zIndex: 9999,
-              }}
-            >
-              {info ? (
-                <div className="sidebar-nav-popover-info">{info}</div>
+      {navModal ? (
+        <div className="sidebar-nav-modal-overlay" onClick={closeNavModal}>
+          <div
+            className="sidebar-nav-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="sidebar-nav-modal-header">
+              <div className="sidebar-nav-modal-title">{navModal.label}</div>
+              {navModal.info ? (
+                <div className="sidebar-nav-modal-desc">{navModal.info}</div>
               ) : null}
-              {isSearch ? (
-                <form
-                  className="sidebar-nav-popover-search"
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    const q = (e.currentTarget.elements.namedItem("q") as HTMLInputElement).value.trim();
-                    closeNavActionPopover();
-                    router.push(`/search${q ? `?q=${encodeURIComponent(q)}` : ""}`);
-                  }}
-                >
-                  <input
-                    name="q"
-                    className="sidebar-nav-popover-input"
-                    placeholder="Ara..."
-                    autoFocus
-                  />
-                </form>
+            </div>
+            <div className="sidebar-nav-modal-body">
+              {navModal.isSearch ? (
+                <div className="sidebar-nav-modal-search">
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      const q = (e.currentTarget.elements.namedItem("q") as HTMLInputElement).value.trim();
+                      closeNavModal();
+                      router.push(`/search${q ? `?q=${encodeURIComponent(q)}` : ""}`);
+                    }}
+                  >
+                    <input
+                      name="q"
+                      className="sidebar-nav-modal-input"
+                      placeholder="Notlar, klasörler, şablonlar ara..."
+                      autoFocus
+                    />
+                  </form>
+                </div>
               ) : null}
-              {navActions?.map((action) => (
+              {navModal.actions?.map((action) => (
                 <button
                   key={action.label}
                   type="button"
-                  className={`sidebar-nav-popover-btn${action.primary ? " primary" : ""}`}
-                  onClick={() => { action.onClick(); closeNavActionPopover(); }}
+                  className={`sidebar-nav-modal-btn${action.primary ? " primary" : ""}`}
+                  onClick={() => { action.onClick(); closeNavModal(); }}
                 >
                   {action.label}
                 </button>
               ))}
             </div>
-          </>
-        );
-      })() : null}
+          </div>
+        </div>
+      ) : null}
     </aside>
   );
 }
