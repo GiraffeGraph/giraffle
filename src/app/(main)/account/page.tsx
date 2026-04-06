@@ -25,16 +25,6 @@ export default async function AccountPage() {
 
   return (
     <div className="dashboard account-page">
-      <section className="dashboard-hero">
-        <div className="dashboard-header">
-          <div className="dashboard-kicker">Hesap</div>
-          <h1 className="dashboard-title">Hesap ayarları</h1>
-          <p className="dashboard-subtitle">
-            Profilini güncelle, şifreni değiştir ve sıfırlama akışını yönet.
-          </p>
-        </div>
-      </section>
-
       <div className="templates-layout">
         <section className="templates-column">
           <div className="dashboard-section-head">

@@ -8,16 +8,6 @@ export default async function SettingsPage() {
 
   return (
     <div className="dashboard settings-page">
-      <section className="dashboard-hero">
-        <div className="dashboard-header">
-          <div className="dashboard-kicker">Ayarlar</div>
-          <h1 className="dashboard-title">Çalışma alanı ayarları</h1>
-          <p className="dashboard-subtitle">
-            Tema, sidebar davranışı, yerel işlem kuyruğu ve son sunucu işlemleri.
-          </p>
-        </div>
-      </section>
-
       <SettingsWorkspace
         operationLogs={operationLogs.map((entry) => ({
           ...entry,

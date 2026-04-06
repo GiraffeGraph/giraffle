@@ -22,14 +22,6 @@ export default async function InboxPage() {
   return (
     <div className="dashboard">
       <section className="dashboard-hero">
-        <div className="dashboard-header">
-          <div className="dashboard-kicker">Varsayılan yerleşim</div>
-          <h1 className="dashboard-title">Gelen kutusu</h1>
-          <p className="dashboard-subtitle">
-            Klasöre taşınmamış notlar önce burada toplanır.
-          </p>
-        </div>
-
         <div className="dashboard-quick-actions">
           <form action={handleCreateNote}>
             <button type="submit" className="dashboard-empty-btn">

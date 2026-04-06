@@ -35,14 +35,6 @@ export default async function DashboardPage() {
   return (
     <div className="dashboard">
       <section className="dashboard-hero">
-        <div className="dashboard-header">
-          <div className="dashboard-kicker">Çalışma alanı</div>
-          <h1 className="dashboard-title">Notlar</h1>
-          <p className="dashboard-subtitle">
-            Notlarını klasörler, etiketler ve bağlantılar etrafında düzenle.
-          </p>
-        </div>
-
         <div className="dashboard-stat-row">
           <div className="dashboard-stat-card">
             <span className="dashboard-stat-value">{notes.length}</span>

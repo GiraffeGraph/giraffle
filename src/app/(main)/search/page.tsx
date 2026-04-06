@@ -44,14 +44,6 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   return (
     <div className="dashboard search-page">
       <section className="dashboard-hero search-hero">
-        <div className="dashboard-header">
-          <div className="dashboard-kicker">Arama</div>
-          <h1 className="dashboard-title">Çalışma alanı araması</h1>
-          <p className="dashboard-subtitle">
-            Notlar, klasörler, şablonlar ve çözülmemiş bağlantılar arasında ara.
-          </p>
-        </div>
-
         <form className="search-form">
           <input
             type="search"

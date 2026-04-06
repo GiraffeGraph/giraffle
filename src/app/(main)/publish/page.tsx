@@ -6,16 +6,6 @@ export default async function PublishPage() {
 
   return (
     <div className="dashboard publish-page">
-      <section className="dashboard-hero">
-        <div className="dashboard-header">
-          <div className="dashboard-kicker">Yayın</div>
-          <h1 className="dashboard-title">Yayımdaki notlar</h1>
-          <p className="dashboard-subtitle">
-            Slug, yayın yolu ve dışa aktarılan çıktıyı tek yerden gör.
-          </p>
-        </div>
-      </section>
-
       <div className="search-result-grid">
         {exports.length === 0 ? (
           <div className="dashboard-empty">Yayında not yok.</div>

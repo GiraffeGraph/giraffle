@@ -146,7 +146,22 @@ export function Sidebar({
   const [isSidebarResizing, setIsSidebarResizing] = useState(false);
   const [collapsedSections, setCollapsedSections] =
     useState<SidebarCollapseState>(() => loadSidebarCollapseState());
+  const [navTooltip, setNavTooltip] = useState<{
+    text: string;
+    x: number;
+    y: number;
+  } | null>(null);
   const deferredSearchQuery = useDeferredValue(searchQuery);
+
+  const showNavTooltip = useCallback(
+    (text: string, event: ReactMouseEvent<HTMLSpanElement>) => {
+      const rect = event.currentTarget.getBoundingClientRect();
+      setNavTooltip({ text, x: rect.right + 8, y: rect.top + rect.height / 2 });
+    },
+    []
+  );
+
+  const hideNavTooltip = useCallback(() => setNavTooltip(null), []);
 
   const currentNoteId =
     activeNoteId ?? extractActiveNoteId(pathname) ?? undefined;
@@ -1004,87 +1019,34 @@ export function Sidebar({
               collapsible={false}
             >
               <nav className="sidebar-nav">
-                <button
-                  className={`sidebar-item ${
-                    pathname === "/dashboard" ? "active" : ""
-                  }`}
-                  onClick={() => router.push("/dashboard")}
-                >
-                  <span className="sidebar-item-icon">Ana</span>
-                  <span className="sidebar-item-label">Pano</span>
-                </button>
-                <button
-                  className={`sidebar-item ${
-                    pathname === "/inbox" ? "active" : ""
-                  }`}
-                  onClick={() => router.push("/inbox")}
-                >
-                  <span className="sidebar-item-icon">In</span>
-                  <span className="sidebar-item-label">Gelen kutusu</span>
-                </button>
-                <button
-                  className={`sidebar-item ${
-                    pathname === "/search" ? "active" : ""
-                  }`}
-                  onClick={() => router.push("/search")}
-                >
-                  <span className="sidebar-item-icon">Ara</span>
-                  <span className="sidebar-item-label">Arama</span>
-                </button>
-                <button
-                  className={`sidebar-item ${
-                    pathname === "/graph" ? "active" : ""
-                  }`}
-                  onClick={() => router.push("/graph")}
-                >
-                  <span className="sidebar-item-icon">Ağ</span>
-                  <span className="sidebar-item-label">Bağlantı ağı</span>
-                </button>
-                <button
-                  className={`sidebar-item ${
-                    pathname === "/templates" ? "active" : ""
-                  }`}
-                  onClick={() => router.push("/templates")}
-                >
-                  <span className="sidebar-item-icon">Tpl</span>
-                  <span className="sidebar-item-label">Şablonlar</span>
-                </button>
-                <button
-                  className={`sidebar-item ${
-                    pathname === "/publish" ? "active" : ""
-                  }`}
-                  onClick={() => router.push("/publish")}
-                >
-                  <span className="sidebar-item-icon">Pub</span>
-                  <span className="sidebar-item-label">Yayın</span>
-                </button>
-                <button
-                  className={`sidebar-item ${
-                    pathname === "/proposals" ? "active" : ""
-                  }`}
-                  onClick={() => router.push("/proposals")}
-                >
-                  <span className="sidebar-item-icon">YZ</span>
-                  <span className="sidebar-item-label">Öneriler</span>
-                </button>
-                <button
-                  className={`sidebar-item ${
-                    pathname === "/settings" ? "active" : ""
-                  }`}
-                  onClick={() => router.push("/settings")}
-                >
-                  <span className="sidebar-item-icon">Ay</span>
-                  <span className="sidebar-item-label">Ayarlar</span>
-                </button>
-                <button
-                  className={`sidebar-item ${
-                    pathname === "/account" ? "active" : ""
-                  }`}
-                  onClick={() => router.push("/account")}
-                >
-                  <span className="sidebar-item-icon">Hs</span>
-                  <span className="sidebar-item-label">Hesap</span>
-                </button>
+                {[
+                  { path: "/dashboard", icon: "Ana", label: "Pano", info: "Notlarını klasörler, etiketler ve bağlantılar etrafında düzenle." },
+                  { path: "/inbox", icon: "In", label: "Gelen kutusu", info: "Klasöre taşınmamış notlar önce burada toplanır." },
+                  { path: "/search", icon: "Ara", label: "Arama", info: "Notlar, klasörler, şablonlar ve çözülmemiş bağlantılar arasında ara." },
+                  { path: "/graph", icon: "Ağ", label: "Bağlantı ağı", info: "Notlar arasındaki bağlantıları görsel olarak keşfet." },
+                  { path: "/templates", icon: "Tpl", label: "Şablonlar", info: "Hazır şablonları yönet, yeni özel şablonlar oluştur." },
+                  { path: "/publish", icon: "Pub", label: "Yayın", info: "Slug, yayın yolu ve dışa aktarılan çıktıyı tek yerden gör." },
+                  { path: "/proposals", icon: "YZ", label: "Öneriler", info: "Önerileri incelenip uygulanacak yamalar olarak yönet." },
+                  { path: "/settings", icon: "Ay", label: "Ayarlar", info: "Tema, sidebar davranışı, yerel işlem kuyruğu ve son sunucu işlemleri." },
+                  { path: "/account", icon: "Hs", label: "Hesap", info: "Profilini güncelle, şifreni değiştir ve sıfırlama akışını yönet." },
+                ].map(({ path, icon, label, info }) => (
+                  <div key={path} className="sidebar-nav-item-row">
+                    <button
+                      className={`sidebar-item ${pathname === path ? "active" : ""}`}
+                      onClick={() => router.push(path)}
+                    >
+                      <span className="sidebar-item-icon">{icon}</span>
+                      <span className="sidebar-item-label">{label}</span>
+                    </button>
+                    <span
+                      className="sidebar-item-info"
+                      onMouseEnter={(e) => showNavTooltip(info, e)}
+                      onMouseLeave={hideNavTooltip}
+                    >
+                      i
+                    </span>
+                  </div>
+                ))}
               </nav>
             </SidebarGroup>
 
@@ -1309,6 +1271,21 @@ export function Sidebar({
         onQueryChange={setPaletteQuery}
         onClose={closePalette}
       />
+      {navTooltip ? (
+        <div
+          className="sidebar-nav-tooltip"
+          style={{
+            position: "fixed",
+            left: navTooltip.x,
+            top: navTooltip.y,
+            transform: "translateY(-50%)",
+            zIndex: 9999,
+            pointerEvents: "none",
+          }}
+        >
+          {navTooltip.text}
+        </div>
+      ) : null}
     </aside>
   );
 }

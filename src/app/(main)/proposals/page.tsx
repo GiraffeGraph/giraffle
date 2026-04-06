@@ -20,16 +20,6 @@ export default async function ProposalsPage() {
 
   return (
     <div className="dashboard proposals-page">
-      <section className="dashboard-hero">
-        <div className="dashboard-header">
-          <div className="dashboard-kicker">YZ öneri akışı</div>
-          <h1 className="dashboard-title">Öneri kuyruğu</h1>
-          <p className="dashboard-subtitle">
-            Önerileri doğrudan editör durumu yerine incelenip uygulanacak yamalar olarak yönet.
-          </p>
-        </div>
-      </section>
-
       <div className="templates-layout">
         <section className="templates-column">
           <div className="dashboard-section-head">

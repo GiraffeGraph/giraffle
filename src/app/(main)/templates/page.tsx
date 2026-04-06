@@ -73,16 +73,6 @@ export default async function TemplatesPage({ searchParams }: TemplatesPageProps
 
   return (
     <div className="dashboard templates-page">
-      <section className="dashboard-hero">
-        <div className="dashboard-header">
-          <div className="dashboard-kicker">Şablon kütüphanesi</div>
-          <h1 className="dashboard-title">Şablonlar</h1>
-          <p className="dashboard-subtitle">
-            Hazır şablonları yönet, yeni özel şablonlar oluştur.
-          </p>
-        </div>
-      </section>
-
       <div className="templates-layout">
         <section className="templates-column">
           <div className="dashboard-section-head">
