@@ -151,6 +151,11 @@ export function Sidebar({
     x: number;
     y: number;
   } | null>(null);
+  const [navActionPopover, setNavActionPopover] = useState<{
+    key: string;
+    x: number;
+    y: number;
+  } | null>(null);
   const deferredSearchQuery = useDeferredValue(searchQuery);
 
   const showNavTooltip = useCallback(
@@ -162,6 +167,21 @@ export function Sidebar({
   );
 
   const hideNavTooltip = useCallback(() => setNavTooltip(null), []);
+
+  const toggleNavActionPopover = useCallback(
+    (key: string, event: ReactMouseEvent<HTMLButtonElement>) => {
+      event.stopPropagation();
+      if (navActionPopover?.key === key) {
+        setNavActionPopover(null);
+        return;
+      }
+      const rect = event.currentTarget.getBoundingClientRect();
+      setNavActionPopover({ key, x: rect.right + 8, y: rect.top });
+    },
+    [navActionPopover]
+  );
+
+  const closeNavActionPopover = useCallback(() => setNavActionPopover(null), []);
 
   const currentNoteId =
     activeNoteId ?? extractActiveNoteId(pathname) ?? undefined;
@@ -1019,21 +1039,50 @@ export function Sidebar({
               collapsible={false}
             >
               <nav className="sidebar-nav">
-                {[
-                  { path: "/dashboard", icon: "Ana", label: "Pano", info: "Notlarını klasörler, etiketler ve bağlantılar etrafında düzenle." },
-                  { path: "/inbox", icon: "In", label: "Gelen kutusu", info: "Klasöre taşınmamış notlar önce burada toplanır." },
+                {((): Array<{
+                  path: string;
+                  icon: string;
+                  label: string;
+                  info: string;
+                  actions?: Array<{ label: string; onClick: () => void; primary?: boolean }>;
+                }> => [
+                  {
+                    path: "/dashboard",
+                    icon: "Ana",
+                    label: "Pano",
+                    info: `Notlarını düzenle · ${notes.length} not · ${templates.length} şablon`,
+                    actions: [
+                      { label: "Yeni not", onClick: handleCreateNote, primary: true },
+                      { label: "Şablondan oluştur", onClick: () => setTemplatePickerOpenSignal((s) => s + 1) },
+                    ],
+                  },
+                  {
+                    path: "/inbox",
+                    icon: "In",
+                    label: "Gelen kutusu",
+                    info: `Klasöre taşınmamış notlar · ${notes.filter((n) => !n.folderId).length} not`,
+                    actions: [
+                      { label: "Yeni not", onClick: handleCreateNote, primary: true },
+                      { label: "Şablondan oluştur", onClick: () => setTemplatePickerOpenSignal((s) => s + 1) },
+                    ],
+                  },
                   { path: "/search", icon: "Ara", label: "Arama", info: "Notlar, klasörler, şablonlar ve çözülmemiş bağlantılar arasında ara." },
                   { path: "/graph", icon: "Ağ", label: "Bağlantı ağı", info: "Notlar arasındaki bağlantıları görsel olarak keşfet." },
-                  { path: "/templates", icon: "Tpl", label: "Şablonlar", info: "Hazır şablonları yönet, yeni özel şablonlar oluştur." },
+                  {
+                    path: "/templates",
+                    icon: "Tpl",
+                    label: "Şablonlar",
+                    info: `Şablonları yönet · ${templates.length} şablon`,
+                  },
                   { path: "/publish", icon: "Pub", label: "Yayın", info: "Slug, yayın yolu ve dışa aktarılan çıktıyı tek yerden gör." },
                   { path: "/proposals", icon: "YZ", label: "Öneriler", info: "Önerileri incelenip uygulanacak yamalar olarak yönet." },
                   { path: "/settings", icon: "Ay", label: "Ayarlar", info: "Tema, sidebar davranışı, yerel işlem kuyruğu ve son sunucu işlemleri." },
                   { path: "/account", icon: "Hs", label: "Hesap", info: "Profilini güncelle, şifreni değiştir ve sıfırlama akışını yönet." },
-                ].map(({ path, icon, label, info }) => (
+                ])().map(({ path, icon, label, info, actions }) => (
                   <div key={path} className="sidebar-nav-item-row">
                     <button
                       className={`sidebar-item ${pathname === path ? "active" : ""}`}
-                      onClick={() => router.push(path)}
+                      onClick={() => { closeNavActionPopover(); router.push(path); }}
                     >
                       <span className="sidebar-item-icon">{icon}</span>
                       <span className="sidebar-item-label">{label}</span>
@@ -1045,6 +1094,16 @@ export function Sidebar({
                     >
                       i
                     </span>
+                    {actions ? (
+                      <button
+                        type="button"
+                        className={`sidebar-item-action${navActionPopover?.key === path ? " active" : ""}`}
+                        onClick={(e) => toggleNavActionPopover(path, e)}
+                        aria-label={`${label} işlemleri`}
+                      >
+                        +
+                      </button>
+                    ) : null}
                   </div>
                 ))}
               </nav>
@@ -1286,6 +1345,47 @@ export function Sidebar({
           {navTooltip.text}
         </div>
       ) : null}
+      {navActionPopover ? (() => {
+        const popoverActions = ((): Array<{ label: string; onClick: () => void; primary?: boolean }> | undefined => {
+          if (navActionPopover.key === "/dashboard" || navActionPopover.key === "/inbox") {
+            return [
+              { label: "Yeni not", onClick: handleCreateNote, primary: true },
+              { label: "Şablondan oluştur", onClick: () => setTemplatePickerOpenSignal((s) => s + 1) },
+            ];
+          }
+          return undefined;
+        })();
+        if (!popoverActions) return null;
+        return (
+          <>
+            <div
+              className="sidebar-nav-popover-backdrop"
+              style={{ position: "fixed", inset: 0, zIndex: 9998 }}
+              onClick={closeNavActionPopover}
+            />
+            <div
+              className="sidebar-nav-action-popover"
+              style={{
+                position: "fixed",
+                left: navActionPopover.x,
+                top: navActionPopover.y,
+                zIndex: 9999,
+              }}
+            >
+              {popoverActions.map((action) => (
+                <button
+                  key={action.label}
+                  type="button"
+                  className={`sidebar-nav-popover-btn${action.primary ? " primary" : ""}`}
+                  onClick={() => { action.onClick(); closeNavActionPopover(); }}
+                >
+                  {action.label}
+                </button>
+              ))}
+            </div>
+          </>
+        );
+      })() : null}
     </aside>
   );
 }

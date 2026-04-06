@@ -2464,6 +2464,70 @@ body::before {
   display: inline-flex;
 }
 
+.sidebar-item-action {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: transparent;
+  border: 1px solid var(--border-soft);
+  color: var(--text-tertiary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.sidebar-item-action.active,
+.sidebar-item-action:hover {
+  background: var(--surface-highlight);
+  color: var(--text-primary);
+}
+
+.sidebar-nav-item-row:hover .sidebar-item-action {
+  display: inline-flex;
+}
+
+.sidebar-nav-action-popover {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 160px;
+  padding: 6px;
+  border-radius: 10px;
+  background: var(--surface-glass-strong);
+  border: 1px solid var(--border-soft);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(12px);
+}
+
+.sidebar-nav-popover-btn {
+  display: block;
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: 7px;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.sidebar-nav-popover-btn:hover {
+  background: var(--surface-glass-hover);
+  color: var(--text-primary);
+}
+
+.sidebar-nav-popover-btn.primary {
+  color: var(--text-primary);
+  background: var(--surface-highlight);
+}
+
 .sidebar-nav-tooltip {
   max-width: 220px;
   padding: 7px 10px;
