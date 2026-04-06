@@ -629,6 +629,24 @@ export function Sidebar({
     [activeThemeId, applyTheme]
   );
 
+  const footerMenuItems = useMemo<ContextMenuItem[]>(
+    () => [
+      ...themeMenuItems,
+      {
+        label: "Tercihleri sıfırla",
+        hint: "Tema ve sidebar tercihlerini varsayılana al",
+        onSelect: resetPreferences,
+      },
+      {
+        label: "Çıkış yap",
+        hint: "Oturumu kapat",
+        tone: "danger" as const,
+        onSelect: () => void signOutAction(),
+      },
+    ],
+    [themeMenuItems, resetPreferences]
+  );
+
   const paletteItems = useMemo<CommandPaletteItem[]>(() => {
     const actionItems: CommandPaletteItem[] = [
       {
@@ -972,178 +990,74 @@ export function Sidebar({
             </div>
           </div>
 
-          <div className="sidebar-command-shell">
-            <div className="sidebar-command">
-              <input
-                ref={commandInputRef}
-                type="text"
-                className="sidebar-command-input"
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    event.preventDefault();
-                    handleCommandSubmit();
-                  }
-                }}
-                placeholder="Ara veya komut çalıştır..."
-                spellCheck={false}
-              />
-              <button
-                type="button"
-                className="sidebar-command-shortcut"
-                onClick={() => openPalette(searchQuery)}
-                aria-label="Arama kısayolu"
-              >
-                Ctrl K
-              </button>
-            </div>
-
-            <div className="sidebar-command-summary">
-              {hasQuery ? (
-                commandMatch ? (
-                  <button
-                    type="button"
-                    className="sidebar-command-result"
-                    onClick={handleCommandSubmit}
-                  >
-                    <span>Enter ile aç</span>
-                    <span>{commandMatch.label}</span>
-                  </button>
-                ) : (
-                  <span className="sidebar-command-empty">
-                    Eşleşen sonuç yok.
-                  </span>
-                )
-              ) : (
-                <span className="sidebar-command-hint">
-                  Notlar, klasörler ve etiketler burada filtrelenir.
-                </span>
-              )}
-            </div>
-          </div>
-
-          <div className="sidebar-inline-actions">
-            <button
-              type="button"
-              className="sidebar-inline-action"
-              onClick={() =>
-                setTemplatePickerOpenSignal((currentValue) => currentValue + 1)
-              }
-            >
-              Şablon
-            </button>
-            <button
-              type="button"
-              className="sidebar-inline-action"
-              onClick={handleCreateFolder}
-            >
-              Klasör
-            </button>
-          </div>
+          <button
+            type="button"
+            className="sidebar-search-trigger"
+            onClick={() => openPalette("")}
+            aria-label="Arama veya komut paleti"
+          >
+            <span className="sidebar-search-icon">○</span>
+            <span className="sidebar-search-placeholder">Ara veya komut çalıştır...</span>
+            <kbd className="sidebar-search-kbd">⌘K</kbd>
+          </button>
 
           <div className="sidebar-section">
-            <SidebarGroup
-              label="Çalışma alanı"
-              meta={hasQuery ? "Sabit" : undefined}
-              collapsible={false}
-            >
-              <nav className="sidebar-nav">
-                {([
-                  {
-                    path: "/dashboard",
-                    icon: "Ana",
-                    label: "Pano",
-                    info: `${notes.length} not · ${templates.length} şablon`,
-                    actions: [
-                      { label: "Yeni not", onClick: () => void handleCreateNote(), primary: true },
-                      { label: "Şablondan oluştur", onClick: () => setTemplatePickerOpenSignal((s) => s + 1) },
-                    ],
-                  },
-                  {
-                    path: "/inbox",
-                    icon: "In",
-                    label: "Gelen kutusu",
-                    info: `${notes.filter((n) => !n.folderId).length} klasörsüz not`,
-                    actions: [
-                      { label: "Yeni not", onClick: () => void handleCreateNote(), primary: true },
-                      { label: "Şablondan oluştur", onClick: () => setTemplatePickerOpenSignal((s) => s + 1) },
-                    ],
-                  },
-                  {
-                    path: "/search",
-                    icon: "Ara",
-                    label: "Arama",
-                    info: "Notlar, klasörler, şablonlar, bağlantılar",
-                    searchAction: true,
-                  },
-                  {
-                    path: "/graph",
-                    icon: "Ağ",
-                    label: "Bağlantı ağı",
-                    info: "Notlar arasındaki wikilink projeksiyonu",
-                  },
-                  {
-                    path: "/templates",
-                    icon: "Tpl",
-                    label: "Şablonlar",
-                    info: `${templates.length} şablon · yönet ve oluştur`,
-                  },
-                  {
-                    path: "/publish",
-                    icon: "Pub",
-                    label: "Yayın",
-                    info: "Slug ve dışa aktarılan çıktılar",
-                  },
-                  {
-                    path: "/proposals",
-                    icon: "YZ",
-                    label: "Öneriler",
-                    info: "Yapay zeka tarafından önerilen değişiklikler",
-                  },
-                  {
-                    path: "/settings",
-                    icon: "Ay",
-                    label: "Ayarlar",
-                    info: "Yerel işlem kuyruğu ve sunucu logları",
-                    actions: [
-                      { label: "Tercihleri sıfırla", onClick: resetPreferences },
-                    ],
-                  },
-                  {
-                    path: "/account",
-                    icon: "Hs",
-                    label: "Hesap",
-                    info: "Profil ve şifre yönetimi",
-                  },
-                ] as Array<{
-                  path: string;
-                  icon: string;
-                  label: string;
-                  info: string;
-                  actions?: Array<{ label: string; onClick: () => void; primary?: boolean }>;
-                  searchAction?: boolean;
-                }>).map(({ path, icon, label, info, actions, searchAction }) => (
-                  <div key={path} className="sidebar-nav-item-row">
-                    <button
-                      className={`sidebar-item ${pathname === path ? "active" : ""}`}
-                      onClick={() => { closeNavModal(); router.push(path); }}
-                    >
-                      <span className="sidebar-item-icon">{icon}</span>
-                      <span className="sidebar-item-label">{label}</span>
-                    </button>
-                    <button
-                      type="button"
-                      className={`sidebar-nav-menu${navModal?.key === path ? " active" : ""}`}
-                      onClick={(e) => openNavModal(path, label, e, { info, isSearch: searchAction, actions })}
-                      aria-label={`${label} menüsü`}
-                    >
-                      ···
-                    </button>
-                  </div>
-                ))}
-              </nav>
-            </SidebarGroup>
+            <nav className="sidebar-primary-nav">
+              {([
+                {
+                  path: "/dashboard",
+                  icon: "Ana",
+                  label: "Pano",
+                  info: `${notes.length} not · ${templates.length} şablon`,
+                  actions: [
+                    { label: "Yeni not", onClick: () => void handleCreateNote(), primary: true },
+                    { label: "Şablondan oluştur", onClick: () => setTemplatePickerOpenSignal((s) => s + 1) },
+                  ],
+                },
+                {
+                  path: "/inbox",
+                  icon: "In",
+                  label: "Gelen kutusu",
+                  info: `${notes.filter((n) => !n.folderId).length} klasörsüz not`,
+                  actions: [
+                    { label: "Yeni not", onClick: () => void handleCreateNote(), primary: true },
+                    { label: "Şablondan oluştur", onClick: () => setTemplatePickerOpenSignal((s) => s + 1) },
+                  ],
+                },
+                {
+                  path: "/graph",
+                  icon: "Ağ",
+                  label: "Bağlantı ağı",
+                  info: "Notlar arasındaki wikilink projeksiyonu",
+                },
+              ] as Array<{
+                path: string;
+                icon: string;
+                label: string;
+                info: string;
+                actions?: Array<{ label: string; onClick: () => void; primary?: boolean }>;
+              }>).map(({ path, icon, label, info, actions }) => (
+                <div key={path} className="sidebar-nav-item-row">
+                  <button
+                    className={`sidebar-item ${pathname === path ? "active" : ""}`}
+                    onClick={() => { closeNavModal(); router.push(path); }}
+                  >
+                    <span className="sidebar-item-icon">{icon}</span>
+                    <span className="sidebar-item-label">{label}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`sidebar-nav-menu${navModal?.key === path ? " active" : ""}`}
+                    onClick={(e) => openNavModal(path, label, e, { info, actions })}
+                    aria-label={`${label} menüsü`}
+                  >
+                    ···
+                  </button>
+                </div>
+              ))}
+            </nav>
+
+            <div className="sidebar-divider" />
 
             <SidebarGroup
               label="Klasörler"
@@ -1154,6 +1068,7 @@ export function Sidebar({
               }
               collapsed={isFoldersCollapsed}
               onToggle={() => toggleSection("folders")}
+              onAdd={handleCreateFolder}
             >
               <div className="sidebar-folder-tree">
                 {draggedFolderId ? (
@@ -1296,41 +1211,50 @@ export function Sidebar({
             </SidebarGroup>
           </div>
 
+          <nav className="sidebar-rail">
+            {([
+              { path: "/search", icon: "Ara", label: "Arama" },
+              { path: "/templates", icon: "Tpl", label: "Şablonlar" },
+              { path: "/publish", icon: "Pub", label: "Yayın" },
+              { path: "/proposals", icon: "YZ", label: "Öneriler" },
+              { path: "/settings", icon: "Ay", label: "Ayarlar" },
+              { path: "/account", icon: "Hs", label: "Hesap" },
+            ]).map(({ path, icon, label }) => (
+              <button
+                key={path}
+                type="button"
+                className={`sidebar-rail-item${pathname === path || pathname.startsWith(path + "/") ? " active" : ""}`}
+                onClick={() => router.push(path)}
+                aria-label={label}
+                title={label}
+              >
+                {icon}
+              </button>
+            ))}
+          </nav>
+
           <div className="sidebar-footer">
-            <div className="sidebar-user-card">
-              <div className="sidebar-user-meta">
-                <span className="sidebar-user-avatar">
-                  {(user.name ?? user.email ?? "G").slice(0, 1).toUpperCase()}
-                </span>
-                <div className="sidebar-user-copy">
-                  <div className="sidebar-user-name">
-                    {user.name ?? user.email ?? "Graffle Kullanıcı"}
-                  </div>
-                  {user.email ? (
-                    <div className="sidebar-user-email">{user.email}</div>
-                  ) : null}
+            <div className="sidebar-user-meta">
+              <span className="sidebar-user-avatar">
+                {(user.name ?? user.email ?? "G").slice(0, 1).toUpperCase()}
+              </span>
+              <div className="sidebar-user-copy">
+                <div className="sidebar-user-name">
+                  {user.name ?? user.email ?? "Graffle Kullanıcı"}
                 </div>
-              </div>
-              <div className="sidebar-user-actions">
-                <button
-                  type="button"
-                  className="sidebar-theme-button"
-                  onClick={(event) =>
-                    openContextMenuFromTrigger(event, themeMenuItems)
-                  }
-                  aria-label="Tema seç"
-                >
-                  <span className="sidebar-theme-label">Tema</span>
-                  <span className="sidebar-theme-value">{activeTheme.label}</span>
-                </button>
+                {user.email ? (
+                  <div className="sidebar-user-email">{user.email}</div>
+                ) : null}
               </div>
             </div>
-
-            <form action={signOutAction}>
-              <button type="submit" className="sidebar-sign-out">
-                Çıkış yap
-              </button>
-            </form>
+            <button
+              type="button"
+              className="sidebar-footer-menu"
+              onClick={(event) => openContextMenuFromTrigger(event, footerMenuItems)}
+              aria-label="Hesap ve tema menüsü"
+            >
+              ···
+            </button>
           </div>
         </>
       )}
@@ -1423,6 +1347,7 @@ function SidebarGroup({
   collapsed = false,
   collapsible = true,
   onToggle,
+  onAdd,
   children,
 }: {
   label: string;
@@ -1430,6 +1355,7 @@ function SidebarGroup({
   collapsed?: boolean;
   collapsible?: boolean;
   onToggle?: () => void;
+  onAdd?: () => void;
   children: React.ReactNode;
 }) {
   return (
@@ -1452,7 +1378,19 @@ function SidebarGroup({
             <span className="sidebar-group-label">{label}</span>
           </div>
         )}
-        {meta ? <span className="sidebar-group-meta">{meta}</span> : null}
+        <div className="sidebar-group-actions">
+          {meta ? <span className="sidebar-group-meta">{meta}</span> : null}
+          {onAdd ? (
+            <button
+              type="button"
+              className="sidebar-group-add"
+              onClick={onAdd}
+              aria-label={`${label} ekle`}
+            >
+              +
+            </button>
+          ) : null}
+        </div>
       </div>
       {!collapsed ? <div className="sidebar-group-body">{children}</div> : null}
     </section>
