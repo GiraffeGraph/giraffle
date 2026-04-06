@@ -1066,7 +1066,13 @@ export function Sidebar({
                       { label: "Şablondan oluştur", onClick: () => setTemplatePickerOpenSignal((s) => s + 1) },
                     ],
                   },
-                  { path: "/search", icon: "Ara", label: "Arama", info: "Notlar, klasörler, şablonlar ve çözülmemiş bağlantılar arasında ara." },
+                  {
+                    path: "/search",
+                    icon: "Ara",
+                    label: "Arama",
+                    info: "Notlar, klasörler, şablonlar ve çözülmemiş bağlantılar arasında ara.",
+                    actions: [{ label: "__search__", onClick: () => {} }],
+                  },
                   { path: "/graph", icon: "Ağ", label: "Bağlantı ağı", info: "Notlar arasındaki bağlantıları görsel olarak keşfet." },
                   {
                     path: "/templates",
@@ -1345,47 +1351,60 @@ export function Sidebar({
           {navTooltip.text}
         </div>
       ) : null}
-      {navActionPopover ? (() => {
-        const popoverActions = ((): Array<{ label: string; onClick: () => void; primary?: boolean }> | undefined => {
-          if (navActionPopover.key === "/dashboard" || navActionPopover.key === "/inbox") {
-            return [
-              { label: "Yeni not", onClick: handleCreateNote, primary: true },
-              { label: "Şablondan oluştur", onClick: () => setTemplatePickerOpenSignal((s) => s + 1) },
-            ];
-          }
-          return undefined;
-        })();
-        if (!popoverActions) return null;
-        return (
-          <>
-            <div
-              className="sidebar-nav-popover-backdrop"
-              style={{ position: "fixed", inset: 0, zIndex: 9998 }}
-              onClick={closeNavActionPopover}
-            />
-            <div
-              className="sidebar-nav-action-popover"
-              style={{
-                position: "fixed",
-                left: navActionPopover.x,
-                top: navActionPopover.y,
-                zIndex: 9999,
-              }}
-            >
-              {popoverActions.map((action) => (
+      {navActionPopover ? (
+        <>
+          <div
+            className="sidebar-nav-popover-backdrop"
+            style={{ position: "fixed", inset: 0, zIndex: 9998 }}
+            onClick={closeNavActionPopover}
+          />
+          <div
+            className="sidebar-nav-action-popover"
+            style={{
+              position: "fixed",
+              left: navActionPopover.x,
+              top: navActionPopover.y,
+              zIndex: 9999,
+            }}
+          >
+            {navActionPopover.key === "/search" ? (
+              <form
+                className="sidebar-nav-popover-search"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const q = (e.currentTarget.elements.namedItem("q") as HTMLInputElement).value.trim();
+                  closeNavActionPopover();
+                  router.push(`/search${q ? `?q=${encodeURIComponent(q)}` : ""}`);
+                }}
+              >
+                <input
+                  name="q"
+                  className="sidebar-nav-popover-input"
+                  placeholder="Ara..."
+                  autoFocus
+                />
+              </form>
+            ) : (
+              <>
                 <button
-                  key={action.label}
                   type="button"
-                  className={`sidebar-nav-popover-btn${action.primary ? " primary" : ""}`}
-                  onClick={() => { action.onClick(); closeNavActionPopover(); }}
+                  className="sidebar-nav-popover-btn primary"
+                  onClick={() => { void handleCreateNote(); closeNavActionPopover(); }}
                 >
-                  {action.label}
+                  Yeni not
                 </button>
-              ))}
-            </div>
-          </>
-        );
-      })() : null}
+                <button
+                  type="button"
+                  className="sidebar-nav-popover-btn"
+                  onClick={() => { setTemplatePickerOpenSignal((s) => s + 1); closeNavActionPopover(); }}
+                >
+                  Şablondan oluştur
+                </button>
+              </>
+            )}
+          </div>
+        </>
+      ) : null}
     </aside>
   );
 }

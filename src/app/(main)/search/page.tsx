@@ -43,28 +43,6 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
 
   return (
     <div className="dashboard search-page">
-      <section className="dashboard-hero search-hero">
-        <form className="search-form">
-          <input
-            type="search"
-            name="q"
-            defaultValue={params.q ?? ""}
-            className="search-input"
-            placeholder="Başlık, etiket, şablon veya link ara..."
-          />
-          <select name="scope" defaultValue={scope} className="search-select">
-            <option value="all">Tüm sonuçlar</option>
-            <option value="notes">Notlar</option>
-            <option value="folders">Klasörler</option>
-            <option value="templates">Şablonlar</option>
-            <option value="unresolved">Çözülmemiş linkler</option>
-          </select>
-          <button type="submit" className="dashboard-empty-btn">
-            Ara
-          </button>
-        </form>
-      </section>
-
       {(scope === "all" || scope === "notes") && (
         <SearchSection title="Notlar" count={noteResults.length}>
           {noteResults.map((note) => (
