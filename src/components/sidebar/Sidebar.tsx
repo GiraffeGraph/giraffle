@@ -146,37 +146,46 @@ export function Sidebar({
   const [isSidebarResizing, setIsSidebarResizing] = useState(false);
   const [collapsedSections, setCollapsedSections] =
     useState<SidebarCollapseState>(() => loadSidebarCollapseState());
-  const [navTooltip, setNavTooltip] = useState<{
-    text: string;
-    x: number;
-    y: number;
-  } | null>(null);
   const [navActionPopover, setNavActionPopover] = useState<{
     key: string;
     x: number;
     y: number;
+    info?: string;
+    isSearch?: boolean;
+    hasActions?: boolean;
+    actions?: Array<{ label: string; onClick: () => void; primary?: boolean }>;
   } | null>(null);
   const deferredSearchQuery = useDeferredValue(searchQuery);
 
-  const showNavTooltip = useCallback(
-    (text: string, event: ReactMouseEvent<HTMLSpanElement>) => {
-      const rect = event.currentTarget.getBoundingClientRect();
-      setNavTooltip({ text, x: rect.right + 8, y: rect.top + rect.height / 2 });
-    },
-    []
-  );
-
-  const hideNavTooltip = useCallback(() => setNavTooltip(null), []);
+  const resetPreferences = useCallback(() => {
+    window.localStorage.removeItem(APP_THEME_STORAGE_KEY);
+    window.localStorage.removeItem(SIDEBAR_WIDTH_STORAGE_KEY);
+    window.localStorage.removeItem(SIDEBAR_COMPACT_STORAGE_KEY);
+    window.localStorage.removeItem(SIDEBAR_COLLAPSE_STORAGE_KEY);
+    setActiveThemeId(DEFAULT_APP_THEME);
+    setSidebarWidth(DEFAULT_EXPANDED_SIDEBAR_WIDTH);
+    setIsSidebarCompact(false);
+    setCollapsedSections(DEFAULT_COLLAPSED_SECTIONS);
+    persistAppTheme(DEFAULT_APP_THEME);
+  }, []);
 
   const toggleNavActionPopover = useCallback(
-    (key: string, event: ReactMouseEvent<HTMLButtonElement>) => {
+    (
+      key: string,
+      event: ReactMouseEvent<HTMLButtonElement>,
+      extra?: {
+        info?: string;
+        isSearch?: boolean;
+        actions?: Array<{ label: string; onClick: () => void; primary?: boolean }>;
+      }
+    ) => {
       event.stopPropagation();
       if (navActionPopover?.key === key) {
         setNavActionPopover(null);
         return;
       }
       const rect = event.currentTarget.getBoundingClientRect();
-      setNavActionPopover({ key, x: rect.right + 8, y: rect.top });
+      setNavActionPopover({ key, x: rect.right + 8, y: rect.top, ...extra });
     },
     [navActionPopover]
   );
@@ -1039,20 +1048,14 @@ export function Sidebar({
               collapsible={false}
             >
               <nav className="sidebar-nav">
-                {((): Array<{
-                  path: string;
-                  icon: string;
-                  label: string;
-                  info: string;
-                  actions?: Array<{ label: string; onClick: () => void; primary?: boolean }>;
-                }> => [
+                {([
                   {
                     path: "/dashboard",
                     icon: "Ana",
                     label: "Pano",
-                    info: `Notlarını düzenle · ${notes.length} not · ${templates.length} şablon`,
+                    info: `${notes.length} not · ${templates.length} şablon`,
                     actions: [
-                      { label: "Yeni not", onClick: handleCreateNote, primary: true },
+                      { label: "Yeni not", onClick: () => void handleCreateNote(), primary: true },
                       { label: "Şablondan oluştur", onClick: () => setTemplatePickerOpenSignal((s) => s + 1) },
                     ],
                   },
@@ -1060,9 +1063,9 @@ export function Sidebar({
                     path: "/inbox",
                     icon: "In",
                     label: "Gelen kutusu",
-                    info: `Klasöre taşınmamış notlar · ${notes.filter((n) => !n.folderId).length} not`,
+                    info: `${notes.filter((n) => !n.folderId).length} klasörsüz not`,
                     actions: [
-                      { label: "Yeni not", onClick: handleCreateNote, primary: true },
+                      { label: "Yeni not", onClick: () => void handleCreateNote(), primary: true },
                       { label: "Şablondan oluştur", onClick: () => setTemplatePickerOpenSignal((s) => s + 1) },
                     ],
                   },
@@ -1070,21 +1073,56 @@ export function Sidebar({
                     path: "/search",
                     icon: "Ara",
                     label: "Arama",
-                    info: "Notlar, klasörler, şablonlar ve çözülmemiş bağlantılar arasında ara.",
-                    actions: [{ label: "__search__", onClick: () => {} }],
+                    info: "Notlar, klasörler, şablonlar, bağlantılar",
+                    searchAction: true,
                   },
-                  { path: "/graph", icon: "Ağ", label: "Bağlantı ağı", info: "Notlar arasındaki bağlantıları görsel olarak keşfet." },
+                  {
+                    path: "/graph",
+                    icon: "Ağ",
+                    label: "Bağlantı ağı",
+                    info: "Notlar arasındaki wikilink projeksiyonu",
+                  },
                   {
                     path: "/templates",
                     icon: "Tpl",
                     label: "Şablonlar",
-                    info: `Şablonları yönet · ${templates.length} şablon`,
+                    info: `${templates.length} şablon · yönet ve oluştur`,
                   },
-                  { path: "/publish", icon: "Pub", label: "Yayın", info: "Slug, yayın yolu ve dışa aktarılan çıktıyı tek yerden gör." },
-                  { path: "/proposals", icon: "YZ", label: "Öneriler", info: "Önerileri incelenip uygulanacak yamalar olarak yönet." },
-                  { path: "/settings", icon: "Ay", label: "Ayarlar", info: "Tema, sidebar davranışı, yerel işlem kuyruğu ve son sunucu işlemleri." },
-                  { path: "/account", icon: "Hs", label: "Hesap", info: "Profilini güncelle, şifreni değiştir ve sıfırlama akışını yönet." },
-                ])().map(({ path, icon, label, info, actions }) => (
+                  {
+                    path: "/publish",
+                    icon: "Pub",
+                    label: "Yayın",
+                    info: "Slug ve dışa aktarılan çıktılar",
+                  },
+                  {
+                    path: "/proposals",
+                    icon: "YZ",
+                    label: "Öneriler",
+                    info: "Yapay zeka tarafından önerilen değişiklikler",
+                  },
+                  {
+                    path: "/settings",
+                    icon: "Ay",
+                    label: "Ayarlar",
+                    info: "Yerel işlem kuyruğu ve sunucu logları",
+                    actions: [
+                      { label: "Tercihleri sıfırla", onClick: resetPreferences },
+                    ],
+                  },
+                  {
+                    path: "/account",
+                    icon: "Hs",
+                    label: "Hesap",
+                    info: "Profil ve şifre yönetimi",
+                  },
+                ] as Array<{
+                  path: string;
+                  icon: string;
+                  label: string;
+                  info: string;
+                  actions?: Array<{ label: string; onClick: () => void; primary?: boolean }>;
+                  searchAction?: boolean;
+                }>).map(({ path, icon, label, info, actions, searchAction }) => (
                   <div key={path} className="sidebar-nav-item-row">
                     <button
                       className={`sidebar-item ${pathname === path ? "active" : ""}`}
@@ -1093,23 +1131,14 @@ export function Sidebar({
                       <span className="sidebar-item-icon">{icon}</span>
                       <span className="sidebar-item-label">{label}</span>
                     </button>
-                    <span
-                      className="sidebar-item-info"
-                      onMouseEnter={(e) => showNavTooltip(info, e)}
-                      onMouseLeave={hideNavTooltip}
+                    <button
+                      type="button"
+                      className={`sidebar-nav-menu${navActionPopover?.key === path ? " active" : ""}`}
+                      onClick={(e) => toggleNavActionPopover(path, e, { info, isSearch: searchAction, actions })}
+                      aria-label={`${label} menüsü`}
                     >
-                      i
-                    </span>
-                    {actions ? (
-                      <button
-                        type="button"
-                        className={`sidebar-item-action${navActionPopover?.key === path ? " active" : ""}`}
-                        onClick={(e) => toggleNavActionPopover(path, e)}
-                        aria-label={`${label} işlemleri`}
-                      >
-                        +
-                      </button>
-                    ) : null}
+                      ···
+                    </button>
                   </div>
                 ))}
               </nav>
@@ -1336,75 +1365,59 @@ export function Sidebar({
         onQueryChange={setPaletteQuery}
         onClose={closePalette}
       />
-      {navTooltip ? (
-        <div
-          className="sidebar-nav-tooltip"
-          style={{
-            position: "fixed",
-            left: navTooltip.x,
-            top: navTooltip.y,
-            transform: "translateY(-50%)",
-            zIndex: 9999,
-            pointerEvents: "none",
-          }}
-        >
-          {navTooltip.text}
-        </div>
-      ) : null}
-      {navActionPopover ? (
-        <>
-          <div
-            className="sidebar-nav-popover-backdrop"
-            style={{ position: "fixed", inset: 0, zIndex: 9998 }}
-            onClick={closeNavActionPopover}
-          />
-          <div
-            className="sidebar-nav-action-popover"
-            style={{
-              position: "fixed",
-              left: navActionPopover.x,
-              top: navActionPopover.y,
-              zIndex: 9999,
-            }}
-          >
-            {navActionPopover.key === "/search" ? (
-              <form
-                className="sidebar-nav-popover-search"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  const q = (e.currentTarget.elements.namedItem("q") as HTMLInputElement).value.trim();
-                  closeNavActionPopover();
-                  router.push(`/search${q ? `?q=${encodeURIComponent(q)}` : ""}`);
-                }}
-              >
-                <input
-                  name="q"
-                  className="sidebar-nav-popover-input"
-                  placeholder="Ara..."
-                  autoFocus
-                />
-              </form>
-            ) : (
-              <>
-                <button
-                  type="button"
-                  className="sidebar-nav-popover-btn primary"
-                  onClick={() => { void handleCreateNote(); closeNavActionPopover(); }}
+      {navActionPopover ? (() => {
+        const { info, isSearch, actions: navActions } = navActionPopover;
+        return (
+          <>
+            <div
+              className="sidebar-nav-popover-backdrop"
+              style={{ position: "fixed", inset: 0, zIndex: 9998 }}
+              onClick={closeNavActionPopover}
+            />
+            <div
+              className="sidebar-nav-action-popover"
+              style={{
+                position: "fixed",
+                left: navActionPopover.x,
+                top: navActionPopover.y,
+                zIndex: 9999,
+              }}
+            >
+              {info ? (
+                <div className="sidebar-nav-popover-info">{info}</div>
+              ) : null}
+              {isSearch ? (
+                <form
+                  className="sidebar-nav-popover-search"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const q = (e.currentTarget.elements.namedItem("q") as HTMLInputElement).value.trim();
+                    closeNavActionPopover();
+                    router.push(`/search${q ? `?q=${encodeURIComponent(q)}` : ""}`);
+                  }}
                 >
-                  Yeni not
-                </button>
+                  <input
+                    name="q"
+                    className="sidebar-nav-popover-input"
+                    placeholder="Ara..."
+                    autoFocus
+                  />
+                </form>
+              ) : null}
+              {navActions?.map((action) => (
                 <button
+                  key={action.label}
                   type="button"
-                  className="sidebar-nav-popover-btn"
-                  onClick={() => { setTemplatePickerOpenSignal((s) => s + 1); closeNavActionPopover(); }}
+                  className={`sidebar-nav-popover-btn${action.primary ? " primary" : ""}`}
+                  onClick={() => { action.onClick(); closeNavActionPopover(); }}
                 >
-                  Şablondan oluştur
+                  {action.label}
                 </button>
-              </>
-            )}
-          </div>
-        </>
-      ) : null}
+              ))}
+            </div>
+          </>
+        );
+      })() : null}
     </aside>
   );
 }

@@ -1,23 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import {
-  APP_THEMES,
-  DEFAULT_APP_THEME,
-  type AppThemeId,
-  isAppThemeId,
-  APP_THEME_STORAGE_KEY,
-  persistAppTheme,
-} from "@/components/theme/theme-config";
-import {
-  DEFAULT_COLLAPSED_SECTIONS,
-  DEFAULT_EXPANDED_SIDEBAR_WIDTH,
   LOCAL_SYNC_QUEUE_STORAGE_KEY,
-  SIDEBAR_COLLAPSE_STORAGE_KEY,
-  SIDEBAR_COMPACT_STORAGE_KEY,
-  SIDEBAR_WIDTH_STORAGE_KEY,
   type LocalSyncQueueItem,
-  type SidebarCollapseState,
 } from "@/lib/workspace-preferences";
 
 interface SettingsWorkspaceProps {
@@ -36,59 +22,6 @@ interface SettingsWorkspaceProps {
 export function SettingsWorkspace({
   operationLogs,
 }: SettingsWorkspaceProps) {
-  const [themeId, setThemeId] = useState<AppThemeId>(() => {
-    if (typeof window === "undefined") {
-      return DEFAULT_APP_THEME;
-    }
-
-    const storedTheme = window.localStorage.getItem(APP_THEME_STORAGE_KEY);
-    return storedTheme && isAppThemeId(storedTheme)
-      ? storedTheme
-      : DEFAULT_APP_THEME;
-  });
-  const [sidebarWidth, setSidebarWidth] = useState(() => {
-    if (typeof window === "undefined") {
-      return DEFAULT_EXPANDED_SIDEBAR_WIDTH;
-    }
-
-    const storedWidth = Number.parseInt(
-      window.localStorage.getItem(SIDEBAR_WIDTH_STORAGE_KEY) ?? "",
-      10
-    );
-
-    return Number.isFinite(storedWidth)
-      ? storedWidth
-      : DEFAULT_EXPANDED_SIDEBAR_WIDTH;
-  });
-  const [sidebarCompact, setSidebarCompact] = useState(() => {
-    if (typeof window === "undefined") {
-      return false;
-    }
-
-    return window.localStorage.getItem(SIDEBAR_COMPACT_STORAGE_KEY) === "true";
-  });
-  const [sections, setSections] = useState<SidebarCollapseState>(() => {
-    if (typeof window === "undefined") {
-      return DEFAULT_COLLAPSED_SECTIONS;
-    }
-
-    try {
-      const storedSections = window.localStorage.getItem(
-        SIDEBAR_COLLAPSE_STORAGE_KEY
-      );
-
-      if (!storedSections) {
-        return DEFAULT_COLLAPSED_SECTIONS;
-      }
-
-      return {
-        ...DEFAULT_COLLAPSED_SECTIONS,
-        ...(JSON.parse(storedSections) as Partial<SidebarCollapseState>),
-      };
-    } catch {
-      return DEFAULT_COLLAPSED_SECTIONS;
-    }
-  });
   const [queuedItems, setQueuedItems] = useState<LocalSyncQueueItem[]>(() => {
     if (typeof window === "undefined") {
       return [];
@@ -102,29 +35,6 @@ export function SettingsWorkspace({
     }
   });
 
-  const appliedTheme = useMemo(
-    () => APP_THEMES.find((theme) => theme.id === themeId) ?? APP_THEMES[0],
-    [themeId]
-  );
-
-  const handleThemeChange = (nextThemeId: AppThemeId) => {
-    setThemeId(nextThemeId);
-    persistAppTheme(nextThemeId);
-  };
-
-  const resetPreferences = () => {
-    window.localStorage.removeItem(APP_THEME_STORAGE_KEY);
-    window.localStorage.removeItem(SIDEBAR_WIDTH_STORAGE_KEY);
-    window.localStorage.removeItem(SIDEBAR_COMPACT_STORAGE_KEY);
-    window.localStorage.removeItem(SIDEBAR_COLLAPSE_STORAGE_KEY);
-
-    setThemeId(DEFAULT_APP_THEME);
-    setSidebarWidth(DEFAULT_EXPANDED_SIDEBAR_WIDTH);
-    setSidebarCompact(false);
-    setSections(DEFAULT_COLLAPSED_SECTIONS);
-    persistAppTheme(DEFAULT_APP_THEME);
-  };
-
   const clearQueue = () => {
     window.localStorage.removeItem(LOCAL_SYNC_QUEUE_STORAGE_KEY);
     setQueuedItems([]);
@@ -132,51 +42,6 @@ export function SettingsWorkspace({
 
   return (
     <div className="settings-layout">
-      <section className="settings-panel">
-        <div className="dashboard-section-head">
-          <span className="dashboard-section-kicker">Tema ve görünüm</span>
-        </div>
-        <label className="settings-field">
-          <span>Aktif tema</span>
-          <select
-            value={themeId}
-            onChange={(event) =>
-              handleThemeChange(event.target.value as AppThemeId)
-            }
-          >
-            {APP_THEMES.map((theme) => (
-              <option key={theme.id} value={theme.id}>
-                {theme.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <div className="settings-helper-text">{appliedTheme.description}</div>
-        <div className="settings-stat-grid">
-          <div className="settings-stat-card">
-            <span className="settings-stat-label">Sidebar genişliği</span>
-            <strong>{sidebarWidth}px</strong>
-          </div>
-          <div className="settings-stat-card">
-            <span className="settings-stat-label">Kompakt mod</span>
-            <strong>{sidebarCompact ? "Açık" : "Kapalı"}</strong>
-          </div>
-          <div className="settings-stat-card">
-            <span className="settings-stat-label">Kapalı bölümler</span>
-            <strong>
-              {Object.values(sections).filter(Boolean).length}/3
-            </strong>
-          </div>
-        </div>
-        <button
-          type="button"
-          className="dashboard-secondary-btn"
-          onClick={resetPreferences}
-        >
-          Arayüz tercihlerini sıfırla
-        </button>
-      </section>
-
       <section className="settings-panel">
         <div className="dashboard-section-head">
           <span className="dashboard-section-kicker">Yerel eşitleme sınırı</span>

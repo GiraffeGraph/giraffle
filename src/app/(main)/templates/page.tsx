@@ -75,9 +75,6 @@ export default async function TemplatesPage({ searchParams }: TemplatesPageProps
     <div className="dashboard templates-page">
       <div className="templates-layout">
         <section className="templates-column">
-          <div className="dashboard-section-head">
-            <span className="dashboard-section-kicker">Mevcut şablonlar</span>
-          </div>
           <div className="search-result-grid">
             {templates.map((template) => (
               <a
@@ -97,9 +94,6 @@ export default async function TemplatesPage({ searchParams }: TemplatesPageProps
         </section>
 
         <section className="templates-column">
-          <div className="dashboard-section-head">
-            <span className="dashboard-section-kicker">Yeni şablon</span>
-          </div>
           <form action={handleCreateTemplate} className="settings-panel">
             <label className="settings-field">
               <span>Ad</span>
@@ -147,9 +141,6 @@ export default async function TemplatesPage({ searchParams }: TemplatesPageProps
 
           {selectedTemplate ? (
             <>
-              <div className="dashboard-section-head">
-                <span className="dashboard-section-kicker">Seçili şablon</span>
-              </div>
               <form action={handleUpdateTemplate} className="settings-panel">
                 <input type="hidden" name="templateId" value={selectedTemplate.id} />
                 <label className="settings-field">

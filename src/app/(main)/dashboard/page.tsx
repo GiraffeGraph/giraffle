@@ -16,9 +16,6 @@ export default async function DashboardPage() {
         </div>
       ) : (
         <>
-          <div className="dashboard-section-head">
-            <span className="dashboard-section-kicker">Son güncellenenler</span>
-          </div>
           <div className="dashboard-grid">
             {notes.map((note) => (
               <Link
