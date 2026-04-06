@@ -383,8 +383,8 @@ export function markdownToBlocks(markdown: string): TiptapDocument {
 function toTableRows(value: unknown): string[][] {
   if (!Array.isArray(value)) {
     return [
-      ["Sutun 1", "Sutun 2"],
-      ["Deger", "Deger"],
+      ["Sütun 1", "Sütun 2"],
+      ["Değer", "Değer"],
     ];
   }
 

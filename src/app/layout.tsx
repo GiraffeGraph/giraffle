@@ -8,9 +8,9 @@ import {
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Graffle — Knowledge Graph Editor",
+  title: "Graffle — Bilgi Grafiği Editörü",
   description:
-    "A block-based knowledge editor with linked notes, wikilinks, and graph structure.",
+    "Bağlantılı notlar, wikilinkler ve bilgi grafiği yapısıyla blok tabanlı bir bilgi editörü.",
 };
 
 export default async function RootLayout({

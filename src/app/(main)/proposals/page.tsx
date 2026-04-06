@@ -12,7 +12,7 @@ export default async function ProposalsPage() {
     "use server";
     await createReplaceDocumentProposalAction({
       noteId: String(formData.get("noteId") ?? ""),
-      title: String(formData.get("title") ?? "").trim() || "Yeni onerilen degisiklik",
+      title: String(formData.get("title") ?? "").trim() || "Yeni önerilen değişiklik",
       summary: String(formData.get("summary") ?? "").trim() || undefined,
       markdown: String(formData.get("markdown") ?? "").trim(),
     });
@@ -22,10 +22,10 @@ export default async function ProposalsPage() {
     <div className="dashboard proposals-page">
       <section className="dashboard-hero">
         <div className="dashboard-header">
-          <div className="dashboard-kicker">AI proposal workflow</div>
-          <h1 className="dashboard-title">Oneri kuyrugu</h1>
+          <div className="dashboard-kicker">YZ öneri akışı</div>
+          <h1 className="dashboard-title">Öneri kuyruğu</h1>
           <p className="dashboard-subtitle">
-            Onerileri direkt editor state yerine review edilip apply edilecek patchler olarak yonet.
+            Önerileri doğrudan editör durumu yerine incelenip uygulanacak yamalar olarak yönet.
           </p>
         </div>
       </section>
@@ -33,7 +33,7 @@ export default async function ProposalsPage() {
       <div className="templates-layout">
         <section className="templates-column">
           <div className="dashboard-section-head">
-            <span className="dashboard-section-kicker">Yeni onerilen belge</span>
+            <span className="dashboard-section-kicker">Yeni önerilen belge</span>
           </div>
           <form action={handleCreateProposal} className="settings-panel">
             <label className="settings-field">
@@ -47,26 +47,26 @@ export default async function ProposalsPage() {
               </select>
             </label>
             <label className="settings-field">
-              <span>Oneri basligi</span>
-              <input name="title" placeholder="Oneri basligi" />
+              <span>Öneri başlığı</span>
+              <input name="title" placeholder="Öneri başlığı" />
             </label>
             <label className="settings-field">
-              <span>Ozet</span>
-              <textarea name="summary" rows={3} placeholder="Neyi degistiriyor?" />
+              <span>Özet</span>
+              <textarea name="summary" rows={3} placeholder="Neyi değiştiriyor?" />
             </label>
             <label className="settings-field">
-              <span>Onerilen Markdown</span>
-              <textarea name="markdown" rows={12} placeholder="# Yeni icerik" required />
+              <span>Önerilen Markdown</span>
+              <textarea name="markdown" rows={12} placeholder="# Yeni içerik" required />
             </label>
             <button type="submit" className="dashboard-empty-btn">
-              Oneri olustur
+              Öneri oluştur
             </button>
           </form>
         </section>
 
         <section className="templates-column">
           <div className="dashboard-section-head">
-            <span className="dashboard-section-kicker">Bekleyen oneriler</span>
+            <span className="dashboard-section-kicker">Bekleyen öneriler</span>
           </div>
           <div className="search-result-grid">
             {proposals.map((proposal) => (

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState, useTransition } from "react"
 import { useRouter } from "next/navigation";
 import { applyTemplateAction } from "@/server/api/templates";
 import type { TemplateVariable } from "@/domain/template/template.types";
+import { getTemplateCategoryLabel } from "@/lib/template-category";
 
 interface TemplateSummary {
   id: string;
@@ -130,14 +131,16 @@ export function TemplatePicker({
                     onClick={() => handleTemplateChange(template.id)}
                   >
                     <span className="template-picker-item-icon">
-                      {template.icon ?? template.category.slice(0, 1).toUpperCase()}
+                      {template.icon ??
+                        getTemplateCategoryLabel(template.category).slice(0, 1).toUpperCase()}
                     </span>
                     <span className="template-picker-item-copy">
                       <span className="template-picker-item-title">
                         {template.name}
                       </span>
                       <span className="template-picker-item-description">
-                        {template.description ?? "Hazır başlangıç şablonu"}
+                        {template.description ??
+                          `${getTemplateCategoryLabel(template.category)} şablonu`}
                       </span>
                     </span>
                   </button>
@@ -149,14 +152,17 @@ export function TemplatePicker({
                   <div className="template-picker-panel-header">
                     <div className="template-picker-panel-icon">
                       {selectedTemplate.icon ??
-                        selectedTemplate.category.slice(0, 1).toUpperCase()}
+                        getTemplateCategoryLabel(selectedTemplate.category)
+                          .slice(0, 1)
+                          .toUpperCase()}
                     </div>
                     <div>
                       <div className="template-picker-panel-title">
                         {selectedTemplate.name}
                       </div>
                       <div className="template-picker-panel-description">
-                        {selectedTemplate.description ?? "Hazır başlangıç şablonu"}
+                        {selectedTemplate.description ??
+                          `${getTemplateCategoryLabel(selectedTemplate.category)} şablonu`}
                       </div>
                     </div>
                   </div>

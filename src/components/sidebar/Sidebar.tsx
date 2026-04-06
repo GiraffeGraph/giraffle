@@ -48,6 +48,7 @@ import {
   SIDEBAR_WIDTH_STORAGE_KEY,
   type SidebarCollapseState,
 } from "@/lib/workspace-preferences";
+import { getTemplateCategoryLabel } from "@/lib/template-category";
 
 interface SidebarNote {
   id: string;
@@ -377,7 +378,7 @@ export function Sidebar({
   };
 
   const handleCreateFolder = async () => {
-    const folderName = window.prompt("Klasor adi", "Yeni Klasor")?.trim();
+    const folderName = window.prompt("Klasör adı", "Yeni Klasör")?.trim();
 
     if (!folderName) {
       return;
@@ -487,13 +488,13 @@ export function Sidebar({
   const buildNoteMenu = useCallback(
     (sidebarNote: SidebarNote): ContextMenuItem[] => [
       {
-        label: "Notu ac",
-        hint: "Secili notu duzenleyicide ac",
+        label: "Notu aç",
+        hint: "Seçili notu düzenleyicide aç",
         onSelect: () => router.push(`/notes/${sidebarNote.id}`),
       },
       {
-        label: sidebarNote.isPinned ? "Sabitlemeyi kaldir" : "Sabitle",
-        hint: "Notu sirali listelerde ustte tut veya birak",
+        label: sidebarNote.isPinned ? "Sabitlemeyi kaldır" : "Sabitle",
+        hint: "Notu sıralı listelerde üstte tut veya bırak",
         onSelect: async () => {
           await updateNoteAction(sidebarNote.id, {
             isPinned: !sidebarNote.isPinned,
@@ -502,29 +503,29 @@ export function Sidebar({
         },
       },
       {
-        label: "Yukari tasi",
-        hint: "Not sirasini bir adim yukari al",
+        label: "Yukarı taşı",
+        hint: "Not sırasını bir adım yukarı al",
         onSelect: async () => {
           await moveNoteAction(sidebarNote.id, "up");
           router.refresh();
         },
       },
       {
-        label: "Asagi tasi",
-        hint: "Not sirasini bir adim asagi al",
+        label: "Aşağı taşı",
+        hint: "Not sırasını bir adım aşağı al",
         onSelect: async () => {
           await moveNoteAction(sidebarNote.id, "down");
           router.refresh();
         },
       },
       {
-        label: "Not baglantisini kopyala",
+        label: "Not bağlantısını kopyala",
         hint: "Dahili not adresini panoya kopyala",
         onSelect: () => copyInternalLink(`/notes/${sidebarNote.id}`),
       },
       {
-        label: "Arsive tasi",
-        hint: "Notu aktif listelerden kaldir",
+        label: "Arşive taşı",
+        hint: "Notu aktif listelerden kaldır",
         tone: "danger",
         onSelect: async () => {
           await archiveNoteAction(sidebarNote.id);
@@ -541,31 +542,31 @@ export function Sidebar({
   const buildFolderMenu = useCallback(
     (folder: SidebarFolder): ContextMenuItem[] => [
       {
-        label: "Klasoru ac",
-        hint: "Klasordeki notlari goruntule",
+        label: "Klasörü aç",
+        hint: "Klasördeki notları görüntüle",
         onSelect: () => router.push(`/folders/${folder.id}`),
       },
       {
-        label: "Bu klasore not olustur",
-        hint: "Yeni notu dogrudan bu klasore ekle",
+        label: "Bu klasöre not oluştur",
+        hint: "Yeni notu doğrudan bu klasöre ekle",
         onSelect: async () => {
           const noteId = await createNoteAction({ folderId: folder.id });
           router.push(`/notes/${noteId}`);
         },
       },
       {
-        label: "Klasor baglantisini kopyala",
-        hint: "Klasor adresini panoya kopyala",
+        label: "Klasör bağlantısını kopyala",
+        hint: "Klasör adresini panoya kopyala",
         onSelect: () => copyInternalLink(`/folders/${folder.id}`),
       },
       {
-        label: "Yukari tasi",
-        hint: "Klasor sirasini bir adim yukari al",
+        label: "Yukarı taşı",
+        hint: "Klasör sırasını bir adım yukarı al",
         onSelect: () => handleMoveFolder(folder.id, "up"),
       },
       {
-        label: "Asagi tasi",
-        hint: "Klasor sirasini bir adim asagi al",
+        label: "Aşağı taşı",
+        hint: "Klasör sırasını bir adım aşağı al",
         onSelect: () => handleMoveFolder(folder.id, "down"),
       },
     ],
@@ -577,7 +578,7 @@ export function Sidebar({
       APP_THEMES.map((theme) => ({
         label: theme.label,
         hint:
-          theme.id === activeThemeId ? "Su an secili tema" : theme.description,
+          theme.id === activeThemeId ? "Şu an seçili tema" : theme.description,
         onSelect: () => applyTheme(theme.id),
       })),
     [activeThemeId, applyTheme]
@@ -587,9 +588,9 @@ export function Sidebar({
     const actionItems: CommandPaletteItem[] = [
       {
         id: "action-new-note",
-        group: "Hizli islemler",
-        title: "Yeni not olustur",
-        description: "Bos bir not ac",
+        group: "Hızlı işlemler",
+        title: "Yeni not oluştur",
+        description: "Boş bir not aç",
         icon: "+",
         hint: "Enter",
         onSelect: async () => {
@@ -599,12 +600,12 @@ export function Sidebar({
       },
       {
         id: "action-new-folder",
-        group: "Hizli islemler",
-        title: "Yeni klasor olustur",
-        description: "Calisma alanina yeni klasor ekle",
+        group: "Hızlı işlemler",
+        title: "Yeni klasör oluştur",
+        description: "Çalışma alanına yeni klasör ekle",
         icon: "K",
         onSelect: async () => {
-          const folderName = window.prompt("Klasor adi", "Yeni Klasor")?.trim();
+          const folderName = window.prompt("Klasör adı", "Yeni Klasör")?.trim();
 
           if (!folderName) {
             return;
@@ -619,9 +620,9 @@ export function Sidebar({
       },
       {
         id: "action-template-note",
-        group: "Hizli islemler",
-        title: "Sablondan not olustur",
-        description: "Template picker ac",
+        group: "Hızlı işlemler",
+        title: "Şablondan not oluştur",
+        description: "Şablon seçiciyi aç",
         icon: "T",
         onSelect: async () => {
           setTemplatePickerOpenSignal((currentValue) => currentValue + 1);
@@ -629,9 +630,9 @@ export function Sidebar({
       },
       {
         id: "action-dashboard",
-        group: "Gecisler",
+        group: "Geçişler",
         title: "Panoya git",
-        description: "Ana calisma alani gorunumu",
+        description: "Ana çalışma alanı görünümü",
         icon: "Ana",
         onSelect: async () => {
           router.push("/dashboard");
@@ -639,19 +640,19 @@ export function Sidebar({
       },
       {
         id: "action-graph",
-        group: "Gecisler",
-        title: "Baglanti agina git",
-        description: "Not graph gorunumu",
-        icon: "Ag",
+        group: "Geçişler",
+        title: "Bağlantı ağına git",
+        description: "Not grafiği görünümü",
+        icon: "Ağ",
         onSelect: async () => {
           router.push("/graph");
         },
       },
       {
         id: "action-inbox",
-        group: "Gecisler",
+        group: "Geçişler",
         title: "Gelen kutusuna git",
-        description: "Klasorsuz notlari ac",
+        description: "Klasörsüz notları aç",
         icon: "In",
         onSelect: async () => {
           router.push("/inbox");
@@ -659,9 +660,9 @@ export function Sidebar({
       },
       {
         id: "action-search",
-        group: "Gecisler",
-        title: "Arama calisma alanini ac",
-        description: "Filtreli arama sayfasi",
+        group: "Geçişler",
+        title: "Arama çalışma alanını aç",
+        description: "Filtreli arama sayfası",
         icon: "Ara",
         onSelect: async () => {
           router.push("/search");
@@ -669,9 +670,9 @@ export function Sidebar({
       },
       {
         id: "action-templates",
-        group: "Gecisler",
-        title: "Sablon kutuphanesi",
-        description: "Template yonetim alanini ac",
+        group: "Geçişler",
+        title: "Şablon kütüphanesi",
+        description: "Şablon yönetim alanını aç",
         icon: "Tpl",
         onSelect: async () => {
           router.push("/templates");
@@ -679,29 +680,29 @@ export function Sidebar({
       },
       {
         id: "action-publish",
-        group: "Gecisler",
-        title: "Publish alani",
-        description: "Yayindaki notlari ve exportleri gor",
-        icon: "Pub",
+        group: "Geçişler",
+        title: "Yayın alanı",
+        description: "Yayımdaki notları ve dışa aktarımları gör",
+        icon: "Yay",
         onSelect: async () => {
           router.push("/publish");
         },
       },
       {
         id: "action-proposals",
-        group: "Gecisler",
-        title: "Oneri kuyrugu",
-        description: "AI proposal review alanini ac",
-        icon: "AI",
+        group: "Geçişler",
+        title: "Öneri kuyruğu",
+        description: "YZ öneri inceleme alanını aç",
+        icon: "YZ",
         onSelect: async () => {
           router.push("/proposals");
         },
       },
       {
         id: "action-settings",
-        group: "Gecisler",
+        group: "Geçişler",
         title: "Ayarlar",
-        description: "Tema, local queue ve tercihleri ac",
+        description: "Tema, yerel kuyruk ve tercihleri aç",
         icon: "Ay",
         onSelect: async () => {
           router.push("/settings");
@@ -709,9 +710,9 @@ export function Sidebar({
       },
       {
         id: "action-account",
-        group: "Gecisler",
+        group: "Geçişler",
         title: "Hesap",
-        description: "Profil ve sifre islemleri",
+        description: "Profil ve şifre işlemleri",
         icon: "Hs",
         onSelect: async () => {
           router.push("/account");
@@ -730,7 +731,7 @@ export function Sidebar({
         id: `note-${note.id}`,
         group: "Notlar",
         title: note.title,
-        description: "Notu duzenleyicide ac",
+        description: "Notu düzenleyicide aç",
         icon: note.icon ?? "Not",
         onSelect: async () => {
           router.push(`/notes/${note.id}`);
@@ -746,9 +747,9 @@ export function Sidebar({
       .slice(0, normalizedPaletteQuery ? 8 : 5)
       .map<CommandPaletteItem>((folder) => ({
         id: `folder-${folder.id}`,
-        group: "Klasorler",
+        group: "Klasörler",
         title: folder.name,
-        description: "Klasor gorunumunu ac",
+        description: "Klasör görünümünü aç",
         icon: folder.icon ?? "Kls",
         onSelect: async () => {
           router.push(`/folders/${folder.id}`);
@@ -766,7 +767,7 @@ export function Sidebar({
         id: `tag-${tag.id}`,
         group: "Etiketler",
         title: `#${tag.name}`,
-        description: `${tag.noteCount} not iceren etiket`,
+        description: `${tag.noteCount} not içeren etiket`,
         icon: "#",
         onSelect: async () => {
           router.push(`/tags/${tag.name}`);
@@ -784,9 +785,10 @@ export function Sidebar({
       .slice(0, normalizedPaletteQuery ? 6 : 4)
       .map<CommandPaletteItem>((template) => ({
         id: `template-${template.id}`,
-        group: "Sablonlar",
+        group: "Şablonlar",
         title: template.name,
-        description: template.description ?? `${template.category} sablonu`,
+        description:
+          template.description ?? `${getTemplateCategoryLabel(template.category)} şablonu`,
         icon: template.icon ?? "Tpl",
         onSelect: async () => {
           router.push(`/templates?selected=${template.id}`);
@@ -844,7 +846,7 @@ export function Sidebar({
               type="button"
               className="sidebar-compact-button"
               onClick={() => openPalette(searchQuery)}
-              aria-label="Komut paletini ac"
+              aria-label="Komut paletini aç"
             >
               Ara
             </button>
@@ -852,7 +854,7 @@ export function Sidebar({
               type="button"
               className="sidebar-compact-button"
               onClick={handleCreateNote}
-              aria-label="Yeni not olustur"
+              aria-label="Yeni not oluştur"
             >
               +
             </button>
@@ -862,9 +864,9 @@ export function Sidebar({
                 pathname === "/graph" ? "active" : ""
               }`}
               onClick={() => router.push("/graph")}
-              aria-label="Baglanti agina git"
+              aria-label="Bağlantı ağına git"
             >
-              Ag
+              Ağ
             </button>
           </div>
 
@@ -873,7 +875,7 @@ export function Sidebar({
               type="button"
               className="sidebar-compact-button"
               onClick={toggleSidebarCompact}
-              aria-label="Sidebari genislet"
+              aria-label="Sidebarı genişlet"
             >
               {">"}
             </button>
@@ -883,7 +885,7 @@ export function Sidebar({
               onClick={(event) =>
                 openContextMenuFromTrigger(event, themeMenuItems)
               }
-              aria-label="Tema sec"
+              aria-label="Tema seç"
             >
               {(user.name ?? user.email ?? "G").slice(0, 1).toUpperCase()}
             </button>
@@ -901,7 +903,7 @@ export function Sidebar({
               <span className="sidebar-workspace-copy">
                 <span className="sidebar-workspace-name">Graffle</span>
                 <span className="sidebar-workspace-meta">
-                  Kisisel bilgi alani
+                  Kişisel bilgi alanı
                 </span>
               </span>
             </button>
@@ -910,7 +912,7 @@ export function Sidebar({
                 type="button"
                 className="sidebar-icon-button"
                 onClick={handleCreateNote}
-                aria-label="Yeni not olustur"
+                aria-label="Yeni not oluştur"
               >
                 +
               </button>
@@ -918,7 +920,7 @@ export function Sidebar({
                 type="button"
                 className="sidebar-icon-button sidebar-collapse-button"
                 onClick={toggleSidebarCompact}
-                aria-label="Sidebari daralt"
+                aria-label="Sidebarı daralt"
               >
                 {"<"}
               </button>
@@ -939,14 +941,14 @@ export function Sidebar({
                     handleCommandSubmit();
                   }
                 }}
-                placeholder="Ara veya komut calistir..."
+                placeholder="Ara veya komut çalıştır..."
                 spellCheck={false}
               />
               <button
                 type="button"
                 className="sidebar-command-shortcut"
                 onClick={() => openPalette(searchQuery)}
-                aria-label="Arama kisayolu"
+                aria-label="Arama kısayolu"
               >
                 Ctrl K
               </button>
@@ -960,17 +962,17 @@ export function Sidebar({
                     className="sidebar-command-result"
                     onClick={handleCommandSubmit}
                   >
-                    <span>Enter ile ac</span>
+                    <span>Enter ile aç</span>
                     <span>{commandMatch.label}</span>
                   </button>
                 ) : (
                   <span className="sidebar-command-empty">
-                    Eslesen sonuc yok.
+                    Eşleşen sonuç yok.
                   </span>
                 )
               ) : (
                 <span className="sidebar-command-hint">
-                  Notlar, klasorler ve etiketler burada filtrelenir.
+                  Notlar, klasörler ve etiketler burada filtrelenir.
                 </span>
               )}
             </div>
@@ -984,20 +986,20 @@ export function Sidebar({
                 setTemplatePickerOpenSignal((currentValue) => currentValue + 1)
               }
             >
-              Sablon
+              Şablon
             </button>
             <button
               type="button"
               className="sidebar-inline-action"
               onClick={handleCreateFolder}
             >
-              Klasor
+              Klasör
             </button>
           </div>
 
           <div className="sidebar-section">
             <SidebarGroup
-              label="Calisma alani"
+              label="Çalışma alanı"
               meta={hasQuery ? "Sabit" : undefined}
               collapsible={false}
             >
@@ -1035,8 +1037,8 @@ export function Sidebar({
                   }`}
                   onClick={() => router.push("/graph")}
                 >
-                  <span className="sidebar-item-icon">Ag</span>
-                  <span className="sidebar-item-label">Baglanti agi</span>
+                  <span className="sidebar-item-icon">Ağ</span>
+                  <span className="sidebar-item-label">Bağlantı ağı</span>
                 </button>
                 <button
                   className={`sidebar-item ${
@@ -1045,7 +1047,7 @@ export function Sidebar({
                   onClick={() => router.push("/templates")}
                 >
                   <span className="sidebar-item-icon">Tpl</span>
-                  <span className="sidebar-item-label">Sablonlar</span>
+                  <span className="sidebar-item-label">Şablonlar</span>
                 </button>
                 <button
                   className={`sidebar-item ${
@@ -1054,7 +1056,7 @@ export function Sidebar({
                   onClick={() => router.push("/publish")}
                 >
                   <span className="sidebar-item-icon">Pub</span>
-                  <span className="sidebar-item-label">Publish</span>
+                  <span className="sidebar-item-label">Yayın</span>
                 </button>
                 <button
                   className={`sidebar-item ${
@@ -1062,8 +1064,8 @@ export function Sidebar({
                   }`}
                   onClick={() => router.push("/proposals")}
                 >
-                  <span className="sidebar-item-icon">AI</span>
-                  <span className="sidebar-item-label">Oneriler</span>
+                  <span className="sidebar-item-icon">YZ</span>
+                  <span className="sidebar-item-label">Öneriler</span>
                 </button>
                 <button
                   className={`sidebar-item ${
@@ -1087,7 +1089,7 @@ export function Sidebar({
             </SidebarGroup>
 
             <SidebarGroup
-              label="Klasorler"
+              label="Klasörler"
               meta={
                 hasQuery
                   ? `${visibleFolderCount}/${countFolders(folders)}`
@@ -1121,12 +1123,12 @@ export function Sidebar({
                       });
                     }}
                   >
-                    Koke tasi
+                    Kök’e taşı
                   </div>
                 ) : null}
                 {filteredFolders.length === 0 ? (
                   <div className="sidebar-empty">
-                    {hasQuery ? "Eslesen klasor yok." : "Henuz klasor yok."}
+                    {hasQuery ? "Eşleşen klasör yok." : "Henüz klasör yok."}
                   </div>
                 ) : (
                   filteredFolders.map((folder) => (
@@ -1174,8 +1176,8 @@ export function Sidebar({
                 {filteredTags.length === 0 ? (
                   <div className="sidebar-empty">
                     {hasQuery
-                      ? "Eslesen etiket yok."
-                      : "Henuz indekslenmis etiket yok."}
+                      ? "Eşleşen etiket yok."
+                      : "Henüz indekslenmiş etiket yok."}
                   </div>
                 ) : (
                   filteredTags.map((tag) => (
@@ -1195,7 +1197,7 @@ export function Sidebar({
             </SidebarGroup>
 
             <SidebarGroup
-              label={hasQuery ? "Not eslesmeleri" : "Son notlar"}
+              label={hasQuery ? "Not eşleşmeleri" : "Son notlar"}
               meta={
                 hasQuery
                   ? `${filteredNotes.length}/${notes.length}`
@@ -1208,8 +1210,8 @@ export function Sidebar({
                 {filteredNotes.length === 0 ? (
                   <div className="sidebar-empty">
                     {hasQuery
-                      ? "Eslesen not yok."
-                      : "Henuz not yok. Ilk notunu olustur."}
+                      ? "Eşleşen not yok."
+                      : "Henüz not yok. İlk notunu oluştur."}
                   </div>
                 ) : (
                   filteredNotes.map((sidebarNote) => (
@@ -1245,7 +1247,7 @@ export function Sidebar({
                 </span>
                 <div className="sidebar-user-copy">
                   <div className="sidebar-user-name">
-                    {user.name ?? user.email ?? "Graffle Kullanici"}
+                    {user.name ?? user.email ?? "Graffle Kullanıcı"}
                   </div>
                   {user.email ? (
                     <div className="sidebar-user-email">{user.email}</div>
@@ -1259,7 +1261,7 @@ export function Sidebar({
                   onClick={(event) =>
                     openContextMenuFromTrigger(event, themeMenuItems)
                   }
-                  aria-label="Tema sec"
+                  aria-label="Tema seç"
                 >
                   <span className="sidebar-theme-label">Tema</span>
                   <span className="sidebar-theme-value">{activeTheme.label}</span>
@@ -1269,7 +1271,7 @@ export function Sidebar({
 
             <form action={signOutAction}>
               <button type="submit" className="sidebar-sign-out">
-                Cikis yap
+                Çıkış yap
               </button>
             </form>
           </div>
@@ -1279,7 +1281,7 @@ export function Sidebar({
       <div className="sidebar-template-host" aria-hidden="true">
         <TemplatePicker
           templates={templates}
-          buttonLabel="Sablon"
+          buttonLabel="Şablon"
           buttonClassName="sidebar-template-host-button"
           openSignal={templatePickerOpenSignal}
         />
@@ -1291,7 +1293,7 @@ export function Sidebar({
           onMouseDown={handleSidebarResizeStart}
           role="separator"
           aria-orientation="vertical"
-          aria-label="Sidebar genisligini degistir"
+          aria-label="Sidebar genişliğini değiştir"
         />
       ) : null}
 
@@ -1391,7 +1393,7 @@ function SidebarNoteRow({
           type="button"
           className="context-trigger sidebar-row-action"
           onClick={(event) => onTriggerMenuOpen(event, note)}
-          aria-label={`${note.title} menusunu ac`}
+          aria-label={`${note.title} menüsünü aç`}
         >
           ...
         </button>
@@ -1505,7 +1507,7 @@ function SidebarFolderItem({
               event.stopPropagation();
               void onMoveFolder(folder.id, "up");
             }}
-            aria-label={`${folder.name} klasorunu yukari tasi`}
+            aria-label={`${folder.name} klasörünü yukarı taşı`}
           >
             ^
           </button>
@@ -1517,7 +1519,7 @@ function SidebarFolderItem({
               event.stopPropagation();
               void onMoveFolder(folder.id, "down");
             }}
-            aria-label={`${folder.name} klasorunu asagi tasi`}
+            aria-label={`${folder.name} klasörünü aşağı taşı`}
           >
             v
           </button>
@@ -1529,7 +1531,7 @@ function SidebarFolderItem({
               event.stopPropagation();
               void onQuickCreate(folder.id);
             }}
-            aria-label={`${folder.name} icine not olustur`}
+            aria-label={`${folder.name} içine not oluştur`}
           >
             +
           </button>
@@ -1537,7 +1539,7 @@ function SidebarFolderItem({
             type="button"
             className="context-trigger sidebar-row-action"
             onClick={(event) => onTriggerMenuOpen(event, folder)}
-            aria-label={`${folder.name} menusunu ac`}
+            aria-label={`${folder.name} menüsünü aç`}
           >
             ...
           </button>
@@ -1563,7 +1565,7 @@ function SidebarFolderItem({
             });
           }}
         >
-          {isInsideDropTarget ? "Icine birak" : "Altina birak"}
+          {isInsideDropTarget ? "İçine bırak" : "Altına bırak"}
         </div>
       ) : null}
 

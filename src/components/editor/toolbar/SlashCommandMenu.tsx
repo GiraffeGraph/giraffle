@@ -23,7 +23,7 @@ export function SlashCommandMenu<T extends CommandMenuItem>({
   command,
   style,
   title = "Komutlar",
-  subtitle = "Yon tuslari ile gezin, Enter ile uygula",
+  subtitle = "Yön tuşları ile gezin, Enter ile uygula",
 }: SlashCommandMenuProps<T>) {
   const itemsKey = items.map((item) => item.title).join("|");
   const [selection, setSelection] = useState({ itemsKey, index: 0 });

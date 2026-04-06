@@ -143,7 +143,7 @@ export function CommandPalette({
             className="command-palette-input"
             value={query}
             onChange={(event) => onQueryChange(event.target.value)}
-            placeholder="Not, klasor, etiket veya komut ara..."
+            placeholder="Not, klasör, etiket veya komut ara..."
             spellCheck={false}
           />
           <span className="command-palette-shortcut">Esc</span>
@@ -152,7 +152,7 @@ export function CommandPalette({
         <div className="command-palette-body">
           {groupedItems.length === 0 ? (
             <div className="command-palette-empty">
-              Bu sorgu icin sonuc bulunamadi.
+              Bu sorgu için sonuç bulunamadı.
             </div>
           ) : (
             groupedItems.map(([groupLabel, groupItems]) => (

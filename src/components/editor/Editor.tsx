@@ -248,7 +248,7 @@ export function Editor({
       const normalizedTarget = currentTarget.toLowerCase();
       const items: WikilinkMenuItem[] = matchingNotes.map((note) => ({
         title: note.title,
-        description: "Var olan nota baglan",
+        description: "Var olan nota bağlan",
         icon: "[[",
         note,
       }));
@@ -261,8 +261,8 @@ export function Editor({
         )
       ) {
         items.push({
-          title: `"${currentTarget}" notunu olustur`,
-          description: "Not olustur ve cozumlenmis wikilink ekle",
+          title: `"${currentTarget}" notunu oluştur`,
+          description: "Not oluştur ve çözümlenmiş wikilink ekle",
           icon: "+",
           createTarget: currentTarget,
         });
@@ -293,7 +293,7 @@ export function Editor({
         allowBase64: false,
       }),
       Placeholder.configure({
-        placeholder: 'Komutlar icin "/" yaz ya da notunu yazmaya basla...',
+        placeholder: 'Komutlar için "/" yaz ya da notunu yazmaya başla...',
         emptyEditorClass: "is-editor-empty",
       }),
       BlockIdExtension,
@@ -386,7 +386,7 @@ export function Editor({
         }
 
         const shouldCreate = window.confirm(
-          `Bu wikilinkten "${wikilinkTarget}" notu olusturulsun mu?`
+          `Bu wikilinkten "${wikilinkTarget}" notu oluşturulsun mu?`
         );
 
         if (!shouldCreate) {
@@ -702,7 +702,7 @@ export function Editor({
           nextAttrs.summary =
             typeof nextAttrs.summary === "string"
               ? nextAttrs.summary
-              : "Ayrintilar";
+              : "Ayrıntılar";
         }
 
         if (nextType === "paragraph") {
@@ -739,7 +739,7 @@ export function Editor({
         .map((row) => row.join(" | "))
         .join("\n");
       const nextValue = window.prompt(
-        "Tablo satirlarini duzenle. Her satir yeni satir, hucreler | ile ayrilir.",
+        "Tablo satırlarını düzenle. Her satır yeni satır, hücreler | ile ayrılır.",
         initialValue
       );
 
@@ -749,7 +749,7 @@ export function Editor({
 
       const nextRows = parseTableRows(nextValue);
       const nextCaption = window.prompt(
-        "Tablo basligi/caption",
+        "Tablo başlığı/açıklaması",
         typeof location.block.attrs?.caption === "string"
           ? location.block.attrs.caption
           : ""
@@ -795,7 +795,7 @@ export function Editor({
         });
 
         if (!response.ok) {
-          throw new Error("Gorsel yuklenemedi");
+          throw new Error("Görsel yüklenemedi");
         }
 
         const payload = (await response.json()) as {
@@ -932,17 +932,17 @@ export function Editor({
         <div className="editor-surface-bar">
           <span className="editor-surface-hint">/ ile blok ekle</span>
           <span className="editor-surface-divider" />
-          <span className="editor-surface-hint">[[ ile baglanti olustur</span>
+          <span className="editor-surface-hint">[[ ile bağlantı oluştur</span>
           <span className="editor-surface-divider" />
           <span className="editor-surface-meta">
-            Metin secince hizli bicimlendirme acilir
+            Metin seçince hızlı biçimlendirme açılır
           </span>
           <button
             type="button"
             className="editor-surface-upload"
             onClick={() => void handleImageUpload()}
           >
-            {isUploadingImage ? "Yukleniyor..." : "Gorsel yukle"}
+            {isUploadingImage ? "Yükleniyor..." : "Görsel yükle"}
           </button>
         </div>
       ) : null}
@@ -963,7 +963,7 @@ export function Editor({
               setDraggedBlockId(blockToolbar.blockId);
               setIsBlockMenuOpen(false);
             }}
-            aria-label="Bloku surukle"
+            aria-label="Bloğu sürükle"
           >
             ::
           </button>
@@ -985,7 +985,7 @@ export function Editor({
               event.preventDefault();
               handleMoveBlock("up");
             }}
-            aria-label="Bloku yukari tasi"
+            aria-label="Bloğu yukarı taşı"
           >
             ^
           </button>
@@ -996,7 +996,7 @@ export function Editor({
               event.preventDefault();
               handleMoveBlock("down");
             }}
-            aria-label="Bloku asagi tasi"
+            aria-label="Bloğu aşağı taşı"
           >
             v
           </button>
@@ -1007,7 +1007,7 @@ export function Editor({
               event.preventDefault();
               setIsBlockMenuOpen((currentValue) => !currentValue);
             }}
-            aria-label="Blok menusunu ac"
+            aria-label="Blok menüsünü aç"
           >
             ...
           </button>
@@ -1034,42 +1034,42 @@ export function Editor({
           }}
         >
           <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={handleDuplicateBlock}>
-            Kopyasini olustur
+            Kopyasını oluştur
           </button>
           <button
             type="button"
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => handleTransformBlock("paragraph")}
           >
-            Paragrafa donustur
+            Paragrafa dönüştür
           </button>
           <button
             type="button"
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => handleTransformBlock("heading")}
           >
-            Basliga donustur
+            Başlığa dönüştür
           </button>
           <button
             type="button"
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => handleTransformBlock("callout")}
           >
-            Callout yap
+            Vurgu yap
           </button>
           <button
             type="button"
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => handleTransformBlock("toggle")}
           >
-            Toggle yap
+            Açılır bölüm yap
           </button>
           <button
             type="button"
             onMouseDown={(event) => event.preventDefault()}
             onClick={handleEditTableBlock}
           >
-            Tabloyu duzenle
+            Tabloyu düzenle
           </button>
           <button
             type="button"
@@ -1206,7 +1206,7 @@ export function Editor({
           items={wikilinkItems}
           command={handleWikilinkCommand}
           title="Wikilinkler"
-          subtitle="Var olan notu sec veya yeni not olustur"
+          subtitle="Var olan notu seç veya yeni not oluştur"
           style={{
             top: wikilinkMenu.position.top,
             left: wikilinkMenu.position.left,
@@ -1218,8 +1218,8 @@ export function Editor({
         <SlashCommandMenu
           items={slashItems}
           command={handleSlashCommand}
-          title="Blok komutlari"
-          subtitle="Yon tuslari ile gezin, Enter ile ekle"
+          title="Blok komutları"
+          subtitle="Yön tuşları ile gezin, Enter ile ekle"
           style={{
             top: slashMenu.position.top,
             left: slashMenu.position.left,
@@ -1335,8 +1335,8 @@ function getTableRows(block: BlockNodeContent): string[][] {
 
   if (!Array.isArray(rows)) {
     return [
-      ["Sutun 1", "Sutun 2"],
-      ["Deger", "Deger"],
+      ["Sütun 1", "Sütun 2"],
+      ["Değer", "Değer"],
     ];
   }
 
@@ -1359,7 +1359,7 @@ function parseTableRows(value: string): string[][] {
   return rows.length > 0
     ? rows
     : [
-        ["Sutun 1", "Sutun 2"],
-        ["Deger", "Deger"],
+        ["Sütun 1", "Sütun 2"],
+        ["Değer", "Değer"],
       ];
 }

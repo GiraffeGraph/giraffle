@@ -22,9 +22,9 @@ export default function ForgotPasswordPage() {
       <div className="auth-card">
         <div className="auth-header">
           <span className="auth-logo">G</span>
-          <h1 className="auth-title">Sifre sifirla</h1>
+          <h1 className="auth-title">Şifre sıfırla</h1>
           <p className="auth-subtitle">
-            Hesabin varsa sifirlama tokeni olusturulacak.
+            Hesabın varsa sıfırlama bağlantısı hazırlanacak.
           </p>
         </div>
 
@@ -35,13 +35,13 @@ export default function ForgotPasswordPage() {
             <input id="email" name="email" type="email" required autoFocus />
           </div>
           <button type="submit" className="auth-submit" disabled={isLoading}>
-            {isLoading ? "Hazirlaniyor..." : "Reset istegi olustur"}
+            {isLoading ? "Hazırlanıyor..." : "Sıfırlama isteği oluştur"}
           </button>
         </form>
 
         <div className="auth-footer">
           <Link href="/login" className="auth-link">
-            Girise don
+            Girişe dön
           </Link>
         </div>
       </div>

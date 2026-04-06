@@ -85,10 +85,10 @@ export function GraphView({ graph, unresolvedLinks }: GraphViewProps) {
   return (
     <div className="graph-page">
       <div className="graph-header">
-        <h1 className="graph-title">Baglanti agi</h1>
+        <h1 className="graph-title">Bağlantı ağı</h1>
         <p className="graph-subtitle">
-          Kalici wikilink projeksiyonlariyla notlar, orphan dugumler ve
-          cozulmemis hedefler.
+          Kalıcı wikilink projeksiyonlarıyla notları, bağlantısız düğümleri ve
+          çözülmemiş hedefleri gör.
         </p>
         <div className="graph-stat-row">
           <div className="graph-stat-chip">
@@ -97,15 +97,15 @@ export function GraphView({ graph, unresolvedLinks }: GraphViewProps) {
           </div>
           <div className="graph-stat-chip">
             <span className="graph-stat-number">{graph.edges.length}</span>
-            <span className="graph-stat-label">bag</span>
+            <span className="graph-stat-label">bağ</span>
           </div>
           <div className="graph-stat-chip">
             <span className="graph-stat-number">{orphanCount}</span>
-            <span className="graph-stat-label">orphan</span>
+            <span className="graph-stat-label">bağlantısız</span>
           </div>
           <div className="graph-stat-chip">
             <span className="graph-stat-number">{unresolvedLinks.length}</span>
-            <span className="graph-stat-label">cozulmemis</span>
+            <span className="graph-stat-label">çözülmemiş</span>
           </div>
         </div>
         <div className="graph-toolbar">
@@ -123,9 +123,9 @@ export function GraphView({ graph, unresolvedLinks }: GraphViewProps) {
               setFilter(event.target.value as "all" | "published" | "orphan")
             }
           >
-            <option value="all">Tum notlar</option>
-            <option value="published">Yayindaki notlar</option>
-            <option value="orphan">Sadece orphan</option>
+            <option value="all">Tüm notlar</option>
+            <option value="published">Yayımdaki notlar</option>
+            <option value="orphan">Sadece bağlantısız</option>
           </select>
         </div>
       </div>
@@ -197,14 +197,14 @@ export function GraphView({ graph, unresolvedLinks }: GraphViewProps) {
             <>
               <div className="graph-panel-title">{activeNode.title}</div>
               <div className="graph-panel-meta">
-                Bag sayisi {activeNode.degree} ·{" "}
-                {activeNode.isPublished ? "Yayinda" : "Ozel"}
+                Bağ sayısı {activeNode.degree} ·{" "}
+                {activeNode.isPublished ? "Yayında" : "Özel"}
               </div>
-              <div className="graph-panel-section-title">Baglantilar</div>
+              <div className="graph-panel-section-title">Bağlantılar</div>
               <div className="graph-panel-list">
                 {activeEdges.length === 0 ? (
                   <div className="graph-panel-empty">
-                    Bu not icin cozumlenmis baglanti yok.
+                    Bu not için çözümlenmiş bağlantı yok.
                   </div>
                 ) : (
                   activeEdges.map((edge) => (
@@ -228,14 +228,14 @@ export function GraphView({ graph, unresolvedLinks }: GraphViewProps) {
             </>
           ) : (
             <div className="graph-panel-empty">
-              Ilk kayittan sonra notlar ve baglantilar burada gorunur.
+              İlk kayıttan sonra notlar ve bağlantılar burada görünür.
             </div>
           )}
 
-          <div className="graph-panel-section-title">Cozulmemis linkler</div>
+          <div className="graph-panel-section-title">Çözülmemiş bağlantılar</div>
           <div className="graph-panel-list">
             {unresolvedLinks.length === 0 ? (
-              <div className="graph-panel-empty">Cozulmemis hedef yok.</div>
+              <div className="graph-panel-empty">Çözülmemiş hedef yok.</div>
             ) : (
               unresolvedLinks.slice(0, 8).map((item) => (
                 <div key={item.targetRaw} className="graph-panel-link">

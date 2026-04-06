@@ -189,7 +189,7 @@ export async function requestPasswordResetAction(email: string) {
   if (!rateLimit.allowed) {
     return {
       ok: false,
-      message: "Cok fazla sifre sifirlama istegi yapildi.",
+      message: "Çok fazla şifre sıfırlama isteği yapıldı.",
     } as const;
   }
 
@@ -204,7 +204,7 @@ export async function requestPasswordResetAction(email: string) {
   if (!user) {
     return {
       ok: true,
-      message: "Hesap varsa sifirlama akisi hazirlandi.",
+      message: "Hesap varsa sıfırlama akışı hazırlandı.",
     } as const;
   }
 
@@ -230,8 +230,8 @@ export async function requestPasswordResetAction(email: string) {
     ok: true,
     message:
       process.env.NODE_ENV === "production"
-        ? "Sifirlama istegi kaydedildi."
-        : `Gelistirme baglantisi: /reset-password/${token}`,
+        ? "Sıfırlama isteği kaydedildi."
+        : `Geliştirme bağlantısı: /reset-password/${token}`,
     token: process.env.NODE_ENV === "production" ? undefined : token,
   } as const;
 }

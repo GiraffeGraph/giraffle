@@ -134,7 +134,7 @@ export function SettingsWorkspace({
     <div className="settings-layout">
       <section className="settings-panel">
         <div className="dashboard-section-head">
-          <span className="dashboard-section-kicker">Tema ve gorunum</span>
+          <span className="dashboard-section-kicker">Tema ve görünüm</span>
         </div>
         <label className="settings-field">
           <span>Aktif tema</span>
@@ -154,15 +154,15 @@ export function SettingsWorkspace({
         <div className="settings-helper-text">{appliedTheme.description}</div>
         <div className="settings-stat-grid">
           <div className="settings-stat-card">
-            <span className="settings-stat-label">Sidebar genisligi</span>
+            <span className="settings-stat-label">Sidebar genişliği</span>
             <strong>{sidebarWidth}px</strong>
           </div>
           <div className="settings-stat-card">
-            <span className="settings-stat-label">Compact mod</span>
-            <strong>{sidebarCompact ? "Acik" : "Kapali"}</strong>
+            <span className="settings-stat-label">Kompakt mod</span>
+            <strong>{sidebarCompact ? "Açık" : "Kapalı"}</strong>
           </div>
           <div className="settings-stat-card">
-            <span className="settings-stat-label">Kapali bolumler</span>
+            <span className="settings-stat-label">Kapalı bölümler</span>
             <strong>
               {Object.values(sections).filter(Boolean).length}/3
             </strong>
@@ -173,23 +173,23 @@ export function SettingsWorkspace({
           className="dashboard-secondary-btn"
           onClick={resetPreferences}
         >
-          UI tercihlerini sifirla
+          Arayüz tercihlerini sıfırla
         </button>
       </section>
 
       <section className="settings-panel">
         <div className="dashboard-section-head">
-          <span className="dashboard-section-kicker">Local sync siniri</span>
+          <span className="dashboard-section-kicker">Yerel eşitleme sınırı</span>
         </div>
         <div className="settings-stat-grid">
           <div className="settings-stat-card">
-            <span className="settings-stat-label">Kuyruktaki mutation</span>
+            <span className="settings-stat-label">Kuyruktaki işlem</span>
             <strong>{queuedItems.length}</strong>
           </div>
         </div>
         <div className="settings-log-list">
           {queuedItems.length === 0 ? (
-            <div className="settings-empty">Bekleyen local mutation yok.</div>
+            <div className="settings-empty">Bekleyen yerel işlem yok.</div>
           ) : (
             queuedItems.map((item) => (
               <div key={item.id} className="settings-log-row">
@@ -211,17 +211,17 @@ export function SettingsWorkspace({
           onClick={clearQueue}
           disabled={queuedItems.length === 0}
         >
-          Local queue temizle
+          Yerel kuyruğu temizle
         </button>
       </section>
 
       <section className="settings-panel">
         <div className="dashboard-section-head">
-          <span className="dashboard-section-kicker">Sunucu operasyonlari</span>
+          <span className="dashboard-section-kicker">Sunucu operasyonları</span>
         </div>
         <div className="settings-log-list">
           {operationLogs.length === 0 ? (
-            <div className="settings-empty">Henuz operation log yok.</div>
+            <div className="settings-empty">Henüz işlem kaydı yok.</div>
           ) : (
             operationLogs.map((entry) => (
               <div key={entry.id} className="settings-log-row">

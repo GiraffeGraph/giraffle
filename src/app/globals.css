@@ -2307,7 +2307,7 @@ body::before {
 .graph-panel-link,
 .template-picker-close {
   border: 1px solid var(--border-soft);
-  border-radius: 10px;
+  border-radius: var(--radius-control);
   background: transparent;
   color: var(--text-secondary);
   cursor: pointer;
@@ -2704,9 +2704,9 @@ body::before {
   gap: 12px;
   padding: 14px 16px;
   border: 1px solid var(--border-soft);
-  border-radius: 14px;
+  border-radius: var(--radius-card);
   background: var(--surface-glass);
-  box-shadow: none;
+  box-shadow: var(--shadow-soft);
 }
 
 .dashboard-note-card::before {
@@ -2715,7 +2715,7 @@ body::before {
 
 .dashboard-note-card:hover {
   transform: none;
-  box-shadow: none;
+  box-shadow: var(--shadow-panel);
   border-color: var(--border-color);
   background: var(--surface-glass-hover);
 }
@@ -2724,7 +2724,7 @@ body::before {
   min-width: 34px;
   height: 34px;
   margin-bottom: 0;
-  border-radius: 10px;
+  border-radius: var(--radius-control);
   background: var(--surface-highlight);
   color: var(--text-secondary);
   font-size: 11px;
@@ -2913,7 +2913,7 @@ body::before {
 .slash-menu,
 .context-menu {
   border-color: var(--border-soft);
-  border-radius: 14px;
+  border-radius: var(--radius-panel);
   background: var(--surface-glass-strong);
   box-shadow: var(--shadow-lift);
   backdrop-filter: blur(12px);
@@ -2921,7 +2921,7 @@ body::before {
 
 .slash-menu-item,
 .context-menu-item {
-  border-radius: 10px;
+  border-radius: var(--radius-control);
 }
 
 .slash-menu-item:hover,
@@ -3052,6 +3052,14 @@ body::before {
 :root {
   --sidebar-width: 272px;
   --surface-glass-hover: #efefec;
+  --radius-control-sm: 8px;
+  --radius-control: 10px;
+  --radius-card: 14px;
+  --radius-panel: 16px;
+  --radius-shell: 20px;
+  --shadow-soft: 0 1px 2px rgba(15, 23, 42, 0.05);
+  --shadow-panel: 0 10px 24px rgba(15, 23, 42, 0.06);
+  --shadow-lift: 0 18px 40px rgba(15, 23, 42, 0.1);
 }
 
 :root[data-theme="graphite-night"] {
@@ -3115,9 +3123,9 @@ body::before {
   --code-block-text: #ededed;
   --code-inline-color: #9abbff;
 
-  --shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.22);
-  --shadow-panel: 0 12px 26px rgba(0, 0, 0, 0.22);
-  --shadow-lift: 0 20px 36px rgba(0, 0, 0, 0.28);
+  --shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.24);
+  --shadow-panel: 0 12px 28px rgba(0, 0, 0, 0.24);
+  --shadow-lift: 0 20px 40px rgba(0, 0, 0, 0.3);
 }
 
 .sidebar-topbar {
@@ -3234,7 +3242,7 @@ body::before {
   width: 56px;
   height: 56px;
   border: 1px solid var(--border-soft);
-  border-radius: 16px;
+  border-radius: var(--radius-panel);
   background: var(--surface-glass);
   color: var(--text-secondary);
   font-size: 13px;
@@ -3556,6 +3564,8 @@ body::before {
   min-width: 320px;
   max-width: min(360px, calc(100vw - 32px));
   padding: 10px;
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-lift);
 }
 
 .slash-menu-header {
@@ -3592,7 +3602,7 @@ body::before {
 .slash-menu-icon {
   width: 30px;
   height: 30px;
-  border-radius: 9px;
+  border-radius: var(--radius-control-sm);
   font-size: 11px;
 }
 
@@ -3729,7 +3739,7 @@ body::before {
   max-height: min(72vh, 820px);
   overflow: hidden;
   border: 1px solid var(--border-soft);
-  border-radius: 18px;
+  border-radius: var(--radius-panel);
   background: var(--surface-glass-strong);
   box-shadow: var(--shadow-lift);
 }
@@ -3803,11 +3813,15 @@ body::before {
   width: 100%;
   padding: 12px;
   border: 1px solid transparent;
-  border-radius: 12px;
+  border-radius: var(--radius-control);
   background: transparent;
   color: var(--text-primary);
   cursor: pointer;
   text-align: left;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
 }
 
 .command-palette-item:hover,
@@ -3822,7 +3836,7 @@ body::before {
   justify-content: center;
   width: 34px;
   height: 34px;
-  border-radius: 10px;
+  border-radius: var(--radius-control);
   background: var(--surface-highlight);
   color: var(--text-secondary);
   font-size: 12px;
@@ -3932,7 +3946,7 @@ body::before {
   gap: 10px;
   padding: 8px 10px;
   border: none;
-  border-radius: 10px;
+  border-radius: var(--radius-control);
   background: transparent;
   color: var(--text-primary);
   cursor: pointer;
@@ -3949,7 +3963,7 @@ body::before {
   justify-content: center;
   width: 28px;
   height: 28px;
-  border-radius: 8px;
+  border-radius: var(--radius-control-sm);
   background: var(--surface-accent-blend);
   color: var(--text-primary);
   font-size: 12px;
@@ -3979,7 +3993,7 @@ body::before {
   width: 28px;
   height: 28px;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: var(--radius-control-sm);
   background: transparent;
   color: var(--text-secondary);
   cursor: pointer;
@@ -4001,7 +4015,7 @@ body::before {
 }
 
 .sidebar-command {
-  border-radius: 10px;
+  border-radius: var(--radius-control);
   background: var(--surface-1);
 }
 
@@ -4018,7 +4032,7 @@ body::before {
   min-height: 28px;
   padding: 6px 10px;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: var(--radius-control-sm);
   background: transparent;
   color: var(--text-secondary);
   cursor: pointer;
@@ -4083,7 +4097,7 @@ body::before {
 .sidebar-item,
 .sidebar-tag-item {
   min-height: 28px;
-  border-radius: 8px;
+  border-radius: var(--radius-control-sm);
   color: var(--text-secondary);
 }
 
@@ -4182,7 +4196,7 @@ body::before {
   min-width: 26px;
   height: 26px;
   padding: 0 8px;
-  border-radius: 8px;
+  border-radius: var(--radius-control-sm);
 }
 
 .sidebar-row-action:hover,
@@ -4209,13 +4223,13 @@ body::before {
 .sidebar-user-avatar {
   width: 28px;
   height: 28px;
-  border-radius: 8px;
+  border-radius: var(--radius-control-sm);
   font-size: 12px;
 }
 
 .sidebar-theme-button,
 .sidebar-sign-out {
-  border-radius: 8px;
+  border-radius: var(--radius-control-sm);
 }
 
 .sidebar-template-host,
@@ -4273,7 +4287,7 @@ body::before {
   width: 48px;
   height: 36px;
   border: 1px solid transparent;
-  border-radius: 10px;
+  border-radius: var(--radius-control);
   background: transparent;
   color: var(--text-secondary);
   cursor: pointer;
@@ -4372,7 +4386,7 @@ body::before {
   gap: 4px;
   padding: 4px;
   border: 1px solid var(--border-soft);
-  border-radius: 10px;
+  border-radius: var(--radius-card);
   background: var(--surface-glass-strong);
   box-shadow: var(--shadow-soft);
 }
@@ -4384,7 +4398,7 @@ body::before {
   width: 26px;
   height: 26px;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: var(--radius-control-sm);
   background: transparent;
   color: var(--text-secondary);
   cursor: pointer;
@@ -4448,7 +4462,8 @@ body::before {
 .note-slug-input {
   border: 1px solid var(--border-color);
   background: var(--surface-glass);
-  border-radius: 14px;
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-soft);
 }
 
 .settings-stat-card,
@@ -4505,6 +4520,7 @@ body::before {
 .note-slug-input {
   padding: 10px 12px;
   color: var(--text-primary);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
 }
 
 .editor-surface-upload {
@@ -4525,7 +4541,7 @@ body::before {
   padding: 8px;
   border: 1px solid var(--border-color);
   background: var(--surface-glass-strong);
-  border-radius: 16px;
+  border-radius: var(--radius-panel);
   box-shadow: var(--shadow-panel);
 }
 
@@ -4535,7 +4551,7 @@ body::before {
   color: var(--text-primary);
   text-align: left;
   padding: 8px 10px;
-  border-radius: 10px;
+  border-radius: var(--radius-control);
 }
 
 .editor-block-context-menu button:hover {

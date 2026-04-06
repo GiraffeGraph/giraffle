@@ -18,7 +18,7 @@ export const ToggleNode = Node.create({
   addAttributes() {
     return {
       summary: {
-        default: "Toggle",
+        default: "Açılır bölüm",
       },
     };
   },
@@ -35,7 +35,7 @@ export const ToggleNode = Node.create({
     const summary =
       typeof HTMLAttributes.summary === "string"
         ? HTMLAttributes.summary
-        : "Toggle";
+        : "Açılır bölüm";
 
     return [
       "details",
@@ -58,7 +58,7 @@ export const ToggleNode = Node.create({
           commands.insertContent({
             type: this.name,
             attrs: {
-              summary: attributes.summary ?? "Toggle",
+              summary: attributes.summary ?? "Açılır bölüm",
             },
             content: [
               {

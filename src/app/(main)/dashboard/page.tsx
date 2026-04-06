@@ -36,10 +36,10 @@ export default async function DashboardPage() {
     <div className="dashboard">
       <section className="dashboard-hero">
         <div className="dashboard-header">
-          <div className="dashboard-kicker">Calisma alani</div>
+          <div className="dashboard-kicker">Çalışma alanı</div>
           <h1 className="dashboard-title">Notlar</h1>
           <p className="dashboard-subtitle">
-            Notlarini klasorler, etiketler ve baglantilar etrafinda duzenle.
+            Notlarını klasörler, etiketler ve bağlantılar etrafında düzenle.
           </p>
         </div>
 
@@ -50,7 +50,7 @@ export default async function DashboardPage() {
           </div>
           <div className="dashboard-stat-card">
             <span className="dashboard-stat-value">{templates.length}</span>
-            <span className="dashboard-stat-label">sablon</span>
+            <span className="dashboard-stat-label">şablon</span>
           </div>
         </div>
 
@@ -62,7 +62,7 @@ export default async function DashboardPage() {
           </form>
           <TemplatePicker
             templates={templateSummaries}
-            buttonLabel="Sablondan olustur"
+            buttonLabel="Şablondan oluştur"
             buttonClassName="dashboard-secondary-btn"
           />
         </div>
@@ -70,15 +70,15 @@ export default async function DashboardPage() {
 
       {notes.length === 0 ? (
         <div className="dashboard-empty">
-          <div className="dashboard-empty-icon">Bos</div>
+          <div className="dashboard-empty-icon">Boş</div>
           <p className="dashboard-empty-text">
-            Henuz not yok. Bos bir not olustur ya da hazir bir sablon sec.
+            Henüz not yok. Boş bir not oluştur ya da hazır bir şablon seç.
           </p>
         </div>
       ) : (
         <>
           <div className="dashboard-section-head">
-            <span className="dashboard-section-kicker">Son guncellenenler</span>
+            <span className="dashboard-section-kicker">Son güncellenenler</span>
           </div>
           <div className="dashboard-grid">
             {notes.map((note) => (

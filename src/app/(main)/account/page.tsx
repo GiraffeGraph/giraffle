@@ -28,9 +28,9 @@ export default async function AccountPage() {
       <section className="dashboard-hero">
         <div className="dashboard-header">
           <div className="dashboard-kicker">Hesap</div>
-          <h1 className="dashboard-title">Hesap ayarlari</h1>
+          <h1 className="dashboard-title">Hesap ayarları</h1>
           <p className="dashboard-subtitle">
-            Profilini guncelle, sifreni degistir ve reset akisini yonet.
+            Profilini güncelle, şifreni değiştir ve sıfırlama akışını yönet.
           </p>
         </div>
       </section>
@@ -57,24 +57,24 @@ export default async function AccountPage() {
 
         <section className="templates-column">
           <div className="dashboard-section-head">
-            <span className="dashboard-section-kicker">Sifre</span>
+            <span className="dashboard-section-kicker">Şifre</span>
           </div>
           <form action={handlePasswordChange} className="settings-panel">
             <label className="settings-field">
-              <span>Mevcut sifre</span>
+              <span>Mevcut şifre</span>
               <input name="currentPassword" type="password" required />
             </label>
             <label className="settings-field">
-              <span>Yeni sifre</span>
+              <span>Yeni şifre</span>
               <input name="nextPassword" type="password" minLength={8} required />
             </label>
             <button type="submit" className="dashboard-empty-btn">
-              Sifreyi degistir
+              Şifreyi değiştir
             </button>
           </form>
 
           <Link href="/forgot-password" className="dashboard-secondary-btn">
-            Reset akisini ac
+            Sıfırlama akışını aç
           </Link>
         </section>
       </div>

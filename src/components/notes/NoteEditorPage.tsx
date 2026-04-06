@@ -83,7 +83,7 @@ export function NoteEditorPage({
   const currentFolderLabel = useMemo(
     () =>
       folderOptions.find((folder) => folder.id === currentFolderId)?.name ??
-      "Calisma alani",
+      "Çalışma alanı",
     [currentFolderId, folderOptions]
   );
 
@@ -289,49 +289,49 @@ export function NoteEditorPage({
   const noteContextItems = useMemo<ContextMenuItem[]>(
     () => [
       {
-        label: isPinned ? "Sabitlemeyi kaldir" : "Sabitle",
-        hint: "Not sirasinda ustte tut veya serbest birak",
+        label: isPinned ? "Sabitlemeyi kaldır" : "Sabitle",
+        hint: "Not sırasında üstte tut veya serbest bırak",
         onSelect: handlePinToggle,
       },
       {
-        label: isPublished ? "Yayindan kaldir" : "Yayinla",
-        hint: "Notun yayin durumunu degistir",
+        label: isPublished ? "Yayımdan kaldır" : "Yayımla",
+        hint: "Notun yayın durumunu değiştir",
         onSelect: handlePublishToggle,
       },
       {
-        label: "Yukari tasi",
-        hint: "Bulundugu listede bir adim yukari al",
+        label: "Yukarı taşı",
+        hint: "Bulunduğu listede bir adım yukarı al",
         onSelect: () => handleMoveNote("up"),
       },
       {
-        label: "Asagi tasi",
-        hint: "Bulundugu listede bir adim asagi al",
+        label: "Aşağı taşı",
+        hint: "Bulunduğu listede bir adım aşağı al",
         onSelect: () => handleMoveNote("down"),
       },
       {
-        label: "Not baglantisini kopyala",
+        label: "Not bağlantısını kopyala",
         hint: "Dahili not adresini panoya kopyala",
         onSelect: handleCopyNoteLink,
       },
       {
         label: "Markdown kopyala",
-        hint: "Disa aktarilan Markdown surumunu kopyala",
+        hint: "Dışa aktarılan Markdown sürümünü kopyala",
         onSelect: () => handleCopyExport("markdown"),
       },
       {
         label: "MDX kopyala",
-        hint: "Disa aktarilan MDX surumunu kopyala",
+        hint: "Dışa aktarılan MDX sürümünü kopyala",
         onSelect: () => handleCopyExport("mdx"),
       },
       {
-        label: "Yayindaki sayfayi ac",
-        hint: "Genel gorunumu yeni sekmede ac",
+        label: "Yayımdaki sayfayı aç",
+        hint: "Genel görünümü yeni sekmede aç",
         disabled: !isPublished,
         onSelect: handleOpenPublishedPage,
       },
       {
-        label: "Arsive tasi",
-        hint: "Notu aktif listelerden kaldir",
+        label: "Arşive taşı",
+        hint: "Notu aktif listelerden kaldır",
         tone: "danger",
         onSelect: handleArchiveNote,
       },
@@ -358,7 +358,7 @@ export function NoteEditorPage({
             className="note-breadcrumb"
             onClick={() => router.push("/dashboard")}
           >
-            Calisma alani
+            Çalışma alanı
           </button>
           <span className="note-breadcrumb-separator">/</span>
           {currentFolderId ? (
@@ -383,7 +383,7 @@ export function NoteEditorPage({
               value={currentFolderId ?? ""}
               onChange={(event) => handleFolderChange(event.target.value)}
             >
-              <option value="">Calisma alani koku</option>
+              <option value="">Çalışma alanı kökü</option>
               {folderOptions.map((folder) => (
                 <option key={folder.id} value={folder.id}>
                   {folder.name}
@@ -394,22 +394,22 @@ export function NoteEditorPage({
 
           <div className="note-toolbar">
             <button className="note-toolbar-btn primary" onClick={handlePublishToggle}>
-              {isPublished ? "Yayindan kaldir" : "Yayinla"}
+              {isPublished ? "Yayımdan kaldır" : "Yayımla"}
             </button>
             <button className="note-toolbar-btn" onClick={handlePinToggle}>
-              {isPinned ? "Pini kaldir" : "Sabitle"}
+              {isPinned ? "Pini kaldır" : "Sabitle"}
             </button>
             <button
               className="note-toolbar-btn"
               onClick={() => handleMoveNote("up")}
             >
-              Yukari
+              Yukarı
             </button>
             <button
               className="note-toolbar-btn"
               onClick={() => handleMoveNote("down")}
             >
-              Asagi
+              Aşağı
             </button>
             <button
               className="note-toolbar-btn"
@@ -428,7 +428,7 @@ export function NoteEditorPage({
             <button
               className="context-trigger"
               onClick={openContextMenuFromTrigger}
-              aria-label="Not menusunu ac"
+              aria-label="Not menüsünü aç"
             >
               ...
             </button>
@@ -443,12 +443,12 @@ export function NoteEditorPage({
               <span
                 className={`note-status-pill ${isPublished ? "published" : "draft"}`}
               >
-                {isPublished ? "Yayinda" : "Taslak"}
+                {isPublished ? "Yayında" : "Taslak"}
               </span>
               {isPinned ? (
                 <span className="note-status-pill pinned">Pinli</span>
               ) : null}
-              <span className="note-status-text">Otomatik kaydetme acik</span>
+              <span className="note-status-text">Otomatik kaydetme açık</span>
             </div>
 
             <input
@@ -475,13 +475,13 @@ export function NoteEditorPage({
             ) : null}
 
             <label className="note-slug-field">
-              <span>Yayin slug</span>
+              <span>Yayın adresi</span>
               <input
                 className="note-slug-input"
                 value={slug ?? ""}
                 onChange={(event) => setSlug(event.target.value)}
                 onBlur={(event) => void handleSlugChange(event.target.value)}
-                placeholder="yayin-slug"
+                placeholder="yayin-adresi"
                 spellCheck={false}
               />
             </label>
@@ -506,7 +506,7 @@ export function NoteEditorPage({
           <div className="backlinks-header">
             <span className="backlinks-icon">Bag</span>
             <span className="backlinks-title">
-              Geri baglantilar ({backlinks.length})
+              Geri bağlantılar ({backlinks.length})
             </span>
           </div>
           <div className="backlinks-list">
@@ -528,9 +528,9 @@ export function NoteEditorPage({
       {proposals.length > 0 ? (
         <div className="backlinks-section">
           <div className="backlinks-header">
-            <span className="backlinks-icon">AI</span>
+            <span className="backlinks-icon">YZ</span>
             <span className="backlinks-title">
-              Bekleyen oneriler ({proposals.length})
+              Bekleyen öneriler ({proposals.length})
             </span>
           </div>
           <div className="proposal-list">

@@ -27,9 +27,9 @@ export function ResetPasswordClient({
         token,
         nextPassword: String(formData.get("password") ?? ""),
       });
-      setMessage("Sifre guncellendi. Artik giris yapabilirsin.");
+      setMessage("Şifre güncellendi. Artık giriş yapabilirsin.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Bir hata olustu.");
+      setMessage(error instanceof Error ? error.message : "Bir hata oluştu.");
     }
 
     setIsLoading(false);
@@ -40,11 +40,11 @@ export function ResetPasswordClient({
       <div className="auth-card">
         <div className="auth-header">
           <span className="auth-logo">G</span>
-          <h1 className="auth-title">Yeni sifre belirle</h1>
+          <h1 className="auth-title">Yeni şifre belirle</h1>
           <p className="auth-subtitle">
             {tokenState.valid
-              ? `${tokenState.email ?? "Hesap"} icin yeni sifre ayarla.`
-              : "Bu sifirlama baglantisi artik gecerli degil."}
+              ? `${tokenState.email ?? "Hesap"} için yeni şifre ayarla.`
+              : "Bu sıfırlama bağlantısı artık geçerli değil."}
           </p>
         </div>
 
@@ -52,7 +52,7 @@ export function ResetPasswordClient({
           <form action={handleSubmit} className="auth-form">
             {message ? <div className="auth-error">{message}</div> : null}
             <div className="auth-field">
-              <label htmlFor="password">Yeni sifre</label>
+              <label htmlFor="password">Yeni şifre</label>
               <input
                 id="password"
                 name="password"
@@ -63,13 +63,13 @@ export function ResetPasswordClient({
               />
             </div>
             <button type="submit" className="auth-submit" disabled={isLoading}>
-              {isLoading ? "Kaydediliyor..." : "Sifreyi guncelle"}
+              {isLoading ? "Kaydediliyor..." : "Şifreyi güncelle"}
             </button>
           </form>
         ) : (
           <div className="auth-footer">
             <Link href="/forgot-password" className="auth-link">
-              Yeni reset iste
+              Yeni sıfırlama isteği
             </Link>
           </div>
         )}

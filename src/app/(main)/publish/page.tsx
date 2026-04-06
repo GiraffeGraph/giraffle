@@ -8,17 +8,17 @@ export default async function PublishPage() {
     <div className="dashboard publish-page">
       <section className="dashboard-hero">
         <div className="dashboard-header">
-          <div className="dashboard-kicker">Publish</div>
-          <h1 className="dashboard-title">Yayindaki notlar</h1>
+          <div className="dashboard-kicker">Yayın</div>
+          <h1 className="dashboard-title">Yayımdaki notlar</h1>
           <p className="dashboard-subtitle">
-            Slug, publish path ve downstream export ciktisini tek yerden gor.
+            Slug, yayın yolu ve dışa aktarılan çıktıyı tek yerden gör.
           </p>
         </div>
       </section>
 
       <div className="search-result-grid">
         {exports.length === 0 ? (
-          <div className="dashboard-empty">Yayinda not yok.</div>
+          <div className="dashboard-empty">Yayında not yok.</div>
         ) : (
           exports.map((artifact) => (
             <div key={artifact.noteId} className="search-result-card publish-card">
@@ -26,9 +26,9 @@ export default async function PublishPage() {
               <span className="search-result-meta">{artifact.publishPath}</span>
               <div className="publish-card-actions">
                 <Link href={`/published/${artifact.publishPath.replace(/\.mdx$/, "")}`}>
-                  Public route
+                  Açık bağlantı
                 </Link>
-                <Link href={`/notes/${artifact.noteId}`}>Notu ac</Link>
+                <Link href={`/notes/${artifact.noteId}`}>Notu aç</Link>
               </div>
             </div>
           ))

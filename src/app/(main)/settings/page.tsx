@@ -11,9 +11,9 @@ export default async function SettingsPage() {
       <section className="dashboard-hero">
         <div className="dashboard-header">
           <div className="dashboard-kicker">Ayarlar</div>
-          <h1 className="dashboard-title">Calisma alani ayarlari</h1>
+          <h1 className="dashboard-title">Çalışma alanı ayarları</h1>
           <p className="dashboard-subtitle">
-            Tema, sidebar davranisi, local operation queue ve son sunucu islemleri.
+            Tema, sidebar davranışı, yerel işlem kuyruğu ve son sunucu işlemleri.
           </p>
         </div>
       </section>

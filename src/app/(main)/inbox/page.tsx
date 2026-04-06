@@ -23,10 +23,10 @@ export default async function InboxPage() {
     <div className="dashboard">
       <section className="dashboard-hero">
         <div className="dashboard-header">
-          <div className="dashboard-kicker">Varsayilan yerlesim</div>
+          <div className="dashboard-kicker">Varsayılan yerleşim</div>
           <h1 className="dashboard-title">Gelen kutusu</h1>
           <p className="dashboard-subtitle">
-            Klasore tasinmamis notlar once burada toplanir.
+            Klasöre taşınmamış notlar önce burada toplanır.
           </p>
         </div>
 
@@ -51,7 +51,7 @@ export default async function InboxPage() {
                 options?: string[];
               }>,
             }))}
-            buttonLabel="Sablondan not"
+            buttonLabel="Şablondan not"
             buttonClassName="dashboard-secondary-btn"
           />
         </div>
@@ -60,7 +60,7 @@ export default async function InboxPage() {
       {inboxNotes.length === 0 ? (
         <div className="dashboard-empty">
           <p className="dashboard-empty-text">
-            Gelen kutusu bos. Yeni notlar varsayilan olarak burada baslar.
+            Gelen kutusu boş. Yeni notlar varsayılan olarak burada başlar.
           </p>
         </div>
       ) : (

@@ -3,10 +3,12 @@ import {
   blocksToMarkdown,
   markdownToBlocks,
 } from "@/domain/note/note.serializer";
-import type {
-  TemplateBlock,
-  TemplateVariable,
+import {
+  TEMPLATE_CATEGORIES,
+  type TemplateBlock,
+  type TemplateVariable,
 } from "@/domain/template/template.types";
+import { getTemplateCategoryLabel } from "@/lib/template-category";
 
 interface TemplatesPageProps {
   searchParams: Promise<{
@@ -17,13 +19,17 @@ interface TemplatesPageProps {
 export default async function TemplatesPage({ searchParams }: TemplatesPageProps) {
   const params = await searchParams;
   const templates = await getTemplatesAction();
+  const templateCategoryOptions = TEMPLATE_CATEGORIES.map((category) => ({
+    value: category,
+    label: getTemplateCategoryLabel(category),
+  }));
   const selectedTemplate =
     templates.find((template) => template.id === params.selected) ?? templates[0] ?? null;
 
   async function handleCreateTemplate(formData: FormData) {
     "use server";
     await createTemplateAction({
-      name: String(formData.get("name") ?? "").trim() || "Yeni Sablon",
+      name: String(formData.get("name") ?? "").trim() || "Yeni Şablon",
       description: String(formData.get("description") ?? "").trim() || undefined,
       category: String(formData.get("category") ?? "custom"),
       icon: String(formData.get("icon") ?? "").trim() || undefined,
@@ -69,10 +75,10 @@ export default async function TemplatesPage({ searchParams }: TemplatesPageProps
     <div className="dashboard templates-page">
       <section className="dashboard-hero">
         <div className="dashboard-header">
-          <div className="dashboard-kicker">Sablon kutuphanesi</div>
-          <h1 className="dashboard-title">Sablonlar</h1>
+          <div className="dashboard-kicker">Şablon kütüphanesi</div>
+          <h1 className="dashboard-title">Şablonlar</h1>
           <p className="dashboard-subtitle">
-            Seed edilen sablonlari yonet, yeni custom sablonlar olustur.
+            Hazır şablonları yönet, yeni özel şablonlar oluştur.
           </p>
         </div>
       </section>
@@ -80,7 +86,7 @@ export default async function TemplatesPage({ searchParams }: TemplatesPageProps
       <div className="templates-layout">
         <section className="templates-column">
           <div className="dashboard-section-head">
-            <span className="dashboard-section-kicker">Mevcut sablonlar</span>
+            <span className="dashboard-section-kicker">Mevcut şablonlar</span>
           </div>
           <div className="search-result-grid">
             {templates.map((template) => (
@@ -92,7 +98,9 @@ export default async function TemplatesPage({ searchParams }: TemplatesPageProps
                 }`}
               >
                 <span className="search-result-title">{template.name}</span>
-                <span className="search-result-meta">{template.category}</span>
+                <span className="search-result-meta">
+                  {getTemplateCategoryLabel(template.category)}
+                </span>
               </a>
             ))}
           </div>
@@ -100,32 +108,33 @@ export default async function TemplatesPage({ searchParams }: TemplatesPageProps
 
         <section className="templates-column">
           <div className="dashboard-section-head">
-            <span className="dashboard-section-kicker">Yeni sablon</span>
+            <span className="dashboard-section-kicker">Yeni şablon</span>
           </div>
           <form action={handleCreateTemplate} className="settings-panel">
             <label className="settings-field">
               <span>Ad</span>
-              <input name="name" placeholder="Sablon adi" />
+              <input name="name" placeholder="Şablon adı" />
             </label>
             <label className="settings-field">
-              <span>Aciklama</span>
-              <textarea name="description" placeholder="Kisa aciklama" rows={3} />
+              <span>Açıklama</span>
+              <textarea name="description" placeholder="Kısa açıklama" rows={3} />
             </label>
             <label className="settings-field">
               <span>Kategori</span>
-              <select name="category">
-                <option value="custom">custom</option>
-                <option value="daily">daily</option>
-                <option value="meeting">meeting</option>
-                <option value="project">project</option>
+              <select name="category" defaultValue="custom">
+                {templateCategoryOptions.map((category) => (
+                  <option key={category.value} value={category.value}>
+                    {category.label}
+                  </option>
+                ))}
               </select>
             </label>
             <label className="settings-field">
-              <span>Ikon</span>
+              <span>İkon</span>
               <input name="icon" placeholder="Not" />
             </label>
             <label className="settings-field">
-              <span>Degiskenler (JSON)</span>
+              <span>Değişkenler (JSON)</span>
               <textarea
                 name="variablesJson"
                 rows={6}
@@ -134,22 +143,22 @@ export default async function TemplatesPage({ searchParams }: TemplatesPageProps
               />
             </label>
             <label className="settings-field">
-              <span>Baslangic Markdown</span>
+              <span>Başlangıç Markdown</span>
               <textarea
                 name="markdown"
                 rows={12}
-                placeholder="# Sablon basligi"
+                placeholder="# Şablon başlığı"
               />
             </label>
             <button type="submit" className="dashboard-empty-btn">
-              Sablon olustur
+              Şablon oluştur
             </button>
           </form>
 
           {selectedTemplate ? (
             <>
               <div className="dashboard-section-head">
-                <span className="dashboard-section-kicker">Secili sablon</span>
+                <span className="dashboard-section-kicker">Seçili şablon</span>
               </div>
               <form action={handleUpdateTemplate} className="settings-panel">
                 <input type="hidden" name="templateId" value={selectedTemplate.id} />
@@ -158,7 +167,7 @@ export default async function TemplatesPage({ searchParams }: TemplatesPageProps
                   <input name="name" defaultValue={selectedTemplate.name} />
                 </label>
                 <label className="settings-field">
-                  <span>Aciklama</span>
+                  <span>Açıklama</span>
                   <textarea
                     name="description"
                     defaultValue={selectedTemplate.description ?? ""}
@@ -167,14 +176,20 @@ export default async function TemplatesPage({ searchParams }: TemplatesPageProps
                 </label>
                 <label className="settings-field">
                   <span>Kategori</span>
-                  <input name="category" defaultValue={selectedTemplate.category} />
+                  <select name="category" defaultValue={selectedTemplate.category}>
+                    {templateCategoryOptions.map((category) => (
+                      <option key={category.value} value={category.value}>
+                        {category.label}
+                      </option>
+                    ))}
+                  </select>
                 </label>
                 <label className="settings-field">
-                  <span>Ikon</span>
+                  <span>İkon</span>
                   <input name="icon" defaultValue={selectedTemplate.icon ?? ""} />
                 </label>
                 <label className="settings-field">
-                  <span>Degiskenler (JSON)</span>
+                  <span>Değişkenler (JSON)</span>
                   <textarea
                     name="variablesJson"
                     rows={6}
@@ -186,7 +201,7 @@ export default async function TemplatesPage({ searchParams }: TemplatesPageProps
                   />
                 </label>
                 <label className="settings-field">
-                  <span>Baslangic Markdown</span>
+                  <span>Başlangıç Markdown</span>
                   <textarea
                     name="markdown"
                     rows={12}
@@ -197,13 +212,13 @@ export default async function TemplatesPage({ searchParams }: TemplatesPageProps
                   />
                 </label>
                 <button type="submit" className="dashboard-empty-btn">
-                  Guncelle
+                  Güncelle
                 </button>
               </form>
               <form action={handleDeleteTemplate}>
                 <input type="hidden" name="templateId" value={selectedTemplate.id} />
                 <button type="submit" className="dashboard-secondary-btn">
-                  Sablonu sil
+                  Şablonu sil
                 </button>
               </form>
             </>

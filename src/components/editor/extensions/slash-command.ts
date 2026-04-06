@@ -14,7 +14,7 @@ export interface SlashCommandItem {
 export const defaultSlashCommands: SlashCommandItem[] = [
   {
     title: "Metin",
-    description: "Duz metin blogu",
+    description: "Düz metin bloğu",
     icon: "TXT",
     shortcut: "/text",
     command: (editor) => {
@@ -22,8 +22,8 @@ export const defaultSlashCommands: SlashCommandItem[] = [
     },
   },
   {
-    title: "Baslik 1",
-    description: "Buyuk bolum basligi",
+    title: "Başlık 1",
+    description: "Büyük bölüm başlığı",
     icon: "H1",
     shortcut: "/h1",
     command: (editor) => {
@@ -31,8 +31,8 @@ export const defaultSlashCommands: SlashCommandItem[] = [
     },
   },
   {
-    title: "Baslik 2",
-    description: "Orta bolum basligi",
+    title: "Başlık 2",
+    description: "Orta bölüm başlığı",
     icon: "H2",
     shortcut: "/h2",
     command: (editor) => {
@@ -40,8 +40,8 @@ export const defaultSlashCommands: SlashCommandItem[] = [
     },
   },
   {
-    title: "Baslik 3",
-    description: "Kucuk bolum basligi",
+    title: "Başlık 3",
+    description: "Küçük bölüm başlığı",
     icon: "H3",
     shortcut: "/h3",
     command: (editor) => {
@@ -50,7 +50,7 @@ export const defaultSlashCommands: SlashCommandItem[] = [
   },
   {
     title: "Madde Listesi",
-    description: "Sirasiz liste",
+    description: "Sırasız liste",
     icon: "UL",
     shortcut: "/ul",
     command: (editor) => {
@@ -58,8 +58,8 @@ export const defaultSlashCommands: SlashCommandItem[] = [
     },
   },
   {
-    title: "Numarali Liste",
-    description: "Sirali liste",
+    title: "Numaralı Liste",
+    description: "Sıralı liste",
     icon: "1.",
     shortcut: "/ol",
     command: (editor) => {
@@ -67,8 +67,8 @@ export const defaultSlashCommands: SlashCommandItem[] = [
     },
   },
   {
-    title: "Kod Blogu",
-    description: "Kod parcasi",
+    title: "Kod Bloğu",
+    description: "Kod parçası",
     icon: "</>",
     shortcut: "/code",
     command: (editor) => {
@@ -76,8 +76,8 @@ export const defaultSlashCommands: SlashCommandItem[] = [
     },
   },
   {
-    title: "Alinti",
-    description: "Alinti blogu",
+    title: "Alıntı",
+    description: "Alıntı bloğu",
     icon: "QT",
     shortcut: "/quote",
     command: (editor) => {
@@ -85,8 +85,8 @@ export const defaultSlashCommands: SlashCommandItem[] = [
     },
   },
   {
-    title: "Ayrac",
-    description: "Yatay cizgi",
+    title: "Ayraç",
+    description: "Yatay çizgi",
     icon: "---",
     shortcut: "/hr",
     command: (editor) => {
@@ -95,7 +95,7 @@ export const defaultSlashCommands: SlashCommandItem[] = [
   },
   {
     title: "Vurgu Kutusu",
-    description: "One cikan not blogu",
+    description: "Öne çıkan not bloğu",
     icon: "!",
     shortcut: "/callout",
     command: (editor) => {
@@ -109,7 +109,7 @@ export const defaultSlashCommands: SlashCommandItem[] = [
       const title =
         typeof window === "undefined"
           ? "Vurgu"
-          : window.prompt("Vurgu basligi", "Onemli nokta")?.trim() || "Vurgu";
+          : window.prompt("Vurgu başlığı", "Önemli nokta")?.trim() || "Vurgu";
 
       editor
         .chain()
@@ -130,16 +130,16 @@ export const defaultSlashCommands: SlashCommandItem[] = [
     },
   },
   {
-    title: "Acilir Blok",
-    description: "Acilip kapanan ic ice blok",
+    title: "Açılır Blok",
+    description: "Açılıp kapanan iç içe blok",
     icon: "+/-",
     shortcut: "/toggle",
     command: (editor) => {
       const summary =
         typeof window === "undefined"
-          ? "Acilir Blok"
-          : window.prompt("Acilir blok ozeti", "Ayrintilar")?.trim() ||
-            "Acilir Blok";
+          ? "Açılır Blok"
+          : window.prompt("Açılır blok özeti", "Ayrıntılar")?.trim() ||
+            "Açılır Blok";
 
       editor
         .chain()
@@ -159,15 +159,15 @@ export const defaultSlashCommands: SlashCommandItem[] = [
     },
   },
   {
-    title: "Gorsel",
-    description: "URL ile gorsel ekle",
+    title: "Görsel",
+    description: "URL ile görsel ekle",
     icon: "IMG",
     shortcut: "/image",
     command: (editor) => {
       const src =
         typeof window === "undefined"
           ? ""
-          : window.prompt("Gorsel URL'si", "https://")?.trim() || "";
+          : window.prompt("Görsel URL'si", "https://")?.trim() || "";
 
       if (!src) {
         return;
@@ -183,7 +183,7 @@ export const defaultSlashCommands: SlashCommandItem[] = [
   },
   {
     title: "Tablo",
-    description: "Yapisal tablo blogu ekle",
+    description: "Yapısal tablo bloğu ekle",
     icon: "TB",
     shortcut: "/table",
     command: (editor) => {
@@ -192,8 +192,8 @@ export const defaultSlashCommands: SlashCommandItem[] = [
         .focus()
         .insertTableBlock({
           rows: [
-            ["Sutun 1", "Sutun 2"],
-            ["Deger", "Deger"],
+            ["Sütun 1", "Sütun 2"],
+            ["Değer", "Değer"],
           ],
         })
         .run();

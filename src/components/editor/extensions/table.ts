@@ -3,8 +3,8 @@ import { mergeAttributes, Node } from "@tiptap/core";
 function sanitizeRows(value: unknown): string[][] {
   if (!Array.isArray(value)) {
     return [
-      ["Sutun 1", "Sutun 2"],
-      ["Deger", "Deger"],
+      ["Sütun 1", "Sütun 2"],
+      ["Değer", "Değer"],
     ];
   }
 
@@ -15,8 +15,8 @@ function sanitizeRows(value: unknown): string[][] {
   return rows.length > 0
     ? rows
     : [
-        ["Sutun 1", "Sutun 2"],
-        ["Deger", "Deger"],
+        ["Sütun 1", "Sütun 2"],
+        ["Değer", "Değer"],
       ];
 }
 
@@ -41,8 +41,8 @@ export const TableBlockNode = Node.create({
     return {
       rows: {
         default: [
-          ["Sutun 1", "Sutun 2"],
-          ["Deger", "Deger"],
+          ["Sütun 1", "Sütun 2"],
+          ["Değer", "Değer"],
         ],
         parseHTML: (element) => {
           const raw = element.getAttribute("data-rows");

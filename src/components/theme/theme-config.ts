@@ -4,18 +4,18 @@ export const APP_THEME_COOKIE_KEY = "graffle.theme";
 export const APP_THEMES = [
   {
     id: "warm-paper",
-    label: "Sicak Kagit",
-    description: "Acik, sakin ve kagit hissi veren varsayilan tema.",
+    label: "Sıcak Kağıt",
+    description: "Açık, sakin ve kağıt hissi veren varsayılan tema.",
   },
   {
     id: "midnight-gold",
-    label: "Gece Altini",
-    description: "Derin gece mavisi ve gunes altini vurgular.",
+    label: "Gece Altını",
+    description: "Derin gece mavisi ve güneş altını vurgular.",
   },
   {
     id: "graphite-night",
     label: "Grafit Gece",
-    description: "Notion ve Obsidian'a yakin koyu grafit arayuz.",
+    description: "Notion ve Obsidian'a yakın koyu grafit arayüz.",
   },
 ] as const;
 

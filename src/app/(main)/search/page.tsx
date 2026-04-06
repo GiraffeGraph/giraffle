@@ -3,6 +3,7 @@ import { getAllFoldersAction } from "@/server/api/folders";
 import { getUnresolvedLinksAction } from "@/server/api/graph";
 import { getNotesAction } from "@/server/api/notes";
 import { getTemplatesAction } from "@/server/api/templates";
+import { getTemplateCategoryLabel } from "@/lib/template-category";
 
 interface SearchPageProps {
   searchParams: Promise<{
@@ -45,9 +46,9 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
       <section className="dashboard-hero search-hero">
         <div className="dashboard-header">
           <div className="dashboard-kicker">Arama</div>
-          <h1 className="dashboard-title">Calisma alani aramasi</h1>
+          <h1 className="dashboard-title">Çalışma alanı araması</h1>
           <p className="dashboard-subtitle">
-            Notlar, klasorler, sablonlar ve cozulmemis baglantilar arasinda ara.
+            Notlar, klasörler, şablonlar ve çözülmemiş bağlantılar arasında ara.
           </p>
         </div>
 
@@ -57,14 +58,14 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             name="q"
             defaultValue={params.q ?? ""}
             className="search-input"
-            placeholder="Baslik, etiket, sablon veya link ara..."
+            placeholder="Başlık, etiket, şablon veya link ara..."
           />
           <select name="scope" defaultValue={scope} className="search-select">
-            <option value="all">Tum sonuclar</option>
+            <option value="all">Tüm sonuçlar</option>
             <option value="notes">Notlar</option>
-            <option value="folders">Klasorler</option>
-            <option value="templates">Sablonlar</option>
-            <option value="unresolved">Cozulmemis linkler</option>
+            <option value="folders">Klasörler</option>
+            <option value="templates">Şablonlar</option>
+            <option value="unresolved">Çözülmemiş linkler</option>
           </select>
           <button type="submit" className="dashboard-empty-btn">
             Ara
@@ -86,7 +87,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
       )}
 
       {(scope === "all" || scope === "folders") && (
-        <SearchSection title="Klasorler" count={folderResults.length}>
+        <SearchSection title="Klasörler" count={folderResults.length}>
           {folderResults.map((folder) => (
             <Link
               key={folder.id}
@@ -94,14 +95,14 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
               className="search-result-card"
             >
               <span className="search-result-title">{folder.name}</span>
-              <span className="search-result-meta">Klasor</span>
+              <span className="search-result-meta">Klasör</span>
             </Link>
           ))}
         </SearchSection>
       )}
 
       {(scope === "all" || scope === "templates") && (
-        <SearchSection title="Sablonlar" count={templateResults.length}>
+        <SearchSection title="Şablonlar" count={templateResults.length}>
           {templateResults.map((template) => (
             <Link
               key={template.id}
@@ -109,7 +110,9 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
               className="search-result-card"
             >
               <span className="search-result-title">{template.name}</span>
-              <span className="search-result-meta">{template.category}</span>
+              <span className="search-result-meta">
+                {getTemplateCategoryLabel(template.category)}
+              </span>
             </Link>
           ))}
         </SearchSection>
@@ -117,13 +120,13 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
 
       {(scope === "all" || scope === "unresolved") && (
         <SearchSection
-          title="Cozulmemis baglantilar"
+          title="Çözülmemiş bağlantılar"
           count={unresolvedResults.length}
         >
           {unresolvedResults.map((item) => (
             <div key={item.targetRaw} className="search-result-card">
               <span className="search-result-title">{item.targetRaw}</span>
-              <span className="search-result-meta">{item.count} notta geciyor</span>
+              <span className="search-result-meta">{item.count} notta geçiyor</span>
             </div>
           ))}
         </SearchSection>
@@ -149,7 +152,7 @@ function SearchSection({
         </span>
       </div>
       <div className="search-result-grid">
-        {count === 0 ? <div className="dashboard-empty">Sonuc yok.</div> : children}
+        {count === 0 ? <div className="dashboard-empty">Sonuç yok.</div> : children}
       </div>
     </section>
   );
