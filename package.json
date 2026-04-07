@@ -10,6 +10,7 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^3.0.51",
     "@auth/prisma-adapter": "^2.11.1",
     "@prisma/adapter-pg": "^7.6.0",
     "@prisma/client": "^7.6.0",
@@ -27,6 +28,8 @@
     "@tiptap/react": "^3.22.1",
     "@tiptap/starter-kit": "^3.22.1",
     "@tiptap/suggestion": "^3.22.1",
+    "@xyflow/react": "^12.10.2",
+    "ai": "^6.0.149",
     "bcryptjs": "^3.0.3",
     "clsx": "^2.1.1",
     "dotenv": "^17.4.0",

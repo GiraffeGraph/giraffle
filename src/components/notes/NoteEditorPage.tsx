@@ -22,6 +22,7 @@ import {
   applyProposalAction,
   rejectProposalAction,
 } from "@/server/api/proposals";
+import { createMapFromNoteAction } from "@/server/api/canvas";
 import { queueLocalMutation, resolveLocalMutation } from "@/lib/local-sync";
 
 interface NoteEditorPageProps {
@@ -220,6 +221,15 @@ export function NoteEditorPage({
     router.push("/dashboard");
   }, [note.id, router]);
 
+  const handleOpenInCanvas = useCallback(async () => {
+    try {
+      const canvasId = await createMapFromNoteAction(note.id);
+      router.push(`/canvas/${canvasId}`);
+    } catch (err) {
+      console.error("Failed to open canvas:", err);
+    }
+  }, [note.id, router]);
+
   const handleSave = useCallback(
     async (content: TiptapDocument) => {
       const mutationId = queueLocalMutation({
@@ -297,6 +307,11 @@ export function NoteEditorPage({
         label: isPublished ? "Yayımdan kaldır" : "Yayımla",
         hint: "Notun yayın durumunu değiştir",
         onSelect: handlePublishToggle,
+      },
+      {
+        label: "Kanvasta Aç",
+        hint: "Bu notu merkez alarak uzamsal haritasını çıkar",
+        onSelect: handleOpenInCanvas,
       },
       {
         label: "Yukarı taşı",

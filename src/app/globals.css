@@ -6075,3 +6075,112 @@ body::before {
 .ghost-highlight:hover {
   background: rgba(var(--accent-warm-rgb), 0.24);
 }
+
+/* --- Spatial Canvas CSS --- */
+.graffle-canvas-container {
+  background: var(--bg-page-deep);
+}
+
+.graffle-canvas-container .react-flow__pane {
+  cursor: grab;
+}
+
+.graffle-canvas-container .react-flow__pane:active {
+  cursor: grabbing;
+}
+
+.graffle-canvas-node-note {
+  background: var(--surface-1);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-card);
+  width: 280px;
+  box-shadow: var(--shadow-panel);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), transform 0.1s ease;
+}
+
+.graffle-canvas-node-note:hover {
+  border-color: var(--accent-subtle);
+  box-shadow: 0 12px 32px rgba(225, 166, 62, 0.08);
+}
+
+.graffle-canvas-node-note.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-subtle);
+}
+
+.graffle-node-inner {
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+}
+
+.graffle-node-header {
+  padding: 12px 14px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border-soft);
+  border-radius: var(--radius-card) var(--radius-card) 0 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.graffle-node-icon {
+  font-size: 16px;
+}
+
+.graffle-node-body {
+  padding: 14px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  background: var(--surface-1);
+  border-radius: 0 0 var(--radius-card) var(--radius-card);
+  min-height: 60px;
+}
+
+.graffle-handle {
+  width: 10px !important;
+  height: 10px !important;
+  background: var(--accent) !important;
+  border: 2px solid var(--bg-page-deep) !important;
+}
+
+.graffle-canvas-panel {
+  background: var(--surface-glass);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-soft);
+  border-radius: 99px;
+  padding: 8px 16px;
+  margin: 16px;
+  box-shadow: var(--shadow-panel);
+}
+
+.graffle-canvas-title {
+  color: var(--text-primary);
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.graffle-canvas-panel-tools {
+  margin: 16px;
+}
+
+.graffle-canvas-save-btn {
+  background: var(--accent);
+  color: var(--text-on-accent);
+  border: none;
+  border-radius: 99px;
+  padding: 8px 16px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  box-shadow: var(--shadow-panel);
+  transition: opacity var(--transition-fast);
+}
+
+.graffle-canvas-save-btn:hover {
+  opacity: 0.9;
+}

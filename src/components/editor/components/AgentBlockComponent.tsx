@@ -15,27 +15,37 @@ export function AgentBlockComponent(props: NodeViewProps) {
     updateAttributes({ status: "thinking", output: "" });
 
     try {
-      // Simulate subsession context reading and streaming.
-      // In REAL usage, this would call out to a Context/Provider handling the LSP lifecycle
-      setTimeout(() => {
-        updateAttributes({ status: "streaming" });
-        const simulateStream = "Cevap üretiliyor...\nBu yapısal olarak mevcut AST'nin sadece Tiptap değil global state farkındalığıyla çalıştığını gösterir.";
-        let currentOut = "";
-        
-        let i = 0;
-        const interval = setInterval(() => {
-          if (i >= simulateStream.length) {
-            clearInterval(interval);
-            updateAttributes({ status: "done" });
-            return;
-          }
-          currentOut += simulateStream[i];
-          updateAttributes({ output: currentOut });
-          i++;
-        }, 30);
-      }, 500);
+      // Pass the entire flattened text content of the document as context boundary for Phase 1
+      const context = editor.getText();
+      
+      const res = await fetch("/api/agent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt, context }),
+      });
 
+      if (!res.ok) {
+        throw new Error("LSP request failed");
+      }
+
+      updateAttributes({ status: "streaming" });
+      
+      const reader = res.body?.getReader();
+      const decoder = new TextDecoder("utf-8");
+      let currentOut = "";
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          currentOut += decoder.decode(value, { stream: true });
+          updateAttributes({ output: currentOut });
+        }
+      }
+
+      updateAttributes({ status: "done" });
     } catch (e) {
+      console.error("Agent Stream Error:", e);
       updateAttributes({ status: "error" });
     }
   };

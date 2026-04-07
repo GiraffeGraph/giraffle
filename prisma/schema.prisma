@@ -25,6 +25,7 @@ model User {
   passwordResetTokens PasswordResetToken[]
   proposals NoteProposal[]
   operationLogs OperationLog[]
+  canvases Canvas[]
 }
 
 model Account {
@@ -106,6 +107,7 @@ model Note {
   incomingLinks Link[]   @relation("IncomingLinks")
   assets       MediaAsset[]
   proposals    NoteProposal[]
+  canvasNodes  CanvasNode[]
 
   @@index([folderId])
   @@index([userId])
@@ -248,4 +250,53 @@ model OperationLog {
 
   @@index([userId, createdAt])
   @@index([entityType, entityId])
+}
+
+// ─── Spatial Canvas Models ────────────────────────────────────
+
+model Canvas {
+  id          String   @id @default(uuid())
+  title       String   @default("Untitled Canvas")
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nodes       CanvasNode[]
+  edges       CanvasEdge[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model CanvasNode {
+  id          String   @id @default(uuid())
+  canvasId    String
+  canvas      Canvas   @relation(fields: [canvasId], references: [id], onDelete: Cascade)
+  noteId      String?
+  note        Note?    @relation(fields: [noteId], references: [id], onDelete: SetNull)
+  type        String   @default("note")
+  data        Json     @default("{}")
+  x           Float    @default(0)
+  y           Float    @default(0)
+  width       Float    @default(300)
+  height      Float    @default(200)
+  color       String?
+
+  @@index([canvasId])
+  @@index([noteId])
+}
+
+model CanvasEdge {
+  id           String   @id @default(uuid())
+  canvasId     String
+  canvas       Canvas   @relation(fields: [canvasId], references: [id], onDelete: Cascade)
+  sourceNodeId String
+  targetNodeId String
+  sourceHandle String?
+  targetHandle String?
+  data         Json     @default("{}")
+  type         String   @default("default")
+
+  @@index([canvasId])
+  @@index([sourceNodeId])
+  @@index([targetNodeId])
 }
