@@ -1001,7 +1001,7 @@ export function Sidebar({
                 onClick={handleCreateNote}
                 aria-label="Yeni not oluştur"
               >
-                +
+                <PlusIcon />
               </button>
               <button
                 type="button"
@@ -1009,7 +1009,7 @@ export function Sidebar({
                 onClick={toggleSidebarCompact}
                 aria-label="Sidebarı daralt"
               >
-                {"<"}
+                <ChevronLeftIcon />
               </button>
             </div>
           </div>
@@ -1075,7 +1075,7 @@ export function Sidebar({
                     onClick={(e) => openNavModal(path, label, e, { info, actions })}
                     aria-label={`${label} menüsü`}
                   >
-                    ···
+                    <MoreHorizontalIcon />
                   </button>
                 </div>
               ))}
@@ -1277,7 +1277,7 @@ export function Sidebar({
               onClick={(event) => openContextMenuFromTrigger(event, footerMenuItems)}
               aria-label="Hesap ve tema menüsü"
             >
-              ···
+              <MoreHorizontalIcon />
             </button>
           </div>
         </>
@@ -1411,7 +1411,7 @@ function SidebarGroup({
               onClick={onAdd}
               aria-label={`${label} ekle`}
             >
-              +
+              <PlusIcon />
             </button>
           ) : null}
         </div>
@@ -1460,8 +1460,9 @@ function SidebarNoteRow({
           className="context-trigger sidebar-row-action"
           onClick={(event) => onTriggerMenuOpen(event, note)}
           aria-label={`${note.title} menüsünü aç`}
+          title="Seçenekler"
         >
-          ...
+          <MoreHorizontalIcon />
         </button>
       </div>
     </div>
@@ -1571,43 +1572,21 @@ function SidebarFolderItem({
             onClick={(event) => {
               event.preventDefault();
               event.stopPropagation();
-              void onMoveFolder(folder.id, "up");
-            }}
-            aria-label={`${folder.name} klasörünü yukarı taşı`}
-          >
-            ^
-          </button>
-          <button
-            type="button"
-            className="context-trigger sidebar-row-action"
-            onClick={(event) => {
-              event.preventDefault();
-              event.stopPropagation();
-              void onMoveFolder(folder.id, "down");
-            }}
-            aria-label={`${folder.name} klasörünü aşağı taşı`}
-          >
-            v
-          </button>
-          <button
-            type="button"
-            className="context-trigger sidebar-row-action"
-            onClick={(event) => {
-              event.preventDefault();
-              event.stopPropagation();
               void onQuickCreate(folder.id);
             }}
             aria-label={`${folder.name} içine not oluştur`}
+            title="Not Oluştur"
           >
-            +
+            <PlusIcon />
           </button>
           <button
             type="button"
             className="context-trigger sidebar-row-action"
             onClick={(event) => onTriggerMenuOpen(event, folder)}
             aria-label={`${folder.name} menüsünü aç`}
+            title="Seçenekler"
           >
-            ...
+            <MoreHorizontalIcon />
           </button>
         </div>
       </div>
@@ -1798,4 +1777,32 @@ function flattenFolderTree(folderTree: SidebarFolder[]): SidebarFolder[] {
     folder,
     ...flattenFolderTree(folder.children ?? []),
   ]);
+}
+
+// UI Icons
+function PlusIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19"></line>
+      <line x1="5" y1="12" x2="19" y2="12"></line>
+    </svg>
+  );
+}
+
+function MoreHorizontalIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="1"></circle>
+      <circle cx="19" cy="12" r="1"></circle>
+      <circle cx="5" cy="12" r="1"></circle>
+    </svg>
+  );
+}
+
+function ChevronLeftIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="15 18 9 12 15 6"></polyline>
+    </svg>
+  );
 }
