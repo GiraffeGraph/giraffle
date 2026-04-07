@@ -668,7 +668,7 @@ export function Sidebar({
         group: "Hızlı işlemler",
         title: "Yeni not oluştur",
         description: "Boş bir not aç",
-        icon: "+",
+        icon: "\uE145",
         hint: "Enter",
         onSelect: async () => {
           const noteId = await createNoteAction();
@@ -680,7 +680,7 @@ export function Sidebar({
         group: "Hızlı işlemler",
         title: "Yeni klasör oluştur",
         description: "Çalışma alanına yeni klasör ekle",
-        icon: "K",
+        icon: "\uE2C7",
         onSelect: async () => {
           const folderName = window.prompt("Klasör adı", "Yeni Klasör")?.trim();
 
@@ -700,7 +700,7 @@ export function Sidebar({
         group: "Hızlı işlemler",
         title: "Şablondan not oluştur",
         description: "Şablon seçiciyi aç",
-        icon: "T",
+        icon: "\uE02F",
         onSelect: async () => {
           setTemplatePickerOpenSignal((currentValue) => currentValue + 1);
         },
@@ -710,7 +710,7 @@ export function Sidebar({
         group: "Geçişler",
         title: "Panoya git",
         description: "Ana çalışma alanı görünümü",
-        icon: "Ana",
+        icon: "\uE88A",
         onSelect: async () => {
           router.push("/dashboard");
         },
@@ -720,7 +720,7 @@ export function Sidebar({
         group: "Geçişler",
         title: "Bağlantı ağına git",
         description: "Not grafiği görünümü",
-        icon: "Ağ",
+        icon: "\uF1E2",
         onSelect: async () => {
           router.push("/graph");
         },
@@ -730,7 +730,7 @@ export function Sidebar({
         group: "Geçişler",
         title: "Gelen kutusuna git",
         description: "Klasörsüz notları aç",
-        icon: "In",
+        icon: "\uE156",
         onSelect: async () => {
           router.push("/inbox");
         },
@@ -740,7 +740,7 @@ export function Sidebar({
         group: "Geçişler",
         title: "Arama çalışma alanını aç",
         description: "Filtreli arama sayfası",
-        icon: "Ara",
+        icon: "\uE8B6",
         onSelect: async () => {
           router.push("/search");
         },
@@ -750,7 +750,7 @@ export function Sidebar({
         group: "Geçişler",
         title: "Şablon kütüphanesi",
         description: "Şablon yönetim alanını aç",
-        icon: "Tpl",
+        icon: "\uE02F",
         onSelect: async () => {
           router.push("/templates");
         },
@@ -760,7 +760,7 @@ export function Sidebar({
         group: "Geçişler",
         title: "Yayın alanı",
         description: "Yayımdaki notları ve dışa aktarımları gör",
-        icon: "Yay",
+        icon: "\uE255",
         onSelect: async () => {
           router.push("/publish");
         },
@@ -770,7 +770,7 @@ export function Sidebar({
         group: "Geçişler",
         title: "Öneri kuyruğu",
         description: "YZ öneri inceleme alanını aç",
-        icon: "YZ",
+        icon: "\uE65F",
         onSelect: async () => {
           router.push("/proposals");
         },
@@ -780,7 +780,7 @@ export function Sidebar({
         group: "Geçişler",
         title: "Ayarlar",
         description: "Tema, yerel kuyruk ve tercihleri aç",
-        icon: "Ay",
+        icon: "\uE8B8",
         onSelect: async () => {
           router.push("/settings");
         },
@@ -790,7 +790,7 @@ export function Sidebar({
         group: "Geçişler",
         title: "Hesap",
         description: "Profil ve şifre işlemleri",
-        icon: "Hs",
+        icon: "\uF20B",
         onSelect: async () => {
           router.push("/account");
         },
@@ -809,7 +809,7 @@ export function Sidebar({
         group: "Notlar",
         title: note.title,
         description: "Notu düzenleyicide aç",
-        icon: note.icon ?? "Not",
+        icon: note.icon ?? "\uE873",
         onSelect: async () => {
           router.push(`/notes/${note.id}`);
         },
@@ -827,7 +827,7 @@ export function Sidebar({
         group: "Klasörler",
         title: folder.name,
         description: "Klasör görünümünü aç",
-        icon: folder.icon ?? "Kls",
+        icon: folder.icon ?? "\uE2C7",
         onSelect: async () => {
           router.push(`/folders/${folder.id}`);
         },
@@ -845,7 +845,7 @@ export function Sidebar({
         group: "Etiketler",
         title: `#${tag.name}`,
         description: `${tag.noteCount} not içeren etiket`,
-        icon: "#",
+        icon: "\uF04F",
         onSelect: async () => {
           router.push(`/tags/${tag.name}`);
         },
@@ -866,7 +866,7 @@ export function Sidebar({
         title: template.name,
         description:
           template.description ?? `${getTemplateCategoryLabel(template.category)} şablonu`,
-        icon: template.icon ?? "Tpl",
+        icon: template.icon ?? "\uE02F",
         onSelect: async () => {
           router.push(`/templates?selected=${template.id}`);
         },
@@ -1011,7 +1011,7 @@ export function Sidebar({
           </div>
 
           <div className="md-nav-drawer-content" style={{ padding: "0 8px" }}>
-            <ul className="md-list" style={{ padding: 0 }}>
+            <div className="sidebar-primary-nav">
               {([
                 {
                   path: "/dashboard",
@@ -1046,32 +1046,29 @@ export function Sidebar({
                 info: string;
                 actions?: Array<{ label: string; onClick: () => void; primary?: boolean }>;
               }>).map(({ path, icon, label, info, actions }) => (
-                <li key={path} style={{ display: "flex", alignItems: "center", marginBottom: "2px" }}>
+                <div key={path} className="sidebar-nav-item-row">
                   <button
-                    className={`md-list-item ${pathname === path ? "md-list-item--active" : ""}`}
-                    style={{ flex: 1, borderRadius: "var(--md-sys-shape-medium)", minHeight: "38px", padding: "0 10px" }}
+                    className={`sidebar-item${pathname === path ? " active" : ""}`}
                     onClick={() => { closeNavModal(); router.push(path); }}
                   >
-                    <div className="md-list-item-start material-symbols-outlined sm" style={{ marginRight: "12px", width: "20px", justifyContent: "center", opacity: 0.65, fontSize: "18px" }} aria-hidden="true">{icon}</div>
-                    <div className="md-list-item-content">
-                      <span className="md-list-item-headline" style={{ fontSize: "13px", fontWeight: 500 }}>{label}</span>
-                    </div>
+                    <span className="sidebar-item-icon" aria-hidden="true">
+                      <span className="material-symbols-outlined" style={{ fontSize: "16px", lineHeight: 1 }}>{icon}</span>
+                    </span>
+                    <span className="sidebar-item-label">{label}</span>
                   </button>
-                  <Button
-                    variant="text"
-                    icon
-                    className={navModal?.key === path ? "active" : ""}
-                    style={{ opacity: 0.4, flexShrink: 0, width: "28px", height: "28px", marginLeft: "2px" }}
+                  <button
+                    type="button"
+                    className={`sidebar-nav-menu${navModal?.key === path ? " active" : ""}`}
                     onClick={(e) => openNavModal(path, label, e, { info, actions })}
                     aria-label={`${label} menüsü`}
                   >
-                    <MoreHorizontalIcon />
-                  </Button>
-                </li>
+                    ···
+                  </button>
+                </div>
               ))}
-            </ul>
+            </div>
 
-            <div className="md-list-divider" style={{ margin: "8px 0" }} />
+            <div className="sidebar-divider" />
 
             <SidebarGroup
               label="Klasörler"
@@ -1221,14 +1218,15 @@ export function Sidebar({
               <button
                 key={path}
                 type="button"
-                className={`sidebar-rail-item${pathname === path || pathname.startsWith(path + "/") ? " active" : ""}`}
+                className={`sidebar-item sidebar-rail-item${pathname === path || pathname.startsWith(path + "/") ? " active" : ""}`}
                 onClick={() => router.push(path)}
                 aria-label={label}
-                title={label}
               >
-                <span className="sidebar-rail-item-icon material-symbols-outlined sm" aria-hidden="true">{icon}</span>
-                <span className="sidebar-rail-item-label">{label}</span>
-                <span className="sidebar-rail-item-chevron" aria-hidden="true">›</span>
+                <span className="sidebar-item-icon" aria-hidden="true">
+                  <span className="material-symbols-outlined" style={{ fontSize: "16px", lineHeight: 1 }}>{icon}</span>
+                </span>
+                <span className="sidebar-item-label">{label}</span>
+                <span className="sidebar-rail-chevron" aria-hidden="true">›</span>
               </button>
             ))}
           </nav>

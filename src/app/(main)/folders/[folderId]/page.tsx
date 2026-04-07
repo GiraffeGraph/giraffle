@@ -27,7 +27,9 @@ export default async function FolderPage({ params }: FolderPageProps) {
               href={`/folders/${childFolder.id}`}
               className="dashboard-note-card"
             >
-              <div className="dashboard-note-card-icon">{childFolder.icon ?? "Kls"}</div>
+              <div className="dashboard-note-card-icon">
+                {childFolder.icon ?? <span className="material-symbols-outlined" aria-hidden="true">folder</span>}
+              </div>
               <div className="dashboard-note-card-title">{childFolder.name}</div>
             </Link>
           ))}
@@ -46,7 +48,9 @@ export default async function FolderPage({ params }: FolderPageProps) {
               href={`/notes/${note.id}`}
               className="dashboard-note-card"
             >
-              <div className="dashboard-note-card-icon">{note.icon ?? "Not"}</div>
+              <div className="dashboard-note-card-icon">
+                {note.icon ?? <span className="material-symbols-outlined" aria-hidden="true">description</span>}
+              </div>
               <div className="dashboard-note-card-title">{note.title}</div>
               <div className="dashboard-note-card-date">
                 {formatDate(new Date(note.updatedAt))}

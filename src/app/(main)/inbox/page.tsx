@@ -30,7 +30,9 @@ export default async function InboxPage() {
               href={`/notes/${note.id}`}
               className="dashboard-note-card"
             >
-              <div className="dashboard-note-card-icon">{note.icon ?? "Not"}</div>
+              <div className="dashboard-note-card-icon">
+                {note.icon ?? <span className="material-symbols-outlined" aria-hidden="true">description</span>}
+              </div>
               <div className="dashboard-note-card-body">
                 <div className="dashboard-note-card-title">
                   {note.isPinned ? "Pinli · " : ""}

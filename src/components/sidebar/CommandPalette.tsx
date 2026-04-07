@@ -178,7 +178,16 @@ export function CommandPalette({
                             await item.onSelect();
                           }}
                         >
-                          <div className="md-list-item-start" style={{ fontSize: "24px", color: isActive ? "var(--md-sys-color-on-secondary-container)" : "var(--md-sys-color-on-surface)" }}>
+                          <div
+                            className="md-list-item-start material-symbols-outlined"
+                            style={{
+                              fontSize: "24px",
+                              lineHeight: 1,
+                              letterSpacing: "normal",
+                              color: isActive ? "var(--md-sys-color-on-secondary-container)" : "var(--md-sys-color-on-surface)",
+                            }}
+                            aria-hidden="true"
+                          >
                             {item.icon}
                           </div>
                           <div className="md-list-item-content">

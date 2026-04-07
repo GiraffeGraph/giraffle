@@ -35,7 +35,7 @@ export default async function DashboardPage() {
                 <Card variant="outlined" isClickable style={{ height: "100%", padding: "16px", transition: "all 0.2s" }}>
                   <CardContent style={{ padding: 0, display: "flex", alignItems: "flex-start", gap: "16px", height: "100%" }}>
                     <div style={{ fontSize: "24px", color: "var(--md-sys-color-primary)", flexShrink: 0 }}>
-                      {note.icon ?? "Not"}
+                      {note.icon ?? <span className="material-symbols-outlined" aria-hidden="true">description</span>}
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", overflow: "hidden" }}>
                       <div style={{ fontWeight: "bold", fontSize: "var(--md-sys-typescale-title-medium-size)", color: "var(--md-sys-color-on-surface)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>

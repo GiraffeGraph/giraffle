@@ -24,7 +24,9 @@ export default async function TagPage({ params }: TagPageProps) {
               href={`/notes/${note.id}`}
               className="dashboard-note-card"
             >
-              <div className="dashboard-note-card-icon">{note.icon ?? "Not"}</div>
+              <div className="dashboard-note-card-icon">
+                {note.icon ?? <span className="material-symbols-outlined" aria-hidden="true">description</span>}
+              </div>
               <div className="dashboard-note-card-title">{note.title}</div>
               <div className="dashboard-note-card-date">
                 {formatDate(new Date(note.updatedAt))}

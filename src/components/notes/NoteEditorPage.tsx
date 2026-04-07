@@ -626,7 +626,7 @@ export function NoteEditorPage({
           <Card variant="outlined" style={{ borderColor: "var(--md-sys-color-tertiary)" }}>
             <CardHeader>
               <CardTitle style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--md-sys-color-tertiary)" }}>
-                <span>YZ</span>
+                <span className="material-symbols-outlined" aria-hidden="true">auto_awesome</span>
                 Bekleyen öneriler ({proposals.length})
               </CardTitle>
             </CardHeader>
