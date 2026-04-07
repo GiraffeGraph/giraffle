@@ -6198,7 +6198,7 @@ body::before {
 }
 
 .note-header {
-  padding: 12px 4px 6px;
+  padding: 10px 2px 4px;
   border: none;
   border-radius: 0;
   background: transparent;
@@ -6210,8 +6210,8 @@ body::before {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 16px;
+  gap: 12px;
+  margin-bottom: 12px;
 }
 
 .note-breadcrumb-row {
@@ -6220,7 +6220,7 @@ body::before {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   margin-bottom: 0;
 }
 
@@ -6307,7 +6307,7 @@ body::before {
 .note-toolbar.note-toolbar-minimal {
   flex-shrink: 0;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   margin-bottom: 0;
 }
 
@@ -6337,30 +6337,47 @@ body::before {
 }
 
 .note-status-row.minimal {
-  gap: 8px;
-  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 6px;
+}
+
+.note-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--text-muted);
+}
+
+.note-status-dot.draft {
+  background: var(--accent-warm);
+}
+
+.note-status-dot.published {
+  background: var(--accent);
 }
 
 .note-status-inline {
   color: var(--text-secondary);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
-.note-status-inline.subtle,
-.note-status-separator,
-.note-status-text {
+.note-status-inline.subtle {
   color: var(--text-tertiary);
-  font-size: 12px;
+  font-size: 11px;
+  font-weight: 500;
 }
 
 .note-title-input {
   margin-top: 0;
-  font-size: clamp(2.35rem, 4.3vw, 3.45rem);
+  font-size: clamp(2.25rem, 4vw, 3.3rem);
 }
 
 .note-tag-list {
-  margin-top: 14px;
+  margin-top: 12px;
 }
 
 .note-settings-panel {
@@ -6391,8 +6408,8 @@ body::before {
 }
 
 .note-editor-container {
-  padding: 34px 38px;
-  border-radius: 24px;
+  padding: 30px 36px;
+  border-radius: 22px;
 }
 
 .graffle-editor-content {

@@ -519,17 +519,18 @@ export function NoteEditorPage({
         <div className="note-title-row">
           <div className="note-title-stack">
             <div className="note-status-row minimal">
+              <span
+                className={`note-status-dot ${
+                  isPublished ? "published" : "draft"
+                }`}
+                aria-hidden="true"
+              />
               <span className="note-status-inline">
                 {isPublished ? "Yayında" : "Taslak"}
               </span>
               {isPinned ? (
-                <>
-                  <span className="note-status-separator">·</span>
-                  <span className="note-status-inline subtle">Pinli</span>
-                </>
+                <span className="note-status-inline subtle">Pinli</span>
               ) : null}
-              <span className="note-status-separator">·</span>
-              <span className="note-status-text">Otomatik kaydetme açık</span>
             </div>
 
             <input
