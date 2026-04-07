@@ -1,11 +1,19 @@
 import Link from "next/link";
+import { AppPageHeader } from "@/components/ui/AppPageHeader";
 import { getWorkspaceProposalsAction } from "@/server/api/proposals";
 
 export default async function ProposalsPage() {
   const proposals = await getWorkspaceProposalsAction();
 
   return (
-    <div className="dashboard proposals-page">
+    <div className="dashboard proposals-page app-page">
+      <AppPageHeader
+        eyebrow="İçerik akışı"
+        title="Öneriler"
+        description="Notlardan çıkan önerileri ve bağlı oldukları kaynak kayıtları tek akışta incele."
+        meta={`${proposals.length} öneri`}
+      />
+
       {proposals.length === 0 ? (
         <div className="dashboard-empty">
           <p className="dashboard-empty-text">Henüz öneri yok.</p>

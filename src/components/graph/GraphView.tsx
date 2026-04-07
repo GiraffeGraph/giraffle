@@ -44,7 +44,22 @@ export function GraphView({ graph, unresolvedLinks }: GraphViewProps) {
     null;
 
   return (
-    <div className="graph-page">
+    <div className="graph-page app-page">
+      <header className="app-page-header graph-page-header">
+        <div className="app-page-header-main">
+          <div className="app-page-eyebrow">İlişki görünümü</div>
+          <div className="app-page-header-copy">
+            <h1 className="app-page-title">Bağlantı ağı</h1>
+            <p className="app-page-subtitle">
+              Notlar arasındaki ilişkileri gör, yoğun düğümleri yakala ve
+              çözülmemiş bağlantıları incele.
+            </p>
+          </div>
+        </div>
+        <div className="app-page-header-side">
+          <span className="app-page-badge">{graph.nodes.length} düğüm</span>
+        </div>
+      </header>
 
       <div className="graph-layout">
         <div className="graph-canvas">
@@ -113,8 +128,7 @@ export function GraphView({ graph, unresolvedLinks }: GraphViewProps) {
             <>
               <div className="graph-panel-title">{activeNode.title}</div>
               <div className="graph-panel-meta">
-                Bağ sayısı {activeNode.degree} ·{" "}
-                {activeNode.isPublished ? "Yayında" : "Özel"}
+                Bağ sayısı {activeNode.degree} · {activeNode.isPublished ? "Yayında" : "Özel"}
               </div>
               <div className="graph-panel-section-title">Bağlantılar</div>
               <div className="graph-panel-list">

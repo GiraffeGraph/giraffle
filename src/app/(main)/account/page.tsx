@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AppPageHeader } from "@/components/ui/AppPageHeader";
 import {
   changePasswordAction,
   getAccountProfileAction,
@@ -24,7 +25,14 @@ export default async function AccountPage() {
   }
 
   return (
-    <div className="dashboard account-page">
+    <div className="dashboard account-page app-page">
+      <AppPageHeader
+        eyebrow="Kimlik"
+        title="Hesap"
+        description="Profil bilgilerini güncelle, giriş bilgilerini düzenle ve kurtarma akışına eriş."
+        meta={profile?.email ?? "Hesap"}
+      />
+
       <div className="templates-layout">
         <section className="templates-column">
           <div className="dashboard-section-head">

@@ -1,4 +1,11 @@
-import { createTemplateAction, deleteTemplateAction, getTemplatesAction, updateTemplateAction } from "@/server/api/templates";
+import Link from "next/link";
+import {
+  createTemplateAction,
+  deleteTemplateAction,
+  getTemplatesAction,
+  updateTemplateAction,
+} from "@/server/api/templates";
+import { AppPageHeader } from "@/components/ui/AppPageHeader";
 import {
   blocksToMarkdown,
   markdownToBlocks,
@@ -75,12 +82,22 @@ export default async function TemplatesPage({ searchParams }: TemplatesPageProps
   }
 
   return (
-    <div className="dashboard templates-page">
+    <div className="dashboard templates-page app-page">
+      <AppPageHeader
+        eyebrow="Sistem"
+        title="Şablonlar"
+        description="Tekrarlanan not başlangıçlarını, ritüelleri ve ekip formatlarını tutarlı hale getir."
+        meta={`${templates.length} şablon`}
+      />
+
       <div className="templates-layout">
-        <section className="templates-column">
+        <section className="templates-column templates-list-column">
+          <div className="dashboard-section-head">
+            <span className="dashboard-section-kicker">Şablon kütüphanesi</span>
+          </div>
           <div className="search-result-grid">
             {templates.map((template) => (
-              <a
+              <Link
                 key={template.id}
                 href={`/templates?selected=${template.id}`}
                 className={`search-result-card ${
@@ -91,12 +108,15 @@ export default async function TemplatesPage({ searchParams }: TemplatesPageProps
                 <span className="search-result-meta">
                   {getTemplateCategoryLabel(template.category)}
                 </span>
-              </a>
+              </Link>
             ))}
           </div>
         </section>
 
         <section className="templates-column">
+          <div className="dashboard-section-head">
+            <span className="dashboard-section-kicker">Yeni şablon</span>
+          </div>
           <form action={handleCreateTemplate} className="settings-panel">
             <label className="settings-field">
               <span>Ad</span>
@@ -144,6 +164,9 @@ export default async function TemplatesPage({ searchParams }: TemplatesPageProps
 
           {selectedTemplate ? (
             <>
+              <div className="dashboard-section-head">
+                <span className="dashboard-section-kicker">Seçili şablon</span>
+              </div>
               <form action={handleUpdateTemplate} className="settings-panel">
                 <input type="hidden" name="templateId" value={selectedTemplate.id} />
                 <label className="settings-field">

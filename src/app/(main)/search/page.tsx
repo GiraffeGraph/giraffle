@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AppPageHeader } from "@/components/ui/AppPageHeader";
 import { getAllFoldersAction } from "@/server/api/folders";
 import { getUnresolvedLinksAction } from "@/server/api/graph";
 import { getNotesAction } from "@/server/api/notes";
@@ -40,9 +41,25 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   const unresolvedResults = unresolved.filter((item) =>
     query ? item.targetRaw.toLowerCase().includes(query) : true
   );
+  const totalResults =
+    noteResults.length +
+    folderResults.length +
+    templateResults.length +
+    unresolvedResults.length;
 
   return (
-    <div className="dashboard search-page">
+    <div className="dashboard search-page app-page">
+      <AppPageHeader
+        eyebrow="Keşif"
+        title="Arama"
+        description={
+          query
+            ? `“${params.q}” için kapsam genelinde sonuçlar.`
+            : "Notlar, klasörler, şablonlar ve çözülmemiş bağlantılar tek akışta."
+        }
+        meta={`${totalResults} sonuç`}
+      />
+
       {(scope === "all" || scope === "notes") && (
         <SearchSection title="Notlar" count={noteResults.length}>
           {noteResults.map((note) => (
@@ -116,10 +133,9 @@ function SearchSection({
 }) {
   return (
     <section className="search-section">
-      <div className="dashboard-section-head">
-        <span className="dashboard-section-kicker">
-          {title} ({count})
-        </span>
+      <div className="dashboard-section-head search-section-head">
+        <span className="dashboard-section-kicker">{title}</span>
+        <span className="search-section-count">{count}</span>
       </div>
       <div className="search-result-grid">
         {count === 0 ? <div className="dashboard-empty">Sonuç yok.</div> : children}

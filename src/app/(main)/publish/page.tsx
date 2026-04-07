@@ -1,11 +1,19 @@
 import Link from "next/link";
+import { AppPageHeader } from "@/components/ui/AppPageHeader";
 import { getPublishedExportsAction } from "@/server/api/notes";
 
 export default async function PublishPage() {
   const exports = await getPublishedExportsAction();
 
   return (
-    <div className="dashboard publish-page">
+    <div className="dashboard publish-page app-page">
+      <AppPageHeader
+        eyebrow="Dağıtım"
+        title="Yayınlar"
+        description="Paylaşıma açılmış notları ve erişilebilir yollarını tek yerden yönet."
+        meta={`${exports.length} yayın`}
+      />
+
       <div className="search-result-grid">
         {exports.length === 0 ? (
           <div className="dashboard-empty">Yayında not yok.</div>
