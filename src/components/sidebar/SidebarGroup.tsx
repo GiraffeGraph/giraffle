@@ -58,18 +58,18 @@ export function SidebarGroup({
         {collapsible ? (
           <button
             type="button"
-            className="sidebar-group-toggle"
+            className="sidebar-item sidebar-group-toggle"
             onClick={onToggle}
             aria-expanded={!collapsed}
           >
             {showChevron ? <ChevronIcon open={!collapsed} /> : null}
-            {icon ? <span className="sidebar-group-icon">{icon}</span> : null}
-            <span className="sidebar-group-label">{label}</span>
+            {icon ? <span className="sidebar-item-icon sidebar-group-icon">{icon}</span> : null}
+            <span className="sidebar-item-label sidebar-group-label">{label}</span>
           </button>
         ) : (
-          <div className="sidebar-group-title">
-            {icon ? <span className="sidebar-group-icon">{icon}</span> : null}
-            <span className="sidebar-group-label">{label}</span>
+          <div className="sidebar-item sidebar-group-title">
+            {icon ? <span className="sidebar-item-icon sidebar-group-icon">{icon}</span> : null}
+            <span className="sidebar-item-label sidebar-group-label">{label}</span>
           </div>
         )}
         <div className="sidebar-group-actions">

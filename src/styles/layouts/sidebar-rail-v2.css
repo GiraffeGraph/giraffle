@@ -218,25 +218,16 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 4px;
+  gap: 2px;
+  padding: 0;
 }
 
 /* Pano / Gelen Kutusu ile aynı görünüm */
 .sidebar-group-toggle,
 .sidebar-group-title {
-  display: flex;
-  align-items: center;
-  gap: 7px;
   flex: 1;
   min-width: 0;
-  min-height: 28px;
-  padding: 3px 7px;
-  border: none;
-  border-radius: 6px;
-  background: transparent;
-  cursor: pointer;
-  color: var(--text-tertiary);
-  transition: background var(--transition-fast), color var(--transition-fast);
+  padding-right: 6px;
 }
 
 .sidebar-group-toggle:hover,
@@ -246,26 +237,10 @@
 }
 
 .sidebar-group-label {
-  font-size: 13px;
-  font-weight: 400;
-  letter-spacing: 0;
-  text-transform: none;
-  color: inherit;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  flex: 1;
   text-align: left;
 }
 
 .sidebar-group-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  flex-shrink: 0;
-  color: inherit;
   opacity: 0.72;
 }
 
@@ -278,6 +253,9 @@
   display: flex;
   align-items: center;
   gap: 2px;
+  flex-shrink: 0;
+  min-height: 28px;
+  padding-right: 4px;
 }
 
 /* VS Code tarzı grup aksiyon ikonları */
@@ -312,6 +290,10 @@
   display: flex;
   flex-direction: column;
   gap: 1px;
+}
+
+.sidebar-group-body {
+  padding-left: 0;
 }
 
 .sidebar-folder-children {
