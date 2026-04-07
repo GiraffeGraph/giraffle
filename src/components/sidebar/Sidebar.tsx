@@ -1237,12 +1237,12 @@ export function Sidebar({
 
           <nav className="sidebar-rail" aria-label="İkincil gezinme">
             {([
-              { path: "/search", icon: "search", label: "Arama" },
-              { path: "/templates", icon: "library_books", label: "Şablonlar" },
-              { path: "/publish", icon: "publish", label: "Yayın" },
-              { path: "/proposals", icon: "auto_awesome", label: "Öneriler" },
-              { path: "/settings", icon: "settings", label: "Ayarlar" },
-              { path: "/account", icon: "account_circle", label: "Hesap" },
+              { path: "/search", icon: "\uE8B6", label: "Arama" },
+              { path: "/templates", icon: "\uE02F", label: "Şablonlar" },
+              { path: "/publish", icon: "\uE255", label: "Yayın" },
+              { path: "/proposals", icon: "\uE65F", label: "Öneriler" },
+              { path: "/settings", icon: "\uE8B8", label: "Ayarlar" },
+              { path: "/account", icon: "\uF20B", label: "Hesap" },
             ]).map(({ path, icon, label }) => (
               <button
                 key={path}
