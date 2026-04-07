@@ -122,6 +122,8 @@ Set `AUTH_SECRET` in `.env` to a long random value before logging in.
 
 ## Production Deployment
 
+For a simpler step-by-step server guide, see [`docs/deploy.md`](./docs/deploy.md).
+
 Giraffle ships with a production Docker Compose stack that runs:
 
 - `postgres` for durable application storage
