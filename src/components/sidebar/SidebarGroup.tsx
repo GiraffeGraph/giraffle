@@ -1,10 +1,30 @@
 import type { ReactNode } from "react";
 
-function PlusIcon() {
+export type SidebarGroupAction = {
+  icon: ReactNode;
+  label: string;
+  onClick: () => void;
+};
+
+function ChevronIcon({ open }: { open: boolean }) {
   return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="12" y1="5" x2="12" y2="19" />
-      <line x1="5" y1="12" x2="19" y2="12" />
+    <svg
+      width="10"
+      height="10"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      style={{
+        transform: open ? "rotate(90deg)" : "rotate(0deg)",
+        transition: "transform 150ms ease",
+        flexShrink: 0,
+      }}
+      aria-hidden="true"
+    >
+      <polyline points="9 18 15 12 9 6" />
     </svg>
   );
 }
@@ -15,7 +35,7 @@ export function SidebarGroup({
   collapsed = false,
   collapsible = true,
   onToggle,
-  onAdd,
+  actions,
   children,
 }: {
   label: string;
@@ -23,7 +43,8 @@ export function SidebarGroup({
   collapsed?: boolean;
   collapsible?: boolean;
   onToggle?: () => void;
-  onAdd?: () => void;
+  /** VS Code tarzı hover ikonları — her biri bir aksiyon butonudur */
+  actions?: SidebarGroupAction[];
   children: ReactNode;
 }) {
   return (
@@ -36,7 +57,7 @@ export function SidebarGroup({
             onClick={onToggle}
             aria-expanded={!collapsed}
           >
-            <span className={`sidebar-group-caret ${collapsed ? "collapsed" : ""}`}>▾</span>
+            <ChevronIcon open={!collapsed} />
             <span className="sidebar-group-label">{label}</span>
           </button>
         ) : (
@@ -46,16 +67,18 @@ export function SidebarGroup({
         )}
         <div className="sidebar-group-actions">
           {meta ? <span className="sidebar-group-meta">{meta}</span> : null}
-          {onAdd ? (
+          {actions?.map((action) => (
             <button
+              key={action.label}
               type="button"
-              className="sidebar-group-add"
-              onClick={onAdd}
-              aria-label={`${label} ekle`}
+              className="sidebar-group-action"
+              onClick={action.onClick}
+              aria-label={action.label}
+              title={action.label}
             >
-              <PlusIcon />
+              {action.icon}
             </button>
-          ) : null}
+          ))}
         </div>
       </div>
       {!collapsed ? <div className="sidebar-group-body">{children}</div> : null}

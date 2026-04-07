@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import type { MouseEvent as ReactMouseEvent } from "react";
 import type { FolderDropTarget, SidebarFolder } from "./sidebar.types";
 
@@ -16,6 +19,28 @@ function MoreHorizontalIcon() {
       <circle cx="12" cy="12" r="1" />
       <circle cx="19" cy="12" r="1" />
       <circle cx="5" cy="12" r="1" />
+    </svg>
+  );
+}
+
+function ChevronIcon({ open }: { open: boolean }) {
+  return (
+    <svg
+      width="10"
+      height="10"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      style={{
+        transform: open ? "rotate(90deg)" : "rotate(0deg)",
+        transition: "transform 150ms ease",
+      }}
+      aria-hidden="true"
+    >
+      <polyline points="9 18 15 12 9 6" />
     </svg>
   );
 }
@@ -52,9 +77,11 @@ export function SidebarFolderItem({
   onDropTargetChange: (target: FolderDropTarget | null) => void;
   depth?: number;
 }) {
-  // onMoveFolder is kept in props for future use / context menu wiring
   void onMoveFolder;
 
+  const [isOpen, setIsOpen] = useState(true);
+
+  const hasChildren = (folder.children ?? []).length > 0;
   const isActive = pathname === `/folders/${folder.id}`;
   const isInsideDropTarget =
     folderDropTarget?.folderId === folder.id && folderDropTarget.mode === "inside";
@@ -64,14 +91,29 @@ export function SidebarFolderItem({
   return (
     <div className="sidebar-folder-node">
       <div
-        className={`sidebar-entity-row ${isActive ? "active" : ""}${
+        className={`sidebar-entity-row${isActive ? " active" : ""}${
           isInsideDropTarget ? " drag-target" : ""
         }`}
       >
+        {/* Chevron — sadece alt klasörü olan klasörlerde görünür */}
         <button
           type="button"
-          className={`sidebar-item sidebar-row-main ${isActive ? "active" : ""}`}
-          style={{ paddingLeft: `${12 + depth * 16}px` }}
+          className={`sidebar-folder-chevron${hasChildren ? "" : " sidebar-folder-chevron--empty"}`}
+          onClick={
+            hasChildren
+              ? (e) => { e.stopPropagation(); setIsOpen((v) => !v); }
+              : undefined
+          }
+          tabIndex={hasChildren ? 0 : -1}
+          aria-label={isOpen ? "Klasörü kapat" : "Klasörü aç"}
+        >
+          {hasChildren ? <ChevronIcon open={isOpen} /> : null}
+        </button>
+
+        {/* Ana klasör butonu */}
+        <button
+          type="button"
+          className={`sidebar-item sidebar-row-main${isActive ? " active" : ""}`}
           onClick={() => onOpen(folder.id)}
           onContextMenu={(event) => onContextMenuOpen(event, folder)}
           draggable
@@ -103,6 +145,8 @@ export function SidebarFolderItem({
           </span>
           <span className="sidebar-item-label">{folder.name}</span>
         </button>
+
+        {/* Hover aksiyonları */}
         <div className="sidebar-row-actions">
           <button
             type="button"
@@ -129,10 +173,10 @@ export function SidebarFolderItem({
         </div>
       </div>
 
+      {/* Sürükle-bırak bölgesi */}
       {draggedFolderId && draggedFolderId !== folder.id ? (
         <div
           className={`sidebar-folder-dropzone${isAfterDropTarget ? " active" : ""}`}
-          style={{ marginLeft: `${12 + depth * 16}px` }}
           onDragOver={(event) => {
             event.preventDefault();
             onDropTargetChange({ folderId: folder.id, mode: "after" });
@@ -149,7 +193,8 @@ export function SidebarFolderItem({
         </div>
       ) : null}
 
-      {(folder.children ?? []).length > 0 ? (
+      {/* Alt klasörler — sadece açıkken */}
+      {hasChildren && isOpen ? (
         <div className="sidebar-folder-children">
           {(folder.children ?? []).map((childFolder) => (
             <SidebarFolderItem
