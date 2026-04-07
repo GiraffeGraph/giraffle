@@ -126,7 +126,7 @@ Giraffle ships with a production Docker Compose stack that runs:
 
 - `postgres` for durable application storage
 - `app` for the standalone Next.js server
-- optional `nginx` profile for reverse proxy use
+- optional `nginx` via a separate proxy compose file
 
 ### Quick Start
 
@@ -181,20 +181,20 @@ docker compose --env-file .env.production -f docker-compose.prod.yml down
 
 ### Optional Reverse Proxy
 
-If you want a front proxy like many self-hosted setups use, enable the nginx profile:
+If you want a front proxy like many self-hosted setups use:
 
 ```bash
-COMPOSE_PROFILES=proxy ./scripts/prod-up.sh
+./scripts/prod-up-proxy.sh
 ```
 
-That will also bind port `80` through nginx. The default stack intentionally stays simpler and publishes the app directly on `APP_PORT`, which matches the default self-host pattern used by projects like AFFiNE, SiYuan, and Memos.
+That adds nginx on port `80` in front of the app. The default stack intentionally stays simpler and publishes the app directly on `APP_PORT`, which matches the default self-host pattern used by projects like AFFiNE, SiYuan, and Memos.
 
 ### Runtime Notes
 
 - The production app container intentionally keeps the full runtime `node_modules` tree. Prisma 7 CLI dependencies are needed for in-container `prisma migrate deploy`.
 - Uploads are written to `/app/public/uploads` and persisted through the `giraffle_uploads` Docker volume.
 - By default the app is public on `APP_PORT` and reachable directly, usually `http://localhost:3000`.
-- nginx is optional and only starts when the `proxy` profile is enabled.
+- nginx is optional and only starts when `docker-compose.proxy.yml` is included.
 
 ## Auth Baseline
 
