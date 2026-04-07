@@ -619,7 +619,7 @@
 .icon-picker {
   position: fixed;
   width: min(520px, calc(100vw - 24px));
-  max-height: min(520px, calc(100vh - 24px));
+  height: min(520px, calc(100vh - 24px));
   border-radius: 22px;
   border: 1px solid var(--border-color);
   background:
@@ -799,12 +799,17 @@
 }
 
 .icon-picker-emoji-shell {
+  display: flex;
   flex: 1;
   min-height: 0;
+  overflow: hidden;
   padding: 14px 18px 18px;
 }
 
 .icon-picker-emoji-panel.EmojiPickerReact {
+  display: flex;
+  flex: 1;
+  min-height: 0;
   width: 100% !important;
   height: 100% !important;
   border-radius: 18px;
@@ -841,4 +846,13 @@
 
 .icon-picker-emoji-panel .epr-category-nav {
   padding-top: 10px;
+}
+
+.icon-picker-emoji-panel .epr-main,
+.icon-picker-emoji-panel .epr-body {
+  min-height: 0;
+}
+
+.icon-picker-emoji-panel .epr-body {
+  overscroll-behavior: contain;
 }

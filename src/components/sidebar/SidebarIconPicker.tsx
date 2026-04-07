@@ -130,8 +130,8 @@ export function SidebarIconPicker({
     }
 
     try {
-      await onSelect(icon);
       onClose();
+      await onSelect(icon);
     } finally {
       setIsSaving(false);
     }
