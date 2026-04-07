@@ -16,6 +16,7 @@ import { renderStoredIcon } from "@/components/sidebar/sidebar-icon-utils";
 import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 import { Button } from "@/components/ui/Button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
+import { TopbarPathNavigator } from "@/components/ui/TopbarPathNavigator";
 import type { BacklinkResult } from "@/domain/link/link.types";
 import { DEFAULT_NOTE_TITLE } from "@/domain/note/note.types";
 import type { NoteReference, TiptapDocument } from "@/domain/note/note.types";
@@ -461,7 +462,7 @@ export function NoteEditorPage({
         style={{
           display: "flex",
           alignItems: "center",
-          justifyContent: "space-between",
+          gap: "12px",
           height: "36px",
           padding: "0 16px",
           borderBottom: "1px solid var(--md-sys-color-outline-variant)",
@@ -476,7 +477,7 @@ export function NoteEditorPage({
         onContextMenu={openContextMenuAtPointer}
       >
         {/* Breadcrumb */}
-        <div style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: 0, overflow: "hidden" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: 0, overflow: "hidden", flex: 1 }}>
           <button
             type="button"
             title="Not ikonunu değiştir"
@@ -556,6 +557,10 @@ export function NoteEditorPage({
           </div>
           <span style={{ opacity: 0.4 }}>/</span>
           <span style={{ color: "var(--md-sys-color-on-surface)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "240px" }}>{effectiveTitle}</span>
+        </div>
+
+        <div style={{ flex: "0 1 320px", minWidth: 0 }}>
+          <TopbarPathNavigator key={note.id} currentPath={`/notes/${note.id}`} />
         </div>
 
         {/* Actions */}

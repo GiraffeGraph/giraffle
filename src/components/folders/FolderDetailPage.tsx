@@ -6,6 +6,7 @@ import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { SidebarIconPicker } from "@/components/sidebar/SidebarIconPicker";
 import { renderStoredIcon } from "@/components/sidebar/sidebar-icon-utils";
+import { TopbarPathNavigator } from "@/components/ui/TopbarPathNavigator";
 import { formatDate } from "@/lib/utils";
 import { updateFolderAction } from "@/server/api/folders";
 
@@ -77,7 +78,7 @@ export function FolderDetailPage({ folder, allFolders }: FolderDetailPageProps) 
         style={{
           display: "flex",
           alignItems: "center",
-          justifyContent: "space-between",
+          gap: "12px",
           height: "36px",
           padding: "0 16px",
           borderBottom: "1px solid var(--md-sys-color-outline-variant)",
@@ -97,6 +98,7 @@ export function FolderDetailPage({ folder, allFolders }: FolderDetailPageProps) 
             gap: "8px",
             minWidth: 0,
             overflow: "hidden",
+            flex: 1,
           }}
         >
           <button
@@ -197,7 +199,9 @@ export function FolderDetailPage({ folder, allFolders }: FolderDetailPageProps) 
           })}
         </div>
 
-        <div style={{ flexShrink: 0 }} />
+        <div style={{ flex: "0 1 320px", minWidth: 0 }}>
+          <TopbarPathNavigator key={folder.id} currentPath={`/folders/${folder.id}`} />
+        </div>
       </div>
 
       <div className="dashboard" style={{ paddingTop: "24px" }}>
