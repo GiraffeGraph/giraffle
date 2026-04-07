@@ -544,7 +544,7 @@
   display: flex;
   flex-direction: column;
   gap: 1px;
-  padding-left: 16px;
+  padding-left: 20px;
 }
 
 .sidebar-folder-node {
@@ -556,7 +556,7 @@
 /* İçerideki not satırlarının sidebar-folder-children etkisini sıfırla */
 .sidebar-folder-contents .sidebar-folder-children {
   margin-left: 0;
-  padding-left: 16px;
+  padding-left: 20px;
 }
 
 /* --- Folder / tag counts ------------------------------------- */
