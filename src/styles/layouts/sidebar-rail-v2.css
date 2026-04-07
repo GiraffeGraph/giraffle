@@ -356,16 +356,18 @@
 }
 
 /* --- Inline folder creator (VS Code style) ------------------- */
+/* .sidebar-folder-icon-btn--static (24px) + gap (2px) + input */
 .sidebar-inline-creator {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 2px;   /* .sidebar-entity-row ile aynı */
   min-height: 28px;
-  padding: 3px 6px;
+  padding: 0;
   border-radius: 6px;
   background: var(--surface-highlight);
   border: 1px solid var(--accent-line);
   margin-bottom: 2px;
+  overflow: hidden;
 }
 
 .sidebar-inline-creator-input {
@@ -377,42 +379,105 @@
   font-size: 13px;
   font-family: inherit;
   outline: none;
+  padding: 3px 6px 3px 2px;  /* .sidebar-folder-name ile aynı */
 }
 
 .sidebar-inline-creator-input::placeholder {
   color: var(--text-muted);
 }
 
-/* --- Folder item chevron ------------------------------------- */
-.sidebar-folder-chevron {
+/* --- Folder icon button (folder / folder_open toggle) -------- */
+.sidebar-folder-icon-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 16px;
+  width: 24px;
   min-height: 28px;
   border: none;
   background: transparent;
   color: var(--text-muted);
   cursor: pointer;
   padding: 0;
-  opacity: 0.55;
-  transition: color var(--transition-fast), opacity var(--transition-fast);
+  border-radius: 4px;
+  transition: color var(--transition-fast), background var(--transition-fast);
 }
 
-.sidebar-entity-row:hover .sidebar-folder-chevron {
-  opacity: 0.9;
-}
-
-.sidebar-folder-chevron:hover {
+.sidebar-folder-icon-btn:hover {
   color: var(--text-secondary);
-  opacity: 1;
+  background: var(--surface-highlight);
 }
 
-.sidebar-folder-chevron--empty {
-  opacity: 0 !important;
-  pointer-events: none;
+.folder-active .sidebar-folder-icon-btn {
+  color: var(--accent);
+}
+
+/* Inline creator — istatik ikon alanı */
+.sidebar-folder-icon-btn--static {
   cursor: default;
+  pointer-events: none;
+}
+
+/* --- Folder name button -------------------------------------- */
+.sidebar-folder-name {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 3px 6px 3px 2px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-tertiary);
+  font-size: 13px;
+  font-weight: 400;
+  cursor: pointer;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.sidebar-folder-name:hover {
+  background: var(--surface-highlight);
+  color: var(--text-secondary);
+}
+
+.sidebar-folder-name.active {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+/* Active left bar on the entity row */
+.sidebar-entity-row.folder-active {
+  position: relative;
+}
+
+.sidebar-entity-row.folder-active::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 20%;
+  height: 60%;
+  width: 2px;
+  border-radius: 999px;
+  background: var(--accent);
+}
+
+/* --- Folder expanded contents (notes + sub-folders) ---------- */
+.sidebar-folder-contents {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding-left: 16px;
+}
+
+/* İçerideki not satırlarının sidebar-folder-children etkisini sıfırla */
+.sidebar-folder-contents .sidebar-folder-children {
+  margin-left: 0;
+  padding-left: 16px;
 }
 
 /* --- Folder / tag counts ------------------------------------- */

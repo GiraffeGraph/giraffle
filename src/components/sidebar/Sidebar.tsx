@@ -469,7 +469,8 @@ export function Sidebar({
               <div className="sidebar-folder-tree">
                 {isCreatingFolder && (
                   <div className="sidebar-inline-creator">
-                    <span className="sidebar-item-icon" aria-hidden="true">
+                    {/* İkon alanı — .sidebar-folder-icon-btn ile aynı genişlik */}
+                    <span className="sidebar-folder-icon-btn sidebar-folder-icon-btn--static" aria-hidden="true">
                       <span className="material-symbols-outlined sm">folder</span>
                     </span>
                     <input
@@ -531,6 +532,11 @@ export function Sidebar({
                     folderDropTarget={folderDropTarget}
                     onDragFolderChange={setDraggedFolderId}
                     onDropTargetChange={setFolderDropTarget}
+                    allNotes={notes}
+                    currentNoteId={currentNoteId}
+                    onNoteOpen={(id) => router.push(`/notes/${id}`)}
+                    onNoteContextMenu={(e, n) => openContextMenuAtPointer(e, buildNoteMenu(n))}
+                    onNoteTriggerMenu={(e, n) => openContextMenuFromTrigger(e, buildNoteMenu(n))}
                   />
                 ))}
               </div>

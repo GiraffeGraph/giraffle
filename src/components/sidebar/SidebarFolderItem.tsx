@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import type { MouseEvent as ReactMouseEvent } from "react";
-import type { FolderDropTarget, SidebarFolder } from "./sidebar.types";
+import type { FolderDropTarget, SidebarFolder, SidebarNote } from "./sidebar.types";
+import { SidebarNoteRow } from "./SidebarNoteRow";
 
 function PlusIcon() {
   return (
@@ -23,28 +24,6 @@ function MoreHorizontalIcon() {
   );
 }
 
-function ChevronIcon({ open }: { open: boolean }) {
-  return (
-    <svg
-      width="10"
-      height="10"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      style={{
-        transform: open ? "rotate(90deg)" : "rotate(0deg)",
-        transition: "transform 150ms ease",
-      }}
-      aria-hidden="true"
-    >
-      <polyline points="9 18 15 12 9 6" />
-    </svg>
-  );
-}
-
 export function SidebarFolderItem({
   folder,
   pathname,
@@ -58,6 +37,11 @@ export function SidebarFolderItem({
   folderDropTarget,
   onDragFolderChange,
   onDropTargetChange,
+  allNotes,
+  currentNoteId,
+  onNoteOpen,
+  onNoteContextMenu,
+  onNoteTriggerMenu,
   depth = 0,
 }: {
   folder: SidebarFolder;
@@ -75,13 +59,21 @@ export function SidebarFolderItem({
   folderDropTarget: FolderDropTarget | null;
   onDragFolderChange: (folderId: string | null) => void;
   onDropTargetChange: (target: FolderDropTarget | null) => void;
+  allNotes: SidebarNote[];
+  currentNoteId?: string;
+  onNoteOpen: (noteId: string) => void;
+  onNoteContextMenu: (event: ReactMouseEvent<HTMLElement>, note: SidebarNote) => void;
+  onNoteTriggerMenu: (event: ReactMouseEvent<HTMLButtonElement>, note: SidebarNote) => void;
   depth?: number;
 }) {
   void onMoveFolder;
 
   const [isOpen, setIsOpen] = useState(true);
 
+  const folderNotes = allNotes.filter((n) => n.folderId === folder.id);
   const hasChildren = (folder.children ?? []).length > 0;
+  const hasContent = hasChildren || folderNotes.length > 0;
+
   const isActive = pathname === `/folders/${folder.id}`;
   const isInsideDropTarget =
     folderDropTarget?.folderId === folder.id && folderDropTarget.mode === "inside";
@@ -91,29 +83,30 @@ export function SidebarFolderItem({
   return (
     <div className="sidebar-folder-node">
       <div
-        className={`sidebar-entity-row${isActive ? " active" : ""}${
+        className={`sidebar-entity-row${isActive ? " folder-active" : ""}${
           isInsideDropTarget ? " drag-target" : ""
         }`}
       >
-        {/* Chevron — sadece alt klasörü olan klasörlerde görünür */}
+        {/* Klasör ikonu — içerik varsa aç/kapat, yoksa navigate */}
         <button
           type="button"
-          className={`sidebar-folder-chevron${hasChildren ? "" : " sidebar-folder-chevron--empty"}`}
+          className="sidebar-folder-icon-btn"
           onClick={
-            hasChildren
+            hasContent
               ? (e) => { e.stopPropagation(); setIsOpen((v) => !v); }
-              : undefined
+              : () => onOpen(folder.id)
           }
-          tabIndex={hasChildren ? 0 : -1}
           aria-label={isOpen ? "Klasörü kapat" : "Klasörü aç"}
         >
-          {hasChildren ? <ChevronIcon open={isOpen} /> : null}
+          <span className="material-symbols-outlined sm" aria-hidden="true">
+            {hasContent && isOpen ? "folder_open" : "folder"}
+          </span>
         </button>
 
-        {/* Ana klasör butonu */}
+        {/* Klasör adı — tıklayınca navigate */}
         <button
           type="button"
-          className={`sidebar-item sidebar-row-main${isActive ? " active" : ""}`}
+          className={`sidebar-folder-name${isActive ? " active" : ""}`}
           onClick={() => onOpen(folder.id)}
           onContextMenu={(event) => onContextMenuOpen(event, folder)}
           draggable
@@ -136,14 +129,7 @@ export function SidebarFolderItem({
             });
           }}
         >
-          <span className="sidebar-item-icon">
-            {folder.icon ? (
-              folder.icon
-            ) : (
-              <span className="material-symbols-outlined sm" aria-hidden="true">folder</span>
-            )}
-          </span>
-          <span className="sidebar-item-label">{folder.name}</span>
+          {folder.name}
         </button>
 
         {/* Hover aksiyonları */}
@@ -193,27 +179,47 @@ export function SidebarFolderItem({
         </div>
       ) : null}
 
-      {/* Alt klasörler — sadece açıkken */}
-      {hasChildren && isOpen ? (
-        <div className="sidebar-folder-children">
-          {(folder.children ?? []).map((childFolder) => (
-            <SidebarFolderItem
-              key={childFolder.id}
-              folder={childFolder}
-              pathname={pathname}
-              onOpen={onOpen}
-              onMoveFolder={onMoveFolder}
-              onRelocateFolder={onRelocateFolder}
-              onQuickCreate={onQuickCreate}
-              onContextMenuOpen={onContextMenuOpen}
-              onTriggerMenuOpen={onTriggerMenuOpen}
-              draggedFolderId={draggedFolderId}
-              folderDropTarget={folderDropTarget}
-              onDragFolderChange={onDragFolderChange}
-              onDropTargetChange={onDropTargetChange}
-              depth={depth + 1}
+      {/* Açık içerik: notlar + alt klasörler */}
+      {hasContent && isOpen ? (
+        <div className="sidebar-folder-contents">
+          {/* Bu klasördeki notlar */}
+          {folderNotes.map((note) => (
+            <SidebarNoteRow
+              key={note.id}
+              note={note}
+              active={note.id === currentNoteId}
+              onOpen={onNoteOpen}
+              onContextMenuOpen={onNoteContextMenu}
+              onTriggerMenuOpen={onNoteTriggerMenu}
             />
           ))}
+
+          {/* Alt klasörler */}
+          {hasChildren
+            ? (folder.children ?? []).map((childFolder) => (
+                <SidebarFolderItem
+                  key={childFolder.id}
+                  folder={childFolder}
+                  pathname={pathname}
+                  onOpen={onOpen}
+                  onMoveFolder={onMoveFolder}
+                  onRelocateFolder={onRelocateFolder}
+                  onQuickCreate={onQuickCreate}
+                  onContextMenuOpen={onContextMenuOpen}
+                  onTriggerMenuOpen={onTriggerMenuOpen}
+                  draggedFolderId={draggedFolderId}
+                  folderDropTarget={folderDropTarget}
+                  onDragFolderChange={onDragFolderChange}
+                  onDropTargetChange={onDropTargetChange}
+                  allNotes={allNotes}
+                  currentNoteId={currentNoteId}
+                  onNoteOpen={onNoteOpen}
+                  onNoteContextMenu={onNoteContextMenu}
+                  onNoteTriggerMenu={onNoteTriggerMenu}
+                  depth={depth + 1}
+                />
+              ))
+            : null}
         </div>
       ) : null}
     </div>
