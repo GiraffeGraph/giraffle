@@ -5268,6 +5268,51 @@ body::before {
   opacity: 0.6;
 }
 
+.sidebar-nav-badge {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 6px;
+  background: var(--accent);
+  color: var(--text-on-accent);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.sidebar-nested-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px 2px 22px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 11px;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+}
+
+.sidebar-nested-toggle:hover {
+  color: var(--text-tertiary);
+}
+
+.sidebar-nested-toggle-chevron {
+  display: inline-block;
+  transition: transform 0.15s ease;
+  font-size: 13px;
+  line-height: 1;
+}
+
+.sidebar-nested-toggle-chevron.open {
+  transform: rotate(90deg);
+}
+
 /* Entity rows (note/folder rows with actions) */
 .sidebar-entity-row {
   display: flex;

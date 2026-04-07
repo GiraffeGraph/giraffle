@@ -99,6 +99,7 @@ export function Sidebar({
   const [isSidebarResizing, setIsSidebarResizing] = useState(false);
   const [collapsedSections, setCollapsedSections] = useState<SidebarCollapseState>(DEFAULT_COLLAPSED_SECTIONS);
   const [hasLoadedPreferences, setHasLoadedPreferences] = useState(false);
+  const [isInboxExpanded, setIsInboxExpanded] = useState(false);
   const [navModal, setNavModal] = useState<{
     key: string;
     label: string;
@@ -526,15 +527,16 @@ export function Sidebar({
             <div className="sidebar-primary-nav">
               {([
                 { path: "/dashboard", icon: "\uE88A", label: "Pano", info: "Son dokunulan notlara, taslaklara ve çalışma alanının ana akışına hızlıca geri dön.", actions: [{ label: "Yeni not", onClick: () => void handleCreateNote(), primary: true }, { label: "Şablondan oluştur", onClick: () => setTemplatePickerOpenSignal((s) => s + 1) }] },
-                { path: "/inbox", icon: "\uE156", label: "Gelen kutusu", info: `${notes.filter((n) => !n.folderId).length} klasörsüz not`, actions: [{ label: "Yeni not", onClick: () => void handleCreateNote(), primary: true }, { label: "Şablondan oluştur", onClick: () => setTemplatePickerOpenSignal((s) => s + 1) }] },
-              ] as Array<{ path: string; icon: string; label: string; info: string; actions?: Array<{ label: string; onClick: () => void; primary?: boolean }> }>).map(({ path, icon, label, info, actions }) => (
+                { path: "/inbox", icon: "\uE156", label: "Gelen kutusu", badge: notes.filter((n) => !n.folderId).length, info: `${notes.filter((n) => !n.folderId).length} klasörsüz not`, actions: [{ label: "Yeni not", onClick: () => void handleCreateNote(), primary: true }, { label: "Şablondan oluştur", onClick: () => setTemplatePickerOpenSignal((s) => s + 1) }] },
+              ] as Array<{ path: string; icon: string; label: string; badge?: number; info: string; actions?: Array<{ label: string; onClick: () => void; primary?: boolean }> }>).map(({ path, icon, label, badge, info, actions }) => (
                 <div key={path}>
                   <div className="sidebar-nav-item-row">
-                    <button className={`sidebar-item${pathname === path ? " active" : ""}`} onClick={() => { closeNavModal(); router.push(path); }}>
+                    <button className={`sidebar-item${pathname === path ? " active" : ""}`} onClick={() => { closeNavModal(); router.push(path); if (path === "/inbox") setIsInboxExpanded((v) => !v); }}>
                       <span className="sidebar-item-icon" aria-hidden="true">
                         {icon === "__graph__" ? <GraphIcon size={16} /> : <span className="material-symbols-outlined" style={{ fontSize: "16px", lineHeight: 1 }}>{icon}</span>}
                       </span>
                       <span className="sidebar-item-label">{label}</span>
+                      {badge != null && badge > 0 && <span className="sidebar-nav-badge">{badge}</span>}
                     </button>
                     <button type="button" className={`sidebar-nav-menu${navModal?.key === path ? " active" : ""}`} onClick={(e) => openNavModal(path, label, e, { info, actions })} aria-label={`${label} menüsü`}>···</button>
                   </div>
@@ -549,6 +551,21 @@ export function Sidebar({
                       ))}
                     </div>
                   )}
+                  {path === "/inbox" && isInboxExpanded && (() => {
+                    const inboxNotes = notes.filter((n) => !n.folderId);
+                    if (inboxNotes.length === 0) return null;
+                    return (
+                      <div className="sidebar-nested-items">
+                        {inboxNotes.slice(0, 8).map((note) => (
+                          <button key={note.id} type="button" className={`sidebar-item sidebar-nested-item${note.id === currentNoteId ? " active" : ""}`} onClick={() => { closeNavModal(); router.push(`/notes/${note.id}`); }}>
+                            <span className="sidebar-item-icon" aria-hidden="true">{note.icon ?? <span style={{ fontSize: "8px", opacity: 0.4 }}>●</span>}</span>
+                            <span className="sidebar-item-label">{note.title || "Adsız"}</span>
+                            <span className="sidebar-nested-item-date">{formatDate(new Date(note.updatedAt))}</span>
+                          </button>
+                        ))}
+                      </div>
+                    );
+                  })()}
                 </div>
               ))}
             </div>
