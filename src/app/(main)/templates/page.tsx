@@ -19,6 +19,8 @@ import {
   type TemplateVariable,
 } from "@/domain/template/template.types";
 import { getTemplateCategoryLabel } from "@/lib/template-category";
+import { Card, CardHeader, CardTitle, CardContent, CardActions } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
 
 interface TemplatesPageProps {
   searchParams: Promise<{
@@ -90,144 +92,172 @@ export default async function TemplatesPage({ searchParams }: TemplatesPageProps
         meta={`${templates.length} şablon`}
       />
 
-      <div className="templates-layout">
-        <section className="templates-column templates-list-column">
-          <div className="dashboard-section-head">
-            <span className="dashboard-section-kicker">Şablon kütüphanesi</span>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "24px", padding: "0 32px 32px", maxWidth: "1200px", margin: "0 auto" }}>
+        
+        {/* Left Column: Library */}
+        <section style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          <div>
+            <span style={{ fontSize: "var(--md-sys-typescale-title-medium-size)", color: "var(--md-sys-color-on-background)", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "1px" }}>Şablon Kütüphanesi</span>
           </div>
-          <div className="search-result-grid">
-            {templates.map((template) => (
-              <Link
-                key={template.id}
-                href={`/templates?selected=${template.id}`}
-                className={`search-result-card ${
-                  selectedTemplate?.id === template.id ? "active" : ""
-                }`}
-              >
-                <span className="search-result-title">{template.name}</span>
-                <span className="search-result-meta">
-                  {getTemplateCategoryLabel(template.category)}
-                </span>
-              </Link>
-            ))}
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            {templates.map((template) => {
+              const isActive = selectedTemplate?.id === template.id;
+              return (
+                <Link
+                  key={template.id}
+                  href={`/templates?selected=${template.id}`}
+                  style={{ textDecoration: "none" }}
+                >
+                  <Card variant={isActive ? "filled" : "outlined"} isClickable style={{ background: isActive ? "var(--md-sys-color-secondary-container)" : "transparent", transition: "all 0.2s" }}>
+                    <CardContent style={{ padding: "16px" }}>
+                      <div style={{ display: "flex", flexDirection: "column" }}>
+                        <span style={{ fontWeight: "bold", fontSize: "var(--md-sys-typescale-title-medium-size)", color: isActive ? "var(--md-sys-color-on-secondary-container)" : "var(--md-sys-color-on-surface)" }}>{template.name}</span>
+                        <span style={{ fontSize: "var(--md-sys-typescale-body-small-size)", color: isActive ? "var(--md-sys-color-on-secondary-container)" : "var(--md-sys-color-on-surface-variant)" }}>
+                          {getTemplateCategoryLabel(template.category)}
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              );
+            })}
           </div>
         </section>
 
-        <section className="templates-column">
-          <div className="dashboard-section-head">
-            <span className="dashboard-section-kicker">Yeni şablon</span>
-          </div>
-          <form action={handleCreateTemplate} className="settings-panel">
-            <label className="settings-field">
-              <span>Ad</span>
-              <input name="name" placeholder="Şablon adı" />
-            </label>
-            <label className="settings-field">
-              <span>Açıklama</span>
-              <textarea name="description" placeholder="Kısa açıklama" rows={3} />
-            </label>
-            <label className="settings-field">
-              <span>Kategori</span>
-              <select name="category" defaultValue="custom">
-                {templateCategoryOptions.map((category) => (
-                  <option key={category.value} value={category.value}>
-                    {category.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="settings-field">
-              <span>İkon</span>
-              <input name="icon" placeholder="Not" />
-            </label>
-            <label className="settings-field">
-              <span>Değişkenler (JSON)</span>
-              <textarea
-                name="variablesJson"
-                rows={6}
-                defaultValue="[]"
-                placeholder='[{"name":"date","label":"Tarih","type":"date"}]'
-              />
-            </label>
-            <label className="settings-field">
-              <span>Başlangıç Markdown</span>
-              <textarea
-                name="markdown"
-                rows={12}
-                placeholder="# Şablon başlığı"
-              />
-            </label>
-            <button type="submit" className="dashboard-empty-btn">
-              Şablon oluştur
-            </button>
-          </form>
+        {/* Right Column: Edit/Create Form */}
+        <section style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
+          {/* Create New Template */}
+          <Card variant="elevated">
+            <CardHeader>
+              <CardTitle>Yeni Şablon</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form action={handleCreateTemplate} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                <div style={{ display: "flex", gap: "16px" }}>
+                  <div className="md-text-field md-text-field--outlined" style={{ flex: 2 }}>
+                    <div className="md-text-field-container">
+                      <input className="md-text-field-input" name="name" placeholder=" " />
+                      <span className="md-text-field-label">Ad (Örn: Haftalık Rapor)</span>
+                    </div>
+                  </div>
+                  <div className="md-text-field md-text-field--outlined" style={{ flex: 1 }}>
+                    <div className="md-text-field-container">
+                      <input className="md-text-field-input" name="icon" placeholder=" " />
+                      <span className="md-text-field-label">İkon (Emoji)</span>
+                    </div>
+                  </div>
+                </div>
 
-          {selectedTemplate ? (
-            <>
-              <div className="dashboard-section-head">
-                <span className="dashboard-section-kicker">Seçili şablon</span>
-              </div>
-              <form action={handleUpdateTemplate} className="settings-panel">
-                <input type="hidden" name="templateId" value={selectedTemplate.id} />
-                <label className="settings-field">
-                  <span>Ad</span>
-                  <input name="name" defaultValue={selectedTemplate.name} />
-                </label>
-                <label className="settings-field">
-                  <span>Açıklama</span>
-                  <textarea
-                    name="description"
-                    defaultValue={selectedTemplate.description ?? ""}
-                    rows={3}
-                  />
-                </label>
-                <label className="settings-field">
-                  <span>Kategori</span>
-                  <select name="category" defaultValue={selectedTemplate.category}>
+                <div className="md-text-field md-text-field--outlined">
+                  <div className="md-text-field-container" style={{ height: "auto", minHeight: "80px", padding: "12px 16px" }}>
+                    <textarea className="md-text-field-input" name="description" placeholder=" " rows={3} style={{ resize: "vertical", paddingTop: "0" }} />
+                    <span className="md-text-field-label">Açıklama</span>
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                  <label style={{ fontSize: "var(--md-sys-typescale-label-medium-size)", color: "var(--md-sys-color-on-surface-variant)", marginLeft: "4px" }}>Kategori</label>
+                  <select name="category" defaultValue="custom" style={{ padding: "12px 16px", borderRadius: "var(--md-sys-shape-medium)", border: "1px solid var(--md-sys-color-outline)", background: "transparent", color: "var(--md-sys-color-on-surface)", fontSize: "var(--md-sys-typescale-body-large-size)" }}>
                     {templateCategoryOptions.map((category) => (
-                      <option key={category.value} value={category.value}>
+                      <option key={category.value} value={category.value} style={{ background: "var(--md-sys-color-surface-container)", color: "var(--md-sys-color-on-surface)" }}>
                         {category.label}
                       </option>
                     ))}
                   </select>
-                </label>
-                <label className="settings-field">
-                  <span>İkon</span>
-                  <input name="icon" defaultValue={selectedTemplate.icon ?? ""} />
-                </label>
-                <label className="settings-field">
-                  <span>Değişkenler (JSON)</span>
-                  <textarea
-                    name="variablesJson"
-                    rows={6}
-                    defaultValue={JSON.stringify(
-                      selectedTemplate.variables ?? [],
-                      null,
-                      2
-                    )}
-                  />
-                </label>
-                <label className="settings-field">
-                  <span>Başlangıç Markdown</span>
-                  <textarea
-                    name="markdown"
-                    rows={12}
-                    defaultValue={blocksToMarkdown(
-                      templateBlocksToDocument(selectedTemplate.blocks)
-                    )}
-                  />
-                </label>
-                <button type="submit" className="dashboard-empty-btn">
-                  Güncelle
-                </button>
+                </div>
+
+                <div className="md-text-field md-text-field--outlined">
+                  <div className="md-text-field-container" style={{ height: "auto", minHeight: "120px", padding: "12px 16px" }}>
+                    <textarea className="md-text-field-input" name="variablesJson" rows={4} defaultValue="[]" placeholder=" " style={{ resize: "vertical", paddingTop: "0", fontFamily: "monospace" }} />
+                    <span className="md-text-field-label">Değişkenler (JSON dizisi)</span>
+                  </div>
+                </div>
+
+                <div className="md-text-field md-text-field--outlined">
+                  <div className="md-text-field-container" style={{ height: "auto", minHeight: "150px", padding: "12px 16px" }}>
+                    <textarea className="md-text-field-input" name="markdown" rows={6} placeholder=" " style={{ resize: "vertical", paddingTop: "0", fontFamily: "monospace" }} />
+                    <span className="md-text-field-label">Başlangıç Markdown</span>
+                  </div>
+                </div>
+
+                <Button type="submit" variant="filled" style={{ alignSelf: "flex-start", marginTop: "8px" }}>
+                  Şablon oluştur
+                </Button>
               </form>
-              <form action={handleDeleteTemplate}>
-                <input type="hidden" name="templateId" value={selectedTemplate.id} />
-                <button type="submit" className="dashboard-secondary-btn">
-                  Şablonu sil
-                </button>
-              </form>
-            </>
+            </CardContent>
+          </Card>
+
+          {/* Edit Selected Template */}
+          {selectedTemplate ? (
+            <Card variant="elevated" style={{ border: "2px solid var(--md-sys-color-primary)" }}>
+              <CardHeader>
+                <CardTitle>Seçili Şablon: {selectedTemplate.name}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form action={handleUpdateTemplate} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                  <input type="hidden" name="templateId" value={selectedTemplate.id} />
+                  
+                  <div style={{ display: "flex", gap: "16px" }}>
+                    <div className="md-text-field md-text-field--outlined md-text-field--has-value" style={{ flex: 2 }}>
+                      <div className="md-text-field-container">
+                        <input className="md-text-field-input" name="name" defaultValue={selectedTemplate.name} placeholder=" " />
+                        <span className="md-text-field-label">Ad</span>
+                      </div>
+                    </div>
+                    <div className="md-text-field md-text-field--outlined md-text-field--has-value" style={{ flex: 1 }}>
+                      <div className="md-text-field-container">
+                        <input className="md-text-field-input" name="icon" defaultValue={selectedTemplate.icon ?? ""} placeholder=" " />
+                        <span className="md-text-field-label">İkon</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="md-text-field md-text-field--outlined md-text-field--has-value">
+                    <div className="md-text-field-container" style={{ height: "auto", minHeight: "80px", padding: "12px 16px" }}>
+                      <textarea className="md-text-field-input" name="description" defaultValue={selectedTemplate.description ?? ""} rows={3} placeholder=" " style={{ resize: "vertical", paddingTop: "0" }} />
+                      <span className="md-text-field-label">Açıklama</span>
+                    </div>
+                  </div>
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    <label style={{ fontSize: "var(--md-sys-typescale-label-medium-size)", color: "var(--md-sys-color-on-surface-variant)", marginLeft: "4px" }}>Kategori</label>
+                    <select name="category" defaultValue={selectedTemplate.category} style={{ padding: "12px 16px", borderRadius: "var(--md-sys-shape-medium)", border: "1px solid var(--md-sys-color-outline)", background: "transparent", color: "var(--md-sys-color-on-surface)", fontSize: "var(--md-sys-typescale-body-large-size)" }}>
+                      {templateCategoryOptions.map((category) => (
+                        <option key={category.value} value={category.value} style={{ background: "var(--md-sys-color-surface-container)", color: "var(--md-sys-color-on-surface)" }}>
+                          {category.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="md-text-field md-text-field--outlined md-text-field--has-value">
+                    <div className="md-text-field-container" style={{ height: "auto", minHeight: "120px", padding: "12px 16px" }}>
+                      <textarea className="md-text-field-input" name="variablesJson" rows={4} defaultValue={JSON.stringify(selectedTemplate.variables ?? [], null, 2)} placeholder=" " style={{ resize: "vertical", paddingTop: "0", fontFamily: "monospace" }} />
+                      <span className="md-text-field-label">Değişkenler (JSON)</span>
+                    </div>
+                  </div>
+
+                  <div className="md-text-field md-text-field--outlined md-text-field--has-value">
+                    <div className="md-text-field-container" style={{ height: "auto", minHeight: "200px", padding: "12px 16px" }}>
+                      <textarea className="md-text-field-input" name="markdown" rows={10} defaultValue={blocksToMarkdown(templateBlocksToDocument(selectedTemplate.blocks))} placeholder=" " style={{ resize: "vertical", paddingTop: "0", fontFamily: "monospace" }} />
+                      <span className="md-text-field-label">Başlangıç Markdown</span>
+                    </div>
+                  </div>
+
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "8px" }}>
+                    <Button type="submit" variant="filled">
+                      Şablonu Güncelle
+                    </Button>
+                    <form action={handleDeleteTemplate}>
+                      <input type="hidden" name="templateId" value={selectedTemplate.id} />
+                      <Button type="submit" variant="tonal" style={{ color: "var(--md-sys-color-error)" }}>
+                        Sil
+                      </Button>
+                    </form>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
           ) : null}
         </section>
       </div>

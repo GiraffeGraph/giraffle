@@ -1,0 +1,90 @@
+/* ==========================================================================
+   navigation.css — M3 Navigation Components
+   GiraffeGraph Design System v2
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Navigation Drawer (Standard & Modal)
+   -------------------------------------------------------------------------- */
+
+.md-nav-drawer {
+  width: 360px; /* M3 max width */
+  height: 100%;
+  background-color: var(--md-sys-color-surface-container-low);
+  border-radius: 0 var(--md-sys-shape-large) var(--md-sys-shape-large) 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* App-Specific Sidebar mapped to M3 Drawer */
+.md-nav-drawer--graffle-sidebar {
+  width: var(--md-layout-sidebar-width);
+  border-radius: var(--md-sys-shape-extra-large);
+  margin: 18px 0 18px 18px; /* Floating variant look */
+  height: calc(100vh - 36px);
+  background-color: var(--md-sys-color-shell-sidebar);
+  box-shadow: var(--md-sys-elevation-level1);
+  backdrop-filter: blur(14px); /* Graffle glass touch */
+  flex-shrink: 0;
+  transition: width var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard);
+}
+
+.md-nav-drawer-header {
+  padding: 18px;
+}
+
+.md-nav-drawer-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 12px;
+}
+
+.md-nav-drawer-footer {
+  padding: 12px;
+  border-top: 1px solid var(--md-sys-color-outline-variant);
+}
+
+/* --------------------------------------------------------------------------
+   Top App Bar
+   -------------------------------------------------------------------------- */
+
+.md-top-app-bar {
+  display: flex;
+  align-items: center;
+  height: 64px;
+  padding: 0 16px;
+  background-color: var(--md-sys-color-surface);
+  color: var(--md-sys-color-on-surface);
+  transition: 
+    background-color var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard),
+    box-shadow var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard);
+}
+
+/* Scrolled state */
+.md-top-app-bar--scrolled {
+  background-color: var(--md-sys-color-surface-container);
+  box-shadow: var(--md-sys-elevation-level2);
+}
+
+.md-top-app-bar-nav-icon {
+  margin-right: 24px;
+}
+
+.md-top-app-bar-title {
+  flex: 1;
+  font-family: var(--md-sys-typeface-brand);
+  font-size: var(--md-sys-typescale-title-large-size);
+  font-weight: var(--md-sys-typescale-title-large-weight);
+  letter-spacing: var(--md-sys-typescale-title-large-tracking);
+  line-height: var(--md-sys-typescale-title-large-line-height);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.md-top-app-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}

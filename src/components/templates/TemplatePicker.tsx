@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { applyTemplateAction } from "@/server/api/templates";
 import type { TemplateVariable } from "@/domain/template/template.types";
 import { getTemplateCategoryLabel } from "@/lib/template-category";
+import { Button } from "@/components/ui/Button";
 
 interface TemplateSummary {
   id: string;
@@ -37,9 +38,7 @@ export function TemplatePicker({
     templates[0]?.id ?? null
   );
   const [title, setTitle] = useState("");
-  const [variableValues, setVariableValues] = useState<Record<string, string>>(
-    {}
-  );
+  const [variableValues, setVariableValues] = useState<Record<string, string>>({});
 
   const selectedTemplate = useMemo(
     () => templates.find((template) => template.id === selectedTemplateId) ?? null,
@@ -93,113 +92,123 @@ export function TemplatePicker({
 
   return (
     <>
-      <button type="button" className={buttonClassName} onClick={openPicker}>
+      <Button
+        variant="tonal"
+        className={buttonClassName}
+        onClick={openPicker}
+      >
         {buttonLabel}
-      </button>
+      </Button>
 
       {isOpen ? (
-        <div className="template-picker-overlay" onClick={closePicker}>
+        <div className="md-dialog-scrim" onClick={closePicker}>
           <div
-            className="template-picker-modal"
+            className="md-dialog"
+            style={{ maxWidth: "800px", width: "90vw", flexDirection: "row", padding: "0", overflow: "hidden", minHeight: "500px" }}
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="template-picker-header">
-              <div>
-                <h2 className="template-picker-title">Şablondan Oluştur</h2>
-                <p className="template-picker-subtitle">
-                  Boş bir sayfa yerine hazır bir yapı ile başla.
+            {/* Sidebar / List area */}
+            <div style={{ flex: "1", borderRight: "1px solid var(--md-sys-color-outline-variant)", display: "flex", flexDirection: "column", background: "var(--md-sys-color-surface-container-low)" }}>
+              <div style={{ padding: "24px 24px 16px" }}>
+                <h2 className="md-dialog-headline" style={{ marginBottom: "4px" }}>Şablondan Oluştur</h2>
+                <p style={{ margin: 0, color: "var(--md-sys-color-on-surface-variant)", fontSize: "var(--md-sys-typescale-body-medium-size)" }}>
+                  Boş sayfa yerine hazır bir yapıyla başla.
                 </p>
               </div>
-              <button
-                type="button"
-                className="template-picker-close"
-                onClick={closePicker}
-              >
-                Kapat
-              </button>
+
+              <div style={{ flex: "1", overflowY: "auto", padding: "0 12px 16px 12px" }}>
+                <ul className="md-list">
+                  {templates.map((template) => {
+                    const isActive = template.id === selectedTemplate?.id;
+                    return (
+                      <li
+                        key={template.id}
+                        className={`md-list-item ${isActive ? "md-list-item--active" : ""}`}
+                        style={{ borderRadius: "var(--md-sys-shape-medium)", marginBottom: "4px" }}
+                        onClick={() => handleTemplateChange(template.id)}
+                      >
+                        <div className="md-list-item-start" style={{ fontSize: "24px" }}>
+                          {template.icon ?? getTemplateCategoryLabel(template.category).slice(0, 1).toUpperCase()}
+                        </div>
+                        <div className="md-list-item-content">
+                          <h3 className="md-list-item-headline">{template.name}</h3>
+                          <p className="md-list-item-supporting-text">
+                            {template.description ?? `${getTemplateCategoryLabel(template.category)} şablonu`}
+                          </p>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
             </div>
 
-            <div className="template-picker-body">
-              <div className="template-picker-list">
-                {templates.map((template) => (
-                  <button
-                    key={template.id}
-                    type="button"
-                    className={`template-picker-item ${
-                      template.id === selectedTemplate?.id ? "active" : ""
-                    }`}
-                    onClick={() => handleTemplateChange(template.id)}
-                  >
-                    <span className="template-picker-item-icon">
-                      {template.icon ??
-                        getTemplateCategoryLabel(template.category).slice(0, 1).toUpperCase()}
-                    </span>
-                    <span className="template-picker-item-copy">
-                      <span className="template-picker-item-title">
-                        {template.name}
-                      </span>
-                      <span className="template-picker-item-description">
-                        {template.description ??
-                          `${getTemplateCategoryLabel(template.category)} şablonu`}
-                      </span>
-                    </span>
-                  </button>
-                ))}
-              </div>
+            {/* Details / Form area */}
+            <div style={{ flex: "1.5", display: "flex", flexDirection: "column", padding: "24px", background: "var(--md-sys-color-surface)" }}>
+               <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "16px" }}>
+                 <Button variant="text" icon onClick={closePicker} leadingIcon="close" aria-label="Kapat" />
+               </div>
 
               {selectedTemplate ? (
-                <div className="template-picker-panel">
-                  <div className="template-picker-panel-header">
-                    <div className="template-picker-panel-icon">
-                      {selectedTemplate.icon ??
-                        getTemplateCategoryLabel(selectedTemplate.category)
-                          .slice(0, 1)
-                          .toUpperCase()}
+                <div style={{ display: "flex", flexDirection: "column", gap: "24px", flex: "1" }}>
+                  <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
+                    <div style={{ width: "48px", height: "48px", borderRadius: "var(--md-sys-shape-medium)", background: "var(--md-sys-color-primary-container)", color: "var(--md-sys-color-on-primary-container)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "24px" }}>
+                      {selectedTemplate.icon ?? getTemplateCategoryLabel(selectedTemplate.category).slice(0, 1).toUpperCase()}
                     </div>
                     <div>
-                      <div className="template-picker-panel-title">
-                        {selectedTemplate.name}
-                      </div>
-                      <div className="template-picker-panel-description">
-                        {selectedTemplate.description ??
-                          `${getTemplateCategoryLabel(selectedTemplate.category)} şablonu`}
-                      </div>
+                        <h3 style={{ margin: "0", color: "var(--md-sys-color-on-surface)", fontSize: "var(--md-sys-typescale-title-large-size)" }}>{selectedTemplate.name}</h3>
+                        <p style={{ margin: "4px 0 0 0", color: "var(--md-sys-color-on-surface-variant)", fontSize: "var(--md-sys-typescale-body-medium-size)" }}>
+                          {selectedTemplate.description ?? `${getTemplateCategoryLabel(selectedTemplate.category)} şablonu`}
+                        </p>
                     </div>
                   </div>
 
-                  <label className="template-picker-field">
-                    <span>Not başlığı</span>
-                    <input
-                      value={title}
-                      onChange={(event) => setTitle(event.target.value)}
-                      placeholder={selectedTemplate.name}
-                    />
-                  </label>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                    {/* Native Input replaced with Outlined Text Field pattern */}
+                    <div className="md-text-field md-text-field--outlined">
+                      <div className="md-text-field-container">
+                        <input
+                          className="md-text-field-input"
+                          placeholder=" "
+                          value={title}
+                          onChange={(e) => setTitle(e.target.value)}
+                        />
+                        <span className="md-text-field-label">Not başlığı (opsiyonel)</span>
+                      </div>
+                    </div>
 
-                  {selectedTemplate.variables.map((variable) => (
-                    <label key={variable.name} className="template-picker-field">
-                      <span>{variable.label}</span>
-                      <input
-                        value={variableValues[variable.name] ?? ""}
-                        onChange={(event) =>
-                          setVariableValues((currentValue) => ({
-                            ...currentValue,
-                            [variable.name]: event.target.value,
-                          }))
-                        }
-                        placeholder={variable.defaultValue ?? ""}
-                      />
-                    </label>
-                  ))}
+                    {selectedTemplate.variables.map((variable) => (
+                       <div key={variable.name} className="md-text-field md-text-field--outlined">
+                         <div className="md-text-field-container">
+                           <input
+                             className="md-text-field-input"
+                             placeholder=" "
+                             value={variableValues[variable.name] ?? ""}
+                             onChange={(e) =>
+                               setVariableValues((currentValue) => ({
+                                 ...currentValue,
+                                 [variable.name]: e.target.value,
+                               }))
+                             }
+                           />
+                           <span className="md-text-field-label">{variable.label}</span>
+                         </div>
+                       </div>
+                    ))}
+                  </div>
 
-                  <button
-                    type="button"
-                    className="template-picker-submit"
-                    disabled={isPending}
-                    onClick={handleCreateNote}
-                  >
-                    {isPending ? "Oluşturuluyor..." : "Not Oluştur"}
-                  </button>
+                  <div className="md-dialog-actions" style={{ marginTop: "auto" }}>
+                    <Button variant="text" onClick={closePicker}>
+                      İptal
+                    </Button>
+                    <Button
+                      variant="filled"
+                      disabled={isPending}
+                      onClick={handleCreateNote}
+                    >
+                      {isPending ? "Oluşturuluyor..." : "Not Oluştur"}
+                    </Button>
+                  </div>
                 </div>
               ) : null}
             </div>

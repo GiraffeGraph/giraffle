@@ -1,0 +1,715 @@
+/* ==========================================================================
+   tokens.css — Material Design 3 Token System
+   GiraffeGraph Design System v2
+   ==========================================================================
+
+   Token hierarchy:
+   1. md.ref.*    — Raw values (colors, font names)
+   2. md.sys.*    — Semantic roles (what it means)
+   3. Bridge      — Aliases from old token names → md.sys (migration safety)
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   GOOGLE FONTS — Inter + Material Symbols
+   -------------------------------------------------------------------------- */
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap');
+
+
+/* ==========================================================================
+   WARM PAPER — Light theme (default)
+   Renk değerleri mevcut sistemden birebir alınmıştır, değiştirilmemiştir.
+   ========================================================================== */
+
+:root {
+  color-scheme: light;
+
+  /* ── md.sys.color — Primary (teal-green) ─────────────────────────────── */
+  --md-sys-color-primary:                  #1a6d60;
+  --md-sys-color-on-primary:               #fffdf8;
+  --md-sys-color-primary-container:        rgba(26, 109, 96, 0.1);
+  --md-sys-color-on-primary-container:     #002020;
+  --md-sys-color-primary-fixed:            #6FF7F6;
+  --md-sys-color-primary-fixed-dim:        #4DDADA;
+  --md-sys-color-on-primary-fixed:         #002020;
+  --md-sys-color-on-primary-fixed-variant: #004F50;
+
+  /* ── md.sys.color — Secondary (warm amber) ───────────────────────────── */
+  --md-sys-color-secondary:                #c46a44;
+  --md-sys-color-on-secondary:             #fffdf8;
+  --md-sys-color-secondary-container:      rgba(196, 106, 68, 0.14);
+  --md-sys-color-on-secondary-container:   #201911;
+
+  /* ── md.sys.color — Tertiary (wikilink blue) ─────────────────────────── */
+  --md-sys-color-tertiary:                 #1d6d80;
+  --md-sys-color-on-tertiary:              #ffffff;
+  --md-sys-color-tertiary-container:       rgba(29, 109, 128, 0.12);
+  --md-sys-color-on-tertiary-container:    #001f28;
+
+  /* ── md.sys.color — Error ────────────────────────────────────────────── */
+  --md-sys-color-error:                    #ad4b3b;
+  --md-sys-color-on-error:                 #ffffff;
+  --md-sys-color-error-container:          rgba(173, 75, 59, 0.12);
+  --md-sys-color-on-error-container:       #410002;
+
+  /* ── md.sys.color — Surface hierarchy ───────────────────────────────── */
+  --md-sys-color-background:               #f5efe5;
+  --md-sys-color-on-background:            #201911;
+  --md-sys-color-surface:                  #fbf6ef;
+  --md-sys-color-on-surface:               #201911;
+  --md-sys-color-surface-variant:          #f1e6d4;
+  --md-sys-color-on-surface-variant:       #5f5446;
+  --md-sys-color-surface-dim:              #efe5d6;
+  --md-sys-color-surface-bright:           #fffdf8;
+  --md-sys-color-surface-container-lowest: rgba(255, 251, 245, 0.86);
+  --md-sys-color-surface-container-low:    #fbf6ef;
+  --md-sys-color-surface-container:        #f1e6d4;
+  --md-sys-color-surface-container-high:   #e7d8bf;
+  --md-sys-color-surface-container-highest: rgba(255, 255, 255, 0.82);
+
+  /* ── md.sys.color — Outline ──────────────────────────────────────────── */
+  --md-sys-color-outline:                  #887a68;
+  --md-sys-color-outline-variant:          rgba(79, 62, 40, 0.15);
+
+  /* ── md.sys.color — Inverse & Scrim ─────────────────────────────────── */
+  --md-sys-color-inverse-surface:          #201911;
+  --md-sys-color-inverse-on-surface:       #f5efe5;
+  --md-sys-color-inverse-primary:          #4DDADA;
+  --md-sys-color-scrim:                    #000000;
+  --md-sys-color-shadow:                   #000000;
+  --md-sys-color-surface-tint:             #1a6d60;
+
+  /* ── md.sys.color — Semantic (success / warning / info) ─────────────── */
+  --md-sys-color-success:                  #2f7a58;
+  --md-sys-color-on-success:               #ffffff;
+  --md-sys-color-success-container:        rgba(47, 122, 88, 0.12);
+  --md-sys-color-warning:                  #a46a17;
+  --md-sys-color-on-warning:               #ffffff;
+  --md-sys-color-warning-container:        rgba(164, 106, 23, 0.12);
+
+  /* ── md.sys.color — Glass surfaces (hybrid glassmorphism) ────────────── */
+  --md-sys-color-glass-soft:               rgba(255, 255, 255, 0.52);
+  --md-sys-color-glass-muted:              rgba(255, 255, 255, 0.56);
+  --md-sys-color-glass:                    rgba(255, 255, 255, 0.62);
+  --md-sys-color-glass-mid:                rgba(255, 255, 255, 0.66);
+  --md-sys-color-glass-highlight:          rgba(255, 255, 255, 0.68);
+  --md-sys-color-glass-chip:               rgba(255, 255, 255, 0.74);
+  --md-sys-color-glass-strong:             rgba(255, 255, 255, 0.82);
+  --md-sys-color-glass-hover:              rgba(255, 255, 255, 0.92);
+
+  /* ── md.sys.color — Shell backgrounds ───────────────────────────────── */
+  --md-sys-color-shell-main: linear-gradient(
+    180deg,
+    rgba(255, 252, 248, 0.76),
+    rgba(249, 242, 233, 0.9)
+  );
+  --md-sys-color-shell-sidebar: linear-gradient(
+    180deg,
+    rgba(255, 253, 249, 0.94),
+    rgba(248, 240, 228, 0.92)
+  );
+  --md-sys-color-surface-overlay: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.82),
+    rgba(249, 240, 228, 0.88)
+  );
+  --md-sys-color-surface-overlay-soft: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.78),
+    rgba(249, 241, 230, 0.9)
+  );
+  --md-sys-color-surface-accent-blend: linear-gradient(
+    135deg,
+    rgba(26, 109, 96, 0.12),
+    rgba(255, 255, 255, 0.64)
+  );
+  --md-sys-color-surface-accent-blend-strong: linear-gradient(
+    135deg,
+    rgba(26, 109, 96, 0.12),
+    rgba(255, 255, 255, 0.74)
+  );
+
+  /* ── md.ref — Page & Grid ────────────────────────────────────────────── */
+  --md-ref-page-bg-start:    #f8f3eb;
+  --md-ref-page-bg-mid:      #f5efe5;
+  --md-ref-page-bg-deep:     #efe5d6;
+  --md-ref-page-grid-rgb:    117 99 73;
+  --md-ref-accent-rgb:       26 109 96;
+  --md-ref-accent-warm-rgb:  196 106 68;
+
+  /* ── md.sys.typescale ────────────────────────────────────────────────── */
+  --md-sys-typeface-brand:   'Inter', 'Aptos', 'Segoe UI Variable Text', sans-serif;
+  --md-sys-typeface-display: 'Inter', 'Aptos Display', 'Segoe UI Variable Display', sans-serif;
+  --md-sys-typeface-mono:    'Cascadia Code', 'JetBrains Mono', Consolas, monospace;
+
+  /* Display */
+  --md-sys-typescale-display-large-size:        3.5625rem;
+  --md-sys-typescale-display-large-line-height: 4rem;
+  --md-sys-typescale-display-large-weight:      400;
+  --md-sys-typescale-display-large-tracking:    -0.015625rem;
+
+  --md-sys-typescale-display-medium-size:        2.8125rem;
+  --md-sys-typescale-display-medium-line-height: 3.25rem;
+  --md-sys-typescale-display-medium-weight:      400;
+  --md-sys-typescale-display-medium-tracking:    0;
+
+  --md-sys-typescale-display-small-size:        2.25rem;
+  --md-sys-typescale-display-small-line-height: 2.75rem;
+  --md-sys-typescale-display-small-weight:      400;
+  --md-sys-typescale-display-small-tracking:    0;
+
+  /* Headline */
+  --md-sys-typescale-headline-large-size:        2rem;
+  --md-sys-typescale-headline-large-line-height: 2.5rem;
+  --md-sys-typescale-headline-large-weight:      400;
+  --md-sys-typescale-headline-large-tracking:    0;
+
+  --md-sys-typescale-headline-medium-size:        1.75rem;
+  --md-sys-typescale-headline-medium-line-height: 2.25rem;
+  --md-sys-typescale-headline-medium-weight:      400;
+  --md-sys-typescale-headline-medium-tracking:    0;
+
+  --md-sys-typescale-headline-small-size:        1.5rem;
+  --md-sys-typescale-headline-small-line-height: 2rem;
+  --md-sys-typescale-headline-small-weight:      400;
+  --md-sys-typescale-headline-small-tracking:    0;
+
+  /* Title */
+  --md-sys-typescale-title-large-size:        1.375rem;
+  --md-sys-typescale-title-large-line-height: 1.75rem;
+  --md-sys-typescale-title-large-weight:      400;
+  --md-sys-typescale-title-large-tracking:    0;
+
+  --md-sys-typescale-title-medium-size:        1rem;
+  --md-sys-typescale-title-medium-line-height: 1.5rem;
+  --md-sys-typescale-title-medium-weight:      500;
+  --md-sys-typescale-title-medium-tracking:    0.009375rem;
+
+  --md-sys-typescale-title-small-size:        0.875rem;
+  --md-sys-typescale-title-small-line-height: 1.25rem;
+  --md-sys-typescale-title-small-weight:      500;
+  --md-sys-typescale-title-small-tracking:    0.00625rem;
+
+  /* Body */
+  --md-sys-typescale-body-large-size:        1rem;
+  --md-sys-typescale-body-large-line-height: 1.5rem;
+  --md-sys-typescale-body-large-weight:      400;
+  --md-sys-typescale-body-large-tracking:    0.03125rem;
+
+  --md-sys-typescale-body-medium-size:        0.875rem;
+  --md-sys-typescale-body-medium-line-height: 1.25rem;
+  --md-sys-typescale-body-medium-weight:      400;
+  --md-sys-typescale-body-medium-tracking:    0.015625rem;
+
+  --md-sys-typescale-body-small-size:        0.75rem;
+  --md-sys-typescale-body-small-line-height: 1rem;
+  --md-sys-typescale-body-small-weight:      400;
+  --md-sys-typescale-body-small-tracking:    0.025rem;
+
+  /* Label */
+  --md-sys-typescale-label-large-size:        0.875rem;
+  --md-sys-typescale-label-large-line-height: 1.25rem;
+  --md-sys-typescale-label-large-weight:      500;
+  --md-sys-typescale-label-large-tracking:    0.00625rem;
+
+  --md-sys-typescale-label-medium-size:        0.75rem;
+  --md-sys-typescale-label-medium-line-height: 1rem;
+  --md-sys-typescale-label-medium-weight:      500;
+  --md-sys-typescale-label-medium-tracking:    0.03125rem;
+
+  --md-sys-typescale-label-small-size:        0.6875rem;
+  --md-sys-typescale-label-small-line-height: 1rem;
+  --md-sys-typescale-label-small-weight:      500;
+  --md-sys-typescale-label-small-tracking:    0.03125rem;
+
+  /* ── md.sys.shape ────────────────────────────────────────────────────── */
+  --md-sys-shape-none:        0px;
+  --md-sys-shape-extra-small: 4px;
+  --md-sys-shape-small:       8px;
+  --md-sys-shape-medium:      12px;
+  --md-sys-shape-large:       16px;
+  --md-sys-shape-extra-large: 28px;
+  --md-sys-shape-full:        9999px;
+
+  /* App-specific extended shape (preserves existing larger radii) */
+  --md-sys-shape-card:        24px;
+  --md-sys-shape-panel:       32px;
+  --md-sys-shape-shell:       38px;
+  --md-sys-shape-control:     16px;
+
+  /* ── md.sys.elevation ────────────────────────────────────────────────── */
+  --md-sys-elevation-level0: none;
+  --md-sys-elevation-level1: 0px 1px 2px rgba(0,0,0,0.3), 0px 1px 3px 1px rgba(0,0,0,0.15);
+  --md-sys-elevation-level2: 0px 1px 2px rgba(0,0,0,0.3), 0px 2px 6px 2px rgba(0,0,0,0.15);
+  --md-sys-elevation-level3: 0px 1px 3px rgba(0,0,0,0.3), 0px 4px 8px 3px rgba(0,0,0,0.15);
+  --md-sys-elevation-level4: 0px 2px 3px rgba(0,0,0,0.3), 0px 6px 10px 4px rgba(0,0,0,0.15);
+  --md-sys-elevation-level5: 0px 4px 4px rgba(0,0,0,0.3), 0px 8px 12px 6px rgba(0,0,0,0.15);
+
+  /* App-specific elevation names (bridge) */
+  --md-sys-elevation-soft:  0 18px 40px rgba(70, 49, 24, 0.1);
+  --md-sys-elevation-panel: 0 16px 36px rgba(92, 71, 42, 0.08);
+  --md-sys-elevation-lift:  0 18px 44px rgba(51, 38, 19, 0.14);
+
+  /* ── md.sys.motion ───────────────────────────────────────────────────── */
+  --md-sys-motion-duration-short1:      50ms;
+  --md-sys-motion-duration-short2:      100ms;
+  --md-sys-motion-duration-short3:      150ms;
+  --md-sys-motion-duration-short4:      200ms;
+  --md-sys-motion-duration-medium1:     250ms;
+  --md-sys-motion-duration-medium2:     300ms;
+  --md-sys-motion-duration-medium3:     350ms;
+  --md-sys-motion-duration-medium4:     400ms;
+  --md-sys-motion-duration-long1:       450ms;
+  --md-sys-motion-duration-long2:       500ms;
+  --md-sys-motion-duration-long3:       550ms;
+  --md-sys-motion-duration-long4:       600ms;
+  --md-sys-motion-duration-extra-long1: 700ms;
+  --md-sys-motion-duration-extra-long2: 800ms;
+  --md-sys-motion-duration-extra-long3: 900ms;
+  --md-sys-motion-duration-extra-long4: 1000ms;
+
+  --md-sys-motion-easing-standard:             cubic-bezier(0.2, 0.0, 0, 1.0);
+  --md-sys-motion-easing-standard-decelerate:  cubic-bezier(0, 0, 0, 1);
+  --md-sys-motion-easing-standard-accelerate:  cubic-bezier(0.3, 0, 1, 1);
+  --md-sys-motion-easing-emphasized-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1.0);
+  --md-sys-motion-easing-emphasized-accelerate: cubic-bezier(0.3, 0.0, 0.8, 0.15);
+
+  /* ── md.sys.state — State layer opacities ────────────────────────────── */
+  --md-sys-state-hover-opacity:   0.08;
+  --md-sys-state-focus-opacity:   0.12;
+  --md-sys-state-pressed-opacity: 0.12;
+  --md-sys-state-dragged-opacity: 0.16;
+  --md-sys-state-disabled-opacity-content:   0.38;
+  --md-sys-state-disabled-opacity-container: 0.12;
+
+  /* ── Layout ───────────────────────────────────────────────────────────── */
+  --md-layout-sidebar-width: 318px;
+
+  /* ── Bridge aliases — tüm mevcut CSS bozulmasın ─────────────────────── */
+  --bg-page:                  var(--md-ref-page-bg-mid);
+  --bg-page-deep:             var(--md-ref-page-bg-deep);
+  --surface-1:                var(--md-sys-color-surface-container-lowest);
+  --surface-2:                var(--md-sys-color-surface-container-low);
+  --surface-3:                var(--md-sys-color-surface-container);
+  --surface-4:                var(--md-sys-color-surface-container-high);
+  --surface-ink:              var(--md-sys-color-on-surface);
+  --text-primary:             var(--md-sys-color-on-surface);
+  --text-secondary:           var(--md-sys-color-on-surface-variant);
+  --text-tertiary:            var(--md-sys-color-outline);
+  --text-muted:               #ad9b84;
+  --text-on-accent:           var(--md-sys-color-on-primary);
+  --heading-ink:              #1d1710;
+  --accent:                   var(--md-sys-color-primary);
+  --accent-strong:            #12584d;
+  --accent-rgb:               26 109 96;
+  --accent-subtle:            var(--md-sys-color-primary-container);
+  --accent-warm:              var(--md-sys-color-secondary);
+  --accent-warm-rgb:          196 106 68;
+  --accent-warm-subtle:       var(--md-sys-color-secondary-container);
+  --accent-line:              rgba(26, 109, 96, 0.24);
+  --color-wikilink:           var(--md-sys-color-tertiary);
+  --color-success:            var(--md-sys-color-success);
+  --color-warning:            var(--md-sys-color-warning);
+  --color-error:              var(--md-sys-color-error);
+  --info-rgb:                 29 109 128;
+  --info-ink:                 var(--md-sys-color-tertiary);
+  --success-rgb:              47 122 88;
+  --success-ink:              var(--md-sys-color-success);
+  --warning-rgb:              164 106 23;
+  --warning-ink:              var(--md-sys-color-warning);
+  --danger-rgb:               173 75 59;
+  --danger-ink:               var(--md-sys-color-error);
+  --border-color:             var(--md-sys-color-outline-variant);
+  --border-strong:            rgba(79, 62, 40, 0.24);
+  --border-soft:              rgba(255, 255, 255, 0.55);
+  --surface-glass-soft:       var(--md-sys-color-glass-soft);
+  --surface-glass-muted:      var(--md-sys-color-glass-muted);
+  --surface-glass:            var(--md-sys-color-glass);
+  --surface-glass-mid:        var(--md-sys-color-glass-mid);
+  --surface-highlight:        var(--md-sys-color-glass-highlight);
+  --surface-chip:             var(--md-sys-color-glass-chip);
+  --surface-glass-strong:     var(--md-sys-color-glass-strong);
+  --surface-glass-hover:      var(--md-sys-color-glass-hover);
+  --surface-overlay:          var(--md-sys-color-surface-overlay);
+  --surface-overlay-soft:     var(--md-sys-color-surface-overlay-soft);
+  --shell-main-bg:            var(--md-sys-color-shell-main);
+  --shell-sidebar-bg:         var(--md-sys-color-shell-sidebar);
+  --surface-accent-blend:     var(--md-sys-color-surface-accent-blend);
+  --surface-accent-blend-strong: var(--md-sys-color-surface-accent-blend-strong);
+  --logo-accent-end:          #2c8c79;
+  --page-grid-rgb:            117 99 73;
+  --code-block-bg-start:      #203038;
+  --code-block-bg-end:        #17242b;
+  --code-block-text:          #edf4f2;
+  --code-inline-color:        #244a49;
+  --sidebar-width:            var(--md-layout-sidebar-width);
+  --radius-sm:                12px;
+  --radius-md:                18px;
+  --radius-lg:                var(--md-sys-shape-extra-large);
+  --radius-xl:                var(--md-sys-shape-shell);
+  --radius-card:              var(--md-sys-shape-card);
+  --radius-control:           var(--md-sys-shape-control);
+  --font-sans:                var(--md-sys-typeface-brand);
+  --font-display:             var(--md-sys-typeface-display);
+  --font-mono:                var(--md-sys-typeface-mono);
+  --shadow-soft:              var(--md-sys-elevation-soft);
+  --shadow-panel:             var(--md-sys-elevation-panel);
+  --shadow-lift:              var(--md-sys-elevation-lift);
+  --transition-fast:          var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard);
+  --transition-normal:        var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-standard);
+}
+
+
+/* ==========================================================================
+   MIDNIGHT GOLD — Dark theme (GiraffeGraph.com navy + gold — rafine edildi)
+   Arka plan renkleri GiraffeGraph.com'dan esinlenerek güncellendi.
+   Altın aksanlar korundu, navy-midnight zemin eklendi.
+   ========================================================================== */
+
+:root[data-theme="midnight-gold"] {
+  color-scheme: dark;
+
+  /* ── md.sys.color — Primary (gold) ──────────────────────────────────── */
+  --md-sys-color-primary:                  #e8b84b;
+  --md-sys-color-on-primary:               #110e00;
+  --md-sys-color-primary-container:        rgba(232, 184, 75, 0.18);
+  --md-sys-color-on-primary-container:     #fce7a8;
+  --md-sys-color-primary-fixed:            #fce7a8;
+  --md-sys-color-primary-fixed-dim:        #e8b84b;
+  --md-sys-color-on-primary-fixed:         #110e00;
+  --md-sys-color-on-primary-fixed-variant: #3d2e00;
+
+  /* ── md.sys.color — Secondary (warm gold highlight) ─────────────────── */
+  --md-sys-color-secondary:                #f6cd7b;
+  --md-sys-color-on-secondary:             #110e00;
+  --md-sys-color-secondary-container:      rgba(246, 205, 123, 0.15);
+  --md-sys-color-on-secondary-container:   #fce7a8;
+
+  /* ── md.sys.color — Tertiary ─────────────────────────────────────────── */
+  --md-sys-color-tertiary:                 #7bb8d4;
+  --md-sys-color-on-tertiary:              #003548;
+  --md-sys-color-tertiary-container:       rgba(123, 184, 212, 0.14);
+  --md-sys-color-on-tertiary-container:    #cce8f5;
+
+  /* ── md.sys.color — Error ────────────────────────────────────────────── */
+  --md-sys-color-error:                    #f09a84;
+  --md-sys-color-on-error:                 #4a0000;
+  --md-sys-color-error-container:          rgba(240, 154, 132, 0.16);
+  --md-sys-color-on-error-container:       #ffd9d0;
+
+  /* ── md.sys.color — Surface hierarchy (navy-midnight) ───────────────── */
+  --md-sys-color-background:               #0c0f16;
+  --md-sys-color-on-background:            #e8e4dc;
+  --md-sys-color-surface:                  #0f1219;
+  --md-sys-color-on-surface:               #fdfaf5;
+  --md-sys-color-surface-variant:          #1e2130;
+  --md-sys-color-on-surface-variant:       #c8c2b4;
+  --md-sys-color-surface-dim:              #0c0f16;
+  --md-sys-color-surface-bright:           #252a38;
+  --md-sys-color-surface-container-lowest: rgba(12, 8, 4, 0.9);
+  --md-sys-color-surface-container-low:    #131720;
+  --md-sys-color-surface-container:        #181c26;
+  --md-sys-color-surface-container-high:   #1e2130;
+  --md-sys-color-surface-container-highest:#252a38;
+
+  /* ── md.sys.color — Outline ──────────────────────────────────────────── */
+  --md-sys-color-outline:                  #a09468;
+  --md-sys-color-outline-variant:          rgba(232, 184, 75, 0.22);
+
+  /* ── md.sys.color — Inverse & Scrim ─────────────────────────────────── */
+  --md-sys-color-inverse-surface:          #e8e4dc;
+  --md-sys-color-inverse-on-surface:       #0c0f16;
+  --md-sys-color-inverse-primary:          #7a5c00;
+  --md-sys-color-scrim:                    #000000;
+  --md-sys-color-shadow:                   #000000;
+  --md-sys-color-surface-tint:             #e8b84b;
+
+  /* ── md.sys.color — Semantic ─────────────────────────────────────────── */
+  --md-sys-color-success:                  #52c4a4;
+  --md-sys-color-on-success:               #00382a;
+  --md-sys-color-success-container:        rgba(82, 196, 164, 0.15);
+  --md-sys-color-warning:                  #e8b84b;
+  --md-sys-color-on-warning:               #110e00;
+  --md-sys-color-warning-container:        rgba(232, 184, 75, 0.15);
+
+  /* ── md.sys.color — Glass surfaces ───────────────────────────────────── */
+  --md-sys-color-glass-soft:               rgba(20, 24, 36, 0.4);
+  --md-sys-color-glass-muted:              rgba(20, 24, 36, 0.65);
+  --md-sys-color-glass:                    rgba(15, 18, 28, 0.75);
+  --md-sys-color-glass-mid:                rgba(15, 18, 28, 0.85);
+  --md-sys-color-glass-highlight:          rgba(232, 184, 75, 0.12);
+  --md-sys-color-glass-chip:               rgba(232, 184, 75, 0.18);
+  --md-sys-color-glass-strong:             #181c26;
+  --md-sys-color-glass-hover:              rgba(232, 184, 75, 0.22);
+
+  /* ── md.sys.color — Shell backgrounds ───────────────────────────────── */
+  --md-sys-color-shell-main: linear-gradient(
+    180deg,
+    rgba(15, 18, 28, 0.85),
+    rgba(10, 12, 20, 0.96)
+  );
+  --md-sys-color-shell-sidebar: linear-gradient(
+    180deg,
+    rgba(20, 24, 36, 0.92),
+    rgba(12, 15, 22, 0.98)
+  );
+  --md-sys-color-surface-overlay: linear-gradient(
+    180deg,
+    rgba(20, 24, 36, 0.86),
+    rgba(12, 15, 22, 0.95)
+  );
+  --md-sys-color-surface-overlay-soft: linear-gradient(
+    180deg,
+    rgba(20, 24, 36, 0.72),
+    rgba(12, 15, 22, 0.82)
+  );
+  --md-sys-color-surface-accent-blend: linear-gradient(
+    135deg,
+    rgba(232, 184, 75, 0.16),
+    rgba(12, 15, 22, 0.6)
+  );
+  --md-sys-color-surface-accent-blend-strong: linear-gradient(
+    135deg,
+    rgba(232, 184, 75, 0.28),
+    rgba(20, 24, 36, 0.82)
+  );
+
+  /* ── md.ref — Page & Grid ────────────────────────────────────────────── */
+  --md-ref-page-bg-start:    #0f1219;
+  --md-ref-page-bg-mid:      #0c0f16;
+  --md-ref-page-bg-deep:     #090b11;
+  --md-ref-page-grid-rgb:    160 148 104;
+  --md-ref-accent-rgb:       232 184 75;
+  --md-ref-accent-warm-rgb:  246 205 123;
+
+  /* ── md.sys.elevation — dark mode ────────────────────────────────────── */
+  --md-sys-elevation-soft:  0 8px 24px rgba(0, 0, 0, 0.32);
+  --md-sys-elevation-panel: 0 12px 32px rgba(0, 0, 0, 0.42);
+  --md-sys-elevation-lift:  0 16px 40px rgba(0, 0, 0, 0.52);
+
+  /* ── Bridge aliases ──────────────────────────────────────────────────── */
+  --bg-page:                  var(--md-ref-page-bg-mid);
+  --bg-page-deep:             var(--md-ref-page-bg-deep);
+  --surface-1:                var(--md-sys-color-surface-container-lowest);
+  --surface-2:                var(--md-sys-color-surface-container-low);
+  --surface-3:                var(--md-sys-color-surface-container);
+  --surface-4:                var(--md-sys-color-surface-container-high);
+  --surface-ink:              #ffffff;
+  --text-primary:             var(--md-sys-color-on-surface);
+  --text-secondary:           #e0d9cc;
+  --text-tertiary:            var(--md-sys-color-on-surface-variant);
+  --text-muted:               #6e6352;
+  --text-on-accent:           var(--md-sys-color-on-primary);
+  --heading-ink:              #ffffff;
+  --accent:                   var(--md-sys-color-primary);
+  --accent-strong:            #f5c855;
+  --accent-rgb:               232 184 75;
+  --accent-subtle:            var(--md-sys-color-primary-container);
+  --accent-warm:              var(--md-sys-color-secondary);
+  --accent-warm-rgb:          246 205 123;
+  --accent-warm-subtle:       var(--md-sys-color-secondary-container);
+  --accent-line:              rgba(232, 184, 75, 0.36);
+  --color-wikilink:           var(--md-sys-color-primary);
+  --color-success:            var(--md-sys-color-success);
+  --color-warning:            var(--md-sys-color-warning);
+  --color-error:              var(--md-sys-color-error);
+  --info-rgb:                 123 184 212;
+  --info-ink:                 var(--md-sys-color-tertiary);
+  --success-rgb:              82 196 164;
+  --success-ink:              #a7edd9;
+  --warning-rgb:              232 184 75;
+  --warning-ink:              var(--md-sys-color-secondary);
+  --danger-rgb:               240 154 132;
+  --danger-ink:               var(--md-sys-color-error);
+  --border-color:             var(--md-sys-color-outline-variant);
+  --border-strong:            rgba(232, 184, 75, 0.42);
+  --border-soft:              rgba(232, 184, 75, 0.1);
+  --surface-glass-soft:       var(--md-sys-color-glass-soft);
+  --surface-glass-muted:      var(--md-sys-color-glass-muted);
+  --surface-glass:            var(--md-sys-color-glass);
+  --surface-glass-mid:        var(--md-sys-color-glass-mid);
+  --surface-highlight:        var(--md-sys-color-glass-highlight);
+  --surface-chip:             var(--md-sys-color-glass-chip);
+  --surface-glass-strong:     var(--md-sys-color-glass-strong);
+  --surface-glass-hover:      var(--md-sys-color-glass-hover);
+  --surface-overlay:          var(--md-sys-color-surface-overlay);
+  --surface-overlay-soft:     var(--md-sys-color-surface-overlay-soft);
+  --shell-main-bg:            var(--md-sys-color-shell-main);
+  --shell-sidebar-bg:         var(--md-sys-color-shell-sidebar);
+  --surface-accent-blend:     var(--md-sys-color-surface-accent-blend);
+  --surface-accent-blend-strong: var(--md-sys-color-surface-accent-blend-strong);
+  --logo-accent-end:          #e8b84b;
+  --page-grid-rgb:            var(--md-ref-page-grid-rgb);
+  --code-block-bg-start:      #090b11;
+  --code-block-bg-end:        #060709;
+  --code-block-text:          #e0d9cc;
+  --code-inline-color:        #f6cd7b;
+  --shadow-soft:              var(--md-sys-elevation-soft);
+  --shadow-panel:             var(--md-sys-elevation-panel);
+  --shadow-lift:              var(--md-sys-elevation-lift);
+}
+
+
+/* ==========================================================================
+   GRAPHITE NIGHT — Dark theme (Notion-benzeri grafit)
+   Tüm hex değerler mevcut sistemden birebir alınmıştır, değiştirilmemiştir.
+   ========================================================================== */
+
+:root[data-theme="graphite-night"] {
+  color-scheme: dark;
+
+  /* ── md.sys.color — Primary (blue) ──────────────────────────────────── */
+  --md-sys-color-primary:                  #7aa2f7;
+  --md-sys-color-on-primary:               #0f1115;
+  --md-sys-color-primary-container:        rgba(122, 162, 247, 0.12);
+  --md-sys-color-on-primary-container:     #c5d5ff;
+  --md-sys-color-primary-fixed:            #c5d5ff;
+  --md-sys-color-primary-fixed-dim:        #9abbff;
+  --md-sys-color-on-primary-fixed:         #0f1115;
+  --md-sys-color-on-primary-fixed-variant: #1e2a44;
+
+  /* ── md.sys.color — Secondary (warm amber) ───────────────────────────── */
+  --md-sys-color-secondary:                #d8b36a;
+  --md-sys-color-on-secondary:             #0f1115;
+  --md-sys-color-secondary-container:      rgba(216, 179, 106, 0.14);
+  --md-sys-color-on-secondary-container:   #f5e0b5;
+
+  /* ── md.sys.color — Tertiary ─────────────────────────────────────────── */
+  --md-sys-color-tertiary:                 #9abbff;
+  --md-sys-color-on-tertiary:              #0f1115;
+  --md-sys-color-tertiary-container:       rgba(154, 187, 255, 0.12);
+  --md-sys-color-on-tertiary-container:    #c5d5ff;
+
+  /* ── md.sys.color — Error ────────────────────────────────────────────── */
+  --md-sys-color-error:                    #ef8d88;
+  --md-sys-color-on-error:                 #3a0000;
+  --md-sys-color-error-container:          rgba(239, 141, 136, 0.16);
+  --md-sys-color-on-error-container:       #ffd9d0;
+
+  /* ── md.sys.color — Surface hierarchy (grafit) ───────────────────────── */
+  --md-sys-color-background:               #191919;
+  --md-sys-color-on-background:            #ebebea;
+  --md-sys-color-surface:                  #191919;
+  --md-sys-color-on-surface:               #ebebea;
+  --md-sys-color-surface-variant:          #2a2a2a;
+  --md-sys-color-on-surface-variant:       #b8b8b5;
+  --md-sys-color-surface-dim:              #151515;
+  --md-sys-color-surface-bright:           #2b2b2b;
+  --md-sys-color-surface-container-lowest: #1f1f1f;
+  --md-sys-color-surface-container-low:    #232323;
+  --md-sys-color-surface-container:        #2a2a2a;
+  --md-sys-color-surface-container-high:   #323232;
+  --md-sys-color-surface-container-highest:#2d2d2d;
+
+  /* ── md.sys.color — Outline ──────────────────────────────────────────── */
+  --md-sys-color-outline:                  #8d8d89;
+  --md-sys-color-outline-variant:          rgba(255, 255, 255, 0.1);
+
+  /* ── md.sys.color — Inverse & Scrim ─────────────────────────────────── */
+  --md-sys-color-inverse-surface:          #ebebea;
+  --md-sys-color-inverse-on-surface:       #191919;
+  --md-sys-color-inverse-primary:          #4f6bbd;
+  --md-sys-color-scrim:                    #000000;
+  --md-sys-color-shadow:                   #000000;
+  --md-sys-color-surface-tint:             #7aa2f7;
+
+  /* ── md.sys.color — Semantic ─────────────────────────────────────────── */
+  --md-sys-color-success:                  #8dcfb7;
+  --md-sys-color-on-success:               #00382a;
+  --md-sys-color-success-container:        rgba(141, 207, 183, 0.14);
+  --md-sys-color-warning:                  #dfbf75;
+  --md-sys-color-on-warning:               #0f1115;
+  --md-sys-color-warning-container:        rgba(223, 191, 117, 0.14);
+
+  /* ── md.sys.color — Glass surfaces (opsak, Notion-benzeri) ──────────── */
+  --md-sys-color-glass-soft:               #202020;
+  --md-sys-color-glass-muted:              #222222;
+  --md-sys-color-glass:                    #191919;
+  --md-sys-color-glass-mid:                #232323;
+  --md-sys-color-glass-highlight:          #2d2d2d;
+  --md-sys-color-glass-chip:               #2d2d2d;
+  --md-sys-color-glass-strong:             #252525;
+  --md-sys-color-glass-hover:              #2b2b2b;
+
+  /* ── md.sys.color — Shell backgrounds ───────────────────────────────── */
+  --md-sys-color-shell-main:              #191919;
+  --md-sys-color-shell-sidebar:           #202020;
+  --md-sys-color-surface-overlay:         #191919;
+  --md-sys-color-surface-overlay-soft:    #202020;
+  --md-sys-color-surface-accent-blend:    rgba(122, 162, 247, 0.10);
+  --md-sys-color-surface-accent-blend-strong: rgba(122, 162, 247, 0.14);
+
+  /* ── md.ref — Page & Grid ────────────────────────────────────────────── */
+  --md-ref-page-bg-start:    #191919;
+  --md-ref-page-bg-mid:      #191919;
+  --md-ref-page-bg-deep:     #151515;
+  --md-ref-page-grid-rgb:    255 255 255;
+  --md-ref-accent-rgb:       122 162 247;
+  --md-ref-accent-warm-rgb:  216 179 106;
+
+  /* ── md.sys.elevation — dark mode (düz grafit, az gölge) ────────────── */
+  --md-sys-elevation-soft:  0 1px 2px rgba(0, 0, 0, 0.24);
+  --md-sys-elevation-panel: 0 12px 28px rgba(0, 0, 0, 0.24);
+  --md-sys-elevation-lift:  0 20px 40px rgba(0, 0, 0, 0.3);
+
+  /* ── Bridge aliases ──────────────────────────────────────────────────── */
+  --bg-page:                  var(--md-ref-page-bg-mid);
+  --bg-page-deep:             var(--md-ref-page-bg-deep);
+  --surface-1:                var(--md-sys-color-surface-container-lowest);
+  --surface-2:                var(--md-sys-color-surface-container-low);
+  --surface-3:                var(--md-sys-color-surface-container);
+  --surface-4:                var(--md-sys-color-surface-container-high);
+  --surface-ink:              #f5f5f5;
+  --text-primary:             var(--md-sys-color-on-surface);
+  --text-secondary:           var(--md-sys-color-on-surface-variant);
+  --text-tertiary:            var(--md-sys-color-outline);
+  --text-muted:               #666662;
+  --text-on-accent:           var(--md-sys-color-on-primary);
+  --heading-ink:              #f5f5f5;
+  --accent:                   var(--md-sys-color-primary);
+  --accent-strong:            #9abbff;
+  --accent-rgb:               122 162 247;
+  --accent-subtle:            var(--md-sys-color-primary-container);
+  --accent-warm:              var(--md-sys-color-secondary);
+  --accent-warm-rgb:          216 179 106;
+  --accent-warm-subtle:       var(--md-sys-color-secondary-container);
+  --accent-line:              rgba(122, 162, 247, 0.22);
+  --color-wikilink:           #9abbff;
+  --color-success:            var(--md-sys-color-success);
+  --color-warning:            var(--md-sys-color-warning);
+  --color-error:              var(--md-sys-color-error);
+  --info-rgb:                 122 162 247;
+  --info-ink:                 #9abbff;
+  --success-rgb:              141 207 183;
+  --success-ink:              #8dcfb7;
+  --warning-rgb:              223 191 117;
+  --warning-ink:              #dfbf75;
+  --danger-rgb:               239 141 136;
+  --danger-ink:               #ef8d88;
+  --border-color:             var(--md-sys-color-outline-variant);
+  --border-strong:            rgba(255, 255, 255, 0.14);
+  --border-soft:              rgba(255, 255, 255, 0.08);
+  --surface-glass-soft:       var(--md-sys-color-glass-soft);
+  --surface-glass-muted:      var(--md-sys-color-glass-muted);
+  --surface-glass:            var(--md-sys-color-glass);
+  --surface-glass-mid:        var(--md-sys-color-glass-mid);
+  --surface-highlight:        var(--md-sys-color-glass-highlight);
+  --surface-chip:             var(--md-sys-color-glass-chip);
+  --surface-glass-strong:     var(--md-sys-color-glass-strong);
+  --surface-glass-hover:      var(--md-sys-color-glass-hover);
+  --surface-overlay:          var(--md-sys-color-surface-overlay);
+  --surface-overlay-soft:     var(--md-sys-color-surface-overlay-soft);
+  --shell-main-bg:            var(--md-sys-color-shell-main);
+  --shell-sidebar-bg:         var(--md-sys-color-shell-sidebar);
+  --surface-accent-blend:     var(--md-sys-color-surface-accent-blend);
+  --surface-accent-blend-strong: var(--md-sys-color-surface-accent-blend-strong);
+  --logo-accent-end:          #4f6bbd;
+  --page-grid-rgb:            255 255 255;
+  --code-block-bg-start:      #111215;
+  --code-block-bg-end:        #0c0d10;
+  --code-block-text:          #ededed;
+  --code-inline-color:        #9abbff;
+  --shadow-soft:              var(--md-sys-elevation-soft);
+  --shadow-panel:             var(--md-sys-elevation-panel);
+  --shadow-lift:              var(--md-sys-elevation-lift);
+}

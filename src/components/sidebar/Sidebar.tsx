@@ -15,6 +15,7 @@ import {
   type CommandPaletteItem,
 } from "@/components/sidebar/CommandPalette";
 import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
+import { Button } from "@/components/ui/Button";
 import {
   APP_THEMES,
   APP_THEME_STORAGE_KEY,
@@ -902,9 +903,12 @@ export function Sidebar({
 
   return (
     <aside
-      className={`sidebar${isSidebarCompact ? " compact" : ""}${
-        isSidebarResizing ? " resizing" : ""
-      }`}
+      className={`md-nav-drawer md-nav-drawer--graffle-sidebar${isSidebarCompact ? " md-nav-drawer--compact" : ""}${
+        isSidebarResizing ? " md-nav-drawer--resizing" : ""
+      }`} style={{ 
+        width: isSidebarCompact ? SIDEBAR_COMPACT_WIDTH : sidebarWidth,
+        transition: isSidebarResizing ? "none" : "width var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard)",
+      }}
     >
       {isSidebarCompact ? (
         <div className="sidebar-compact-shell">
@@ -968,53 +972,56 @@ export function Sidebar({
         </div>
       ) : (
         <>
-          <div className="sidebar-topbar">
-            <button
-              type="button"
+          <div className="sidebar-topbar" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px" }}>
+            <div
               className="sidebar-workspace-card"
               onClick={() => router.push("/dashboard")}
+              style={{ display: "flex", alignItems: "center", gap: "12px", cursor: "pointer" }}
             >
-              <span className="sidebar-workspace-logo">G</span>
-              <span className="sidebar-workspace-copy">
-                <span className="sidebar-workspace-name">Graffle</span>
-                <span className="sidebar-workspace-meta">
+              <div className="sidebar-workspace-logo" style={{ width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--md-sys-color-primary)", color: "var(--md-sys-color-on-primary)", borderRadius: "var(--md-sys-shape-small)", fontWeight: "bold" }}>G</div>
+              <div className="sidebar-workspace-copy" style={{ display: "flex", flexDirection: "column" }}>
+                <span className="sidebar-workspace-name" style={{ fontSize: "var(--md-sys-typescale-label-large-size)", fontWeight: "bold", color: "var(--md-sys-color-on-surface)" }}>Graffle</span>
+                <span className="sidebar-workspace-meta" style={{ fontSize: "var(--md-sys-typescale-body-small-size)", color: "var(--md-sys-color-on-surface-variant)" }}>
                   Kişisel bilgi alanı
                 </span>
-              </span>
-            </button>
-            <div className="sidebar-topbar-actions">
-              <button
-                type="button"
-                className="sidebar-icon-button"
+              </div>
+            </div>
+            <div className="sidebar-topbar-actions" style={{ display: "flex", gap: "4px" }}>
+              <Button
+                variant="text"
+                icon
                 onClick={handleCreateNote}
                 aria-label="Yeni not oluştur"
               >
                 <PlusIcon />
-              </button>
-              <button
-                type="button"
-                className="sidebar-icon-button sidebar-collapse-button"
+              </Button>
+              <Button
+                variant="text"
+                icon
                 onClick={toggleSidebarCompact}
                 aria-label="Sidebarı daralt"
               >
                 <ChevronLeftIcon />
-              </button>
+              </Button>
             </div>
           </div>
 
-          <button
-            type="button"
-            className="sidebar-search-trigger"
-            onClick={() => openPalette("")}
-            aria-label="Arama veya komut paleti"
-          >
-            <span className="sidebar-search-icon">○</span>
-            <span className="sidebar-search-placeholder">Ara veya komut çalıştır...</span>
-            <kbd className="sidebar-search-kbd">⌘K</kbd>
-          </button>
+          <div style={{ padding: "0 16px 12px" }}>
+            <button
+              type="button"
+              className="md-text-field-container"
+              style={{ width: "100%", borderRadius: "var(--md-sys-shape-full)", height: "40px", cursor: "pointer", background: "var(--md-sys-color-surface-container-high)", border: "1px solid var(--md-sys-color-outline-variant)" }}
+              onClick={() => openPalette("")}
+              aria-label="Arama veya komut paleti"
+            >
+              <span style={{ margin: "0 12px", color: "var(--md-sys-color-on-surface-variant)" }}>○</span>
+              <span style={{ flex: 1, textAlign: "left", color: "var(--md-sys-color-on-surface-variant)", fontSize: "var(--md-sys-typescale-body-medium-size)" }}>Ara veya komut çalıştır...</span>
+              <kbd style={{ margin: "0 12px", fontSize: "10px", padding: "2px 6px", borderRadius: "4px", background: "var(--md-sys-color-surface-container-low)" }}>⌘K</kbd>
+            </button>
+          </div>
 
-          <div className="sidebar-section">
-            <nav className="sidebar-primary-nav">
+          <div className="md-nav-drawer-content" style={{ padding: "0 12px" }}>
+            <ul className="md-list" style={{ padding: 0 }}>
               {([
                 {
                   path: "/dashboard",
@@ -1049,27 +1056,32 @@ export function Sidebar({
                 info: string;
                 actions?: Array<{ label: string; onClick: () => void; primary?: boolean }>;
               }>).map(({ path, icon, label, info, actions }) => (
-                <div key={path} className="sidebar-nav-item-row">
+                <li key={path} style={{ display: "flex", alignItems: "center", marginBottom: "4px" }}>
                   <button
-                    className={`sidebar-item ${pathname === path ? "active" : ""}`}
+                    className={`md-list-item ${pathname === path ? "md-list-item--active" : ""}`}
+                    style={{ flex: 1, borderRadius: "var(--md-sys-shape-medium)", minHeight: "48px", padding: "0 12px" }}
                     onClick={() => { closeNavModal(); router.push(path); }}
                   >
-                    <span className="sidebar-item-icon">{icon}</span>
-                    <span className="sidebar-item-label">{label}</span>
+                    <div className="md-list-item-start" style={{ marginRight: "16px", width: "24px", justifyContent: "center", fontSize: "var(--md-sys-typescale-label-small-size)", opacity: 0.7 }}>{icon}</div>
+                    <div className="md-list-item-content">
+                      <span className="md-list-item-headline" style={{ fontSize: "var(--md-sys-typescale-label-large-size)" }}>{label}</span>
+                    </div>
                   </button>
-                  <button
-                    type="button"
-                    className={`sidebar-nav-menu${navModal?.key === path ? " active" : ""}`}
+                  <Button
+                    variant="text"
+                    icon
+                    className={navModal?.key === path ? "active" : ""}
+                    style={{ opacity: 0.5, flexShrink: 0, width: "32px", height: "32px", marginLeft: "4px" }}
                     onClick={(e) => openNavModal(path, label, e, { info, actions })}
                     aria-label={`${label} menüsü`}
                   >
                     <MoreHorizontalIcon />
-                  </button>
-                </div>
+                  </Button>
+                </li>
               ))}
-            </nav>
+            </ul>
 
-            <div className="sidebar-divider" />
+            <div className="md-list-divider" style={{ margin: "12px 0" }} />
 
             <SidebarGroup
               label="Klasörler"
@@ -1245,28 +1257,30 @@ export function Sidebar({
             ))}
           </nav>
 
-          <div className="sidebar-footer">
-            <div className="sidebar-user-meta">
-              <span className="sidebar-user-avatar">
+          <div className="md-nav-drawer-footer" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: "1px solid var(--md-sys-color-outline-variant)", padding: "12px 16px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", overflow: "hidden" }}>
+              <div style={{ flexShrink: 0, width: "32px", height: "32px", borderRadius: "var(--md-sys-shape-full)", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--md-sys-color-surface-variant)", color: "var(--md-sys-color-on-surface-variant)", fontWeight: "bold" }}>
                 {(user.name ?? user.email ?? "G").slice(0, 1).toUpperCase()}
-              </span>
-              <div className="sidebar-user-copy">
-                <div className="sidebar-user-name">
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
+                <div style={{ fontSize: "var(--md-sys-typescale-body-medium-size)", fontWeight: "var(--md-sys-typescale-body-medium-weight)", color: "var(--md-sys-color-on-surface)", overflow: "hidden", textOverflow: "ellipsis" }}>
                   {user.name ?? user.email ?? "Graffle Kullanıcı"}
                 </div>
                 {user.email ? (
-                  <div className="sidebar-user-email">{user.email}</div>
+                  <div style={{ fontSize: "var(--md-sys-typescale-body-small-size)", color: "var(--md-sys-color-on-surface-variant)", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    {user.email}
+                  </div>
                 ) : null}
               </div>
             </div>
-            <button
-              type="button"
-              className="sidebar-footer-menu"
+            <Button
+              variant="text"
+              icon
               onClick={(event) => openContextMenuFromTrigger(event, footerMenuItems)}
               aria-label="Hesap ve tema menüsü"
             >
               <MoreHorizontalIcon />
-            </button>
+            </Button>
           </div>
         </>
       )}

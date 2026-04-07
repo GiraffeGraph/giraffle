@@ -1,0 +1,199 @@
+/* ==========================================================================
+   card.css — M3 Card Components
+   GiraffeGraph Design System v2
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Base — tüm kart varyantları için ortak yapı
+   -------------------------------------------------------------------------- */
+
+.md-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  border-radius: var(--md-sys-shape-medium);
+  background-color: var(--md-sys-color-surface-container-low);
+  color: var(--md-sys-color-on-surface);
+  box-shadow: var(--md-sys-elevation-level1);
+  overflow: hidden;
+  transition:
+    box-shadow var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard),
+    background-color var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard),
+    transform var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard);
+}
+
+/* Interactive Card State Layer (for clickable cards) */
+.md-card--clickable {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.md-card--clickable::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--md-sys-color-on-surface);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--md-sys-motion-duration-short3) var(--md-sys-motion-easing-standard);
+  z-index: 1;
+}
+
+.md-card--clickable:hover::before {
+  opacity: var(--md-sys-state-hover-opacity);
+}
+
+.md-card--clickable:focus-visible::before {
+  opacity: var(--md-sys-state-focus-opacity);
+}
+
+.md-card--clickable:active::before {
+  opacity: var(--md-sys-state-pressed-opacity);
+}
+
+.md-card--clickable:focus-visible {
+  outline: 3px solid var(--md-sys-color-primary);
+  outline-offset: -3px;
+}
+
+/* Disabled state */
+.md-card--disabled {
+  opacity: 0.38;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
+/* --------------------------------------------------------------------------
+   Elevated Card
+   -------------------------------------------------------------------------- */
+
+.md-card--elevated {
+  background-color: var(--md-sys-color-surface-container-low);
+  box-shadow: var(--md-sys-elevation-level1);
+  border: none;
+}
+
+.md-card--elevated.md-card--clickable:hover {
+  box-shadow: var(--md-sys-elevation-level2);
+}
+
+.md-card--elevated.md-card--clickable:active {
+  box-shadow: var(--md-sys-elevation-level1);
+}
+
+/* --------------------------------------------------------------------------
+   Filled Card
+   -------------------------------------------------------------------------- */
+
+.md-card--filled {
+  background-color: var(--md-sys-color-surface-container-highest);
+  box-shadow: none;
+  border: none;
+}
+
+.md-card--filled.md-card--clickable:hover {
+  box-shadow: var(--md-sys-elevation-level1);
+}
+
+.md-card--filled.md-card--clickable:active {
+  box-shadow: none;
+}
+
+/* --------------------------------------------------------------------------
+   Outlined Card
+   -------------------------------------------------------------------------- */
+
+.md-card--outlined {
+  background-color: var(--md-sys-color-surface);
+  box-shadow: none;
+  border: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.md-card--outlined.md-card--clickable:hover {
+  box-shadow: var(--md-sys-elevation-level1);
+}
+
+.md-card--outlined.md-card--clickable:focus-visible {
+  border-color: var(--md-sys-color-primary);
+}
+
+/* --------------------------------------------------------------------------
+   Card Layout Sections (header, content, actions)
+   -------------------------------------------------------------------------- */
+
+.md-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.md-card-header:only-child {
+  margin-bottom: 0;
+}
+
+.md-card-title {
+  font-family: var(--md-sys-typeface-brand);
+  font-size: var(--md-sys-typescale-title-medium-size);
+  font-weight: var(--md-sys-typescale-title-medium-weight);
+  letter-spacing: var(--md-sys-typescale-title-medium-tracking);
+  line-height: var(--md-sys-typescale-title-medium-line-height);
+  color: var(--md-sys-color-on-surface);
+  margin: 0;
+}
+
+.md-card-subtitle {
+  font-family: var(--md-sys-typeface-brand);
+  font-size: var(--md-sys-typescale-body-medium-size);
+  font-weight: var(--md-sys-typescale-body-medium-weight);
+  letter-spacing: var(--md-sys-typescale-body-medium-tracking);
+  line-height: var(--md-sys-typescale-body-medium-line-height);
+  color: var(--md-sys-color-on-surface-variant);
+  margin: 4px 0 0 0;
+}
+
+/* If header has avatar/icon */
+.md-card-header-start {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.md-card-content {
+  flex: 1;
+  font-family: var(--md-sys-typeface-brand);
+  font-size: var(--md-sys-typescale-body-medium-size);
+  font-weight: var(--md-sys-typescale-body-medium-weight);
+  letter-spacing: var(--md-sys-typescale-body-medium-tracking);
+  line-height: var(--md-sys-typescale-body-medium-line-height);
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.md-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 16px;
+}
+
+.md-card-actions--start {
+  justify-content: flex-start;
+}
+
+/* Card image placeholder/container */
+.md-card-media {
+  margin: -16px -16px 16px -16px;
+  overflow: hidden;
+  border-top-left-radius: inherit;
+  border-top-right-radius: inherit;
+}
+
+.md-card-media img {
+  width: 100%;
+  height: auto;
+  display: block;
+}

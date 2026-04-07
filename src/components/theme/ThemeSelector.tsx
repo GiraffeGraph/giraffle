@@ -11,6 +11,8 @@ import {
 } from "./theme-config";
 import iconImg from "@/app/icon1.png";
 
+import { Button } from "@/components/ui/Button";
+
 export function ThemeSelector() {
   const [mounted, setMounted] = useState(false);
   const [activeThemeId, setActiveThemeId] = useState<AppThemeId>(DEFAULT_APP_THEME);
@@ -60,34 +62,21 @@ export function ThemeSelector() {
         alignItems: "center",
         gap: "4px",
         padding: "6px",
-        background: "var(--surface-glass)",
+        background: "var(--md-sys-color-surface-container-high)",
         backdropFilter: "blur(12px)",
-        border: "1px solid var(--border-soft)",
-        borderRadius: "99px",
-        boxShadow: "var(--shadow-panel)",
+        border: "1px solid var(--md-sys-color-outline-variant)",
+        borderRadius: "var(--md-sys-shape-full)",
+        boxShadow: "var(--md-sys-elevation-level2)",
         zIndex: 50,
       }}
     >
-      <button
+      <Button
+        icon
+        variant={activeThemeId === "warm-paper" ? "tonal" : "text"}
         onClick={() => applyTheme("warm-paper")}
         title="Sıcak Kağıt (Aydınlık)"
-        style={{
-          width: "36px",
-          height: "36px",
-          borderRadius: "50%",
-          background: activeThemeId === "warm-paper" ? "var(--surface-highlight)" : "transparent",
-          border: activeThemeId === "warm-paper" ? "1px solid var(--border-strong)" : "1px solid transparent",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          cursor: "pointer",
-          color: "var(--text-primary)",
-          transition: "all 0.2s ease",
-        }}
-        onMouseEnter={(e) => (e.currentTarget.style.background = "var(--surface-hover)")}
-        onMouseLeave={(e) => (e.currentTarget.style.background = activeThemeId === "warm-paper" ? "var(--surface-highlight)" : "transparent")}
       >
-        <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+        <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
           <circle cx="12" cy="12" r="5" />
           <line x1="12" y1="1" x2="12" y2="3" />
           <line x1="12" y1="21" x2="12" y2="23" />
@@ -98,52 +87,27 @@ export function ThemeSelector() {
           <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
           <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
         </svg>
-      </button>
+      </Button>
 
-      <button
+      <Button
+        icon
+        variant={activeThemeId === "midnight-gold" ? "tonal" : "text"}
         onClick={() => applyTheme("midnight-gold")}
         title="Gece Altını (Giraffe)"
-        style={{
-          width: "36px",
-          height: "36px",
-          borderRadius: "50%",
-          background: activeThemeId === "midnight-gold" ? "var(--surface-highlight)" : "transparent",
-          border: activeThemeId === "midnight-gold" ? "1px solid var(--border-strong)" : "1px solid transparent",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          cursor: "pointer",
-          transition: "all 0.2s ease",
-        }}
-        onMouseEnter={(e) => (e.currentTarget.style.background = "var(--surface-hover)")}
-        onMouseLeave={(e) => (e.currentTarget.style.background = activeThemeId === "midnight-gold" ? "var(--surface-highlight)" : "transparent")}
       >
-        <Image src={iconImg} alt="Giraffe Logo" width={20} height={20} style={{ borderRadius: "4px" }} />
-      </button>
+        <Image src={iconImg} alt="Giraffe Logo" width={20} height={20} style={{ borderRadius: "4px", opacity: activeThemeId === "midnight-gold" ? 1 : 0.8 }} />
+      </Button>
 
-      <button
+      <Button
+        icon
+        variant={activeThemeId === "graphite-night" ? "tonal" : "text"}
         onClick={() => applyTheme("graphite-night")}
         title="Grafit Gece (Karanlık)"
-        style={{
-          width: "36px",
-          height: "36px",
-          borderRadius: "50%",
-          background: activeThemeId === "graphite-night" ? "var(--surface-highlight)" : "transparent",
-          border: activeThemeId === "graphite-night" ? "1px solid var(--border-strong)" : "1px solid transparent",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          cursor: "pointer",
-          color: "var(--text-primary)",
-          transition: "all 0.2s ease",
-        }}
-        onMouseEnter={(e) => (e.currentTarget.style.background = "var(--surface-hover)")}
-        onMouseLeave={(e) => (e.currentTarget.style.background = activeThemeId === "graphite-night" ? "var(--surface-highlight)" : "transparent")}
       >
-        <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+        <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
           <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
         </svg>
-      </button>
+      </Button>
     </div>
   );
 }

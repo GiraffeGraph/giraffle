@@ -5,6 +5,8 @@ import {
   LOCAL_SYNC_QUEUE_STORAGE_KEY,
   type LocalSyncQueueItem,
 } from "@/lib/workspace-preferences";
+import { Button } from "@/components/ui/Button";
+import { Card, CardHeader, CardTitle, CardContent, CardActions } from "@/components/ui/Card";
 
 interface SettingsWorkspaceProps {
   operationLogs: Array<{
@@ -41,69 +43,83 @@ export function SettingsWorkspace({
   };
 
   return (
-    <div className="settings-layout">
-      <section className="settings-panel">
-        <div className="dashboard-section-head">
-          <span className="dashboard-section-kicker">Yerel eşitleme sınırı</span>
-        </div>
-        <div className="settings-stat-grid">
-          <div className="settings-stat-card">
-            <span className="settings-stat-label">Kuyruktaki işlem</span>
-            <strong>{queuedItems.length}</strong>
-          </div>
-        </div>
-        <div className="settings-log-list">
-          {queuedItems.length === 0 ? (
-            <div className="settings-empty">Bekleyen yerel işlem yok.</div>
-          ) : (
-            queuedItems.map((item) => (
-              <div key={item.id} className="settings-log-row">
-                <div>
-                  <div className="settings-log-title">
-                    {item.entityType}:{item.actionType}
-                  </div>
-                  <div className="settings-log-meta">
-                    {item.entityId} · {new Date(item.queuedAt).toLocaleString("tr-TR")}
-                  </div>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-        <button
-          type="button"
-          className="dashboard-secondary-btn"
-          onClick={clearQueue}
-          disabled={queuedItems.length === 0}
-        >
-          Yerel kuyruğu temizle
-        </button>
-      </section>
+    <div style={{ padding: "32px", maxWidth: "800px", margin: "0 auto", display: "flex", flexDirection: "column", gap: "24px" }}>
+      <h1 className="md-typescale-display-small" style={{ marginBottom: "16px", color: "var(--md-sys-color-on-background)" }}>Sistem Ayarları</h1>
 
-      <section className="settings-panel">
-        <div className="dashboard-section-head">
-          <span className="dashboard-section-kicker">Sunucu operasyonları</span>
-        </div>
-        <div className="settings-log-list">
-          {operationLogs.length === 0 ? (
-            <div className="settings-empty">Henüz işlem kaydı yok.</div>
-          ) : (
-            operationLogs.map((entry) => (
-              <div key={entry.id} className="settings-log-row">
-                <div>
-                  <div className="settings-log-title">
-                    {entry.entityType}:{entry.actionType}
+      <Card variant="outlined">
+        <CardHeader>
+          <CardTitle>Yerel Eşitleme Sınırı</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div style={{ display: "flex", gap: "16px", marginBottom: "24px" }}>
+            <div style={{ padding: "16px", borderRadius: "12px", background: "var(--md-sys-color-secondary-container)", color: "var(--md-sys-color-on-secondary-container)", flex: 1 }}>
+              <div style={{ fontSize: "var(--md-sys-typescale-label-medium-size)" }}>Kuyruktaki İşlem</div>
+              <div style={{ fontSize: "var(--md-sys-typescale-display-small-size)", fontWeight: "bold" }}>{queuedItems.length}</div>
+            </div>
+          </div>
+
+          <div style={{ border: "1px solid var(--md-sys-color-outline-variant)", borderRadius: "var(--md-sys-shape-medium)", overflow: "hidden" }}>
+            <ul className="md-list" style={{ padding: 0 }}>
+              {queuedItems.length === 0 ? (
+                <li className="md-list-item">
+                  <div className="md-list-item-content">
+                    <span className="md-list-item-headline" style={{ color: "var(--md-sys-color-on-surface-variant)" }}>Bekleyen yerel işlem yok.</span>
                   </div>
-                  <div className="settings-log-meta">
-                    {entry.entityId} · {new Date(entry.createdAt).toLocaleString("tr-TR")}
+                </li>
+              ) : (
+                queuedItems.map((item, index) => (
+                  <li key={item.id} className="md-list-item" style={{ borderBottom: index < queuedItems.length - 1 ? "1px solid var(--md-sys-color-outline-variant)" : "none" }}>
+                    <div className="md-list-item-content">
+                      <span className="md-list-item-headline">{item.entityType}:{item.actionType}</span>
+                      <span className="md-list-item-supporting-text">{item.entityId} · {new Date(item.queuedAt).toLocaleString("tr-TR")}</span>
+                    </div>
+                  </li>
+                ))
+              )}
+            </ul>
+          </div>
+        </CardContent>
+        <CardActions>
+          <Button
+            variant="filled"
+            onClick={clearQueue}
+            disabled={queuedItems.length === 0}
+          >
+            Yerel kuyruğu temizle
+          </Button>
+        </CardActions>
+      </Card>
+
+      <Card variant="outlined">
+        <CardHeader>
+          <CardTitle>Sunucu Operasyonları</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div style={{ border: "1px solid var(--md-sys-color-outline-variant)", borderRadius: "var(--md-sys-shape-medium)", overflow: "hidden" }}>
+            <ul className="md-list" style={{ padding: 0 }}>
+              {operationLogs.length === 0 ? (
+                <li className="md-list-item">
+                  <div className="md-list-item-content">
+                    <span className="md-list-item-headline" style={{ color: "var(--md-sys-color-on-surface-variant)" }}>Henüz işlem kaydı yok.</span>
                   </div>
-                </div>
-                <span className="settings-log-source">{entry.source}</span>
-              </div>
-            ))
-          )}
-        </div>
-      </section>
+                </li>
+              ) : (
+                operationLogs.map((entry, index) => (
+                  <li key={entry.id} className="md-list-item" style={{ borderBottom: index < operationLogs.length - 1 ? "1px solid var(--md-sys-color-outline-variant)" : "none" }}>
+                    <div className="md-list-item-content">
+                      <span className="md-list-item-headline">{entry.entityType}:{entry.actionType}</span>
+                      <span className="md-list-item-supporting-text">{entry.entityId} · {new Date(entry.createdAt).toLocaleString("tr-TR")}</span>
+                    </div>
+                    <div className="md-list-item-end" style={{ fontSize: "var(--md-sys-typescale-label-small-size)", color: "var(--md-sys-color-primary)", padding: "4px 8px", background: "var(--md-sys-color-primary-container)", borderRadius: "12px" }}>
+                      {entry.source}
+                    </div>
+                  </li>
+                ))
+              )}
+            </ul>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -5,6 +5,16 @@ import {
   DEFAULT_APP_THEME,
   isAppThemeId,
 } from "@/components/theme/theme-config";
+import "@/styles/tokens.css";
+import "@/styles/reset.css";
+import "@/styles/base.css";
+import "@/styles/components/button.css";
+import "@/styles/components/card.css";
+import "@/styles/components/text-field.css";
+import "@/styles/components/list.css";
+import "@/styles/components/chip.css";
+import "@/styles/components/dialog.css";
+import "@/styles/components/navigation.css";
 import "./globals.css";
 
 export const metadata: Metadata = {
