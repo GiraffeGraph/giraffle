@@ -27,9 +27,9 @@ export function ResetPasswordClient({
         token,
         nextPassword: String(formData.get("password") ?? ""),
       });
-      setMessage("Şifre güncellendi. Artık giriş yapabilirsin.");
+      setMessage("Password updated. You can sign in now.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Bir hata oluştu.");
+      setMessage(error instanceof Error ? error.message : "Something went wrong.");
     }
 
     setIsLoading(false);
@@ -40,11 +40,11 @@ export function ResetPasswordClient({
       <div className="auth-card">
         <div className="auth-header">
           <span className="auth-logo">G</span>
-          <h1 className="auth-title">Yeni şifre belirle</h1>
+          <h1 className="auth-title">Set a new password</h1>
           <p className="auth-subtitle">
             {tokenState.valid
-              ? `${tokenState.email ?? "Hesap"} için yeni şifre ayarla.`
-              : "Bu sıfırlama bağlantısı artık geçerli değil."}
+              ? `Set a new password for ${tokenState.email ?? "this account"}.`
+              : "This reset link is no longer valid."}
           </p>
         </div>
 
@@ -52,7 +52,7 @@ export function ResetPasswordClient({
           <form action={handleSubmit} className="auth-form">
             {message ? <div className="auth-error">{message}</div> : null}
             <div className="auth-field">
-              <label htmlFor="password">Yeni şifre</label>
+              <label htmlFor="password">New password</label>
               <input
                 id="password"
                 name="password"
@@ -63,13 +63,13 @@ export function ResetPasswordClient({
               />
             </div>
             <button type="submit" className="auth-submit" disabled={isLoading}>
-              {isLoading ? "Kaydediliyor..." : "Şifreyi güncelle"}
+              {isLoading ? "Saving..." : "Update password"}
             </button>
           </form>
         ) : (
           <div className="auth-footer">
             <Link href="/forgot-password" className="auth-link">
-              Yeni sıfırlama isteği
+              Request a new reset link
             </Link>
           </div>
         )}

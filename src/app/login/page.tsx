@@ -23,15 +23,15 @@ export default function LoginPage() {
       <div className="auth-card">
         <div className="auth-header">
           <span className="auth-logo">G</span>
-          <h1 className="auth-title">Tekrar hoş geldin</h1>
-          <p className="auth-subtitle">Giraffle çalışma alanına giriş yap</p>
+          <h1 className="auth-title">Welcome back</h1>
+          <p className="auth-subtitle">Sign in to your Giraffle workspace</p>
         </div>
 
         <form action={handleSubmit} className="auth-form">
           {error && <div className="auth-error">{error}</div>}
 
           <div className="auth-field">
-            <label htmlFor="email">E-posta</label>
+            <label htmlFor="email">Email</label>
             <input
               id="email"
               name="email"
@@ -43,7 +43,7 @@ export default function LoginPage() {
           </div>
 
           <div className="auth-field">
-            <label htmlFor="password">Şifre</label>
+            <label htmlFor="password">Password</label>
             <input
               id="password"
               name="password"
@@ -55,14 +55,14 @@ export default function LoginPage() {
           </div>
 
           <button type="submit" className="auth-submit" disabled={isLoading}>
-            {isLoading ? "Giriş yapılıyor..." : "Giriş Yap"}
+            {isLoading ? "Signing in..." : "Sign in"}
           </button>
         </form>
 
         <div className="auth-footer">
-          <span>Hesabın yok mu?</span>
+          <span>Don&apos;t have an account?</span>
           <Link href="/register" className="auth-link">
-            Hesap oluştur
+            Create account
           </Link>
         </div>
       </div>

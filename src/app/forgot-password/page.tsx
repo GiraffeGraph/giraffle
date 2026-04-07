@@ -22,26 +22,26 @@ export default function ForgotPasswordPage() {
       <div className="auth-card">
         <div className="auth-header">
           <span className="auth-logo">G</span>
-          <h1 className="auth-title">Şifre sıfırla</h1>
+          <h1 className="auth-title">Reset password</h1>
           <p className="auth-subtitle">
-            Hesabın varsa sıfırlama bağlantısı hazırlanacak.
+            If an account exists, we&apos;ll prepare a reset link for it.
           </p>
         </div>
 
         <form action={handleSubmit} className="auth-form">
           {message ? <div className="auth-error">{message}</div> : null}
           <div className="auth-field">
-            <label htmlFor="email">E-posta</label>
+            <label htmlFor="email">Email</label>
             <input id="email" name="email" type="email" required autoFocus />
           </div>
           <button type="submit" className="auth-submit" disabled={isLoading}>
-            {isLoading ? "Hazırlanıyor..." : "Sıfırlama isteği oluştur"}
+            {isLoading ? "Preparing..." : "Request reset link"}
           </button>
         </form>
 
         <div className="auth-footer">
           <Link href="/login" className="auth-link">
-            Girişe dön
+            Back to sign in
           </Link>
         </div>
       </div>

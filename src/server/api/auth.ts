@@ -26,19 +26,19 @@ export async function registerAction(formData: FormData) {
   });
 
   if (!rateLimit.allowed) {
-    return { error: "Çok fazla kayıt denemesi yapıldı. Daha sonra tekrar deneyin." };
+    return { error: "Too many registration attempts. Please try again later." };
   }
 
   if (!email || !password) {
-    return { error: "E-posta ve şifre zorunludur." };
+    return { error: "Email and password are required." };
   }
 
   if (!EMAIL_PATTERN.test(email)) {
-    return { error: "Geçerli bir e-posta adresi girin." };
+    return { error: "Enter a valid email address." };
   }
 
   if (password.length < 8) {
-    return { error: "Şifre en az 8 karakter olmalıdır." };
+    return { error: "Password must be at least 8 characters." };
   }
 
   const existingUser = await db.user.findUnique({
@@ -46,7 +46,7 @@ export async function registerAction(formData: FormData) {
   });
 
   if (existingUser) {
-    return { error: "Bu e-posta ile kayıtlı bir hesap zaten var." };
+    return { error: "An account with this email already exists." };
   }
 
   const hashedPassword = await bcrypt.hash(password, 12);
@@ -72,7 +72,7 @@ export async function registerAction(formData: FormData) {
     resetRateLimit(`register:${email}`);
   } catch (error) {
     if (error instanceof AuthError) {
-      return { error: "Kayıt sonrası giriş yapılamadı." };
+      return { error: "Signed up successfully, but automatic sign-in failed." };
     }
     throw error;
   }
@@ -88,11 +88,11 @@ export async function loginAction(formData: FormData) {
   });
 
   if (!rateLimit.allowed) {
-    return { error: "Çok fazla giriş denemesi yapıldı. Daha sonra tekrar deneyin." };
+    return { error: "Too many sign-in attempts. Please try again later." };
   }
 
   if (!email || !password) {
-    return { error: "E-posta ve şifre zorunludur." };
+    return { error: "Email and password are required." };
   }
 
   try {
@@ -106,9 +106,9 @@ export async function loginAction(formData: FormData) {
     if (error instanceof AuthError) {
       switch (error.type) {
         case "CredentialsSignin":
-          return { error: "E-posta veya şifre hatalı." };
+          return { error: "Incorrect email or password." };
         default:
-          return { error: "Bir hata oluştu." };
+          return { error: "Something went wrong." };
       }
     }
     throw error;
@@ -189,7 +189,7 @@ export async function requestPasswordResetAction(email: string) {
   if (!rateLimit.allowed) {
     return {
       ok: false,
-      message: "Çok fazla şifre sıfırlama isteği yapıldı.",
+      message: "Too many password reset requests were made.",
     } as const;
   }
 
@@ -204,7 +204,7 @@ export async function requestPasswordResetAction(email: string) {
   if (!user) {
     return {
       ok: true,
-      message: "Hesap varsa sıfırlama akışı hazırlandı.",
+      message: "If the account exists, the reset flow has been prepared.",
     } as const;
   }
 
@@ -230,8 +230,8 @@ export async function requestPasswordResetAction(email: string) {
     ok: true,
     message:
       process.env.NODE_ENV === "production"
-        ? "Sıfırlama isteği kaydedildi."
-        : `Geliştirme bağlantısı: /reset-password/${token}`,
+        ? "Reset request recorded."
+        : `Development link: /reset-password/${token}`,
     token: process.env.NODE_ENV === "production" ? undefined : token,
   } as const;
 }
