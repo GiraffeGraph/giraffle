@@ -13,7 +13,7 @@ import iconImg from "@/app/icon1.png";
 
 import { Button } from "@/components/ui/Button";
 
-export function ThemeSelector() {
+export function ThemeSelector({ vertical = false }: { vertical?: boolean }) {
   const [mounted, setMounted] = useState(false);
   const [activeThemeId, setActiveThemeId] = useState<AppThemeId>(DEFAULT_APP_THEME);
 
@@ -55,19 +55,22 @@ export function ThemeSelector() {
   return (
     <div
       style={{
-        position: "fixed",
-        top: "18px",
-        right: "18px",
+        ...(vertical ? {} : {
+          position: "fixed",
+          top: "18px",
+          right: "18px",
+          border: "1px solid var(--md-sys-color-outline-variant)",
+          borderRadius: "var(--md-sys-shape-full)",
+          boxShadow: "var(--md-sys-elevation-level2)",
+          zIndex: 50,
+        }),
         display: "flex",
+        flexDirection: vertical ? "column" : "row",
         alignItems: "center",
         gap: "4px",
         padding: "6px",
-        background: "var(--md-sys-color-surface-container-high)",
-        backdropFilter: "blur(12px)",
-        border: "1px solid var(--md-sys-color-outline-variant)",
-        borderRadius: "var(--md-sys-shape-full)",
-        boxShadow: "var(--md-sys-elevation-level2)",
-        zIndex: 50,
+        background: vertical ? "transparent" : "var(--md-sys-color-surface-container-high)",
+        backdropFilter: vertical ? "none" : "blur(12px)",
       }}
     >
       <Button

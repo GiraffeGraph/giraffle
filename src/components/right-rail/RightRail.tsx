@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { GraphIcon } from "@/components/sidebar/GraphIcon";
+import { ThemeSelector } from "@/components/theme/ThemeSelector";
 
 export function RightRail() {
   const pathname = usePathname();
@@ -18,6 +19,9 @@ export function RightRail() {
       >
         <GraphIcon size={18} />
       </button>
+      <div style={{ marginTop: "auto" }}>
+        <ThemeSelector vertical />
+      </div>
     </div>
   );
 }

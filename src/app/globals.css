@@ -22,14 +22,20 @@
 
 /* Right rail */
 .right-rail {
+  height: calc(100vh - 36px);
+  position: sticky;
+  top: 18px;
   display: flex;
   flex-direction: column;
   align-items: center;
   padding: 8px 0;
   gap: 4px;
   border-radius: var(--radius-xl);
-  background: var(--shell-sidebar-bg, var(--surface-base));
+  background: var(--shell-sidebar-bg);
   border: 1px solid var(--border-soft);
+  box-shadow: var(--shadow-panel);
+  backdrop-filter: blur(14px);
+  overflow: hidden;
 }
 
 .right-rail-btn {
@@ -46,13 +52,22 @@
   transition: background var(--transition-fast), color var(--transition-fast);
 }
 
-.right-rail-btn:hover {
+.right-rail-btn:hover,
+.right-rail .md-icon-button:hover {
   background: var(--surface-highlight);
   color: var(--text-secondary);
 }
 
 .right-rail-btn.active {
   color: var(--accent);
+}
+
+.right-rail .md-icon-button {
+  width: 32px;
+  height: 32px;
+  color: var(--text-muted);
+  border-radius: 8px;
+  transition: background var(--transition-fast), color var(--transition-fast);
 }
 
 .main-content {
@@ -1938,7 +1953,7 @@ body::before {
 
 .app-layout {
   display: grid;
-  grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+  grid-template-columns: var(--sidebar-width) minmax(0, 1fr) 48px;
   min-height: 100vh;
   gap: 0;
   padding: 0;
@@ -1985,6 +2000,17 @@ body::before {
   border-right: 1px solid var(--border-soft);
   border-radius: 0;
   background: var(--shell-sidebar-bg);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.right-rail {
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  border: none;
+  border-left: 1px solid var(--border-soft);
+  border-radius: 0;
   box-shadow: none;
   backdrop-filter: none;
 }
@@ -3760,6 +3786,17 @@ body::before {
   box-shadow: none;
   backdrop-filter: none;
   transition: width var(--transition-normal), background var(--transition-normal);
+}
+
+.right-rail {
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  border: none;
+  border-left: 1px solid var(--border-soft);
+  border-radius: 0;
+  box-shadow: none;
+  backdrop-filter: none;
 }
 
 .sidebar.resizing {

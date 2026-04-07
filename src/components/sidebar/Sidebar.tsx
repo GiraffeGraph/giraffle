@@ -527,7 +527,6 @@ export function Sidebar({
               {([
                 { path: "/dashboard", icon: "\uE88A", label: "Pano", info: "Son dokunulan notlara, taslaklara ve çalışma alanının ana akışına hızlıca geri dön.", actions: [{ label: "Yeni not", onClick: () => void handleCreateNote(), primary: true }, { label: "Şablondan oluştur", onClick: () => setTemplatePickerOpenSignal((s) => s + 1) }] },
                 { path: "/inbox", icon: "\uE156", label: "Gelen kutusu", info: `${notes.filter((n) => !n.folderId).length} klasörsüz not`, actions: [{ label: "Yeni not", onClick: () => void handleCreateNote(), primary: true }, { label: "Şablondan oluştur", onClick: () => setTemplatePickerOpenSignal((s) => s + 1) }] },
-                { path: "/graph", icon: "__graph__", label: "Bağlantı ağı", info: "Notlar arasındaki wikilink projeksiyonu" },
               ] as Array<{ path: string; icon: string; label: string; info: string; actions?: Array<{ label: string; onClick: () => void; primary?: boolean }> }>).map(({ path, icon, label, info, actions }) => (
                 <div key={path}>
                   <div className="sidebar-nav-item-row">
