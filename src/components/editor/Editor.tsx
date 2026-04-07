@@ -106,6 +106,8 @@ export function Editor({
   onNavigateToNote,
 }: EditorProps) {
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const blockToolbarDelayRef = useRef<number | null>(null);
+  const blockToolbarIntentRef = useRef<string | null>(null);
   const editorRootRef = useRef<HTMLDivElement | null>(null);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const [slashMenu, setSlashMenu] = useState<SlashMenuState | null>(null);
@@ -113,6 +115,7 @@ export function Editor({
     null
   );
   const [wikilinkItems, setWikilinkItems] = useState<WikilinkMenuItem[]>([]);
+  const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
   const [blockToolbar, setBlockToolbar] = useState<BlockToolbarState | null>(
     null
   );
@@ -253,6 +256,32 @@ export function Editor({
     );
   }, [slashCommandItems, slashMenu]);
 
+  const clearBlockToolbarIntent = useCallback(() => {
+    if (blockToolbarDelayRef.current !== null) {
+      window.clearTimeout(blockToolbarDelayRef.current);
+      blockToolbarDelayRef.current = null;
+    }
+
+    blockToolbarIntentRef.current = null;
+  }, []);
+
+  const syncActiveBlock = useCallback(
+    (instance: TiptapEditor) => {
+      const nextActiveBlockId = getSelectionBlockId(instance);
+
+      setActiveBlockId((currentValue) =>
+        currentValue === nextActiveBlockId ? currentValue : nextActiveBlockId
+      );
+
+      if (blockToolbar?.blockId && blockToolbar.blockId !== nextActiveBlockId) {
+        clearBlockToolbarIntent();
+        setBlockToolbar(null);
+        setIsBlockMenuOpen(false);
+      }
+    },
+    [blockToolbar?.blockId, clearBlockToolbarIntent]
+  );
+
   useEffect(() => {
     if (!wikilinkMenu || !searchWikilinkNotes) {
       return;
@@ -340,6 +369,7 @@ export function Editor({
     onUpdate: ({ editor }) => {
       updateSlashMenu(editor);
       updateWikilinkMenu(editor);
+      syncActiveBlock(editor);
 
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
@@ -353,10 +383,12 @@ export function Editor({
     onSelectionUpdate: ({ editor }) => {
       updateSlashMenu(editor);
       updateWikilinkMenu(editor);
+      syncActiveBlock(editor);
     },
     onCreate: ({ editor }) => {
       updateSlashMenu(editor);
       updateWikilinkMenu(editor);
+      syncActiveBlock(editor);
     },
   });
 
@@ -365,8 +397,10 @@ export function Editor({
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
+
+      clearBlockToolbarIntent();
     };
-  }, [editable]);
+  }, [clearBlockToolbarIntent, editable]);
 
   useEffect(() => {
     if (!slashMenu && !wikilinkMenu && !isBlockMenuOpen) {
@@ -414,6 +448,11 @@ export function Editor({
   const handleClick = useCallback(
     async (event: React.MouseEvent) => {
       const target = event.target as HTMLElement;
+      const clickedBlock = editorRootRef.current
+        ? getClosestBlockElement(target, editorRootRef.current)
+        : null;
+
+      setActiveBlockId(clickedBlock?.dataset.blockId ?? null);
 
       if (target.dataset.type === "wikilink" && target.dataset.target) {
         event.preventDefault();
@@ -581,7 +620,9 @@ export function Editor({
       const blockElement = getClosestBlockElement(target, editorRootRef.current);
 
       if (!blockElement) {
-        if (blockToolbar) {
+        clearBlockToolbarIntent();
+
+        if (!isBlockMenuOpen && blockToolbar) {
           setBlockToolbar(null);
         }
 
@@ -590,16 +631,24 @@ export function Editor({
 
       const blockId = blockElement.dataset.blockId;
 
-      if (!blockId) {
+      if (!blockId || blockId !== activeBlockId) {
+        clearBlockToolbarIntent();
+
+        if (!isBlockMenuOpen && blockToolbar) {
+          setBlockToolbar(null);
+        }
+
         return;
       }
 
       const rootRect = editorRootRef.current.getBoundingClientRect();
       const blockRect = blockElement.getBoundingClientRect();
       const isInsideToolbarGutter =
-        event.clientX >= blockRect.left - 44 && event.clientX <= blockRect.left + 18;
+        event.clientX >= blockRect.left - 32 && event.clientX <= blockRect.left + 12;
 
       if (!isInsideToolbarGutter) {
+        clearBlockToolbarIntent();
+
         if (!isBlockMenuOpen && blockToolbar) {
           setBlockToolbar(null);
         }
@@ -610,30 +659,51 @@ export function Editor({
       const nextToolbar = {
         blockId,
         position: {
-          top: blockRect.top - rootRect.top + 2,
-          left: Math.max(0, blockRect.left - rootRect.left - 64),
+          top: blockRect.top - rootRect.top + 1,
+          left: Math.max(0, blockRect.left - rootRect.left - 40),
         },
       } satisfies BlockToolbarState;
+      const toolbarIntentKey = `${nextToolbar.blockId}:${Math.round(nextToolbar.position.top)}:${Math.round(nextToolbar.position.left)}`;
 
-      setBlockToolbar((currentValue) => {
-        if (
-          currentValue?.blockId === nextToolbar.blockId &&
-          currentValue.position.top === nextToolbar.position.top &&
-          currentValue.position.left === nextToolbar.position.left
-        ) {
-          return currentValue;
-        }
+      if (
+        blockToolbar?.blockId === nextToolbar.blockId &&
+        blockToolbar.position.top === nextToolbar.position.top &&
+        blockToolbar.position.left === nextToolbar.position.left
+      ) {
+        clearBlockToolbarIntent();
+        return;
+      }
 
-        return nextToolbar;
-      });
+      if (blockToolbarIntentRef.current === toolbarIntentKey) {
+        return;
+      }
+
+      clearBlockToolbarIntent();
+      blockToolbarIntentRef.current = toolbarIntentKey;
+      blockToolbarDelayRef.current = window.setTimeout(() => {
+        setBlockToolbar((currentValue) => {
+          if (
+            currentValue?.blockId === nextToolbar.blockId &&
+            currentValue.position.top === nextToolbar.position.top &&
+            currentValue.position.left === nextToolbar.position.left
+          ) {
+            return currentValue;
+          }
+
+          return nextToolbar;
+        });
+        blockToolbarDelayRef.current = null;
+        blockToolbarIntentRef.current = null;
+      }, 150);
     },
-    [blockToolbar, editable, isBlockMenuOpen]
+    [activeBlockId, blockToolbar, clearBlockToolbarIntent, editable, isBlockMenuOpen]
   );
 
   const handleBlockToolbarLeave = useCallback(() => {
+    clearBlockToolbarIntent();
     setBlockToolbar(null);
     setIsBlockMenuOpen(false);
-  }, []);
+  }, [clearBlockToolbarIntent]);
 
   const handleInsertBlockBelow = useCallback(() => {
     if (!blockToolbar) {
@@ -1002,46 +1072,25 @@ export function Editor({
         >
           <button
             type="button"
-            className="editor-block-button"
+            className={`editor-block-button editor-block-handle${isBlockMenuOpen ? " active" : ""}`}
             data-drag-handle="true"
             draggable
+            onClick={() => {
+              setActiveBlockId(blockToolbar.blockId);
+              setIsBlockMenuOpen((currentValue) => !currentValue);
+            }}
             onDragStart={() => {
+              setActiveBlockId(blockToolbar.blockId);
               setDraggedBlockId(blockToolbar.blockId);
               setIsBlockMenuOpen(false);
             }}
-            aria-label="Bloğu sürükle"
-            title="Bloğu sürükle"
+            aria-label="Blok menüsünü aç veya sürükle"
+            aria-haspopup="menu"
+            aria-expanded={isBlockMenuOpen}
+            title="Sürükle veya menüyü aç"
           >
             <span className="material-symbols-outlined" aria-hidden="true">
               drag_indicator
-            </span>
-          </button>
-          <button
-            type="button"
-            className="editor-block-button"
-            onMouseDown={(event) => {
-              event.preventDefault();
-              handleInsertBlockBelow();
-            }}
-            aria-label="Alta yeni blok ekle"
-            title="Alta yeni blok ekle"
-          >
-            <span className="material-symbols-outlined" aria-hidden="true">
-              add
-            </span>
-          </button>
-          <button
-            type="button"
-            className={`editor-block-button${isBlockMenuOpen ? " active" : ""}`}
-            onMouseDown={(event) => {
-              event.preventDefault();
-              setIsBlockMenuOpen((currentValue) => !currentValue);
-            }}
-            aria-label="Blok menüsünü aç"
-            title="Blok menüsü"
-          >
-            <span className="material-symbols-outlined" aria-hidden="true">
-              more_horiz
             </span>
           </button>
         </div>
@@ -1055,6 +1104,16 @@ export function Editor({
             left: blockToolbar.position.left,
           }}
         >
+          <button
+            type="button"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => {
+              handleInsertBlockBelow();
+              setIsBlockMenuOpen(false);
+            }}
+          >
+            Alta yeni blok ekle
+          </button>
           <button
             type="button"
             onMouseDown={(event) => event.preventDefault()}

@@ -38,6 +38,7 @@ interface FolderDetailPageProps {
 export function FolderDetailPage({ folder, allFolders }: FolderDetailPageProps) {
   const router = useRouter();
   const [folderIcon, setFolderIcon] = useState<string | null>(folder.icon);
+  const [isCopyingLink, setIsCopyingLink] = useState(false);
   const [iconPickerPosition, setIconPickerPosition] = useState<{
     x: number;
     y: number;
@@ -71,6 +72,12 @@ export function FolderDetailPage({ folder, allFolders }: FolderDetailPageProps) 
     },
     [folder.id, router]
   );
+
+  const handleCopyFolderLink = useCallback(async () => {
+    setIsCopyingLink(true);
+    await navigator.clipboard.writeText(`${window.location.origin}/folders/${folder.id}`);
+    window.setTimeout(() => setIsCopyingLink(false), 1200);
+  }, [folder.id]);
 
   return (
     <>
@@ -201,6 +208,36 @@ export function FolderDetailPage({ folder, allFolders }: FolderDetailPageProps) 
 
         <div style={{ flex: "0 1 320px", minWidth: 0 }}>
           <TopbarPathNavigator key={folder.id} currentPath={`/folders/${folder.id}`} />
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: "4px", flexShrink: 0 }}>
+          <button
+            type="button"
+            title="Klasör bağlantısını kopyala"
+            aria-label="Klasör bağlantısını kopyala"
+            onClick={() => void handleCopyFolderLink()}
+            style={{
+              width: "28px",
+              height: "28px",
+              borderRadius: "999px",
+              border: "1px solid var(--md-sys-color-outline-variant)",
+              background: isCopyingLink
+                ? "var(--md-sys-color-secondary-container)"
+                : "var(--md-sys-color-surface-container-highest)",
+              color: isCopyingLink
+                ? "var(--md-sys-color-on-secondary-container)"
+                : "var(--md-sys-color-on-surface-variant)",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              flexShrink: 0,
+            }}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: "16px" }} aria-hidden="true">
+              {isCopyingLink ? "check" : "link"}
+            </span>
+          </button>
         </div>
       </div>
 

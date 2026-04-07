@@ -1,5 +1,6 @@
 "use client";
 
+import type { MouseEvent as ReactMouseEvent } from "react";
 import { useEffect, useRef, useState } from "react";
 import { combine } from "@atlaskit/pragmatic-drag-and-drop/combine";
 import {
@@ -57,8 +58,8 @@ export function SidebarFolderItem({
   allNotes: SidebarNote[];
   currentNoteId?: string;
   onNoteOpen: (noteId: string) => void;
-  onNoteContextMenu: (event: React.MouseEvent<HTMLElement>, note: SidebarNote) => void;
-  onNoteTriggerMenu: (event: React.MouseEvent<HTMLButtonElement>, note: SidebarNote) => void;
+  onNoteContextMenu: (event: ReactMouseEvent<HTMLElement>, note: SidebarNote) => void;
+  onNoteTriggerMenu: (event: ReactMouseEvent<HTMLButtonElement>, note: SidebarNote) => void;
   onCreateSubFolder: (parentId: string, name: string) => Promise<void>;
 }) {
   const [isOpen, setIsOpen] = useState(true);

@@ -237,10 +237,10 @@ export function Sidebar({
   );
 
   // Note actions
-  const handleCreateNote = async () => {
+  const handleCreateNote = useCallback(async () => {
     const noteId = await createNoteAction();
     router.push(`/notes/${noteId}`);
-  };
+  }, [router]);
 
   const doCreateFolder = useCallback(
     async (name: string) => {
@@ -272,14 +272,6 @@ export function Sidebar({
       const trimmed = name.trim();
       if (!trimmed) return;
       await createFolderAction({ name: trimmed, parentId });
-      router.refresh();
-    },
-    [router]
-  );
-
-  const handleMoveFolder = useCallback(
-    async (folderId: string, direction: "up" | "down") => {
-      await moveFolderAction(folderId, direction);
       router.refresh();
     },
     [router]
@@ -321,16 +313,74 @@ export function Sidebar({
     [copyInternalLink, currentNoteId, router]
   );
 
-  const buildFolderMenu = useCallback(
-    (folder: { id: string; name: string; icon?: string | null }): ContextMenuItem[] => [
-      { label: "Klasörü aç", hint: "Klasördeki notları görüntüle", onSelect: () => router.push(`/folders/${folder.id}`) },
-      { label: "Bu klasöre not oluştur", hint: "Yeni notu doğrudan bu klasöre ekle", onSelect: async () => { const noteId = await createNoteAction({ folderId: folder.id }); router.push(`/notes/${noteId}`); } },
-      { label: "Klasör bağlantısını kopyala", hint: "Klasör adresini panoya kopyala", onSelect: () => copyInternalLink(`/folders/${folder.id}`) },
-      { label: "Yukarı taşı", hint: "Klasör sırasını bir adım yukarı al", onSelect: () => handleMoveFolder(folder.id, "up") },
-      { label: "Aşağı taşı", hint: "Klasör sırasını bir adım aşağı al", onSelect: () => handleMoveFolder(folder.id, "down") },
-    ],
-    [copyInternalLink, handleMoveFolder, router]
-  );
+  useEffect(() => {
+    if (!rootFolderDropzoneRef.current) {
+      return;
+    }
+
+    return combine(
+      dropTargetForElements({
+        element: rootFolderDropzoneRef.current,
+        canDrop: ({ source }) => isSidebarFolderDragData(source.data),
+        getData: () => ({
+          type: "sidebar-folder-drop-target",
+          folderId: "__root__",
+          mode: "root",
+          parentId: null,
+          afterFolderId: null,
+        }),
+      }),
+      monitorForElements({
+        canMonitor: ({ source }) => isSidebarFolderDragData(source.data),
+        onDragStart: ({ source }) => {
+          if (isSidebarFolderDragData(source.data)) {
+            setDraggedFolderId(source.data.folderId);
+          }
+        },
+        onDropTargetChange: ({ location }) => {
+          const currentTarget = location.current.dropTargets[0]?.data;
+
+          if (!isSidebarFolderDropData(currentTarget)) {
+            setFolderDropTarget(null);
+            return;
+          }
+
+          if (currentTarget.mode === "root") {
+            setFolderDropTarget({ folderId: "__root__", mode: "after" });
+            return;
+          }
+
+          setFolderDropTarget({
+            folderId: currentTarget.folderId,
+            mode: currentTarget.mode,
+          });
+        },
+        onDrop: async ({ source, location }) => {
+          setDraggedFolderId(null);
+          setFolderDropTarget(null);
+
+          if (!isSidebarFolderDragData(source.data)) {
+            return;
+          }
+
+          const currentTarget = location.current.dropTargets[0]?.data;
+
+          if (!isSidebarFolderDropData(currentTarget)) {
+            return;
+          }
+
+          if (currentTarget.folderId === source.data.folderId) {
+            return;
+          }
+
+          await handleRelocateFolder(source.data.folderId, {
+            parentId: currentTarget.parentId,
+            afterFolderId: currentTarget.afterFolderId,
+          });
+        },
+      })
+    );
+  }, [handleRelocateFolder]);
 
   // Derived / filtered data
   const flattenedFolders = useMemo(() => flattenFolderTree(folders), [folders]);
@@ -398,15 +448,14 @@ export function Sidebar({
       `${item.title} ${item.description}`.toLowerCase().includes(normalizedPaletteQuery)
     );
     return [...filteredActions, ...noteItems, ...folderItems, ...tagItems, ...templateItems];
-  }, [flattenedFolders, normalizedPaletteQuery, notes, router, tags, templates]);
+  }, [closePalette, flattenedFolders, handleStartCreateFolder, normalizedPaletteQuery, notes, router, tags, templates]);
 
   const folderGroupActions = useMemo<SidebarGroupAction[]>(
     () => [
       { icon: <FileNewIcon />, label: "Yeni not", onClick: () => void handleCreateNote() },
       { icon: <FolderNewIcon />, label: "Yeni klasör", onClick: handleStartCreateFolder },
     ],
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [handleStartCreateFolder]
+    [handleCreateNote, handleStartCreateFolder]
   );
 
   const isFoldersCollapsed = hasQuery ? false : collapsedSections.folders;
@@ -504,10 +553,9 @@ export function Sidebar({
                   <div className="sidebar-inline-creator">
                     {/* İkon alanı — .sidebar-folder-icon-btn ile aynı genişlik */}
                     <span className="sidebar-folder-icon-btn sidebar-folder-icon-btn--static" aria-hidden="true">
-                      <span className="material-symbols-outlined sm">folder</span>
+                    <span className="material-symbols-outlined sm">folder</span>
                     </span>
                     <input
-                      // eslint-disable-next-line jsx-a11y/no-autofocus
                       autoFocus
                       type="text"
                       className="sidebar-inline-creator-input"
@@ -539,15 +587,14 @@ export function Sidebar({
                     />
                   </div>
                 )}
-                {draggedFolderId ? (
-                  <div
-                    className={`sidebar-folder-dropzone root${folderDropTarget?.folderId === "__root__" ? " active" : ""}`}
-                    onDragOver={(e) => { e.preventDefault(); setFolderDropTarget({ folderId: "__root__", mode: "after" }); }}
-                    onDrop={(e) => { e.preventDefault(); if (draggedFolderId) void handleRelocateFolder(draggedFolderId, { parentId: null, afterFolderId: null }); }}
-                  >
-                    Kök&apos;e taşı
-                  </div>
-                ) : null}
+                <div
+                  ref={rootFolderDropzoneRef}
+                  className={`sidebar-folder-dropzone root${folderDropTarget?.folderId === "__root__" ? " active" : ""}${
+                    draggedFolderId ? " visible" : ""
+                  }`}
+                >
+                  Kök&apos;e taşı
+                </div>
                 {filteredFolders.length === 0 ? (
                   <div className="sidebar-empty">{hasQuery ? "Eşleşen klasör yok." : "Henüz klasör yok."}</div>
                 ) : filteredFolders.map((folder) => (
@@ -556,15 +603,9 @@ export function Sidebar({
                     folder={folder}
                     pathname={pathname}
                     onOpen={(id) => router.push(`/folders/${id}`)}
-                    onMoveFolder={handleMoveFolder}
-                    onRelocateFolder={handleRelocateFolder}
                     onQuickCreate={handleCreateNoteInFolder}
-                    onContextMenuOpen={(e, f) => openContextMenuAtPointer(e, buildFolderMenu(f))}
-                    onTriggerMenuOpen={(e, f) => openContextMenuFromTrigger(e, buildFolderMenu(f))}
                     draggedFolderId={draggedFolderId}
                     folderDropTarget={folderDropTarget}
-                    onDragFolderChange={setDraggedFolderId}
-                    onDropTargetChange={setFolderDropTarget}
                     allNotes={notes}
                     currentNoteId={currentNoteId}
                     onNoteOpen={(id) => router.push(`/notes/${id}`)}

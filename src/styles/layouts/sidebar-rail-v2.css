@@ -442,51 +442,11 @@
 }
 
 .sidebar-folder-icon-stack {
-  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 18px;
   height: 18px;
-}
-
-.sidebar-folder-icon-visual {
-  position: absolute;
-  inset: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: opacity var(--transition-fast), transform var(--transition-fast);
-}
-
-.sidebar-folder-icon-default {
-  opacity: 1;
-  transform: scale(1);
-}
-
-.sidebar-folder-icon-chevron {
-  opacity: 0;
-  transform: scale(0.84);
-}
-
-.sidebar-folder-icon-btn.collapsible:hover .sidebar-folder-icon-default,
-.sidebar-folder-icon-btn.collapsible:focus-visible .sidebar-folder-icon-default {
-  opacity: 0;
-  transform: scale(0.84);
-}
-
-.sidebar-folder-icon-btn.collapsible:hover .sidebar-folder-icon-chevron,
-.sidebar-folder-icon-btn.collapsible:focus-visible .sidebar-folder-icon-chevron {
-  opacity: 1;
-  transform: scale(1);
-}
-
-.sidebar-folder-chevron-symbol {
-  transition: transform var(--transition-fast);
-}
-
-.sidebar-folder-icon-chevron.open .sidebar-folder-chevron-symbol {
-  transform: rotate(90deg);
 }
 
 /* Inline creator — istatik ikon alanı */
