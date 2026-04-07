@@ -369,7 +369,7 @@ export function Editor({
   }, [editable]);
 
   useEffect(() => {
-    if (!slashMenu && !wikilinkMenu) {
+    if (!slashMenu && !wikilinkMenu && !isBlockMenuOpen) {
       return;
     }
 
@@ -377,12 +377,39 @@ export function Editor({
       if (event.key === "Escape") {
         setSlashMenu(null);
         setWikilinkMenu(null);
+        setIsBlockMenuOpen(false);
       }
     };
 
     document.addEventListener("keydown", handleEscape);
     return () => document.removeEventListener("keydown", handleEscape);
-  }, [slashMenu, wikilinkMenu]);
+  }, [isBlockMenuOpen, slashMenu, wikilinkMenu]);
+
+  useEffect(() => {
+    if (!isBlockMenuOpen) {
+      return;
+    }
+
+    const handlePointerDown = (event: MouseEvent) => {
+      const target = event.target;
+
+      if (!(target instanceof HTMLElement)) {
+        return;
+      }
+
+      if (
+        target.closest(".editor-block-toolbar") ||
+        target.closest(".editor-block-context-menu")
+      ) {
+        return;
+      }
+
+      setIsBlockMenuOpen(false);
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    return () => document.removeEventListener("mousedown", handlePointerDown);
+  }, [isBlockMenuOpen]);
 
   const handleClick = useCallback(
     async (event: React.MouseEvent) => {
@@ -544,7 +571,10 @@ export function Editor({
 
       const target = event.target as HTMLElement;
 
-      if (target.closest(".editor-block-toolbar")) {
+      if (
+        target.closest(".editor-block-toolbar") ||
+        target.closest(".editor-block-context-menu")
+      ) {
         return;
       }
 
@@ -566,11 +596,22 @@ export function Editor({
 
       const rootRect = editorRootRef.current.getBoundingClientRect();
       const blockRect = blockElement.getBoundingClientRect();
+      const isInsideToolbarGutter =
+        event.clientX >= blockRect.left - 44 && event.clientX <= blockRect.left + 18;
+
+      if (!isInsideToolbarGutter) {
+        if (!isBlockMenuOpen && blockToolbar) {
+          setBlockToolbar(null);
+        }
+
+        return;
+      }
+
       const nextToolbar = {
         blockId,
         position: {
           top: blockRect.top - rootRect.top + 2,
-          left: Math.max(0, blockRect.left - rootRect.left - 56),
+          left: Math.max(0, blockRect.left - rootRect.left - 64),
         },
       } satisfies BlockToolbarState;
 
@@ -586,11 +627,12 @@ export function Editor({
         return nextToolbar;
       });
     },
-    [blockToolbar, editable]
+    [blockToolbar, editable, isBlockMenuOpen]
   );
 
   const handleBlockToolbarLeave = useCallback(() => {
     setBlockToolbar(null);
+    setIsBlockMenuOpen(false);
   }, []);
 
   const handleInsertBlockBelow = useCallback(() => {
@@ -961,14 +1003,18 @@ export function Editor({
           <button
             type="button"
             className="editor-block-button"
+            data-drag-handle="true"
             draggable
             onDragStart={() => {
               setDraggedBlockId(blockToolbar.blockId);
               setIsBlockMenuOpen(false);
             }}
             aria-label="Bloğu sürükle"
+            title="Bloğu sürükle"
           >
-            ::
+            <span className="material-symbols-outlined" aria-hidden="true">
+              drag_indicator
+            </span>
           </button>
           <button
             type="button"
@@ -978,52 +1024,25 @@ export function Editor({
               handleInsertBlockBelow();
             }}
             aria-label="Alta yeni blok ekle"
+            title="Alta yeni blok ekle"
           >
-            +
+            <span className="material-symbols-outlined" aria-hidden="true">
+              add
+            </span>
           </button>
           <button
             type="button"
-            className="editor-block-button"
-            onMouseDown={(event) => {
-              event.preventDefault();
-              handleMoveBlock("up");
-            }}
-            aria-label="Bloğu yukarı taşı"
-          >
-            ^
-          </button>
-          <button
-            type="button"
-            className="editor-block-button"
-            onMouseDown={(event) => {
-              event.preventDefault();
-              handleMoveBlock("down");
-            }}
-            aria-label="Bloğu aşağı taşı"
-          >
-            v
-          </button>
-          <button
-            type="button"
-            className="editor-block-button"
+            className={`editor-block-button${isBlockMenuOpen ? " active" : ""}`}
             onMouseDown={(event) => {
               event.preventDefault();
               setIsBlockMenuOpen((currentValue) => !currentValue);
             }}
             aria-label="Blok menüsünü aç"
+            title="Blok menüsü"
           >
-            ...
-          </button>
-          <button
-            type="button"
-            className="editor-block-button danger"
-            onMouseDown={(event) => {
-              event.preventDefault();
-              handleDeleteBlock();
-            }}
-            aria-label="Bloku sil"
-          >
-            x
+            <span className="material-symbols-outlined" aria-hidden="true">
+              more_horiz
+            </span>
           </button>
         </div>
       ) : null}
@@ -1032,11 +1051,38 @@ export function Editor({
         <div
           className="editor-block-context-menu"
           style={{
-            top: blockToolbar.position.top + 40,
+            top: blockToolbar.position.top + 38,
             left: blockToolbar.position.left,
           }}
         >
-          <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={handleDuplicateBlock}>
+          <button
+            type="button"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => {
+              handleMoveBlock("up");
+              setIsBlockMenuOpen(false);
+            }}
+          >
+            Yukarı taşı
+          </button>
+          <button
+            type="button"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => {
+              handleMoveBlock("down");
+              setIsBlockMenuOpen(false);
+            }}
+          >
+            Aşağı taşı
+          </button>
+          <button
+            type="button"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => {
+              handleDuplicateBlock();
+              setIsBlockMenuOpen(false);
+            }}
+          >
             Kopyasını oluştur
           </button>
           <button
@@ -1078,7 +1124,10 @@ export function Editor({
             type="button"
             className="danger"
             onMouseDown={(event) => event.preventDefault()}
-            onClick={handleDeleteBlock}
+            onClick={() => {
+              handleDeleteBlock();
+              setIsBlockMenuOpen(false);
+            }}
           >
             Sil
           </button>

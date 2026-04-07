@@ -525,10 +525,10 @@
 .giraffle-editor-content > div[data-type="callout"],
 .giraffle-editor-content > details[data-type="toggle"] {
   position: relative;
-  margin-left: -18px;
-  padding-left: 18px;
-  border-radius: 10px;
-  transition: background var(--transition-fast);
+  margin-left: -12px;
+  padding-left: 12px;
+  border-radius: 12px;
+  transition: background var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .giraffle-editor-content > p:hover,
@@ -543,6 +543,7 @@
 .giraffle-editor-content > div[data-type="callout"]:hover,
 .giraffle-editor-content > details[data-type="toggle"]:hover {
   background: var(--surface-accent-blend);
+  box-shadow: inset 2px 0 0 var(--border-soft);
 }
 
 .giraffle-editor-content > p::before,
@@ -556,16 +557,20 @@
 .giraffle-editor-content > hr::before,
 .giraffle-editor-content > div[data-type="callout"]::before,
 .giraffle-editor-content > details[data-type="toggle"]::before {
-  content: "⋮⋮";
+  content: "";
   position: absolute;
-  left: 0;
-  top: 12px;
+  left: 2px;
+  top: 50%;
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
   color: var(--text-muted);
-  font-size: 11px;
-  line-height: 1;
-  letter-spacing: -2px;
+  background: currentColor;
+  box-shadow: 0 -6px 0 currentColor, 0 6px 0 currentColor;
   opacity: 0;
-  transition: opacity var(--transition-fast);
+  transform: translateY(-50%);
+  transition: opacity var(--transition-fast), transform var(--transition-fast);
+  pointer-events: none;
 }
 
 .giraffle-editor-content > p:hover::before,
@@ -579,7 +584,8 @@
 .giraffle-editor-content > hr:hover::before,
 .giraffle-editor-content > div[data-type="callout"]:hover::before,
 .giraffle-editor-content > details[data-type="toggle"]:hover::before {
-  opacity: 1;
+  opacity: 0.7;
+  transform: translateY(-50%) scale(1.02);
 }
 
 @media (max-width: 760px) {
