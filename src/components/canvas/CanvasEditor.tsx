@@ -45,7 +45,7 @@ export function CanvasEditor({ initialNodes = [], initialEdges = [], title = "Uz
   };
 
   return (
-    <div style={{ width: '100%', height: '100%' }} className="graffle-canvas-container">
+    <div style={{ width: '100%', height: '100%' }} className="giraffle-canvas-container">
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -55,14 +55,14 @@ export function CanvasEditor({ initialNodes = [], initialEdges = [], title = "Uz
         nodeTypes={nodeTypes}
         fitView
       >
-        <Panel position="top-left" className="graffle-canvas-panel">
-          <div className="graffle-canvas-title">{title}</div>
+        <Panel position="top-left" className="giraffle-canvas-panel">
+          <div className="giraffle-canvas-title">{title}</div>
         </Panel>
-        <Panel position="top-right" className="graffle-canvas-panel-tools">
-          <button onClick={handleSave} className="graffle-canvas-save-btn">Haritayı Kaydet</button>
+        <Panel position="top-right" className="giraffle-canvas-panel-tools">
+          <button onClick={handleSave} className="giraffle-canvas-save-btn">Haritayı Kaydet</button>
         </Panel>
         
-        <Controls className="graffle-canvas-controls" />
+        <Controls className="giraffle-canvas-controls" />
         <MiniMap 
           nodeColor="var(--surface-3)" 
           maskColor="var(--surface-glass-muted)"

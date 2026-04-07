@@ -1,5 +1,5 @@
-export const APP_THEME_STORAGE_KEY = "graffle.theme";
-export const APP_THEME_COOKIE_KEY = "graffle.theme";
+export const APP_THEME_STORAGE_KEY = "giraffle.theme";
+export const APP_THEME_COOKIE_KEY = "giraffle.theme";
 
 export const APP_THEMES = [
   {

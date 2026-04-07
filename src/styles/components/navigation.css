@@ -18,7 +18,7 @@
 }
 
 /* App-Specific Sidebar mapped to M3 Drawer */
-.md-nav-drawer--graffle-sidebar {
+.md-nav-drawer--giraffle-sidebar {
   width: var(--md-layout-sidebar-width);
   border-radius: var(--md-sys-shape-extra-large);
   margin: 18px 0 18px 18px; /* Floating variant look */

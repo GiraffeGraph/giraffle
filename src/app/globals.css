@@ -868,59 +868,59 @@
   padding: 28px;
 }
 
-.graffle-editor {
+.giraffle-editor {
   position: relative;
 }
 
-.graffle-editor-content {
+.giraffle-editor-content {
   min-height: 340px;
   outline: none;
 }
 
-.graffle-editor-content > * + * {
+.giraffle-editor-content > * + * {
   margin-top: 0.75em;
 }
 
-.graffle-editor-content p {
+.giraffle-editor-content p {
   font-size: 16px;
   line-height: 1.82;
   color: var(--text-primary);
 }
 
-.graffle-editor-content h1,
-.graffle-editor-content h2,
-.graffle-editor-content h3 {
+.giraffle-editor-content h1,
+.giraffle-editor-content h2,
+.giraffle-editor-content h3 {
   font-family: var(--font-display);
   line-height: 1.1;
   letter-spacing: -0.05em;
   color: var(--heading-ink);
 }
 
-.graffle-editor-content h1 {
+.giraffle-editor-content h1 {
   font-size: 2.1rem;
   margin-top: 1.6em;
 }
 
-.graffle-editor-content h2 {
+.giraffle-editor-content h2 {
   font-size: 1.7rem;
   margin-top: 1.4em;
 }
 
-.graffle-editor-content h3 {
+.giraffle-editor-content h3 {
   font-size: 1.35rem;
   margin-top: 1.3em;
 }
 
-.graffle-editor-content ul,
-.graffle-editor-content ol {
+.giraffle-editor-content ul,
+.giraffle-editor-content ol {
   padding-left: 26px;
 }
 
-.graffle-editor-content li {
+.giraffle-editor-content li {
   margin: 3px 0;
 }
 
-.graffle-editor-content blockquote {
+.giraffle-editor-content blockquote {
   margin: 16px 0;
   padding: 14px 18px;
   border-left: 4px solid var(--accent);
@@ -930,7 +930,7 @@
   font-style: italic;
 }
 
-.graffle-editor-content pre {
+.giraffle-editor-content pre {
   margin: 16px 0;
   padding: 18px;
   overflow-x: auto;
@@ -944,7 +944,7 @@
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
-.graffle-editor-content code {
+.giraffle-editor-content code {
   padding: 3px 7px;
   border-radius: 8px;
   background: rgba(31, 42, 41, 0.08);
@@ -953,19 +953,19 @@
   font-size: 0.92em;
 }
 
-.graffle-editor-content pre code {
+.giraffle-editor-content pre code {
   padding: 0;
   background: none;
   color: inherit;
 }
 
-.graffle-editor-content hr {
+.giraffle-editor-content hr {
   margin: 28px 0;
   border: none;
   border-top: 1px solid rgba(95, 84, 70, 0.18);
 }
 
-.graffle-editor-content img {
+.giraffle-editor-content img {
   display: block;
   max-width: 100%;
   margin: 18px 0;
@@ -1079,8 +1079,8 @@
   color: var(--text-tertiary);
 }
 
-.graffle-callout,
-.graffle-toggle {
+.giraffle-callout,
+.giraffle-toggle {
   margin: 18px 0;
   border: 1px solid var(--border-soft);
   border-radius: 22px;
@@ -1088,8 +1088,8 @@
   background: var(--surface-highlight);
 }
 
-.graffle-callout-header,
-.graffle-toggle-summary {
+.giraffle-callout-header,
+.giraffle-toggle-summary {
   padding: 12px 16px;
   font-size: 12px;
   font-weight: 800;
@@ -1097,32 +1097,32 @@
   text-transform: uppercase;
 }
 
-.graffle-callout-body,
-.graffle-toggle-body {
+.giraffle-callout-body,
+.giraffle-toggle-body {
   padding: 14px 16px;
 }
 
-.graffle-callout-info .graffle-callout-header {
+.giraffle-callout-info .giraffle-callout-header {
   background: rgb(var(--info-rgb) / 0.1);
   color: var(--info-ink);
 }
 
-.graffle-callout-tip .graffle-callout-header {
+.giraffle-callout-tip .giraffle-callout-header {
   background: rgb(var(--success-rgb) / 0.1);
   color: var(--success-ink);
 }
 
-.graffle-callout-warning .graffle-callout-header {
+.giraffle-callout-warning .giraffle-callout-header {
   background: rgb(var(--warning-rgb) / 0.1);
   color: var(--warning-ink);
 }
 
-.graffle-callout-danger .graffle-callout-header {
+.giraffle-callout-danger .giraffle-callout-header {
   background: rgb(var(--danger-rgb) / 0.1);
   color: var(--danger-ink);
 }
 
-.graffle-toggle-summary {
+.giraffle-toggle-summary {
   cursor: pointer;
 }
 
@@ -2730,51 +2730,51 @@ body::before {
   padding: 0;
 }
 
-.graffle-editor {
+.giraffle-editor {
   max-width: 760px;
   margin: 0 auto;
 }
 
-.graffle-editor-content {
+.giraffle-editor-content {
   min-height: 60vh;
   max-width: 760px;
   margin: 0 auto;
   outline: none;
 }
 
-.graffle-editor-content > * + * {
+.giraffle-editor-content > * + * {
   margin-top: 0.9em;
 }
 
-.graffle-editor-content p {
+.giraffle-editor-content p {
   font-size: 16px;
   line-height: 1.8;
 }
 
-.graffle-editor-content h1 {
+.giraffle-editor-content h1 {
   font-size: 2rem;
 }
 
-.graffle-editor-content h2 {
+.giraffle-editor-content h2 {
   font-size: 1.55rem;
 }
 
-.graffle-editor-content h3 {
+.giraffle-editor-content h3 {
   font-size: 1.25rem;
 }
 
-.graffle-editor-content blockquote {
+.giraffle-editor-content blockquote {
   padding: 12px 16px;
   border-left-width: 3px;
   border-radius: 0 12px 12px 0;
 }
 
-.graffle-editor-content pre {
+.giraffle-editor-content pre {
   border-radius: 14px;
   box-shadow: none;
 }
 
-.graffle-editor-content img {
+.giraffle-editor-content img {
   border-radius: 14px;
   box-shadow: none;
 }
@@ -3078,27 +3078,27 @@ body::before {
   font-size: clamp(2.5rem, 5vw, 3.5rem);
 }
 
-.graffle-editor-content {
+.giraffle-editor-content {
   max-width: 720px;
 }
 
-.graffle-editor-content p {
+.giraffle-editor-content p {
   font-size: 16px;
   line-height: 1.85;
 }
 
-.graffle-editor-content h1,
-.graffle-editor-content h2,
-.graffle-editor-content h3 {
+.giraffle-editor-content h1,
+.giraffle-editor-content h2,
+.giraffle-editor-content h3 {
   letter-spacing: -0.04em;
 }
 
-.graffle-editor-content ul,
-.graffle-editor-content ol {
+.giraffle-editor-content ul,
+.giraffle-editor-content ol {
   padding-left: 22px;
 }
 
-.graffle-editor-content li {
+.giraffle-editor-content li {
   padding-left: 2px;
 }
 
@@ -3433,17 +3433,17 @@ body::before {
   font-size: 11px;
 }
 
-.graffle-editor-content > p,
-.graffle-editor-content > h1,
-.graffle-editor-content > h2,
-.graffle-editor-content > h3,
-.graffle-editor-content > blockquote,
-.graffle-editor-content > pre,
-.graffle-editor-content > ul,
-.graffle-editor-content > ol,
-.graffle-editor-content > hr,
-.graffle-editor-content > div[data-type="callout"],
-.graffle-editor-content > details[data-type="toggle"] {
+.giraffle-editor-content > p,
+.giraffle-editor-content > h1,
+.giraffle-editor-content > h2,
+.giraffle-editor-content > h3,
+.giraffle-editor-content > blockquote,
+.giraffle-editor-content > pre,
+.giraffle-editor-content > ul,
+.giraffle-editor-content > ol,
+.giraffle-editor-content > hr,
+.giraffle-editor-content > div[data-type="callout"],
+.giraffle-editor-content > details[data-type="toggle"] {
   position: relative;
   margin-left: -18px;
   padding-left: 18px;
@@ -3451,31 +3451,31 @@ body::before {
   transition: background var(--transition-fast);
 }
 
-.graffle-editor-content > p:hover,
-.graffle-editor-content > h1:hover,
-.graffle-editor-content > h2:hover,
-.graffle-editor-content > h3:hover,
-.graffle-editor-content > blockquote:hover,
-.graffle-editor-content > pre:hover,
-.graffle-editor-content > ul:hover,
-.graffle-editor-content > ol:hover,
-.graffle-editor-content > hr:hover,
-.graffle-editor-content > div[data-type="callout"]:hover,
-.graffle-editor-content > details[data-type="toggle"]:hover {
+.giraffle-editor-content > p:hover,
+.giraffle-editor-content > h1:hover,
+.giraffle-editor-content > h2:hover,
+.giraffle-editor-content > h3:hover,
+.giraffle-editor-content > blockquote:hover,
+.giraffle-editor-content > pre:hover,
+.giraffle-editor-content > ul:hover,
+.giraffle-editor-content > ol:hover,
+.giraffle-editor-content > hr:hover,
+.giraffle-editor-content > div[data-type="callout"]:hover,
+.giraffle-editor-content > details[data-type="toggle"]:hover {
   background: var(--surface-accent-blend);
 }
 
-.graffle-editor-content > p::before,
-.graffle-editor-content > h1::before,
-.graffle-editor-content > h2::before,
-.graffle-editor-content > h3::before,
-.graffle-editor-content > blockquote::before,
-.graffle-editor-content > pre::before,
-.graffle-editor-content > ul::before,
-.graffle-editor-content > ol::before,
-.graffle-editor-content > hr::before,
-.graffle-editor-content > div[data-type="callout"]::before,
-.graffle-editor-content > details[data-type="toggle"]::before {
+.giraffle-editor-content > p::before,
+.giraffle-editor-content > h1::before,
+.giraffle-editor-content > h2::before,
+.giraffle-editor-content > h3::before,
+.giraffle-editor-content > blockquote::before,
+.giraffle-editor-content > pre::before,
+.giraffle-editor-content > ul::before,
+.giraffle-editor-content > ol::before,
+.giraffle-editor-content > hr::before,
+.giraffle-editor-content > div[data-type="callout"]::before,
+.giraffle-editor-content > details[data-type="toggle"]::before {
   content: "⋮⋮";
   position: absolute;
   left: 0;
@@ -3488,17 +3488,17 @@ body::before {
   transition: opacity var(--transition-fast);
 }
 
-.graffle-editor-content > p:hover::before,
-.graffle-editor-content > h1:hover::before,
-.graffle-editor-content > h2:hover::before,
-.graffle-editor-content > h3:hover::before,
-.graffle-editor-content > blockquote:hover::before,
-.graffle-editor-content > pre:hover::before,
-.graffle-editor-content > ul:hover::before,
-.graffle-editor-content > ol:hover::before,
-.graffle-editor-content > hr:hover::before,
-.graffle-editor-content > div[data-type="callout"]:hover::before,
-.graffle-editor-content > details[data-type="toggle"]:hover::before {
+.giraffle-editor-content > p:hover::before,
+.giraffle-editor-content > h1:hover::before,
+.giraffle-editor-content > h2:hover::before,
+.giraffle-editor-content > h3:hover::before,
+.giraffle-editor-content > blockquote:hover::before,
+.giraffle-editor-content > pre:hover::before,
+.giraffle-editor-content > ul:hover::before,
+.giraffle-editor-content > ol:hover::before,
+.giraffle-editor-content > hr:hover::before,
+.giraffle-editor-content > div[data-type="callout"]:hover::before,
+.giraffle-editor-content > details[data-type="toggle"]:hover::before {
   opacity: 1;
 }
 
@@ -4122,17 +4122,17 @@ body::before {
   background: var(--surface-glass);
 }
 
-.graffle-editor-content > p::before,
-.graffle-editor-content > h1::before,
-.graffle-editor-content > h2::before,
-.graffle-editor-content > h3::before,
-.graffle-editor-content > blockquote::before,
-.graffle-editor-content > pre::before,
-.graffle-editor-content > ul::before,
-.graffle-editor-content > ol::before,
-.graffle-editor-content > hr::before,
-.graffle-editor-content > div[data-type="callout"]::before,
-.graffle-editor-content > details[data-type="toggle"]::before {
+.giraffle-editor-content > p::before,
+.giraffle-editor-content > h1::before,
+.giraffle-editor-content > h2::before,
+.giraffle-editor-content > h3::before,
+.giraffle-editor-content > blockquote::before,
+.giraffle-editor-content > pre::before,
+.giraffle-editor-content > ul::before,
+.giraffle-editor-content > ol::before,
+.giraffle-editor-content > hr::before,
+.giraffle-editor-content > div[data-type="callout"]::before,
+.giraffle-editor-content > details[data-type="toggle"]::before {
   content: "::";
   letter-spacing: 0;
   font-size: 10px;
@@ -5620,7 +5620,7 @@ body::before {
 }
 
 /* --- Agent Inline UI --- */
-.graffle-agent-block {
+.giraffle-agent-block {
   margin: 1.5rem 0;
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-card);
@@ -5630,12 +5630,12 @@ body::before {
   font-family: inherit;
 }
 
-.GraffleAgentBlock_Inner {
+.GiraffleAgentBlock_Inner {
   display: flex;
   flex-direction: column;
 }
 
-.GraffleAgentBlock_Header {
+.GiraffleAgentBlock_Header {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -5647,23 +5647,23 @@ body::before {
   color: var(--text-secondary);
 }
 
-.GraffleAgent_Icon {
+.GiraffleAgent_Icon {
   font-size: 14px;
 }
 
-.GraffleAgentBlock_Body {
+.GiraffleAgentBlock_Body {
   padding: 14px;
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.GraffleAgent_InputRow {
+.GiraffleAgent_InputRow {
   display: flex;
   gap: 8px;
 }
 
-.GraffleAgent_Input {
+.GiraffleAgent_Input {
   flex: 1;
   background: var(--bg-page-deep);
   border: 1px solid var(--border-soft);
@@ -5675,11 +5675,11 @@ body::before {
   transition: border-color var(--transition-fast);
 }
 
-.GraffleAgent_Input:focus {
+.GiraffleAgent_Input:focus {
   border-color: var(--accent);
 }
 
-.GraffleAgent_BtnRun {
+.GiraffleAgent_BtnRun {
   background: var(--accent);
   color: var(--text-on-accent);
   border: none;
@@ -5690,12 +5690,12 @@ body::before {
   cursor: pointer;
   transition: opacity var(--transition-fast);
 }
-.GraffleAgent_BtnRun:disabled {
+.GiraffleAgent_BtnRun:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.GraffleAgent_StatusRow {
+.GiraffleAgent_StatusRow {
   font-size: 13px;
   color: var(--text-muted);
   display: flex;
@@ -5703,7 +5703,7 @@ body::before {
   gap: 8px;
 }
 
-.GraffleAgent_OutputRow {
+.GiraffleAgent_OutputRow {
   background: var(--bg-page-deep);
   padding: 12px;
   border-radius: var(--radius-control);
@@ -5714,7 +5714,7 @@ body::before {
   position: relative;
 }
 
-.GraffleAgent_Cursor {
+.GiraffleAgent_Cursor {
   display: inline-block;
   width: 2px;
   height: 14px;
@@ -5728,13 +5728,13 @@ body::before {
   50% { opacity: 0; }
 }
 
-.GraffleAgent_ActionsRow {
+.GiraffleAgent_ActionsRow {
   display: flex;
   gap: 8px;
   justify-content: flex-end;
 }
 
-.GraffleAgent_BtnAction {
+.GiraffleAgent_BtnAction {
   background: var(--surface-highlight);
   color: var(--text-primary);
   border: 1px solid var(--border-soft);
@@ -5746,16 +5746,16 @@ body::before {
   transition: background var(--transition-fast);
 }
 
-.GraffleAgent_BtnAction:hover {
+.GiraffleAgent_BtnAction:hover {
   background: var(--surface-glass-hover);
 }
 
-.GraffleAgent_BtnAction.ghost {
+.GiraffleAgent_BtnAction.ghost {
   background: transparent;
   border-color: transparent;
   color: var(--text-muted);
 }
-.GraffleAgent_BtnAction.ghost:hover {
+.GiraffleAgent_BtnAction.ghost:hover {
   background: var(--surface-glass-soft);
   color: var(--text-secondary);
 }
@@ -5774,19 +5774,19 @@ body::before {
 }
 
 /* --- Spatial Canvas CSS --- */
-.graffle-canvas-container {
+.giraffle-canvas-container {
   background: var(--bg-page-deep);
 }
 
-.graffle-canvas-container .react-flow__pane {
+.giraffle-canvas-container .react-flow__pane {
   cursor: grab;
 }
 
-.graffle-canvas-container .react-flow__pane:active {
+.giraffle-canvas-container .react-flow__pane:active {
   cursor: grabbing;
 }
 
-.graffle-canvas-node-note {
+.giraffle-canvas-node-note {
   background: var(--surface-1);
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-card);
@@ -5795,23 +5795,23 @@ body::before {
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast), transform 0.1s ease;
 }
 
-.graffle-canvas-node-note:hover {
+.giraffle-canvas-node-note:hover {
   border-color: var(--accent-subtle);
   box-shadow: 0 12px 32px rgba(225, 166, 62, 0.08);
 }
 
-.graffle-canvas-node-note.selected {
+.giraffle-canvas-node-note.selected {
   border-color: var(--accent);
   box-shadow: 0 0 0 2px var(--accent-subtle);
 }
 
-.graffle-node-inner {
+.giraffle-node-inner {
   display: flex;
   flex-direction: column;
   cursor: pointer;
 }
 
-.graffle-node-header {
+.giraffle-node-header {
   padding: 12px 14px;
   background: var(--surface-2);
   border-bottom: 1px solid var(--border-soft);
@@ -5824,11 +5824,11 @@ body::before {
   font-size: 14px;
 }
 
-.graffle-node-icon {
+.giraffle-node-icon {
   font-size: 16px;
 }
 
-.graffle-node-body {
+.giraffle-node-body {
   padding: 14px;
   font-size: 13px;
   line-height: 1.5;
@@ -5838,14 +5838,14 @@ body::before {
   min-height: 60px;
 }
 
-.graffle-handle {
+.giraffle-handle {
   width: 10px !important;
   height: 10px !important;
   background: var(--accent) !important;
   border: 2px solid var(--bg-page-deep) !important;
 }
 
-.graffle-canvas-panel {
+.giraffle-canvas-panel {
   background: var(--surface-glass);
   backdrop-filter: blur(12px);
   border: 1px solid var(--border-soft);
@@ -5855,17 +5855,17 @@ body::before {
   box-shadow: var(--shadow-panel);
 }
 
-.graffle-canvas-title {
+.giraffle-canvas-title {
   color: var(--text-primary);
   font-weight: 700;
   font-size: 15px;
 }
 
-.graffle-canvas-panel-tools {
+.giraffle-canvas-panel-tools {
   margin: 16px;
 }
 
-.graffle-canvas-save-btn {
+.giraffle-canvas-save-btn {
   background: var(--accent);
   color: var(--text-on-accent);
   border: none;
@@ -5878,7 +5878,7 @@ body::before {
   transition: opacity var(--transition-fast);
 }
 
-.graffle-canvas-save-btn:hover {
+.giraffle-canvas-save-btn:hover {
   opacity: 0.9;
 }
 
@@ -6109,12 +6109,12 @@ body::before {
   border-radius: 22px;
 }
 
-.graffle-editor-content {
+.giraffle-editor-content {
   max-width: 920px;
   min-height: 440px;
 }
 
-.graffle-editor .is-editor-empty::before {
+.giraffle-editor .is-editor-empty::before {
   white-space: pre-wrap;
   font-style: normal;
   line-height: 1.9;

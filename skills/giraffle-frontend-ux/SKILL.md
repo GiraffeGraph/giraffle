@@ -1,5 +1,5 @@
 ---
-name: graffle-frontend-ux
+name: giraffle-frontend-ux
 description: Continue Giraffle frontend localization and product-surface work in the giraffle repository. Use when changing Turkish product copy, visual design tokens, layout hierarchy, sidebar information architecture, note page UX, menus, context menus, responsive behavior, or shared interaction patterns. Prefer this skill for work touching src/app/globals.css, src/components/sidebar, src/components/notes, src/components/templates, src/components/graph, dashboard routes, or authenticated app-shell surfaces.
 ---
 

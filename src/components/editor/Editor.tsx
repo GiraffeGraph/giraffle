@@ -308,7 +308,7 @@ export function Editor({
       }),
       CodeBlock.configure({
         HTMLAttributes: {
-          class: "graffle-code-block",
+          class: "giraffle-code-block",
         },
       }),
       Image.configure({
@@ -334,7 +334,7 @@ export function Editor({
     editable,
     editorProps: {
       attributes: {
-        class: "graffle-editor-content",
+        class: "giraffle-editor-content",
       },
     },
     onUpdate: ({ editor }) => {
@@ -930,7 +930,7 @@ export function Editor({
   return (
     <div
       ref={editorRootRef}
-      className={`graffle-editor ${editable ? "editable" : "readonly"}`}
+      className={`giraffle-editor ${editable ? "editable" : "readonly"}`}
       onClick={handleClick}
       onMouseMove={handleBlockToolbarMouseMove}
       onMouseLeave={handleBlockToolbarLeave}

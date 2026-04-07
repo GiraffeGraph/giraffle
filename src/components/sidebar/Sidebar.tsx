@@ -903,7 +903,7 @@ export function Sidebar({
 
   return (
     <aside
-      className={`md-nav-drawer md-nav-drawer--graffle-sidebar${isSidebarCompact ? " md-nav-drawer--compact" : ""}${
+      className={`md-nav-drawer md-nav-drawer--giraffle-sidebar${isSidebarCompact ? " md-nav-drawer--compact" : ""}${
         isSidebarResizing ? " md-nav-drawer--resizing" : ""
       }`} style={{ 
         width: isSidebarCompact ? SIDEBAR_COMPACT_WIDTH : sidebarWidth,

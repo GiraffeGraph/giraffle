@@ -1,5 +1,5 @@
 ---
-name: graffle-backlog-executor
+name: giraffle-backlog-executor
 description: Continue Giraffle work from the repository backlog with small, reviewable implementation slices. Use when choosing the next ready task, reading the task brief, executing it safely, updating task status, splitting oversized work into new tasks, and leaving validation results in the repo. Prefer this skill whenever the user asks to continue from where previous Giraffle work stopped.
 ---
 
@@ -12,7 +12,7 @@ Then read `/docs/backlog/roadmap.md`. Pick the highest-priority task marked `Rea
 ## Execution Rules
 
 - Read the chosen `/docs/backlog/tasks/*.md` file before editing code.
-- If the chosen task touches note, editor, link, template, or serializer code, also read `../graffle-note-core/references/architecture.md`.
+- If the chosen task touches note, editor, link, template, or serializer code, also read `../giraffle-note-core/references/architecture.md`.
 - Keep the implementation slice small enough to finish with validation in one pass.
 - Split broad work into a new task file instead of hiding scope growth inside one big diff.
 - Update backlog status and follow-up notes before ending the turn.

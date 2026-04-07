@@ -66,49 +66,49 @@ export function AgentBlockComponent(props: NodeViewProps) {
   };
 
   return (
-    <NodeViewWrapper className="graffle-agent-block" data-drag-handle>
-      <div className="GraffleAgentBlock_Inner">
-        <div className="GraffleAgentBlock_Header">
-          <span className="GraffleAgent_Icon">✨</span>
-          <span className="GraffleAgent_Title">LSP Ajan Bağlantısı</span>
+    <NodeViewWrapper className="giraffle-agent-block" data-drag-handle>
+      <div className="GiraffleAgentBlock_Inner">
+        <div className="GiraffleAgentBlock_Header">
+          <span className="GiraffleAgent_Icon">✨</span>
+          <span className="GiraffleAgent_Title">LSP Ajan Bağlantısı</span>
         </div>
         
-        <div className="GraffleAgentBlock_Body">
+        <div className="GiraffleAgentBlock_Body">
           {status === "idle" && (
-            <div className="GraffleAgent_InputRow">
+            <div className="GiraffleAgent_InputRow">
               <input 
                 type="text" 
                 value={prompt} 
                 onChange={handlePromptChange} 
                 placeholder="Ajan için bir istek yaz... (Örn: Bu notun özetini çıkar)" 
-                className="GraffleAgent_Input"
+                className="GiraffleAgent_Input"
                 onKeyDown={(e) => {
                   if (e.key === "Enter") handleRun();
                 }}
               />
-              <button onClick={handleRun} className="GraffleAgent_BtnRun" disabled={!prompt.trim()}>
+              <button onClick={handleRun} className="GiraffleAgent_BtnRun" disabled={!prompt.trim()}>
                 Çalıştır
               </button>
             </div>
           )}
           
           {status === "thinking" && (
-            <div className="GraffleAgent_StatusRow">
-              <span className="GraffleAgent_Spinner animate-spin inline-block">⏳</span> Bağlam analiz ediliyor...
+            <div className="GiraffleAgent_StatusRow">
+              <span className="GiraffleAgent_Spinner animate-spin inline-block">⏳</span> Bağlam analiz ediliyor...
             </div>
           )}
           
           {(status === "streaming" || status === "done") && (
-            <div className="GraffleAgent_OutputRow">
-               <div className="GraffleAgent_OutputContent whitespace-pre-wrap">{output}</div>
-               {status === "streaming" && <span className="GraffleAgent_Cursor"></span>}
+            <div className="GiraffleAgent_OutputRow">
+               <div className="GiraffleAgent_OutputContent whitespace-pre-wrap">{output}</div>
+               {status === "streaming" && <span className="GiraffleAgent_Cursor"></span>}
             </div>
           )}
           
           {status === "done" && (
-            <div className="GraffleAgent_ActionsRow">
-              <button onClick={handleApply} className="GraffleAgent_BtnAction">Uygula</button>
-              <button onClick={handleDismiss} className="GraffleAgent_BtnAction ghost">Vazgeç</button>
+            <div className="GiraffleAgent_ActionsRow">
+              <button onClick={handleApply} className="GiraffleAgent_BtnAction">Uygula</button>
+              <button onClick={handleDismiss} className="GiraffleAgent_BtnAction ghost">Vazgeç</button>
             </div>
           )}
         </div>

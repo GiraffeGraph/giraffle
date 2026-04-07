@@ -42,11 +42,11 @@ export const ToggleNode = Node.create({
       mergeAttributes(HTMLAttributes, {
         "data-type": "toggle",
         "data-summary": summary,
-        class: "graffle-toggle",
+        class: "giraffle-toggle",
         open: "open",
       }),
-      ["summary", { class: "graffle-toggle-summary" }, summary],
-      ["div", { class: "graffle-toggle-body" }, 0],
+      ["summary", { class: "giraffle-toggle-summary" }, summary],
+      ["div", { class: "giraffle-toggle-body" }, 0],
     ];
   },
 

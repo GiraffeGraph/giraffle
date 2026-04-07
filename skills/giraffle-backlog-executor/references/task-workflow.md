@@ -23,7 +23,7 @@
 
 ## Chain With Note Core Skill
 
-Also load `../graffle-note-core/references/architecture.md` when the task touches:
+Also load `../giraffle-note-core/references/architecture.md` when the task touches:
 
 - `src/domain/note/`
 - `src/domain/link/`

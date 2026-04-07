@@ -1,7 +1,7 @@
-export const SIDEBAR_COLLAPSE_STORAGE_KEY = "graffle.sidebar.sections";
-export const SIDEBAR_WIDTH_STORAGE_KEY = "graffle.sidebar.width";
-export const SIDEBAR_COMPACT_STORAGE_KEY = "graffle.sidebar.compact";
-export const LOCAL_SYNC_QUEUE_STORAGE_KEY = "graffle.localSync.queue";
+export const SIDEBAR_COLLAPSE_STORAGE_KEY = "giraffle.sidebar.sections";
+export const SIDEBAR_WIDTH_STORAGE_KEY = "giraffle.sidebar.width";
+export const SIDEBAR_COMPACT_STORAGE_KEY = "giraffle.sidebar.compact";
+export const LOCAL_SYNC_QUEUE_STORAGE_KEY = "giraffle.localSync.queue";
 
 export const DEFAULT_EXPANDED_SIDEBAR_WIDTH = 232;
 export const SIDEBAR_MIN_WIDTH = 216;

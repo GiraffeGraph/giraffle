@@ -74,7 +74,7 @@ INSERT INTO "User" ("id", "name", "email", "password", "createdAt", "updatedAt")
 SELECT
     'legacy-bootstrap-user',
     'Legacy Workspace',
-    'legacy-import@graffle.local',
+    'legacy-import@giraffle.local',
     NULL,
     CURRENT_TIMESTAMP,
     CURRENT_TIMESTAMP

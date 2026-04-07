@@ -1,0 +1,4 @@
+interface:
+  display_name: "Giraffle Note Core"
+  short_description: "Giraffle note/editor core implementation"
+  default_prompt: "Use $giraffle-note-core to continue the next safe note or editor core task in the giraffle repo."

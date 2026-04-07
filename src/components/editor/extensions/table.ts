@@ -82,7 +82,7 @@ export const TableBlockNode = Node.create({
 
     const tableSpec = [
       "table",
-      { class: "graffle-table" },
+      { class: "giraffle-table" },
       [
         "tbody",
         {},
@@ -105,7 +105,7 @@ export const TableBlockNode = Node.create({
           "data-type": "table",
           "data-rows": JSON.stringify(rows),
           "data-caption": caption ?? "",
-          class: "graffle-table-block",
+          class: "giraffle-table-block",
         },
         Object.fromEntries(
           Object.entries(HTMLAttributes).filter(
@@ -113,7 +113,7 @@ export const TableBlockNode = Node.create({
           )
         )
       ),
-      ...(caption ? [["div", { class: "graffle-table-caption" }, caption]] : []),
+      ...(caption ? [["div", { class: "giraffle-table-caption" }, caption]] : []),
       tableSpec,
     ];
   },

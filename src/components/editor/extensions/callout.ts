@@ -50,10 +50,10 @@ export const CalloutNode = Node.create({
       mergeAttributes(HTMLAttributes, {
         "data-type": "callout",
         "data-tone": tone,
-        class: `graffle-callout graffle-callout-${tone}`,
+        class: `giraffle-callout giraffle-callout-${tone}`,
       }),
-      ["div", { class: "graffle-callout-header" }, title],
-      ["div", { class: "graffle-callout-body" }, 0],
+      ["div", { class: "giraffle-callout-header" }, title],
+      ["div", { class: "giraffle-callout-body" }, 0],
     ];
   },
 
