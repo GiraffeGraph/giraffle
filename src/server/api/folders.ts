@@ -46,6 +46,7 @@ export async function updateFolderAction(
   const { userId } = await requireAuthenticatedUser();
   await updateFolder(userId, folderId, input);
   revalidatePath("/dashboard");
+  revalidatePath(`/folders/${folderId}`);
 }
 
 export async function deleteFolderAction(folderId: string) {

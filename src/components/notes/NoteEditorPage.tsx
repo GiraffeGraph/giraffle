@@ -11,6 +11,8 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 import { Editor } from "@/components/editor/Editor";
+import { SidebarIconPicker } from "@/components/sidebar/SidebarIconPicker";
+import { renderStoredIcon } from "@/components/sidebar/sidebar-icon-utils";
 import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 import { Button } from "@/components/ui/Button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
@@ -81,6 +83,11 @@ export function NoteEditorPage({
   const [isExportPending, startExportTransition] = useTransition();
   const [isFolderMenuOpen, setIsFolderMenuOpen] = useState(false);
   const [isMetaPanelOpen, setIsMetaPanelOpen] = useState(false);
+  const [noteIcon, setNoteIcon] = useState<string | null>(note.icon);
+  const [iconPickerPosition, setIconPickerPosition] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
   const folderMenuRef = useRef<HTMLDivElement | null>(null);
   const router = useRouter();
 
@@ -320,6 +327,38 @@ export function NoteEditorPage({
     setContextMenuPosition(null);
   }, []);
 
+  const closeIconPicker = useCallback(() => {
+    setIconPickerPosition(null);
+  }, []);
+
+  const handleOpenIconPicker = useCallback(
+    (event: ReactMouseEvent<HTMLButtonElement>) => {
+      event.stopPropagation();
+      const rect = event.currentTarget.getBoundingClientRect();
+      setIconPickerPosition({
+        x: rect.right - 28,
+        y: rect.bottom + 8,
+      });
+    },
+    []
+  );
+
+  const handleIconChange = useCallback(
+    async (nextIcon: string | null) => {
+      setNoteIcon(nextIcon);
+      const mutationId = queueLocalMutation({
+        entityType: "note",
+        entityId: note.id,
+        actionType: "update-icon",
+        payload: { icon: nextIcon },
+      });
+      await updateNoteAction(note.id, { icon: nextIcon });
+      resolveLocalMutation(mutationId);
+      router.refresh();
+    },
+    [note.id, router]
+  );
+
   const toggleMetaPanel = useCallback(() => {
     setIsMetaPanelOpen((currentValue) => !currentValue);
   }, []);
@@ -484,7 +523,40 @@ export function NoteEditorPage({
         </div>
 
         {/* Actions */}
-        <div style={{ display: "flex", alignItems: "center", gap: "2px", flexShrink: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "4px", flexShrink: 0 }}>
+          <button
+            type="button"
+            title="Not ikonunu değiştir"
+            aria-label="Not ikonunu değiştir"
+            onClick={handleOpenIconPicker}
+            style={{
+              background: iconPickerPosition ? "var(--md-sys-color-secondary-container)" : "none",
+              border: "none",
+              color: iconPickerPosition
+                ? "var(--md-sys-color-on-secondary-container)"
+                : "var(--md-sys-color-on-surface-variant)",
+              cursor: "pointer",
+              padding: "4px 6px",
+              borderRadius: "6px",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              minWidth: "30px",
+              minHeight: "26px",
+              lineHeight: 1,
+            }}
+          >
+            {renderStoredIcon(noteIcon, {
+              fallback: (
+                <span className="material-symbols-outlined" style={{ fontSize: "18px" }} aria-hidden="true">
+                  description
+                </span>
+              ),
+              materialClassName: "material-symbols-outlined",
+              emojiStyle: { fontSize: "18px", lineHeight: 1 },
+            })}
+          </button>
+
           {(
             [
               { icon: "share", label: isPublished ? "Yayımdan kaldır" : "Yayımla", onClick: handlePublishToggle, active: isPublished, disabled: false, danger: false },
@@ -675,6 +747,15 @@ export function NoteEditorPage({
             </CardContent>
           </Card>
         </div>
+      ) : null}
+
+      {iconPickerPosition ? (
+        <SidebarIconPicker
+          position={iconPickerPosition}
+          currentIcon={noteIcon}
+          onClose={closeIconPicker}
+          onSelect={handleIconChange}
+        />
       ) : null}
 
       <ContextMenu

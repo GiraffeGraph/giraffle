@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { renderStoredIcon } from "@/components/sidebar/sidebar-icon-utils";
 import { getNotesForTagAction } from "@/server/api/tags";
 import { formatDate } from "@/lib/utils";
 
@@ -25,7 +26,11 @@ export default async function TagPage({ params }: TagPageProps) {
               className="dashboard-note-card"
             >
               <div className="dashboard-note-card-icon">
-                {note.icon ?? <span className="material-symbols-outlined" aria-hidden="true">description</span>}
+                {renderStoredIcon(note.icon, {
+                  fallback: <span className="material-symbols-outlined" aria-hidden="true">description</span>,
+                  materialClassName: "material-symbols-outlined",
+                  emojiStyle: { fontSize: "22px", lineHeight: 1 },
+                })}
               </div>
               <div className="dashboard-note-card-title">{note.title}</div>
               <div className="dashboard-note-card-date">

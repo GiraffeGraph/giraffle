@@ -8,7 +8,7 @@ import { CommandPalette, type CommandPaletteItem } from "@/components/sidebar/Co
 import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 import { Button } from "@/components/ui/Button";
 import { TemplatePicker } from "@/components/templates/TemplatePicker";
-import { createFolderAction, moveFolderAction, relocateFolderAction, updateFolderAction } from "@/server/api/folders";
+import { createFolderAction, moveFolderAction, relocateFolderAction } from "@/server/api/folders";
 import { archiveNoteAction, createNoteAction, moveNoteAction, updateNoteAction } from "@/server/api/notes";
 import {
   DEFAULT_COLLAPSED_SECTIONS,
@@ -32,18 +32,10 @@ import {
   loadSidebarWidth,
 } from "./sidebar.utils";
 import { SidebarGroup } from "./SidebarGroup";
-import { SidebarIconPicker } from "./SidebarIconPicker";
 import type { SidebarGroupAction } from "./SidebarGroup";
 import { SidebarNoteRow } from "./SidebarNoteRow";
 import { SidebarFolderItem } from "./SidebarFolderItem";
 import { encodeMaterialSymbol } from "./sidebar-icon-utils";
-
-type IconPickerState = {
-  target: "folder" | "note";
-  id: string;
-  currentIcon: string | null;
-  position: { x: number; y: number };
-};
 
 function PlusIcon() {
   return (
@@ -106,9 +98,7 @@ export function Sidebar({
   const [collapsedSections, setCollapsedSections] = useState<SidebarCollapseState>(DEFAULT_COLLAPSED_SECTIONS);
   const [hasLoadedPreferences, setHasLoadedPreferences] = useState(false);
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
-  const [iconPicker, setIconPicker] = useState<IconPickerState | null>(null);
   const folderCreationHandledRef = useRef(false);
-  const lastMenuPosRef = useRef<{ x: number; y: number } | null>(null);
 
   const normalizedPaletteQuery = paletteQuery.trim().toLowerCase();
   const currentNoteId = activeNoteId ?? extractActiveNoteId(pathname) ?? undefined;
@@ -127,7 +117,6 @@ export function Sidebar({
     (event: ReactMouseEvent<HTMLElement>, items: ContextMenuItem[]) => {
       event.preventDefault();
       const position = { x: event.clientX, y: event.clientY };
-      lastMenuPosRef.current = position;
       setContextMenu({ position, items });
     },
     []
@@ -139,7 +128,6 @@ export function Sidebar({
       event.stopPropagation();
       const rect = event.currentTarget.getBoundingClientRect();
       const position = { x: rect.right - 14, y: rect.bottom + 8 };
-      lastMenuPosRef.current = position;
       setContextMenu({ position, items });
     },
     []
@@ -294,37 +282,10 @@ export function Sidebar({
     [router]
   );
 
-  const openIconPicker = useCallback((target: "folder" | "note", id: string, currentIcon?: string | null) => {
-    const fallbackPosition = { x: 260, y: 180 };
-    const position = lastMenuPosRef.current ?? fallbackPosition;
-    setIconPicker({
-      target,
-      id,
-      currentIcon: currentIcon ?? null,
-      position,
-    });
-  }, []);
-
-  const closeIconPicker = useCallback(() => setIconPicker(null), []);
-
-  const handleSaveIcon = useCallback(async (nextIcon: string | null) => {
-    if (!iconPicker) return;
-
-    if (iconPicker.target === "folder") {
-      await updateFolderAction(iconPicker.id, { icon: nextIcon });
-    } else {
-      await updateNoteAction(iconPicker.id, { icon: nextIcon });
-    }
-
-    setIconPicker(null);
-    router.refresh();
-  }, [iconPicker, router]);
-
   // Context menus
   const buildNoteMenu = useCallback(
     (note: { id: string; title: string; icon?: string | null; isPinned?: boolean }): ContextMenuItem[] => [
       { label: "Notu aç", hint: "Seçili notu düzenleyicide aç", onSelect: () => router.push(`/notes/${note.id}`) },
-      { label: "İkonu değiştir", hint: "Emoji veya Material Symbol ata", onSelect: () => openIconPicker("note", note.id, note.icon) },
       {
         label: note.isPinned ? "Sabitlemeyi kaldır" : "Sabitle",
         hint: "Notu sıralı listelerde üstte tut veya bırak",
@@ -344,19 +305,18 @@ export function Sidebar({
         },
       },
     ],
-    [copyInternalLink, currentNoteId, openIconPicker, router]
+    [copyInternalLink, currentNoteId, router]
   );
 
   const buildFolderMenu = useCallback(
     (folder: { id: string; name: string; icon?: string | null }): ContextMenuItem[] => [
       { label: "Klasörü aç", hint: "Klasördeki notları görüntüle", onSelect: () => router.push(`/folders/${folder.id}`) },
       { label: "Bu klasöre not oluştur", hint: "Yeni notu doğrudan bu klasöre ekle", onSelect: async () => { const noteId = await createNoteAction({ folderId: folder.id }); router.push(`/notes/${noteId}`); } },
-      { label: "İkonu değiştir", hint: "Emoji veya Material Symbol ata", onSelect: () => openIconPicker("folder", folder.id, folder.icon) },
       { label: "Klasör bağlantısını kopyala", hint: "Klasör adresini panoya kopyala", onSelect: () => copyInternalLink(`/folders/${folder.id}`) },
       { label: "Yukarı taşı", hint: "Klasör sırasını bir adım yukarı al", onSelect: () => handleMoveFolder(folder.id, "up") },
       { label: "Aşağı taşı", hint: "Klasör sırasını bir adım aşağı al", onSelect: () => handleMoveFolder(folder.id, "down") },
     ],
-    [copyInternalLink, handleMoveFolder, openIconPicker, router]
+    [copyInternalLink, handleMoveFolder, router]
   );
 
   // Derived / filtered data
@@ -657,15 +617,6 @@ export function Sidebar({
 
       {!isSidebarCompact ? (
         <div className="sidebar-resize-handle" onMouseDown={handleSidebarResizeStart} role="separator" aria-orientation="vertical" aria-label="Sidebar genişliğini değiştir" />
-      ) : null}
-
-      {iconPicker ? (
-        <SidebarIconPicker
-          position={iconPicker.position}
-          currentIcon={iconPicker.currentIcon}
-          onClose={closeIconPicker}
-          onSelect={handleSaveIcon}
-        />
       ) : null}
 
       <ContextMenu items={contextMenu?.items ?? []} position={contextMenu?.position ?? null} onClose={closeContextMenu} />
