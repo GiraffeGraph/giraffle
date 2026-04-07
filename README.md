@@ -84,15 +84,20 @@ Set `AUTH_SECRET` in `.env` to a long random value before logging in.
 ### Container Build
 
 ```bash
-docker compose -f docker-compose.prod.yml up -d --build
+cp .env.production.example .env.production
+$EDITOR .env.production
+./scripts/prod-up.sh
 ```
 
 The production container:
 
 - builds Next.js in `standalone` mode
 - runs `prisma migrate deploy` on startup
-- starts the Next.js server on port `3000`
+- starts the Next.js server behind nginx
+- exposes the app on port `80`
 - exposes `/api/health` for container health checks
+- persists PostgreSQL data in `giraffle_pgdata`
+- persists uploaded images in `giraffle_uploads`
 
 ### Required Environment Variables
 
@@ -102,6 +107,26 @@ The production container:
 - `POSTGRES_USER`
 - `POSTGRES_PASSWORD`
 - `POSTGRES_DB`
+
+### Server Steps
+
+```bash
+git clone <your-repo-url> giraffle
+cd giraffle
+cp .env.production.example .env.production
+$EDITOR .env.production
+docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build
+```
+
+Useful commands:
+
+```bash
+./scripts/prod-logs.sh
+docker compose --env-file .env.production -f docker-compose.prod.yml ps
+docker compose --env-file .env.production -f docker-compose.prod.yml restart app
+```
+
+`NEXTAUTH_URL` must point to the public URL you will actually use, for example `http://203.0.113.10` or `https://notes.example.com`.
 
 ## Auth Baseline
 
