@@ -499,6 +499,16 @@ export function NoteEditorPage({
         <div style={{ display: "flex", alignItems: "center", gap: "4px", flexShrink: 0 }}>
           <button
             type="button"
+            onClick={() => void handlePublishToggle()}
+            aria-label={isPublished ? "Yayımdan kaldır" : "Yayımla"}
+            aria-pressed={isPublished}
+            title={isPublished ? "Yayımdan kaldır" : "Yayımla"}
+            style={{ background: isPublished ? "var(--md-sys-color-secondary-container)" : "none", border: "none", color: isPublished ? "var(--md-sys-color-on-secondary-container)" : "var(--md-sys-color-on-surface-variant)", cursor: "pointer", padding: "4px", borderRadius: "6px", display: "flex", alignItems: "center", lineHeight: 1, fontFamily: "Material Symbols Outlined", fontSize: "18px" }}
+          >
+            {"\uE80D"}
+          </button>
+          <button
+            type="button"
             onClick={() => void handlePinToggle()}
             aria-label={isPinned ? "Sabitlemeyi kaldır" : "Sabitle"}
             aria-pressed={isPinned}
@@ -506,23 +516,6 @@ export function NoteEditorPage({
             style={{ background: isPinned ? "var(--md-sys-color-secondary-container)" : "none", border: "none", color: isPinned ? "var(--md-sys-color-on-secondary-container)" : "var(--md-sys-color-on-surface-variant)", cursor: "pointer", padding: "4px", borderRadius: "6px", display: "flex", alignItems: "center", lineHeight: 1 }}
           >
             <PinIcon />
-          </button>
-          <button
-            type="button"
-            onClick={() => void handlePublishToggle()}
-            style={{
-              background: isPublished ? "var(--md-sys-color-secondary-container)" : "var(--md-sys-color-primary)",
-              border: "none",
-              color: isPublished ? "var(--md-sys-color-on-secondary-container)" : "var(--md-sys-color-on-primary)",
-              cursor: "pointer",
-              padding: "4px 12px",
-              borderRadius: "6px",
-              fontSize: "12px",
-              fontWeight: "500",
-              lineHeight: 1.4,
-            }}
-          >
-            {isPublished ? "Yayımdan kaldır" : "Yayımla"}
           </button>
           <button
             type="button"
@@ -702,6 +695,7 @@ function PinIcon() {
     </svg>
   );
 }
+
 
 function ChevronDownIcon() {
   return (
