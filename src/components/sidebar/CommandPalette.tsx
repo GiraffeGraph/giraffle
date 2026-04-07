@@ -128,74 +128,75 @@ export function CommandPalette({
   let flatIndex = -1;
 
   return createPortal(
-    <div className="command-palette-overlay" role="presentation">
+    <div className="md-dialog-scrim" role="presentation" style={{ alignItems: "flex-start", paddingTop: "12vh" }}>
       <div
         ref={dialogRef}
-        className="command-palette"
+        className="md-dialog"
         role="dialog"
         aria-modal="true"
         aria-label="Komut paleti"
+        style={{ padding: 0, width: "100%", maxWidth: "700px", minHeight: "200px" }}
       >
-        <div className="command-palette-header">
+        <div style={{ display: "flex", alignItems: "center", borderBottom: "1px solid var(--md-sys-color-outline-variant)", padding: "16px 24px" }}>
           <input
             ref={inputRef}
             type="text"
-            className="command-palette-input"
             value={query}
             onChange={(event) => onQueryChange(event.target.value)}
             placeholder="Not, klasör, etiket veya komut ara..."
             spellCheck={false}
+            style={{ flex: 1, border: "none", background: "transparent", fontSize: "var(--md-sys-typescale-headline-small-size)", color: "var(--md-sys-color-on-surface)", outline: "none" }}
           />
-          <span className="command-palette-shortcut">Esc</span>
+          <kbd style={{ marginLeft: "16px", padding: "4px 8px", fontSize: "12px", background: "var(--md-sys-color-surface-container-high)", borderRadius: "4px", color: "var(--md-sys-color-on-surface-variant)" }}>Esc</kbd>
         </div>
 
-        <div className="command-palette-body">
+        <div style={{ maxHeight: "60vh", overflowY: "auto", padding: "12px 16px" }}>
           {groupedItems.length === 0 ? (
-            <div className="command-palette-empty">
+            <div style={{ padding: "32px", textAlign: "center", color: "var(--md-sys-color-on-surface-variant)" }}>
               Bu sorgu için sonuç bulunamadı.
             </div>
           ) : (
             groupedItems.map(([groupLabel, groupItems]) => (
-              <section key={groupLabel} className="command-palette-group">
-                <div className="command-palette-group-title">{groupLabel}</div>
-                <div className="command-palette-group-list">
+              <section key={groupLabel} style={{ marginBottom: "16px" }}>
+                <div style={{ fontSize: "var(--md-sys-typescale-label-small-size)", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "1px", color: "var(--md-sys-color-primary)", margin: "0 0 8px 12px" }}>
+                  {groupLabel}
+                </div>
+                <ul className="md-list" style={{ padding: 0 }}>
                   {groupItems.map((item) => {
                     flatIndex += 1;
                     const isActive = flatIndex === selectedIndex;
 
                     return (
-                      <button
-                        key={item.id}
-                        type="button"
-                        className={`command-palette-item ${isActive ? "active" : ""}`}
-                        onMouseEnter={() => setSelectedIndex(flatIndex)}
-                        onClick={async () => {
-                          onClose();
-                          await item.onSelect();
-                        }}
-                      >
-                        <span className="command-palette-item-icon">
-                          {item.icon}
-                        </span>
-                        <span className="command-palette-item-copy">
-                          <span className="command-palette-item-title-row">
-                            <span className="command-palette-item-title">
+                      <li key={item.id} style={{ display: "block", marginBottom: "2px" }}>
+                        <button
+                          type="button"
+                          className={`md-list-item ${isActive ? "md-list-item--active" : ""}`}
+                          style={{ width: "100%", textAlign: "left", borderRadius: "12px", background: isActive ? "var(--md-sys-color-secondary-container)" : "transparent", minHeight: "64px" }}
+                          onMouseEnter={() => setSelectedIndex(flatIndex)}
+                          onClick={async () => {
+                            onClose();
+                            await item.onSelect();
+                          }}
+                        >
+                          <div className="md-list-item-start" style={{ fontSize: "24px", color: isActive ? "var(--md-sys-color-on-secondary-container)" : "var(--md-sys-color-on-surface)" }}>
+                            {item.icon}
+                          </div>
+                          <div className="md-list-item-content">
+                            <span className="md-list-item-headline" style={{ color: isActive ? "var(--md-sys-color-on-secondary-container)" : "var(--md-sys-color-on-surface)", display: "flex", alignItems: "center", gap: "8px" }}>
                               {item.title}
+                              {item.hint ? (
+                                <span style={{ fontSize: "var(--md-sys-typescale-label-small-size)", padding: "2px 6px", background: "var(--md-sys-color-surface-container-high)", borderRadius: "4px", color: "var(--md-sys-color-on-surface-variant)" }}>{item.hint}</span>
+                              ) : null}
                             </span>
-                            {item.hint ? (
-                              <span className="command-palette-item-hint">
-                                {item.hint}
-                              </span>
-                            ) : null}
-                          </span>
-                          <span className="command-palette-item-description">
-                            {item.description}
-                          </span>
-                        </span>
-                      </button>
+                            <span className="md-list-item-supporting-text" style={{ color: isActive ? "var(--md-sys-color-on-secondary-container)" : "var(--md-sys-color-on-surface-variant)", opacity: isActive ? 0.9 : 1 }}>
+                              {item.description}
+                            </span>
+                          </div>
+                        </button>
+                      </li>
                     );
                   })}
-                </div>
+                </ul>
               </section>
             ))
           )}

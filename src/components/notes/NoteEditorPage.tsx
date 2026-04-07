@@ -12,6 +12,8 @@ import {
 import { useRouter } from "next/navigation";
 import { Editor } from "@/components/editor/Editor";
 import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
+import { Button } from "@/components/ui/Button";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import type { BacklinkResult } from "@/domain/link/link.types";
 import { DEFAULT_NOTE_TITLE } from "@/domain/note/note.types";
 import type { NoteReference, TiptapDocument } from "@/domain/note/note.types";
@@ -428,20 +430,20 @@ export function NoteEditorPage({
   return (
     <div className="note-page">
       <div className="note-header" onContextMenu={openContextMenuAtPointer}>
-        <div className="note-topbar">
-          <div className="note-breadcrumb-row">
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 32px", borderBottom: "1px solid var(--md-sys-color-outline-variant)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "var(--md-sys-typescale-body-medium-size)", color: "var(--md-sys-color-on-surface-variant)" }}>
             <button
               type="button"
-              className="note-breadcrumb"
+              style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", padding: "4px 8px", borderRadius: "8px" }}
               onClick={() => router.push("/dashboard")}
             >
               Çalışma alanı
             </button>
-            <span className="note-breadcrumb-separator">/</span>
-            <div className="note-folder-picker" ref={folderMenuRef}>
+            <span>/</span>
+            <div className="note-folder-picker" ref={folderMenuRef} style={{ position: "relative" }}>
               <button
                 type="button"
-                className="note-breadcrumb note-breadcrumb-folder"
+                style={{ background: "var(--md-sys-color-surface-container-low)", border: "1px solid var(--md-sys-color-outline)", color: "var(--md-sys-color-on-surface)", cursor: "pointer", padding: "4px 12px", borderRadius: "16px", display: "flex", alignItems: "center", gap: "4px", fontSize: "14px" }}
                 onClick={() =>
                   setIsFolderMenuOpen((currentValue) => !currentValue)
                 }
@@ -453,101 +455,92 @@ export function NoteEditorPage({
               </button>
 
               {isFolderMenuOpen ? (
-                <div className="note-folder-popover" role="menu">
+                <div style={{ position: "absolute", top: "100%", left: 0, marginTop: "8px", background: "var(--md-sys-color-surface-container-high)", borderRadius: "12px", padding: "8px", boxShadow: "var(--md-sys-elevation-3)", zIndex: 100, minWidth: "200px" }} role="menu">
                   <button
                     type="button"
-                    className={`note-folder-option ${
-                      currentFolderId === null ? "active" : ""
-                    }`}
+                    style={{ width: "100%", textAlign: "left", padding: "8px 12px", background: currentFolderId === null ? "var(--md-sys-color-secondary-container)" : "transparent", color: currentFolderId === null ? "var(--md-sys-color-on-secondary-container)" : "var(--md-sys-color-on-surface)", border: "none", borderRadius: "8px", cursor: "pointer", display: "flex", flexDirection: "column" }}
                     onClick={() => void handleSelectFolder(null)}
                   >
-                    <span className="note-folder-option-label">Kök klasör</span>
-                    <span className="note-folder-option-path">Çalışma alanı</span>
+                    <span style={{ fontWeight: "bold" }}>Kök klasör</span>
+                    <span style={{ fontSize: "12px", opacity: 0.8 }}>Çalışma alanı</span>
                   </button>
 
                   {folderOptions.map((folder) => (
                     <button
                       key={folder.id}
                       type="button"
-                      className={`note-folder-option ${
-                        folder.id === currentFolderId ? "active" : ""
-                      }`}
+                      style={{ width: "100%", textAlign: "left", padding: "8px 12px", background: folder.id === currentFolderId ? "var(--md-sys-color-secondary-container)" : "transparent", color: folder.id === currentFolderId ? "var(--md-sys-color-on-secondary-container)" : "var(--md-sys-color-on-surface)", border: "none", borderRadius: "8px", cursor: "pointer", display: "flex", flexDirection: "column", marginTop: "4px" }}
                       onClick={() => void handleSelectFolder(folder.id)}
                     >
-                      <span className="note-folder-option-label">
+                      <span style={{ fontWeight: "bold" }}>
                         {folder.name.split(" / ").at(-1) ?? folder.name}
                       </span>
-                      <span className="note-folder-option-path">{folder.name}</span>
+                      <span style={{ fontSize: "12px", opacity: 0.8 }}>{folder.name}</span>
                     </button>
                   ))}
                 </div>
               ) : null}
             </div>
-            <span className="note-breadcrumb-separator">/</span>
-            <span className="note-breadcrumb current">{effectiveTitle}</span>
+            <span>/</span>
+            <span style={{ color: "var(--md-sys-color-on-surface)", fontWeight: "500" }}>{effectiveTitle}</span>
           </div>
 
-          <div className="note-toolbar note-toolbar-minimal">
-            <button
-              type="button"
-              className={`note-toolbar-btn icon-only${isPinned ? " active" : ""}`}
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <Button
+              variant={isPinned ? "filled" : "tonal"}
+              icon
               onClick={() => void handlePinToggle()}
               aria-label={isPinned ? "Sabitlemeyi kaldır" : "Sabitle"}
               aria-pressed={isPinned}
               title={isPinned ? "Sabitlemeyi kaldır" : "Sabitle"}
             >
               <PinIcon />
-            </button>
-            <button
-              type="button"
-              className="note-toolbar-btn primary"
+            </Button>
+            <Button
+              variant="filled"
               onClick={() => void handlePublishToggle()}
             >
               {isPublished ? "Yayımdan kaldır" : "Yayımla"}
-            </button>
-            <button
-              className="context-trigger"
+            </Button>
+            <Button
+              variant="text"
+              icon
               onClick={openContextMenuFromTrigger}
               aria-label="Not menüsünü aç"
               aria-haspopup="menu"
             >
               ...
-            </button>
+            </Button>
           </div>
         </div>
 
-        <div className="note-title-row">
-          <div className="note-title-stack">
-            <div className="note-status-row minimal">
-              <span
-                className={`note-status-dot ${
-                  isPublished ? "published" : "draft"
-                }`}
-                aria-hidden="true"
-              />
-              <span className="note-status-inline">
+        <div style={{ padding: "32px 32px 0", maxWidth: "800px", margin: "0 auto" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <span style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "var(--md-sys-shape-full)", backgroundColor: isPublished ? "var(--md-sys-color-primary)" : "var(--md-sys-color-outline)" }} />
+              <span style={{ fontSize: "var(--md-sys-typescale-label-medium-size)", fontWeight: "var(--md-sys-typescale-label-medium-weight)", color: "var(--md-sys-color-on-surface-variant)" }}>
                 {isPublished ? "Yayında" : "Taslak"}
               </span>
               {isPinned ? (
-                <span className="note-status-inline subtle">Pinli</span>
+                <span style={{ fontSize: "var(--md-sys-typescale-label-small-size)", padding: "2px 6px", background: "var(--md-sys-color-surface-container-high)", borderRadius: "4px", color: "var(--md-sys-color-on-surface-variant)" }}>Pinli</span>
               ) : null}
             </div>
 
             <input
-              className="note-title-input"
               value={title}
               onChange={(event) => handleTitleChange(event.target.value)}
               placeholder={DEFAULT_NOTE_TITLE}
               spellCheck={false}
+              style={{ fontSize: "var(--md-sys-typescale-display-small-size)", fontWeight: "var(--md-sys-typescale-display-small-weight)", color: "var(--md-sys-color-on-background)", border: "none", background: "transparent", outline: "none", width: "100%", padding: 0 }}
             />
 
             {note.tags.length > 0 ? (
-              <div className="note-tag-list">
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
                 {note.tags.map((tag) => (
                   <button
                     key={tag}
                     type="button"
-                    className="note-tag-chip"
+                    style={{ background: "var(--md-sys-color-secondary-container)", color: "var(--md-sys-color-on-secondary-container)", border: "none", padding: "4px 12px", borderRadius: "8px", fontSize: "var(--md-sys-typescale-label-large-size)", cursor: "pointer" }}
                     onClick={() => router.push(`/tags/${tag}`)}
                   >
                     #{tag}
@@ -557,30 +550,34 @@ export function NoteEditorPage({
             ) : null}
 
             {isMetaPanelOpen ? (
-              <div className="note-settings-panel">
-                <label className="note-slug-field">
-                  <span>Yayın adresi</span>
-                  <input
-                    className="note-slug-input"
-                    value={slug ?? ""}
-                    onChange={(event) => setSlug(event.target.value)}
-                    onBlur={(event) => void handleSlugChange(event.target.value)}
-                    placeholder="yayin-adresi"
-                    spellCheck={false}
-                  />
-                </label>
-                <p className="note-settings-help">
-                  {slug?.trim()
-                    ? `Yayın yolu: /published/${slug}`
-                    : "Yayımlandığında otomatik bir adres oluşturulur."}
-                </p>
-              </div>
+              <Card variant="outlined" style={{ marginTop: "16px" }}>
+                <CardContent>
+                  <div className="md-text-field md-text-field--outlined md-text-field--has-value" style={{ width: "100%" }}>
+                    <div className="md-text-field-container">
+                      <input
+                        className="md-text-field-input"
+                        value={slug ?? ""}
+                        onChange={(event) => setSlug(event.target.value)}
+                        onBlur={(event) => void handleSlugChange(event.target.value)}
+                        placeholder="yayin-adresi"
+                        spellCheck={false}
+                      />
+                      <span className="md-text-field-label">Yayın Adresi</span>
+                    </div>
+                  </div>
+                  <p style={{ marginTop: "8px", fontSize: "var(--md-sys-typescale-body-small-size)", color: "var(--md-sys-color-on-surface-variant)" }}>
+                    {slug?.trim()
+                      ? `Yayın yolu: /published/${slug}`
+                      : "Yayımlandığında otomatik bir adres oluşturulur."}
+                  </p>
+                </CardContent>
+              </Card>
             ) : null}
           </div>
         </div>
       </div>
 
-      <div className="note-editor-container">
+      <div style={{ maxWidth: "800px", margin: "0 auto", padding: "0 32px 32px", minHeight: "60vh" }}>
         <Editor
           noteId={note.id}
           initialContent={note.document}
@@ -593,75 +590,85 @@ export function NoteEditorPage({
       </div>
 
       {backlinks.length > 0 ? (
-        <div className="backlinks-section">
-          <div className="backlinks-header">
-            <span className="backlinks-icon">Bag</span>
-            <span className="backlinks-title">
-              Geri bağlantılar ({backlinks.length})
-            </span>
-          </div>
-          <div className="backlinks-list">
-            {backlinks.map((backlink) => (
-              <button
-                key={`${backlink.sourceNoteId}-${backlink.targetRaw}`}
-                type="button"
-                className="backlink-item"
-                onClick={() => router.push(`/notes/${backlink.sourceNoteId}`)}
-              >
-                <span className="backlink-source">{backlink.sourceNoteTitle}</span>
-                <span className="backlink-target">-&gt; {backlink.targetRaw}</span>
-              </button>
-            ))}
-          </div>
+        <div style={{ maxWidth: "800px", margin: "48px auto 0", padding: "0 32px" }}>
+          <Card variant="outlined">
+            <CardHeader>
+              <CardTitle style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <span>Bag</span>
+                Geri bağlantılar ({backlinks.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent style={{ padding: 0 }}>
+              <ul className="md-list">
+                {backlinks.map((backlink) => (
+                  <li key={`${backlink.sourceNoteId}-${backlink.targetRaw}`} style={{ display: "block" }}>
+                    <button
+                      type="button"
+                      className="md-list-item"
+                      style={{ width: "100%", textAlign: "left", background: "transparent", borderBottom: "1px solid var(--md-sys-color-outline-variant)" }}
+                      onClick={() => router.push(`/notes/${backlink.sourceNoteId}`)}
+                    >
+                      <div className="md-list-item-content">
+                        <span className="md-list-item-headline">{backlink.sourceNoteTitle}</span>
+                        <span className="md-list-item-supporting-text" style={{ color: "var(--md-sys-color-primary)" }}>-&gt; {backlink.targetRaw}</span>
+                      </div>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
         </div>
       ) : null}
 
       {proposals.length > 0 ? (
-        <div className="backlinks-section">
-          <div className="backlinks-header">
-            <span className="backlinks-icon">YZ</span>
-            <span className="backlinks-title">
-              Bekleyen öneriler ({proposals.length})
-            </span>
-          </div>
-          <div className="proposal-list">
-            {proposals.map((proposal) => (
-              <div key={proposal.id} className="proposal-card">
-                <div className="proposal-card-head">
-                  <div>
-                    <div className="proposal-card-title">{proposal.title}</div>
-                    <div className="proposal-card-meta">
-                      {proposal.status} ·{" "}
-                      {new Date(proposal.createdAt).toLocaleString("tr-TR")}
+        <div style={{ maxWidth: "800px", margin: "32px auto 64px", padding: "0 32px" }}>
+          <Card variant="outlined" style={{ borderColor: "var(--md-sys-color-tertiary)" }}>
+            <CardHeader>
+              <CardTitle style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--md-sys-color-tertiary)" }}>
+                <span>YZ</span>
+                Bekleyen öneriler ({proposals.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent style={{ padding: 0 }}>
+              <ul className="md-list">
+                {proposals.map((proposal) => (
+                  <li key={proposal.id} style={{ display: "block", borderBottom: "1px solid var(--md-sys-color-outline-variant)", padding: "16px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: proposal.summary ? "12px" : "0" }}>
+                      <div>
+                        <div style={{ fontWeight: "bold", fontSize: "var(--md-sys-typescale-title-medium-size)", color: "var(--md-sys-color-on-surface)" }}>{proposal.title}</div>
+                        <div style={{ fontSize: "var(--md-sys-typescale-body-small-size)", color: "var(--md-sys-color-on-surface-variant)" }}>
+                          <span style={{ textTransform: "uppercase", padding: "2px 6px", background: "var(--md-sys-color-surface-container-high)", borderRadius: "4px", fontSize: "10px", fontWeight: "bold", marginRight: "8px" }}>{proposal.status}</span>
+                          {new Date(proposal.createdAt).toLocaleString("tr-TR")}
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", gap: "8px" }}>
+                        {proposal.status === "pending" ? (
+                          <>
+                            <Button
+                              variant="tonal"
+                              onClick={() => void handleApplyProposal(proposal.id)}
+                            >
+                              Uygula
+                            </Button>
+                            <Button
+                              variant="text"
+                              onClick={() => void handleRejectProposal(proposal.id)}
+                            >
+                              Reddet
+                            </Button>
+                          </>
+                        ) : null}
+                      </div>
                     </div>
-                  </div>
-                  <div className="proposal-card-actions">
-                    {proposal.status === "pending" ? (
-                      <>
-                        <button
-                          type="button"
-                          className="note-toolbar-btn"
-                          onClick={() => void handleApplyProposal(proposal.id)}
-                        >
-                          Uygula
-                        </button>
-                        <button
-                          type="button"
-                          className="note-toolbar-btn"
-                          onClick={() => void handleRejectProposal(proposal.id)}
-                        >
-                          Reddet
-                        </button>
-                      </>
+                    {proposal.summary ? (
+                      <div style={{ fontSize: "var(--md-sys-typescale-body-medium-size)", color: "var(--md-sys-color-on-surface-variant)", background: "var(--md-sys-color-surface-container-lowest)", padding: "12px", borderRadius: "8px" }}>{proposal.summary}</div>
                     ) : null}
-                  </div>
-                </div>
-                {proposal.summary ? (
-                  <div className="proposal-card-summary">{proposal.summary}</div>
-                ) : null}
-              </div>
-            ))}
-          </div>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
         </div>
       ) : null}
 
