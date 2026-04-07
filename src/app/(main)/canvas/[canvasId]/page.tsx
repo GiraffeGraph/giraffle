@@ -8,9 +8,14 @@ export const metadata: Metadata = {
   title: 'Kanvas | GiraffeGraph',
 };
 
-export default async function CanvasPage({ params }: { params: { canvasId: string } }) {
+export default async function CanvasPage({
+  params,
+}: {
+  params: Promise<{ canvasId: string }>;
+}) {
   await requireAuthenticatedUser();
-  const canvas = await getCanvasAction(params.canvasId);
+  const { canvasId } = await params;
+  const canvas = await getCanvasAction(canvasId);
 
   if (!canvas) {
     notFound();
