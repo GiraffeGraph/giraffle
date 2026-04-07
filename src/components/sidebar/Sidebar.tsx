@@ -642,20 +642,8 @@ export function Sidebar({
     [copyInternalLink, handleMoveFolder, router]
   );
 
-  const themeMenuItems = useMemo<ContextMenuItem[]>(
-    () =>
-      APP_THEMES.map((theme) => ({
-        label: theme.label,
-        hint:
-          theme.id === activeThemeId ? "Şu an seçili tema" : theme.description,
-        onSelect: () => applyTheme(theme.id),
-      })),
-    [activeThemeId, applyTheme]
-  );
-
   const footerMenuItems = useMemo<ContextMenuItem[]>(
     () => [
-      ...themeMenuItems,
       {
         label: "Tercihleri sıfırla",
         hint: "Tema ve sidebar tercihlerini varsayılana al",
@@ -668,7 +656,7 @@ export function Sidebar({
         onSelect: () => void signOutAction(),
       },
     ],
-    [themeMenuItems, resetPreferences]
+    [resetPreferences]
   );
 
   const paletteItems = useMemo<CommandPaletteItem[]>(() => {
@@ -970,9 +958,9 @@ export function Sidebar({
               type="button"
               className="sidebar-compact-avatar"
               onClick={(event) =>
-                openContextMenuFromTrigger(event, themeMenuItems)
+                openContextMenuFromTrigger(event, footerMenuItems)
               }
-              aria-label="Tema seç"
+              aria-label="Hesap menüsü"
             >
               {(user.name ?? user.email ?? "G").slice(0, 1).toUpperCase()}
             </button>

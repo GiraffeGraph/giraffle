@@ -4,6 +4,7 @@ import { getFoldersAction } from "@/server/api/folders";
 import { getNotesAction } from "@/server/api/notes";
 import { getWorkspaceTagsAction } from "@/server/api/tags";
 import { getTemplatesAction } from "@/server/api/templates";
+import { ThemeSelector } from "@/components/theme/ThemeSelector";
 
 export default async function MainLayout({
   children,
@@ -43,6 +44,7 @@ export default async function MainLayout({
           email: session?.user?.email ?? null,
         }}
       />
+      <ThemeSelector />
       <main className="main-content">
         <div className="main-content-inner">{children}</div>
       </main>
