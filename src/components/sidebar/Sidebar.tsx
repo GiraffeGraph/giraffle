@@ -550,17 +550,6 @@ export function Sidebar({
                       ))}
                     </div>
                   )}
-                  {path === "/inbox" && notes.filter((n) => !n.folderId).length > 0 && (
-                    <div className="sidebar-nested-items">
-                      {notes.filter((n) => !n.folderId).slice(0, 5).map((note) => (
-                        <button key={note.id} type="button" className={`sidebar-item sidebar-nested-item${note.id === currentNoteId ? " active" : ""}`} onClick={() => { closeNavModal(); router.push(`/notes/${note.id}`); }}>
-                          <span className="sidebar-item-icon" aria-hidden="true">{note.icon ?? <span style={{ fontSize: "8px", opacity: 0.4 }}>●</span>}</span>
-                          <span className="sidebar-item-label">{note.title || "Adsız"}</span>
-                          <span className="sidebar-nested-item-date">{formatDate(new Date(note.updatedAt))}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
                 </div>
               ))}
             </div>
