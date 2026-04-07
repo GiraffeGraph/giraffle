@@ -5544,26 +5544,26 @@ body::before {
   color: var(--text-secondary);
 }
 
-/* Bottom icon rail */
+/* Secondary nav rail — Google AI Studio style labeled rows */
 .sidebar-rail {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 8px 10px;
+  gap: 2px;
+  padding: 6px 8px;
   border-top: 1px solid var(--border-soft);
   flex-shrink: 0;
 }
 
 .sidebar-rail-item {
-  display: inline-flex;
+  display: flex;
   flex-direction: row;
   align-items: center;
-  justify-content: flex-start;
-  gap: 8px;
+  gap: 10px;
   width: 100%;
-  min-height: 30px;
+  min-height: 32px;
+  padding: 5px 8px;
   border: none;
-  border-radius: 8px;
+  border-radius: 7px;
   background: transparent;
   color: var(--text-muted);
   font-size: 12px;
@@ -5577,10 +5577,10 @@ body::before {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 18px;
+  height: 18px;
   color: var(--text-tertiary);
-  font-size: 18px;
+  font-size: 16px;
   line-height: 1;
   flex-shrink: 0;
 }
@@ -5590,7 +5590,7 @@ body::before {
   font-family: "Material Symbols Outlined";
   font-weight: 400;
   font-style: normal;
-  font-size: 18px;
+  font-size: 16px;
   line-height: 1;
   letter-spacing: normal;
   text-transform: none;
@@ -5603,9 +5603,20 @@ body::before {
 }
 
 .sidebar-rail-item-label {
+  flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.sidebar-rail-item-chevron {
+  margin-left: auto;
+  opacity: 0.35;
+  font-size: 12px;
+  line-height: 1;
+  flex-shrink: 0;
 }
 
 .sidebar-rail-item:hover {
@@ -5613,8 +5624,20 @@ body::before {
   color: var(--text-secondary);
 }
 
+.sidebar-rail-item:hover .sidebar-rail-item-icon {
+  color: var(--text-secondary);
+}
+
+.sidebar-rail-item:hover .sidebar-rail-item-chevron {
+  opacity: 0.6;
+}
+
 .sidebar-rail-item.active {
   background: var(--accent-subtle);
+  color: var(--accent);
+}
+
+.sidebar-rail-item.active .sidebar-rail-item-icon {
   color: var(--accent);
 }
 
@@ -6195,12 +6218,32 @@ body::before {
 
 .sidebar-rail {
   padding: 4px 8px;
+  gap: 2px;
 }
 
 .sidebar-rail-item {
-  width: 28px;
-  height: 26px;
+  width: 100%;
+  min-height: 32px;
+  height: auto;
   border-radius: 7px;
+  padding: 5px 8px;
+  justify-content: flex-start;
+  gap: 10px;
+}
+
+.sidebar-rail-item-label {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 500;
+  color: inherit;
+}
+
+.sidebar-rail-item-chevron {
+  margin-left: auto;
+  opacity: 0.35;
+  font-size: 13px;
+  line-height: 1;
+  flex-shrink: 0;
 }
 
 .sidebar-footer {

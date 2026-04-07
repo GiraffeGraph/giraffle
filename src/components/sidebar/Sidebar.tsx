@@ -965,23 +965,18 @@ export function Sidebar({
         </div>
       ) : (
         <>
-          <div className="sidebar-topbar" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px" }}>
+          <div className="sidebar-topbar" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px 8px" }}>
             <div
               className="sidebar-workspace-card"
               onClick={() => router.push("/dashboard")}
-              style={{ display: "flex", alignItems: "center", gap: "12px", cursor: "pointer" }}
+              style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }}
             >
-              <div className="sidebar-workspace-logo" style={{ width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", borderRadius: "var(--md-sys-shape-small)" }}>
-                <Image src="/apple-icon.png" alt="Giraffle" width={32} height={32} />
+              <div className="sidebar-workspace-logo" style={{ width: "28px", height: "28px", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", borderRadius: "var(--md-sys-shape-small)" }}>
+                <Image src="/apple-icon.png" alt="Giraffle" width={28} height={28} />
               </div>
-              <div className="sidebar-workspace-copy" style={{ display: "flex", flexDirection: "column" }}>
-                <span className="sidebar-workspace-name" style={{ fontSize: "var(--md-sys-typescale-label-large-size)", fontWeight: "bold", color: "var(--md-sys-color-on-surface)" }}>Giraffle</span>
-                <span className="sidebar-workspace-meta" style={{ fontSize: "var(--md-sys-typescale-body-small-size)", color: "var(--md-sys-color-on-surface-variant)" }}>
-                  Kişisel bilgi alanı
-                </span>
-              </div>
+              <span className="sidebar-workspace-name" style={{ fontSize: "14px", fontWeight: 600, color: "var(--md-sys-color-on-surface)" }}>Giraffle</span>
             </div>
-            <div className="sidebar-topbar-actions" style={{ display: "flex", gap: "4px" }}>
+            <div className="sidebar-topbar-actions" style={{ display: "flex", gap: "2px" }}>
               <Button
                 variant="text"
                 icon
@@ -1001,21 +996,21 @@ export function Sidebar({
             </div>
           </div>
 
-          <div style={{ padding: "0 16px 12px" }}>
+          <div style={{ padding: "0 10px 8px" }}>
             <button
               type="button"
               className="md-text-field-container"
-              style={{ width: "100%", borderRadius: "var(--md-sys-shape-full)", height: "40px", cursor: "pointer", background: "var(--md-sys-color-surface-container-high)", border: "1px solid var(--md-sys-color-outline-variant)" }}
+              style={{ width: "100%", borderRadius: "var(--md-sys-shape-full)", height: "36px", cursor: "pointer", background: "var(--md-sys-color-surface-container-high)", border: "1px solid var(--md-sys-color-outline-variant)" }}
               onClick={() => openPalette("")}
               aria-label="Arama veya komut paleti"
             >
-              <span style={{ margin: "0 12px", color: "var(--md-sys-color-on-surface-variant)" }}>○</span>
-              <span style={{ flex: 1, textAlign: "left", color: "var(--md-sys-color-on-surface-variant)", fontSize: "var(--md-sys-typescale-body-medium-size)" }}>Ara veya komut çalıştır...</span>
-              <kbd style={{ margin: "0 12px", fontSize: "10px", padding: "2px 6px", borderRadius: "4px", background: "var(--md-sys-color-surface-container-low)" }}>⌘K</kbd>
+              <span style={{ margin: "0 10px", color: "var(--md-sys-color-on-surface-variant)", fontSize: "14px" }}>○</span>
+              <span style={{ flex: 1, textAlign: "left", color: "var(--md-sys-color-on-surface-variant)", fontSize: "12px" }}>Ara veya komut çalıştır...</span>
+              <kbd style={{ margin: "0 10px", fontSize: "10px", padding: "2px 5px", borderRadius: "4px", background: "var(--md-sys-color-surface-container-low)", color: "var(--md-sys-color-on-surface-variant)" }}>⌘K</kbd>
             </button>
           </div>
 
-          <div className="md-nav-drawer-content" style={{ padding: "0 12px" }}>
+          <div className="md-nav-drawer-content" style={{ padding: "0 8px" }}>
             <ul className="md-list" style={{ padding: 0 }}>
               {([
                 {
@@ -1051,22 +1046,22 @@ export function Sidebar({
                 info: string;
                 actions?: Array<{ label: string; onClick: () => void; primary?: boolean }>;
               }>).map(({ path, icon, label, info, actions }) => (
-                <li key={path} style={{ display: "flex", alignItems: "center", marginBottom: "4px" }}>
+                <li key={path} style={{ display: "flex", alignItems: "center", marginBottom: "2px" }}>
                   <button
                     className={`md-list-item ${pathname === path ? "md-list-item--active" : ""}`}
-                    style={{ flex: 1, borderRadius: "var(--md-sys-shape-medium)", minHeight: "48px", padding: "0 12px" }}
+                    style={{ flex: 1, borderRadius: "var(--md-sys-shape-medium)", minHeight: "38px", padding: "0 10px" }}
                     onClick={() => { closeNavModal(); router.push(path); }}
                   >
-                    <div className="md-list-item-start material-symbols-outlined sm" style={{ marginRight: "16px", width: "24px", justifyContent: "center", opacity: 0.7 }} aria-hidden="true">{icon}</div>
+                    <div className="md-list-item-start material-symbols-outlined sm" style={{ marginRight: "12px", width: "20px", justifyContent: "center", opacity: 0.65, fontSize: "18px" }} aria-hidden="true">{icon}</div>
                     <div className="md-list-item-content">
-                      <span className="md-list-item-headline" style={{ fontSize: "var(--md-sys-typescale-label-large-size)" }}>{label}</span>
+                      <span className="md-list-item-headline" style={{ fontSize: "13px", fontWeight: 500 }}>{label}</span>
                     </div>
                   </button>
                   <Button
                     variant="text"
                     icon
                     className={navModal?.key === path ? "active" : ""}
-                    style={{ opacity: 0.5, flexShrink: 0, width: "32px", height: "32px", marginLeft: "4px" }}
+                    style={{ opacity: 0.4, flexShrink: 0, width: "28px", height: "28px", marginLeft: "2px" }}
                     onClick={(e) => openNavModal(path, label, e, { info, actions })}
                     aria-label={`${label} menüsü`}
                   >
@@ -1076,7 +1071,7 @@ export function Sidebar({
               ))}
             </ul>
 
-            <div className="md-list-divider" style={{ margin: "12px 0" }} />
+            <div className="md-list-divider" style={{ margin: "8px 0" }} />
 
             <SidebarGroup
               label="Klasörler"
@@ -1233,6 +1228,7 @@ export function Sidebar({
               >
                 <span className="sidebar-rail-item-icon material-symbols-outlined sm" aria-hidden="true">{icon}</span>
                 <span className="sidebar-rail-item-label">{label}</span>
+                <span className="sidebar-rail-item-chevron" aria-hidden="true">›</span>
               </button>
             ))}
           </nav>
