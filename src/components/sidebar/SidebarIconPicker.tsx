@@ -40,6 +40,7 @@ export function SidebarIconPicker({
   const [activeTab, setActiveTab] = useState<PickerTab>(initialTab);
   const [query, setQuery] = useState("");
   const [recentIcons, setRecentIcons] = useState<string[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -102,22 +103,30 @@ export function SidebarIconPicker({
   }, [activeTab, normalizedQuery]);
 
   const commitSelection = async (icon: string | null) => {
+    if (isSaving) return;
+
+    setIsSaving(true);
+
     if (icon) {
       const nextRecent = [icon, ...recentIcons.filter((item) => item !== icon)].slice(0, MAX_RECENT_ICONS);
       setRecentIcons(nextRecent);
       window.localStorage.setItem(RECENT_ICONS_STORAGE_KEY, JSON.stringify(nextRecent));
     }
 
-    await onSelect(icon);
-    onClose();
+    try {
+      await onSelect(icon);
+      onClose();
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
-    <div className="icon-picker-overlay" onMouseDown={onClose}>
+    <div className="icon-picker-overlay" onClick={onClose}>
       <div
         className="icon-picker"
         style={panelStyle}
-        onMouseDown={(event) => event.stopPropagation()}
+        onClick={(event) => event.stopPropagation()}
       >
         <div className="icon-picker-topbar">
           <div className="icon-picker-tabs" role="tablist" aria-label="Ikon sekmeleri">
@@ -131,6 +140,7 @@ export function SidebarIconPicker({
                 role="tab"
                 className={`icon-picker-tab${activeTab === tab.id ? " active" : ""}`}
                 aria-selected={activeTab === tab.id}
+                disabled={isSaving}
                 onClick={() => setActiveTab(tab.id)}
               >
                 {tab.label}
@@ -140,9 +150,10 @@ export function SidebarIconPicker({
           <button
             type="button"
             className="icon-picker-remove"
+            disabled={isSaving}
             onClick={() => void commitSelection(null)}
           >
-            Remove
+            {isSaving ? "Saving..." : "Remove"}
           </button>
         </div>
 
@@ -154,6 +165,7 @@ export function SidebarIconPicker({
               autoFocus
               type="text"
               value={query}
+              disabled={isSaving}
               onChange={(event) => setQuery(event.currentTarget.value)}
               placeholder={activeTab === "emoji" ? "Emoji filtrele..." : "Material Symbols filtrele..."}
             />
@@ -170,6 +182,7 @@ export function SidebarIconPicker({
                     key={icon}
                     type="button"
                     className={`icon-picker-choice${icon === currentIcon ? " active" : ""}`}
+                    disabled={isSaving}
                     onClick={() => void commitSelection(icon)}
                     title={decodeStoredIcon(icon).value ?? "icon"}
                   >
@@ -193,6 +206,7 @@ export function SidebarIconPicker({
                         key={icon}
                         type="button"
                         className={`icon-picker-choice${icon === currentIcon ? " active" : ""}`}
+                        disabled={isSaving}
                         onClick={() => void commitSelection(icon)}
                         title={icon}
                       >
@@ -213,6 +227,7 @@ export function SidebarIconPicker({
                         key={icon}
                         type="button"
                         className={`icon-picker-choice icon-picker-choice--material${storedIcon === currentIcon ? " active" : ""}`}
+                        disabled={isSaving}
                         onClick={() => void commitSelection(storedIcon)}
                         title={icon}
                       >
