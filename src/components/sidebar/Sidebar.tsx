@@ -1237,12 +1237,12 @@ export function Sidebar({
 
           <nav className="sidebar-rail" aria-label="İkincil gezinme">
             {([
-              { path: "/search", icon: "Ara", label: "Arama" },
-              { path: "/templates", icon: "Tpl", label: "Şablonlar" },
-              { path: "/publish", icon: "Pub", label: "Yayın" },
-              { path: "/proposals", icon: "YZ", label: "Öneriler" },
-              { path: "/settings", icon: "Ay", label: "Ayarlar" },
-              { path: "/account", icon: "Hs", label: "Hesap" },
+              { path: "/search", icon: "search", label: "Arama" },
+              { path: "/templates", icon: "library_books", label: "Şablonlar" },
+              { path: "/publish", icon: "publish", label: "Yayın" },
+              { path: "/proposals", icon: "auto_awesome", label: "Öneriler" },
+              { path: "/settings", icon: "settings", label: "Ayarlar" },
+              { path: "/account", icon: "account_circle", label: "Hesap" },
             ]).map(({ path, icon, label }) => (
               <button
                 key={path}
@@ -1252,7 +1252,7 @@ export function Sidebar({
                 aria-label={label}
                 title={label}
               >
-                <span className="sidebar-rail-item-icon" aria-hidden="true">{icon}</span>
+                <span className="sidebar-rail-item-icon material-symbols-outlined sm" aria-hidden="true">{icon}</span>
                 <span className="sidebar-rail-item-label">{label}</span>
               </button>
             ))}

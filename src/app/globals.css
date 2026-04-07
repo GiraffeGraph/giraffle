@@ -5579,9 +5579,8 @@ body::before {
   justify-content: center;
   width: 24px;
   color: var(--text-tertiary);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  font-size: 18px;
+  line-height: 1;
   flex-shrink: 0;
 }
 

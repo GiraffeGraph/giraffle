@@ -248,12 +248,14 @@ export default async function TemplatesPage({ searchParams }: TemplatesPageProps
                     <Button type="submit" variant="filled">
                       Şablonu Güncelle
                     </Button>
-                    <form action={handleDeleteTemplate}>
-                      <input type="hidden" name="templateId" value={selectedTemplate.id} />
-                      <Button type="submit" variant="tonal" style={{ color: "var(--md-sys-color-error)" }}>
-                        Sil
-                      </Button>
-                    </form>
+                    <Button
+                      type="submit"
+                      variant="tonal"
+                      formAction={handleDeleteTemplate}
+                      style={{ color: "var(--md-sys-color-error)" }}
+                    >
+                      Sil
+                    </Button>
                   </div>
                 </form>
               </CardContent>
