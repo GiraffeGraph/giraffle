@@ -428,7 +428,7 @@ export function NoteEditorPage({
   );
 
   return (
-    <div className="note-page">
+    <div className="note-page" style={{ paddingTop: 0 }}>
       <div
         className="note-topbar"
         style={{
@@ -441,6 +441,14 @@ export function NoteEditorPage({
           fontSize: "12px",
           color: "var(--md-sys-color-on-surface-variant)",
           flexShrink: 0,
+          position: "sticky",
+          top: 0,
+          zIndex: 10,
+          background: "var(--shell-main-bg, var(--md-sys-color-surface))",
+          marginLeft: "calc(-1 * var(--note-page-px, 34px))",
+          marginRight: "calc(-1 * var(--note-page-px, 34px))",
+          paddingLeft: "calc(16px + var(--note-page-px, 34px))",
+          paddingRight: "calc(16px + var(--note-page-px, 34px))",
         }}
         onContextMenu={openContextMenuAtPointer}
       >
