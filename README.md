@@ -1,12 +1,45 @@
-# Giraffle
+<p align="center">
+  <img src="./public/web-app-manifest-192x192.png" alt="Giraffle logo" width="112" height="112" />
+</p>
 
-Giraffle is a block-based knowledge editor that combines:
+<h1 align="center">Giraffle</h1>
 
-- Notion-like block editing
-- Obsidian-like wikilinks and backlinks
-- PostgreSQL-backed canonical note storage
-- Markdown and MDX as derived export formats
-- self-hosted deployment discipline
+<p align="center">
+  A self-hosted knowledge editor that combines block editing, wikilinks, backlinks, graph navigation, and canonical PostgreSQL storage.
+</p>
+
+<p align="center">
+  <img alt="Next.js 16" src="https://img.shields.io/badge/Next.js-16-111111?logo=nextdotjs&logoColor=white">
+  <img alt="React 19" src="https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white">
+  <img alt="Prisma 7" src="https://img.shields.io/badge/Prisma-7-2D3748?logo=prisma&logoColor=white">
+  <img alt="PostgreSQL" src="https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql&logoColor=white">
+  <img alt="Docker Ready" src="https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white">
+  <img alt="Self Hosted" src="https://img.shields.io/badge/Self--hosted-yes-1F883D">
+</p>
+
+<p align="center">
+  <a href="#why-giraffle">Why Giraffle</a> •
+  <a href="#features">Features</a> •
+  <a href="#local-development">Local Development</a> •
+  <a href="#production-deployment">Production Deployment</a> •
+  <a href="#project-structure">Project Structure</a>
+</p>
+
+## Why Giraffle
+
+Giraffle is built for people who want a Notion-like editing experience, Obsidian-style linking, and a deployment model they can fully own.
+
+Instead of storing notes as loose markdown files first and reconstructing structure later, Giraffle keeps a canonical block AST in PostgreSQL, then derives Markdown and MDX as export formats. That gives you a richer editor model without giving up portability.
+
+## Features
+
+- Block-based editing with Tiptap and custom block behaviors
+- Wikilinks, backlinks, unresolved links, and graph projection
+- PostgreSQL-backed canonical note and block storage
+- Folder hierarchy, tags, templates, publishing, and note proposals
+- Markdown and MDX export from canonical note data
+- Public note routes and slug-based published pages
+- Self-hosted production stack with Docker Compose, PostgreSQL, and nginx
 
 ## Current Foundation
 
@@ -18,13 +51,16 @@ Giraffle is a block-based knowledge editor that combines:
 - Seeded daily, meeting, and project templates with variable filling
 - Folder navigation, note move flow, publish toggle, Markdown/MDX export, and public note pages
 
-## Architecture
+## Stack
 
-- Editor engine: Tiptap
-- Canonical source of truth: block AST JSON
-- Derived formats: Markdown and MDX
-- Database: PostgreSQL via Prisma
-- Framework: Next.js App Router with TypeScript
+| Layer | Technology |
+| --- | --- |
+| Framework | Next.js App Router |
+| UI | React 19 + Tiptap |
+| Database | PostgreSQL 16 |
+| ORM / Client | Prisma 7 + `@prisma/adapter-pg` |
+| Auth | NextAuth |
+| Deployment | Docker Compose + nginx |
 
 ## Core Domains
 
@@ -56,7 +92,12 @@ npm run dev
 
 Set `AUTH_SECRET` in `.env` to a long random value before logging in.
 
-## Routes
+### Local Services
+
+- App: `http://localhost:3000`
+- PostgreSQL: `localhost:5432`
+
+## Main Routes
 
 - `/dashboard` workspace overview
 - `/notes/[noteId]` editable note view
@@ -81,7 +122,13 @@ Set `AUTH_SECRET` in `.env` to a long random value before logging in.
 
 ## Production Deployment
 
-### Container Build
+Giraffle ships with a production Docker Compose stack that runs:
+
+- `postgres` for durable application storage
+- `app` for the standalone Next.js server
+- optional `nginx` profile for reverse proxy use
+
+### Quick Start
 
 ```bash
 cp .env.production.example .env.production
@@ -89,21 +136,24 @@ $EDITOR .env.production
 ./scripts/prod-up.sh
 ```
 
-The production container:
+Then open `http://localhost:3000` for a local production smoke test, or point your domain at the server and set `NEXTAUTH_URL` accordingly.
+
+### What The Production Stack Does
 
 - builds Next.js in `standalone` mode
 - runs `prisma migrate deploy` on startup
-- starts the Next.js server behind nginx
-- exposes the app on port `80`
-- exposes `/api/health` for container health checks
+- publishes the app directly on `APP_PORT` (default `3000`)
+- exposes `/api/health` for health checks
 - persists PostgreSQL data in `giraffle_pgdata`
 - persists uploaded images in `giraffle_uploads`
+- keeps `prisma.config.ts` inside the image because Prisma 7 reads datasource config from it during `migrate deploy`
 
 ### Required Environment Variables
 
 - `DATABASE_URL`
 - `AUTH_SECRET`
 - `NEXTAUTH_URL`
+- `APP_PORT`
 - `POSTGRES_USER`
 - `POSTGRES_PASSWORD`
 - `POSTGRES_DB`
@@ -115,18 +165,36 @@ git clone <your-repo-url> giraffle
 cd giraffle
 cp .env.production.example .env.production
 $EDITOR .env.production
-docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build
+./scripts/prod-up.sh
 ```
 
-Useful commands:
+### Useful Commands
 
 ```bash
 ./scripts/prod-logs.sh
 docker compose --env-file .env.production -f docker-compose.prod.yml ps
 docker compose --env-file .env.production -f docker-compose.prod.yml restart app
+docker compose --env-file .env.production -f docker-compose.prod.yml down
 ```
 
-`NEXTAUTH_URL` must point to the public URL you will actually use, for example `http://203.0.113.10` or `https://notes.example.com`.
+`NEXTAUTH_URL` must match the public URL you actually use, for example `http://203.0.113.10` or `https://notes.example.com`.
+
+### Optional Reverse Proxy
+
+If you want a front proxy like many self-hosted setups use, enable the nginx profile:
+
+```bash
+COMPOSE_PROFILES=proxy ./scripts/prod-up.sh
+```
+
+That will also bind port `80` through nginx. The default stack intentionally stays simpler and publishes the app directly on `APP_PORT`, which matches the default self-host pattern used by projects like AFFiNE, SiYuan, and Memos.
+
+### Runtime Notes
+
+- The production app container intentionally keeps the full runtime `node_modules` tree. Prisma 7 CLI dependencies are needed for in-container `prisma migrate deploy`.
+- Uploads are written to `/app/public/uploads` and persisted through the `giraffle_uploads` Docker volume.
+- By default the app is public on `APP_PORT` and reachable directly, usually `http://localhost:3000`.
+- nginx is optional and only starts when the `proxy` profile is enabled.
 
 ## Auth Baseline
 

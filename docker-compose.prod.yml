@@ -35,8 +35,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    expose:
-      - "3000"
+    ports:
+      - "${APP_PORT:-3000}:3000"
     environment:
       DATABASE_URL: ${DATABASE_URL}
       AUTH_SECRET: ${AUTH_SECRET}
@@ -60,6 +60,7 @@ services:
 
   nginx:
     image: nginx:1.27-alpine
+    profiles: ["proxy"]
     restart: unless-stopped
     depends_on:
       app:
