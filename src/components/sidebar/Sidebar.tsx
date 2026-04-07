@@ -903,7 +903,7 @@ export function Sidebar({
 
   return (
     <aside
-      className={`md-nav-drawer md-nav-drawer--giraffle-sidebar${isSidebarCompact ? " md-nav-drawer--compact" : ""}${
+      className={`md-nav-drawer md-nav-drawer--giraffle-sidebar sidebar${isSidebarCompact ? " md-nav-drawer--compact compact" : ""}${
         isSidebarResizing ? " md-nav-drawer--resizing" : ""
       }`} style={{ 
         width: isSidebarCompact ? SIDEBAR_COMPACT_WIDTH : sidebarWidth,
@@ -1235,7 +1235,7 @@ export function Sidebar({
             </SidebarGroup>
           </div>
 
-          <nav className="sidebar-rail">
+          <nav className="sidebar-rail" aria-label="İkincil gezinme">
             {([
               { path: "/search", icon: "Ara", label: "Arama" },
               { path: "/templates", icon: "Tpl", label: "Şablonlar" },
@@ -1252,17 +1252,18 @@ export function Sidebar({
                 aria-label={label}
                 title={label}
               >
-                {icon}
+                <span className="sidebar-rail-item-icon" aria-hidden="true">{icon}</span>
+                <span className="sidebar-rail-item-label">{label}</span>
               </button>
             ))}
           </nav>
 
-          <div className="md-nav-drawer-footer" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: "1px solid var(--md-sys-color-outline-variant)", padding: "12px 16px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "12px", overflow: "hidden" }}>
+          <div className="md-nav-drawer-footer sidebar-footer">
+            <div className="sidebar-user-meta">
               <div style={{ flexShrink: 0, width: "32px", height: "32px", borderRadius: "var(--md-sys-shape-full)", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--md-sys-color-surface-variant)", color: "var(--md-sys-color-on-surface-variant)", fontWeight: "bold" }}>
                 {(user.name ?? user.email ?? "G").slice(0, 1).toUpperCase()}
               </div>
-              <div style={{ display: "flex", flexDirection: "column", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
+              <div style={{ display: "flex", flexDirection: "column", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis", minWidth: 0 }}>
                 <div style={{ fontSize: "var(--md-sys-typescale-body-medium-size)", fontWeight: "var(--md-sys-typescale-body-medium-weight)", color: "var(--md-sys-color-on-surface)", overflow: "hidden", textOverflow: "ellipsis" }}>
                   {user.name ?? user.email ?? "Giraffle Kullanıcı"}
                 </div>
@@ -1276,6 +1277,7 @@ export function Sidebar({
             <Button
               variant="text"
               icon
+              className="sidebar-footer-menu"
               onClick={(event) => openContextMenuFromTrigger(event, footerMenuItems)}
               aria-label="Hesap ve tema menüsü"
             >

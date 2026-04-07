@@ -20,12 +20,12 @@
 /* App-Specific Sidebar mapped to M3 Drawer */
 .md-nav-drawer--giraffle-sidebar {
   width: var(--md-layout-sidebar-width);
-  border-radius: var(--md-sys-shape-extra-large);
-  margin: 18px 0 18px 18px; /* Floating variant look */
-  height: calc(100vh - 36px);
+  border-radius: 0;
+  margin: 0;
+  height: 100vh;
   background-color: var(--md-sys-color-shell-sidebar);
-  box-shadow: var(--md-sys-elevation-level1);
-  backdrop-filter: blur(14px); /* Giraffle glass touch */
+  box-shadow: none;
+  backdrop-filter: none;
   flex-shrink: 0;
   transition: width var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard);
 }
