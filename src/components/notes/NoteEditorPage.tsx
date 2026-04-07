@@ -678,7 +678,6 @@ export function NoteEditorPage({
         position={contextMenuPosition}
         onClose={closeContextMenu}
       />
-    </div>
     </>
   );
 }
