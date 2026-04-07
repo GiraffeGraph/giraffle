@@ -510,7 +510,17 @@ export function NoteEditorPage({
           <button
             type="button"
             onClick={() => void handlePublishToggle()}
-            style={{ background: "none", border: "none", color: isPublished ? "var(--md-sys-color-primary)" : "var(--md-sys-color-on-surface-variant)", cursor: "pointer", padding: "3px 8px", borderRadius: "6px", fontSize: "12px", fontWeight: "500" }}
+            style={{
+              background: isPublished ? "var(--md-sys-color-secondary-container)" : "var(--md-sys-color-primary)",
+              border: "none",
+              color: isPublished ? "var(--md-sys-color-on-secondary-container)" : "var(--md-sys-color-on-primary)",
+              cursor: "pointer",
+              padding: "4px 12px",
+              borderRadius: "6px",
+              fontSize: "12px",
+              fontWeight: "500",
+              lineHeight: 1.4,
+            }}
           >
             {isPublished ? "Yayımdan kaldır" : "Yayımla"}
           </button>
