@@ -96,6 +96,8 @@ export function Sidebar({
   const [isSidebarResizing, setIsSidebarResizing] = useState(false);
   const [collapsedSections, setCollapsedSections] = useState<SidebarCollapseState>(DEFAULT_COLLAPSED_SECTIONS);
   const [hasLoadedPreferences, setHasLoadedPreferences] = useState(false);
+  const [isCreatingFolder, setIsCreatingFolder] = useState(false);
+  const folderCreationHandledRef = useRef(false);
 
   const normalizedPaletteQuery = paletteQuery.trim().toLowerCase();
   const currentNoteId = activeNoteId ?? extractActiveNoteId(pathname) ?? undefined;
@@ -224,12 +226,22 @@ export function Sidebar({
     router.push(`/notes/${noteId}`);
   };
 
-  const handleCreateFolder = async () => {
-    const folderName = window.prompt("Klasör adı", "Yeni Klasör")?.trim();
-    if (!folderName) return;
-    const folderId = await createFolderAction({ name: folderName });
-    router.push(`/folders/${folderId}`);
-  };
+  const doCreateFolder = useCallback(
+    async (name: string) => {
+      const trimmed = name.trim();
+      if (!trimmed) return;
+      const folderId = await createFolderAction({ name: trimmed });
+      router.push(`/folders/${folderId}`);
+    },
+    [router]
+  );
+
+  const handleStartCreateFolder = useCallback(() => {
+    folderCreationHandledRef.current = false;
+    setIsCreatingFolder(true);
+    // Klasörler bölümü kapalıysa aç
+    setCollapsedSections((s) => ({ ...s, folders: false }));
+  }, []);
 
   const handleCreateNoteInFolder = useCallback(
     async (folderId: string) => {
@@ -321,7 +333,7 @@ export function Sidebar({
   const paletteItems = useMemo<CommandPaletteItem[]>(() => {
     const actionItems: CommandPaletteItem[] = [
       { id: "action-new-note", group: "Hızlı işlemler", title: "Yeni not oluştur", description: "Boş bir not aç", icon: "\uE145", hint: "Enter", onSelect: async () => { const id = await createNoteAction(); router.push(`/notes/${id}`); } },
-      { id: "action-new-folder", group: "Hızlı işlemler", title: "Yeni klasör oluştur", description: "Çalışma alanına yeni klasör ekle", icon: "\uE2C7", onSelect: async () => { const name = window.prompt("Klasör adı", "Yeni Klasör")?.trim(); if (!name) return; const id = await createFolderAction({ name }); router.push(`/folders/${id}`); } },
+      { id: "action-new-folder", group: "Hızlı işlemler", title: "Yeni klasör oluştur", description: "Çalışma alanına yeni klasör ekle", icon: "\uE2C7", onSelect: async () => { closePalette(); handleStartCreateFolder(); } },
       { id: "action-template-note", group: "Hızlı işlemler", title: "Şablondan not oluştur", description: "Şablon seçiciyi aç", icon: "\uE02F", onSelect: async () => { setTemplatePickerOpenSignal((v) => v + 1); } },
       { id: "action-dashboard", group: "Geçişler", title: "Panoya git", description: "Ana çalışma alanı görünümü", icon: "\uE88A", onSelect: async () => { router.push("/dashboard"); } },
       { id: "action-graph", group: "Geçişler", title: "Bağlantı ağına git", description: "Not grafiği görünümü", icon: "\uE92B", onSelect: async () => { router.push("/graph"); } },
@@ -365,10 +377,10 @@ export function Sidebar({
   const folderGroupActions = useMemo<SidebarGroupAction[]>(
     () => [
       { icon: <FileNewIcon />, label: "Yeni not", onClick: () => void handleCreateNote() },
-      { icon: <FolderNewIcon />, label: "Yeni klasör", onClick: () => void handleCreateFolder() },
+      { icon: <FolderNewIcon />, label: "Yeni klasör", onClick: handleStartCreateFolder },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    []
+    [handleStartCreateFolder]
   );
 
   const isFoldersCollapsed = hasQuery ? false : collapsedSections.folders;
@@ -455,6 +467,44 @@ export function Sidebar({
             {/* Folders */}
             <SidebarGroup label="Klasörler" collapsed={isFoldersCollapsed} onToggle={() => toggleSection("folders")} actions={folderGroupActions}>
               <div className="sidebar-folder-tree">
+                {isCreatingFolder && (
+                  <div className="sidebar-inline-creator">
+                    <span className="sidebar-item-icon" aria-hidden="true">
+                      <span className="material-symbols-outlined sm">folder</span>
+                    </span>
+                    <input
+                      // eslint-disable-next-line jsx-a11y/no-autofocus
+                      autoFocus
+                      type="text"
+                      className="sidebar-inline-creator-input"
+                      defaultValue="Yeni Klasör"
+                      placeholder="Klasör adı"
+                      onFocus={(e) => e.currentTarget.select()}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          folderCreationHandledRef.current = true;
+                          const name = e.currentTarget.value;
+                          setIsCreatingFolder(false);
+                          void doCreateFolder(name);
+                        } else if (e.key === "Escape") {
+                          e.preventDefault();
+                          folderCreationHandledRef.current = true;
+                          setIsCreatingFolder(false);
+                        }
+                      }}
+                      onBlur={(e) => {
+                        if (folderCreationHandledRef.current) {
+                          folderCreationHandledRef.current = false;
+                          return;
+                        }
+                        const name = e.currentTarget.value;
+                        setIsCreatingFolder(false);
+                        void doCreateFolder(name);
+                      }}
+                    />
+                  </div>
+                )}
                 {draggedFolderId ? (
                   <div
                     className={`sidebar-folder-dropzone root${folderDropTarget?.folderId === "__root__" ? " active" : ""}`}
