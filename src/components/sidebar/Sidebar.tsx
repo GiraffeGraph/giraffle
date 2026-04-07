@@ -1,5 +1,10 @@
 "use client";
 
+import { combine } from "@atlaskit/pragmatic-drag-and-drop/combine";
+import {
+  dropTargetForElements,
+  monitorForElements,
+} from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import Image from "next/image";
 import type { MouseEvent as ReactMouseEvent } from "react";
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
@@ -8,7 +13,7 @@ import { CommandPalette, type CommandPaletteItem } from "@/components/sidebar/Co
 import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 import { Button } from "@/components/ui/Button";
 import { TemplatePicker } from "@/components/templates/TemplatePicker";
-import { createFolderAction, moveFolderAction, relocateFolderAction } from "@/server/api/folders";
+import { createFolderAction, relocateFolderAction } from "@/server/api/folders";
 import { archiveNoteAction, createNoteAction, moveNoteAction, updateNoteAction } from "@/server/api/notes";
 import {
   DEFAULT_COLLAPSED_SECTIONS,
@@ -20,7 +25,14 @@ import {
   type SidebarCollapseState,
 } from "@/lib/workspace-preferences";
 import { getTemplateCategoryLabel } from "@/lib/template-category";
-import type { FolderDropTarget, SidebarMenuState, SidebarProps, SidebarSectionKey } from "./sidebar.types";
+import {
+  isSidebarFolderDragData,
+  isSidebarFolderDropData,
+  type FolderDropTarget,
+  type SidebarMenuState,
+  type SidebarProps,
+  type SidebarSectionKey,
+} from "./sidebar.types";
 import {
   areSidebarCollapseStatesEqual,
   clampSidebarWidth,
@@ -99,6 +111,7 @@ export function Sidebar({
   const [hasLoadedPreferences, setHasLoadedPreferences] = useState(false);
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const folderCreationHandledRef = useRef(false);
+  const rootFolderDropzoneRef = useRef<HTMLDivElement | null>(null);
 
   const normalizedPaletteQuery = paletteQuery.trim().toLowerCase();
   const currentNoteId = activeNoteId ?? extractActiveNoteId(pathname) ?? undefined;
