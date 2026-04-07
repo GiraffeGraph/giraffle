@@ -6187,18 +6187,23 @@ body::before {
 
 /* Minimal note editor + wider workspace refinements */
 .note-page {
-  width: min(100%, 1180px);
+  width: min(100%, 1240px);
 }
 
 .note-header,
 .note-editor-container,
 .backlinks-section {
-  max-width: 920px;
+  max-width: 980px;
   margin-inline: auto;
 }
 
 .note-header {
-  padding: 22px 26px 20px;
+  padding: 12px 4px 6px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
 }
 
 .note-topbar {
@@ -6206,7 +6211,7 @@ body::before {
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 18px;
+  margin-bottom: 16px;
 }
 
 .note-breadcrumb-row {
@@ -6215,7 +6220,7 @@ body::before {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   margin-bottom: 0;
 }
 
@@ -6223,7 +6228,7 @@ body::before {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  min-height: 28px;
+  min-height: 26px;
   padding: 0;
   border: none;
   background: transparent;
@@ -6333,7 +6338,7 @@ body::before {
 
 .note-status-row.minimal {
   gap: 8px;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .note-status-inline {
@@ -6355,7 +6360,7 @@ body::before {
 }
 
 .note-tag-list {
-  margin-top: 16px;
+  margin-top: 14px;
 }
 
 .note-settings-panel {
@@ -6386,12 +6391,13 @@ body::before {
 }
 
 .note-editor-container {
-  padding: 32px 30px;
+  padding: 34px 38px;
+  border-radius: 24px;
 }
 
 .graffle-editor-content {
-  max-width: 860px;
-  min-height: 420px;
+  max-width: 920px;
+  min-height: 440px;
 }
 
 .graffle-editor .is-editor-empty::before {
@@ -6431,6 +6437,16 @@ body::before {
 .sidebar-folder-count,
 .sidebar-tag-count {
   font-size: 11px;
+}
+
+.sidebar-rail {
+  padding: 4px 8px;
+}
+
+.sidebar-rail-item {
+  width: 30px;
+  height: 28px;
+  border-radius: 7px;
 }
 
 .sidebar-footer {
