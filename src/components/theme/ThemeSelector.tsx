@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import {
   APP_THEME_STORAGE_KEY,
   DEFAULT_APP_THEME,
@@ -8,6 +9,7 @@ import {
   isAppThemeId,
   persistAppTheme,
 } from "./theme-config";
+import iconImg from "@/app/icon1.png";
 
 export function ThemeSelector() {
   const [mounted, setMounted] = useState(false);
@@ -111,13 +113,12 @@ export function ThemeSelector() {
           justifyContent: "center",
           alignItems: "center",
           cursor: "pointer",
-          fontSize: "20px",
           transition: "all 0.2s ease",
         }}
         onMouseEnter={(e) => (e.currentTarget.style.background = "var(--surface-hover)")}
         onMouseLeave={(e) => (e.currentTarget.style.background = activeThemeId === "midnight-gold" ? "var(--surface-highlight)" : "transparent")}
       >
-        🦒
+        <Image src={iconImg} alt="Giraffe Logo" width={20} height={20} style={{ borderRadius: "4px" }} />
       </button>
 
       <button
