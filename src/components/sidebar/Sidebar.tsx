@@ -253,7 +253,6 @@ export function Sidebar({
   );
 
   const handleStartCreateFolder = useCallback(() => {
-    folderCreationHandledRef.current = false;
     setIsCreatingFolder(true);
     // Klasörler bölümü kapalıysa aç
     setCollapsedSections((s) => ({ ...s, folders: false }));
@@ -561,7 +560,10 @@ export function Sidebar({
                       className="sidebar-inline-creator-input"
                       defaultValue="Yeni Klasör"
                       placeholder="Klasör adı"
-                      onFocus={(e) => e.currentTarget.select()}
+                      onFocus={(e) => {
+                        folderCreationHandledRef.current = false;
+                        e.currentTarget.select();
+                      }}
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
                           e.preventDefault();

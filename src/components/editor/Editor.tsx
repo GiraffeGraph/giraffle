@@ -1358,6 +1358,21 @@ function getClosestBlockElement(
   return blockElement;
 }
 
+function getSelectionBlockId(editor: TiptapEditor) {
+  const { $from } = editor.state.selection;
+
+  for (let depth = $from.depth; depth >= 0; depth -= 1) {
+    const node = $from.node(depth);
+    const blockId = node.attrs?.blockId;
+
+    if (typeof blockId === "string") {
+      return blockId;
+    }
+  }
+
+  return null;
+}
+
 function focusBlockById(editor: TiptapEditor, blockId: string) {
   const blockElement = document.querySelector(
     `[data-block-id="${blockId}"]`
