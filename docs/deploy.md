@@ -2,6 +2,8 @@
 
 This is the simplest production deployment flow for Giraffle.
 
+The Docker image is already published by the project maintainers. End users do not need to build or publish anything.
+
 ## What this setup uses
 
 - Docker image: `docker.io/efekurucay/giraffle:latest`
@@ -9,31 +11,7 @@ This is the simplest production deployment flow for Giraffle.
 - Database container: PostgreSQL 16
 - Optional reverse proxy: nginx
 
-## 1. Publish the Docker image
-
-If the image is not already on Docker Hub, publish it from your local machine:
-
-```bash
-docker login -u efekurucay
-
-docker buildx build \
-  --platform linux/amd64 \
-  -t docker.io/efekurucay/giraffle:latest \
-  --push .
-```
-
-If you also want GitHub Actions to publish automatically:
-
-1. Add these GitHub Actions secrets:
-   - `DOCKERHUB_USERNAME=efekurucay`
-   - `DOCKERHUB_TOKEN=<your-docker-hub-token>`
-2. Push to `main`, or run the workflow manually.
-
-Workflow file:
-
-- `.github/workflows/docker-publish.yml`
-
-## 2. Prepare the server
+## 1. Prepare the server
 
 Install these on the server:
 
@@ -48,7 +26,7 @@ git clone https://github.com/GiraffeGraph/giraffle.git
 cd giraffle
 ```
 
-## 3. Create the production env file
+## 2. Create the production env file
 
 ```bash
 cp .env.production.example .env.production
@@ -77,7 +55,7 @@ Important:
 - `POSTGRES_PASSWORD` and the password inside `DATABASE_URL` must be the same.
 - `AUTH_SECRET` should be long and random.
 
-## 4. Start the app
+## 3. Start the app
 
 Pull the image and start everything:
 
@@ -102,7 +80,7 @@ Check running containers:
 docker compose --env-file .env.production -f docker-compose.prod.yml ps
 ```
 
-## 5. Open the app
+## 4. Open the app
 
 If `APP_PORT=3000`, open:
 
@@ -112,7 +90,7 @@ If you configured a domain, set:
 
 - `NEXTAUTH_URL=http://your-domain.com`
 
-## 6. Optional: run behind nginx
+## 5. Optional: run behind nginx
 
 If you want nginx in front of the app:
 
@@ -124,27 +102,18 @@ That adds the nginx service from:
 
 - `docker-compose.proxy.yml`
 
-## 7. Updating to a new version
+## 6. Updating to a new version
 
-### If you publish a new Docker image
-
-On the server:
+When a new Docker image is published by the project maintainers, update the server with:
 
 ```bash
+git pull
 ./scripts/prod-up.sh
 ```
 
 Because the script does `docker compose pull` first, the latest image is fetched.
 
-### If you build directly on the server
-
-Use:
-
-```bash
-./scripts/prod-build-up.sh
-```
-
-## 8. Useful commands
+## 7. Useful commands
 
 Restart app:
 
@@ -164,7 +133,7 @@ View logs:
 ./scripts/prod-logs.sh
 ```
 
-## 9. Troubleshooting
+## 8. Troubleshooting
 
 ### App does not start
 
@@ -179,7 +148,7 @@ Common causes:
 - wrong `DATABASE_URL`
 - missing `AUTH_SECRET`
 - wrong `NEXTAUTH_URL`
-- Docker image was not pushed yet
+- `APP_IMAGE` is wrong or points to a tag that does not exist
 
 ### Database connection error
 
@@ -198,25 +167,17 @@ docker compose --env-file .env.production -f docker-compose.prod.yml pull
 ./scripts/prod-up.sh
 ```
 
-## 10. Recommended simple production flow
+## 9. Recommended simple production flow
 
-The simplest repeatable flow is:
+The simplest repeatable flow for users is:
 
-1. Build and push image to Docker Hub
-2. SSH into server
-3. Pull latest code
-4. Run `./scripts/prod-up.sh`
+1. SSH into the server
+2. Pull the latest code
+3. Run `./scripts/prod-up.sh`
 
 Example:
 
 ```bash
-# local
-docker buildx build \
-  --platform linux/amd64 \
-  -t docker.io/efekurucay/giraffle:latest \
-  --push .
-
-# server
 cd giraffle
 git pull
 ./scripts/prod-up.sh
