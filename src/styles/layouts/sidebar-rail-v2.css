@@ -374,6 +374,21 @@
   flex-shrink: 0;
 }
 
+/* --- Pin indicator ------------------------------------------- */
+.sidebar-pin-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--accent);
+  opacity: 0.6;
+  margin-left: 2px;
+}
+
+.sidebar-item.active .sidebar-pin-indicator {
+  opacity: 0.9;
+}
+
 /* --- Empty state --------------------------------------------- */
 .sidebar-empty {
   padding: 4px 6px;

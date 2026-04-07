@@ -11,6 +11,14 @@ function MoreHorizontalIcon() {
   );
 }
 
+function PinIcon() {
+  return (
+    <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true">
+      <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z" />
+    </svg>
+  );
+}
+
 export function SidebarNoteRow({
   note,
   active,
@@ -39,10 +47,12 @@ export function SidebarNoteRow({
             <span className="material-symbols-outlined sm" aria-hidden="true">description</span>
           )}
         </span>
-        <span className="sidebar-item-label">
-          {note.title}
-          {note.isPinned ? " *" : ""}
-        </span>
+        <span className="sidebar-item-label">{note.title || "Adsız"}</span>
+        {note.isPinned ? (
+          <span className="sidebar-pin-indicator" aria-label="Sabitlenmiş" title="Sabitlenmiş">
+            <PinIcon />
+          </span>
+        ) : null}
       </button>
       <div className="sidebar-row-actions">
         <button

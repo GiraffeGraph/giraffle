@@ -7,16 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { CommandPalette, type CommandPaletteItem } from "@/components/sidebar/CommandPalette";
 import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 import { Button } from "@/components/ui/Button";
-import {
-  APP_THEMES,
-  APP_THEME_STORAGE_KEY,
-  DEFAULT_APP_THEME,
-  type AppThemeId,
-  isAppThemeId,
-  persistAppTheme,
-} from "@/components/theme/theme-config";
 import { TemplatePicker } from "@/components/templates/TemplatePicker";
-import { signOutAction } from "@/server/api/auth";
 import { createFolderAction, moveFolderAction, relocateFolderAction } from "@/server/api/folders";
 import { archiveNoteAction, createNoteAction, moveNoteAction, updateNoteAction } from "@/server/api/notes";
 import {
@@ -29,16 +20,13 @@ import {
   type SidebarCollapseState,
 } from "@/lib/workspace-preferences";
 import { getTemplateCategoryLabel } from "@/lib/template-category";
-import { formatDate } from "@/lib/utils";
 import type { FolderDropTarget, SidebarMenuState, SidebarProps, SidebarSectionKey } from "./sidebar.types";
 import {
   areSidebarCollapseStatesEqual,
   clampSidebarWidth,
   extractActiveNoteId,
   filterFolderTree,
-  findFolderById,
   flattenFolderTree,
-  getFirstFolderId,
   loadSidebarCollapseState,
   loadSidebarCompactState,
   loadSidebarWidth,
@@ -46,23 +34,12 @@ import {
 import { SidebarGroup } from "./SidebarGroup";
 import { SidebarNoteRow } from "./SidebarNoteRow";
 import { SidebarFolderItem } from "./SidebarFolderItem";
-import { GraphIcon } from "./GraphIcon";
 
 function PlusIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <line x1="12" y1="5" x2="12" y2="19" />
       <line x1="5" y1="12" x2="19" y2="12" />
-    </svg>
-  );
-}
-
-function MoreHorizontalIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="1" />
-      <circle cx="19" cy="12" r="1" />
-      <circle cx="5" cy="12" r="1" />
     </svg>
   );
 }
@@ -80,7 +57,6 @@ export function Sidebar({
   folders,
   templates,
   tags,
-  user,
   activeNoteId,
 }: SidebarProps) {
   const pathname = usePathname();
@@ -93,22 +69,11 @@ export function Sidebar({
   const [templatePickerOpenSignal, setTemplatePickerOpenSignal] = useState(0);
   const [draggedFolderId, setDraggedFolderId] = useState<string | null>(null);
   const [folderDropTarget, setFolderDropTarget] = useState<FolderDropTarget | null>(null);
-  const [activeThemeId, setActiveThemeId] = useState<AppThemeId>(DEFAULT_APP_THEME);
   const [sidebarWidth, setSidebarWidth] = useState<number>(DEFAULT_EXPANDED_SIDEBAR_WIDTH);
   const [isSidebarCompact, setIsSidebarCompact] = useState(false);
   const [isSidebarResizing, setIsSidebarResizing] = useState(false);
   const [collapsedSections, setCollapsedSections] = useState<SidebarCollapseState>(DEFAULT_COLLAPSED_SECTIONS);
   const [hasLoadedPreferences, setHasLoadedPreferences] = useState(false);
-  const [isInboxExpanded, setIsInboxExpanded] = useState(false);
-  const [navModal, setNavModal] = useState<{
-    key: string;
-    label: string;
-    x: number;
-    y: number;
-    info?: string;
-    isSearch?: boolean;
-    actions?: Array<{ label: string; onClick: () => void; primary?: boolean }>;
-  } | null>(null);
 
   const normalizedPaletteQuery = paletteQuery.trim().toLowerCase();
   const currentNoteId = activeNoteId ?? extractActiveNoteId(pathname) ?? undefined;
@@ -122,22 +87,6 @@ export function Sidebar({
     setIsPaletteOpen(false);
     setPaletteQuery("");
   }, []);
-  const closeNavModal = useCallback(() => setNavModal(null), []);
-
-  const openNavModal = useCallback(
-    (
-      key: string,
-      label: string,
-      event: ReactMouseEvent<HTMLButtonElement>,
-      extra?: { info?: string; isSearch?: boolean; actions?: Array<{ label: string; onClick: () => void; primary?: boolean }> }
-    ) => {
-      event.stopPropagation();
-      if (navModal?.key === key) { setNavModal(null); return; }
-      const rect = event.currentTarget.getBoundingClientRect();
-      setNavModal({ key, label, x: rect.right + 6, y: rect.top, ...extra });
-    },
-    [navModal]
-  );
 
   const openContextMenuAtPointer = useCallback(
     (event: ReactMouseEvent<HTMLElement>, items: ContextMenuItem[]) => {
@@ -161,23 +110,6 @@ export function Sidebar({
     await navigator.clipboard.writeText(`${window.location.origin}${path}`);
   }, []);
 
-  const applyTheme = useCallback((themeId: AppThemeId) => {
-    persistAppTheme(themeId);
-    setActiveThemeId(themeId);
-  }, []);
-
-  const resetPreferences = useCallback(() => {
-    window.localStorage.removeItem(APP_THEME_STORAGE_KEY);
-    window.localStorage.removeItem(SIDEBAR_WIDTH_STORAGE_KEY);
-    window.localStorage.removeItem(SIDEBAR_COMPACT_STORAGE_KEY);
-    window.localStorage.removeItem(SIDEBAR_COLLAPSE_STORAGE_KEY);
-    setActiveThemeId(DEFAULT_APP_THEME);
-    setSidebarWidth(DEFAULT_EXPANDED_SIDEBAR_WIDTH);
-    setIsSidebarCompact(false);
-    setCollapsedSections(DEFAULT_COLLAPSED_SECTIONS);
-    persistAppTheme(DEFAULT_APP_THEME);
-  }, []);
-
   const toggleSection = useCallback((section: SidebarSectionKey) => {
     setCollapsedSections((current) => ({ ...current, [section]: !current[section] }));
   }, []);
@@ -197,26 +129,6 @@ export function Sidebar({
     });
     return () => window.cancelAnimationFrame(frameId);
   }, []);
-
-  // Sync theme from DOM/localStorage
-  useEffect(() => {
-    const currentTheme = document.documentElement.dataset.theme;
-    let nextTheme = DEFAULT_APP_THEME;
-    if (currentTheme && isAppThemeId(currentTheme)) {
-      nextTheme = currentTheme;
-    } else {
-      const stored = localStorage.getItem(APP_THEME_STORAGE_KEY);
-      if (stored && isAppThemeId(stored)) {
-        nextTheme = stored;
-        persistAppTheme(stored);
-      } else {
-        persistAppTheme(DEFAULT_APP_THEME);
-      }
-    }
-    if (nextTheme === activeThemeId) return;
-    const frameId = window.requestAnimationFrame(() => setActiveThemeId(nextTheme));
-    return () => window.cancelAnimationFrame(frameId);
-  }, [activeThemeId]);
 
   // Persist collapsed sections
   useEffect(() => {
@@ -360,14 +272,6 @@ export function Sidebar({
     [copyInternalLink, handleMoveFolder, router]
   );
 
-  const footerMenuItems = useMemo<ContextMenuItem[]>(
-    () => [
-      { label: "Tercihleri sıfırla", hint: "Tema ve sidebar tercihlerini varsayılana al", onSelect: resetPreferences },
-      { label: "Çıkış yap", hint: "Oturumu kapat", tone: "danger" as const, onSelect: () => void signOutAction() },
-    ],
-    [resetPreferences]
-  );
-
   // Derived / filtered data
   const flattenedFolders = useMemo(() => flattenFolderTree(folders), [folders]);
 
@@ -391,17 +295,6 @@ export function Sidebar({
     return source.slice(0, hasQuery ? 12 : 8);
   }, [hasQuery, normalizedQuery, notes]);
 
-  const commandMatch = useMemo(() => {
-    if (filteredNotes.length > 0) return { type: "note" as const, label: filteredNotes[0].title, href: `/notes/${filteredNotes[0].id}` };
-    const firstFolderId = getFirstFolderId(filteredFolders);
-    if (firstFolderId) {
-      const folder = findFolderById(filteredFolders, firstFolderId);
-      if (folder) return { type: "folder" as const, label: folder.name, href: `/folders/${folder.id}` };
-    }
-    if (filteredTags.length > 0) return { type: "tag" as const, label: `#${filteredTags[0].name}`, href: `/tags/${filteredTags[0].name}` };
-    return null;
-  }, [filteredFolders, filteredNotes, filteredTags]);
-
   // Palette items
   const paletteItems = useMemo<CommandPaletteItem[]>(() => {
     const actionItems: CommandPaletteItem[] = [
@@ -409,7 +302,7 @@ export function Sidebar({
       { id: "action-new-folder", group: "Hızlı işlemler", title: "Yeni klasör oluştur", description: "Çalışma alanına yeni klasör ekle", icon: "\uE2C7", onSelect: async () => { const name = window.prompt("Klasör adı", "Yeni Klasör")?.trim(); if (!name) return; const id = await createFolderAction({ name }); router.push(`/folders/${id}`); } },
       { id: "action-template-note", group: "Hızlı işlemler", title: "Şablondan not oluştur", description: "Şablon seçiciyi aç", icon: "\uE02F", onSelect: async () => { setTemplatePickerOpenSignal((v) => v + 1); } },
       { id: "action-dashboard", group: "Geçişler", title: "Panoya git", description: "Ana çalışma alanı görünümü", icon: "\uE88A", onSelect: async () => { router.push("/dashboard"); } },
-      { id: "action-graph", group: "Geçişler", title: "Bağlantı ağına git", description: "Not grafiği görünümü", icon: "__graph__", onSelect: async () => { router.push("/graph"); } },
+      { id: "action-graph", group: "Geçişler", title: "Bağlantı ağına git", description: "Not grafiği görünümü", icon: "\uE92B", onSelect: async () => { router.push("/graph"); } },
       { id: "action-inbox", group: "Geçişler", title: "Gelen kutusuna git", description: "Klasörsüz notları aç", icon: "\uE156", onSelect: async () => { router.push("/inbox"); } },
       { id: "action-search", group: "Geçişler", title: "Arama çalışma alanını aç", description: "Filtreli arama sayfası", icon: "\uE8B6", onSelect: async () => { router.push("/search"); } },
       { id: "action-templates", group: "Geçişler", title: "Şablon kütüphanesi", description: "Şablon yönetim alanını aç", icon: "\uE02F", onSelect: async () => { router.push("/templates"); } },
@@ -447,19 +340,10 @@ export function Sidebar({
     return [...filteredActions, ...noteItems, ...folderItems, ...tagItems, ...templateItems];
   }, [flattenedFolders, normalizedPaletteQuery, notes, router, tags, templates]);
 
-  const activeTheme = useMemo(
-    () => APP_THEMES.find((t) => t.id === activeThemeId) ?? APP_THEMES[0],
-    [activeThemeId]
-  );
-
   const isFoldersCollapsed = hasQuery ? false : collapsedSections.folders;
   const isTagsCollapsed = hasQuery ? false : collapsedSections.tags;
   const isRecentNotesCollapsed = hasQuery ? false : collapsedSections.recentNotes;
-
-  // Suppress unused variable warnings for commandMatch / activeTheme (used in future features)
-  void commandMatch;
-  void activeTheme;
-  void applyTheme;
+  const inboxCount = notes.filter((n) => !n.folderId).length;
 
   return (
     <aside
@@ -473,21 +357,13 @@ export function Sidebar({
         <div className="sidebar-compact-shell">
           <div className="sidebar-compact-stack">
             <button type="button" className="sidebar-compact-button sidebar-compact-brand" onClick={toggleSidebarCompact} aria-label="Sidebarı genişlet">
-              <Image src="/apple-icon.png" alt="Giraffle" width={24} height={24} />
+              <Image src="/apple-icon.png" alt="Giraffe" width={24} height={24} />
             </button>
             <button type="button" className="sidebar-compact-button" onClick={() => openPalette()} aria-label="Komut paletini aç">
               <span className="material-symbols-outlined sm" aria-hidden="true">&#xE8B6;</span>
             </button>
             <button type="button" className="sidebar-compact-button" onClick={handleCreateNote} aria-label="Yeni not oluştur">
               <PlusIcon />
-            </button>
-            <button type="button" className={`sidebar-compact-button ${pathname === "/graph" ? "active" : ""}`} onClick={() => router.push("/graph")} aria-label="Bağlantı ağına git">
-              <GraphIcon size={16} />
-            </button>
-          </div>
-          <div className="sidebar-compact-footer">
-            <button type="button" className="sidebar-compact-avatar" onClick={(e) => openContextMenuFromTrigger(e, footerMenuItems)} aria-label="Hesap menüsü">
-              {(user.name ?? user.email ?? "G").slice(0, 1).toUpperCase()}
             </button>
           </div>
         </div>
@@ -497,9 +373,9 @@ export function Sidebar({
           <div className="sidebar-topbar" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px 8px" }}>
             <div className="sidebar-workspace-card" onClick={() => router.push("/dashboard")} style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }}>
               <div className="sidebar-workspace-logo" style={{ width: "28px", height: "28px", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", borderRadius: "var(--md-sys-shape-small)" }}>
-                <Image src="/apple-icon.png" alt="Giraffle" width={28} height={28} />
+                <Image src="/apple-icon.png" alt="Giraffe" width={28} height={28} />
               </div>
-              <span style={{ fontSize: "14px", fontWeight: 600, color: "var(--md-sys-color-on-surface)" }}>Giraffle</span>
+              <span style={{ fontSize: "14px", fontWeight: 600, color: "var(--md-sys-color-on-surface)" }}>Giraffe</span>
             </div>
             <div style={{ display: "flex", gap: "2px" }}>
               <Button variant="text" icon onClick={handleCreateNote} aria-label="Yeni not oluştur"><PlusIcon /></Button>
@@ -526,47 +402,20 @@ export function Sidebar({
             {/* Primary nav */}
             <div className="sidebar-primary-nav">
               {([
-                { path: "/dashboard", icon: "\uE88A", label: "Pano", info: "Son dokunulan notlara, taslaklara ve çalışma alanının ana akışına hızlıca geri dön.", actions: [{ label: "Yeni not", onClick: () => void handleCreateNote(), primary: true }, { label: "Şablondan oluştur", onClick: () => setTemplatePickerOpenSignal((s) => s + 1) }] },
-                { path: "/inbox", icon: "\uE156", label: "Gelen kutusu", badge: notes.filter((n) => !n.folderId).length, info: `${notes.filter((n) => !n.folderId).length} klasörsüz not`, actions: [{ label: "Yeni not", onClick: () => void handleCreateNote(), primary: true }, { label: "Şablondan oluştur", onClick: () => setTemplatePickerOpenSignal((s) => s + 1) }] },
-              ] as Array<{ path: string; icon: string; label: string; badge?: number; info: string; actions?: Array<{ label: string; onClick: () => void; primary?: boolean }> }>).map(({ path, icon, label, badge, info, actions }) => (
-                <div key={path}>
-                  <div className="sidebar-nav-item-row">
-                    <button className={`sidebar-item${pathname === path ? " active" : ""}`} onClick={() => { closeNavModal(); router.push(path); if (path === "/inbox") setIsInboxExpanded((v) => !v); }}>
-                      <span className="sidebar-item-icon" aria-hidden="true">
-                        {icon === "__graph__" ? <GraphIcon size={16} /> : <span className="material-symbols-outlined" style={{ fontSize: "16px", lineHeight: 1 }}>{icon}</span>}
-                      </span>
-                      <span className="sidebar-item-label">{label}</span>
-                      {badge != null && badge > 0 && <span className="sidebar-nav-badge">{badge}</span>}
-                    </button>
-                    <button type="button" className={`sidebar-nav-menu${navModal?.key === path ? " active" : ""}`} onClick={(e) => openNavModal(path, label, e, { info, actions })} aria-label={`${label} menüsü`}>···</button>
-                  </div>
-                  {path === "/dashboard" && notes.length > 0 && (
-                    <div className="sidebar-nested-items">
-                      {notes.slice(0, 5).map((note) => (
-                        <button key={note.id} type="button" className={`sidebar-item sidebar-nested-item${note.id === currentNoteId ? " active" : ""}`} onClick={() => { closeNavModal(); router.push(`/notes/${note.id}`); }}>
-                          <span className="sidebar-item-icon" aria-hidden="true">{note.icon ?? <span style={{ fontSize: "8px", opacity: 0.4 }}>●</span>}</span>
-                          <span className="sidebar-item-label">{note.title || "Adsız"}</span>
-                          <span className="sidebar-nested-item-date">{formatDate(new Date(note.updatedAt))}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  {path === "/inbox" && isInboxExpanded && (() => {
-                    const inboxNotes = notes.filter((n) => !n.folderId);
-                    if (inboxNotes.length === 0) return null;
-                    return (
-                      <div className="sidebar-nested-items">
-                        {inboxNotes.slice(0, 8).map((note) => (
-                          <button key={note.id} type="button" className={`sidebar-item sidebar-nested-item${note.id === currentNoteId ? " active" : ""}`} onClick={() => { closeNavModal(); router.push(`/notes/${note.id}`); }}>
-                            <span className="sidebar-item-icon" aria-hidden="true">{note.icon ?? <span style={{ fontSize: "8px", opacity: 0.4 }}>●</span>}</span>
-                            <span className="sidebar-item-label">{note.title || "Adsız"}</span>
-                            <span className="sidebar-nested-item-date">{formatDate(new Date(note.updatedAt))}</span>
-                          </button>
-                        ))}
-                      </div>
-                    );
-                  })()}
-                </div>
+                { path: "/dashboard", icon: "\uE88A", label: "Pano" },
+                { path: "/inbox", icon: "\uE156", label: "Gelen kutusu", badge: inboxCount > 0 ? inboxCount : undefined },
+              ] as Array<{ path: string; icon: string; label: string; badge?: number }>).map(({ path, icon, label, badge }) => (
+                <button
+                  key={path}
+                  className={`sidebar-item${pathname === path ? " active" : ""}`}
+                  onClick={() => router.push(path)}
+                >
+                  <span className="sidebar-item-icon" aria-hidden="true">
+                    <span className="material-symbols-outlined" style={{ fontSize: "16px", lineHeight: 1 }}>{icon}</span>
+                  </span>
+                  <span className="sidebar-item-label">{label}</span>
+                  {badge != null && <span className="sidebar-nav-badge">{badge}</span>}
+                </button>
               ))}
             </div>
 
@@ -614,6 +463,7 @@ export function Sidebar({
                 ) : filteredTags.map((tag) => (
                   <button key={tag.id} className={`sidebar-item sidebar-tag-item${pathname === `/tags/${tag.name}` ? " active" : ""}`} onClick={() => router.push(`/tags/${tag.name}`)}>
                     <span className="sidebar-item-label">#{tag.name}</span>
+                    {tag.noteCount > 0 && <span className="sidebar-tag-count">{tag.noteCount}</span>}
                   </button>
                 ))}
               </div>
@@ -637,48 +487,6 @@ export function Sidebar({
               </nav>
             </SidebarGroup>
           </div>
-
-          {/* Secondary nav rail */}
-          <nav className="sidebar-rail" aria-label="İkincil gezinme">
-            {([
-              { path: "/search", icon: "\uE8B6", label: "Arama" },
-              { path: "/templates", icon: "\uE02F", label: "Şablonlar" },
-              { path: "/publish", icon: "\uE255", label: "Yayın" },
-              { path: "/proposals", icon: "\uE65F", label: "Öneriler" },
-              { path: "/settings", icon: "\uE8B8", label: "Ayarlar" },
-              { path: "/account", icon: "\uF20B", label: "Hesap" },
-            ]).map(({ path, icon, label }) => (
-              <button key={path} type="button" className={`sidebar-item sidebar-rail-item${pathname === path || pathname.startsWith(path + "/") ? " active" : ""}`} onClick={() => router.push(path)} aria-label={label}>
-                <span className="sidebar-item-icon" aria-hidden="true">
-                  <span className="material-symbols-outlined" style={{ fontSize: "16px", lineHeight: 1 }}>{icon}</span>
-                </span>
-                <span className="sidebar-item-label">{label}</span>
-                <span className="sidebar-rail-chevron" aria-hidden="true">›</span>
-              </button>
-            ))}
-          </nav>
-
-          {/* Footer */}
-          <div className="md-nav-drawer-footer sidebar-footer">
-            <div className="sidebar-user-meta">
-              <div style={{ flexShrink: 0, width: "28px", height: "28px", borderRadius: "var(--md-sys-shape-full)", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--md-sys-color-surface-variant)", color: "var(--md-sys-color-on-surface-variant)", fontWeight: 700, fontSize: "12px" }}>
-                {(user.name ?? user.email ?? "G").slice(0, 1).toUpperCase()}
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 }}>
-                <div style={{ fontSize: "12px", fontWeight: 500, color: "var(--md-sys-color-on-surface)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {user.name ?? user.email ?? "Giraffle Kullanıcı"}
-                </div>
-                {user.email ? (
-                  <div style={{ fontSize: "11px", color: "var(--md-sys-color-on-surface-variant)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {user.email}
-                  </div>
-                ) : null}
-              </div>
-            </div>
-            <Button variant="text" icon className="sidebar-footer-menu" onClick={(e) => openContextMenuFromTrigger(e, footerMenuItems)} aria-label="Hesap ve tema menüsü">
-              <MoreHorizontalIcon />
-            </Button>
-          </div>
         </>
       )}
 
@@ -693,24 +501,6 @@ export function Sidebar({
 
       <ContextMenu items={contextMenu?.items ?? []} position={contextMenu?.position ?? null} onClose={closeContextMenu} />
       <CommandPalette open={isPaletteOpen} query={paletteQuery} items={paletteItems} onQueryChange={setPaletteQuery} onClose={closePalette} />
-
-      {navModal ? (
-        <div className="sidebar-nav-modal-overlay" onClick={closeNavModal}>
-          <div className="sidebar-nav-modal" style={{ left: navModal.x, top: navModal.y }} onClick={(e) => e.stopPropagation()}>
-            <div className="sidebar-nav-modal-header">
-              <div className="sidebar-nav-modal-title">{navModal.label}</div>
-              {navModal.info ? <div className="sidebar-nav-modal-desc">{navModal.info}</div> : null}
-            </div>
-            <div className="sidebar-nav-modal-body">
-              {navModal.actions?.map((action) => (
-                <button key={action.label} type="button" className={`sidebar-nav-modal-btn${action.primary ? " primary" : ""}`} onClick={() => { action.onClick(); closeNavModal(); }}>
-                  {action.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      ) : null}
     </aside>
   );
 }

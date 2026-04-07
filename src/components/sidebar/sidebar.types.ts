@@ -44,10 +44,6 @@ export interface SidebarProps {
   folders: SidebarFolder[];
   templates: SidebarTemplate[];
   tags: SidebarTag[];
-  user: {
-    name: string | null;
-    email: string | null;
-  };
   activeNoteId?: string;
 }
 

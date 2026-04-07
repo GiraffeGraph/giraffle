@@ -19,6 +19,11 @@ export default async function MainLayout({
     getWorkspaceTagsAction(),
   ]);
 
+  const user = {
+    name: session?.user?.name ?? null,
+    email: session?.user?.email ?? null,
+  };
+
   return (
     <div className="app-layout">
       <Sidebar
@@ -39,15 +44,11 @@ export default async function MainLayout({
           }>,
         }))}
         tags={tags}
-        user={{
-          name: session?.user?.name ?? null,
-          email: session?.user?.email ?? null,
-        }}
       />
       <main className="main-content">
         <div className="main-content-inner">{children}</div>
       </main>
-      <RightRail />
+      <RightRail user={user} />
     </div>
   );
 }
