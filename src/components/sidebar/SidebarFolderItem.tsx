@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { MouseEvent as ReactMouseEvent } from "react";
 import type { FolderDropTarget, SidebarFolder, SidebarNote } from "./sidebar.types";
 import { SidebarNoteRow } from "./SidebarNoteRow";
@@ -10,6 +10,16 @@ function PlusIcon() {
     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
       <line x1="12" y1="5" x2="12" y2="19" />
       <line x1="5" y1="12" x2="19" y2="12" />
+    </svg>
+  );
+}
+
+function FolderPlusIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+      <line x1="12" y1="11" x2="12" y2="17" />
+      <line x1="9" y1="14" x2="15" y2="14" />
     </svg>
   );
 }
@@ -42,6 +52,7 @@ export function SidebarFolderItem({
   onNoteOpen,
   onNoteContextMenu,
   onNoteTriggerMenu,
+  onCreateSubFolder,
   depth = 0,
 }: {
   folder: SidebarFolder;
@@ -64,11 +75,14 @@ export function SidebarFolderItem({
   onNoteOpen: (noteId: string) => void;
   onNoteContextMenu: (event: ReactMouseEvent<HTMLElement>, note: SidebarNote) => void;
   onNoteTriggerMenu: (event: ReactMouseEvent<HTMLButtonElement>, note: SidebarNote) => void;
+  onCreateSubFolder: (parentId: string, name: string) => Promise<void>;
   depth?: number;
 }) {
   void onMoveFolder;
 
   const [isOpen, setIsOpen] = useState(true);
+  const [isCreatingSubFolder, setIsCreatingSubFolder] = useState(false);
+  const subFolderHandledRef = useRef(false);
 
   const folderNotes = allNotes.filter((n) => n.folderId === folder.id);
   const hasChildren = (folder.children ?? []).length > 0;
@@ -79,6 +93,15 @@ export function SidebarFolderItem({
     folderDropTarget?.folderId === folder.id && folderDropTarget.mode === "inside";
   const isAfterDropTarget =
     folderDropTarget?.folderId === folder.id && folderDropTarget.mode === "after";
+
+  // Özel ikon varsa onu göster, yoksa material folder/folder_open
+  const folderIcon = folder.icon ? (
+    <span style={{ fontSize: "14px", lineHeight: 1 }}>{folder.icon}</span>
+  ) : (
+    <span className="material-symbols-outlined sm" aria-hidden="true">
+      {hasContent && isOpen ? "folder_open" : "folder"}
+    </span>
+  );
 
   return (
     <div className="sidebar-folder-node">
@@ -98,12 +121,10 @@ export function SidebarFolderItem({
           }
           aria-label={isOpen ? "Klasörü kapat" : "Klasörü aç"}
         >
-          <span className="material-symbols-outlined sm" aria-hidden="true">
-            {hasContent && isOpen ? "folder_open" : "folder"}
-          </span>
+          {folderIcon}
         </button>
 
-        {/* Klasör adı — tıklayınca navigate */}
+        {/* Klasör adı */}
         <button
           type="button"
           className={`sidebar-folder-name${isActive ? " active" : ""}`}
@@ -132,20 +153,30 @@ export function SidebarFolderItem({
           {folder.name}
         </button>
 
-        {/* Hover aksiyonları */}
+        {/* Hover aksiyonları: +Not | +Klasör | ··· */}
         <div className="sidebar-row-actions">
           <button
             type="button"
             className="context-trigger sidebar-row-action"
-            onClick={(event) => {
-              event.preventDefault();
-              event.stopPropagation();
-              void onQuickCreate(folder.id);
-            }}
-            aria-label={`${folder.name} içine not oluştur`}
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); void onQuickCreate(folder.id); }}
+            aria-label="Not oluştur"
             title="Not Oluştur"
           >
             <PlusIcon />
+          </button>
+          <button
+            type="button"
+            className="context-trigger sidebar-row-action"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsCreatingSubFolder(true);
+              setIsOpen(true);
+            }}
+            aria-label="Alt klasör oluştur"
+            title="Alt Klasör Oluştur"
+          >
+            <FolderPlusIcon />
           </button>
           <button
             type="button"
@@ -179,9 +210,49 @@ export function SidebarFolderItem({
         </div>
       ) : null}
 
-      {/* Açık içerik: notlar + alt klasörler */}
-      {hasContent && isOpen ? (
+      {/* Açık içerik */}
+      {isOpen ? (
         <div className="sidebar-folder-contents">
+          {/* Alt klasör oluştur — inline creator */}
+          {isCreatingSubFolder && (
+            <div className="sidebar-inline-creator">
+              <span className="sidebar-folder-icon-btn sidebar-folder-icon-btn--static" aria-hidden="true">
+                <span className="material-symbols-outlined sm">folder</span>
+              </span>
+              <input
+                // eslint-disable-next-line jsx-a11y/no-autofocus
+                autoFocus
+                type="text"
+                className="sidebar-inline-creator-input"
+                defaultValue="Yeni Klasör"
+                placeholder="Klasör adı"
+                onFocus={(e) => e.currentTarget.select()}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    subFolderHandledRef.current = true;
+                    const name = e.currentTarget.value;
+                    setIsCreatingSubFolder(false);
+                    void onCreateSubFolder(folder.id, name);
+                  } else if (e.key === "Escape") {
+                    e.preventDefault();
+                    subFolderHandledRef.current = true;
+                    setIsCreatingSubFolder(false);
+                  }
+                }}
+                onBlur={(e) => {
+                  if (subFolderHandledRef.current) {
+                    subFolderHandledRef.current = false;
+                    return;
+                  }
+                  const name = e.currentTarget.value;
+                  setIsCreatingSubFolder(false);
+                  void onCreateSubFolder(folder.id, name);
+                }}
+              />
+            </div>
+          )}
+
           {/* Bu klasördeki notlar */}
           {folderNotes.map((note) => (
             <SidebarNoteRow
@@ -216,6 +287,7 @@ export function SidebarFolderItem({
                   onNoteOpen={onNoteOpen}
                   onNoteContextMenu={onNoteContextMenu}
                   onNoteTriggerMenu={onNoteTriggerMenu}
+                  onCreateSubFolder={onCreateSubFolder}
                   depth={depth + 1}
                 />
               ))

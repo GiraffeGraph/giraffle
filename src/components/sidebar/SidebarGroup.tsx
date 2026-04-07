@@ -31,6 +31,7 @@ function ChevronIcon({ open }: { open: boolean }) {
 
 export function SidebarGroup({
   label,
+  icon,
   meta,
   collapsed = false,
   collapsible = true,
@@ -39,6 +40,8 @@ export function SidebarGroup({
   children,
 }: {
   label: string;
+  /** Etiketin solunda görünecek ikon */
+  icon?: ReactNode;
   meta?: string;
   collapsed?: boolean;
   collapsible?: boolean;
@@ -58,6 +61,7 @@ export function SidebarGroup({
             aria-expanded={!collapsed}
           >
             <ChevronIcon open={!collapsed} />
+            {icon ? <span className="sidebar-group-icon">{icon}</span> : null}
             <span className="sidebar-group-label">{label}</span>
           </button>
         ) : (
