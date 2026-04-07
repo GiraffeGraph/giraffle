@@ -335,18 +335,6 @@ export function NoteEditorPage({
     []
   );
 
-  const openContextMenuFromTrigger = useCallback(
-    (event: ReactMouseEvent<HTMLButtonElement>) => {
-      event.preventDefault();
-      event.stopPropagation();
-      const rect = event.currentTarget.getBoundingClientRect();
-      setContextMenuPosition({
-        x: rect.right - 14,
-        y: rect.bottom + 8,
-      });
-    },
-    []
-  );
 
   const noteContextItems = useMemo<ContextMenuItem[]>(
     () => [
@@ -496,36 +484,49 @@ export function NoteEditorPage({
         </div>
 
         {/* Actions */}
-        <div style={{ display: "flex", alignItems: "center", gap: "4px", flexShrink: 0 }}>
-          <button
-            type="button"
-            onClick={() => void handlePublishToggle()}
-            aria-label={isPublished ? "Yayımdan kaldır" : "Yayımla"}
-            aria-pressed={isPublished}
-            title={isPublished ? "Yayımdan kaldır" : "Yayımla"}
-            style={{ background: isPublished ? "var(--md-sys-color-secondary-container)" : "none", border: "none", color: isPublished ? "var(--md-sys-color-on-secondary-container)" : "var(--md-sys-color-on-surface-variant)", cursor: "pointer", padding: "4px", borderRadius: "6px", display: "flex", alignItems: "center", lineHeight: 1, fontFamily: "Material Symbols Outlined", fontSize: "18px" }}
-          >
-            {"\uE80D"}
-          </button>
-          <button
-            type="button"
-            onClick={() => void handlePinToggle()}
-            aria-label={isPinned ? "Sabitlemeyi kaldır" : "Sabitle"}
-            aria-pressed={isPinned}
-            title={isPinned ? "Sabitlemeyi kaldır" : "Sabitle"}
-            style={{ background: isPinned ? "var(--md-sys-color-secondary-container)" : "none", border: "none", color: isPinned ? "var(--md-sys-color-on-secondary-container)" : "var(--md-sys-color-on-surface-variant)", cursor: "pointer", padding: "4px", borderRadius: "6px", display: "flex", alignItems: "center", lineHeight: 1 }}
-          >
-            <PinIcon />
-          </button>
-          <button
-            type="button"
-            onClick={openContextMenuFromTrigger}
-            aria-label="Not menüsünü aç"
-            aria-haspopup="menu"
-            style={{ background: "none", border: "none", color: "var(--md-sys-color-on-surface-variant)", cursor: "pointer", padding: "3px 6px", borderRadius: "6px", fontSize: "16px", lineHeight: 1, letterSpacing: "1px" }}
-          >
-            ···
-          </button>
+        <div style={{ display: "flex", alignItems: "center", gap: "2px", flexShrink: 0 }}>
+          {(
+            [
+              { icon: "share", label: isPublished ? "Yayımdan kaldır" : "Yayımla", onClick: handlePublishToggle, active: isPublished, disabled: false, danger: false },
+              { icon: "push_pin", label: isPinned ? "Sabitlemeyi kaldır" : "Sabitle", onClick: handlePinToggle, active: isPinned, disabled: false, danger: false },
+              { icon: "tune", label: isMetaPanelOpen ? "Sayfa ayarlarını gizle" : "Sayfa ayarları", onClick: toggleMetaPanel, active: isMetaPanelOpen, disabled: false, danger: false },
+              { icon: "hub", label: "Kanvasta Aç", onClick: handleOpenInCanvas, active: false, disabled: false, danger: false },
+              { icon: "arrow_upward", label: "Yukarı taşı", onClick: () => handleMoveNote("up"), active: false, disabled: false, danger: false },
+              { icon: "arrow_downward", label: "Aşağı taşı", onClick: () => handleMoveNote("down"), active: false, disabled: false, danger: false },
+              { icon: "link", label: "Not bağlantısını kopyala", onClick: handleCopyNoteLink, active: false, disabled: false, danger: false },
+              { icon: "description", label: "Markdown kopyala", onClick: () => handleCopyExport("markdown"), active: false, disabled: isExportPending, danger: false },
+              { icon: "code", label: "MDX kopyala", onClick: () => handleCopyExport("mdx"), active: false, disabled: isExportPending, danger: false },
+              { icon: "open_in_new", label: "Yayımdaki sayfayı aç", onClick: handleOpenPublishedPage, active: false, disabled: !isPublished, danger: false },
+              { icon: "archive", label: "Arşive taşı", onClick: handleArchiveNote, active: false, disabled: false, danger: true },
+            ]
+          ).map(({ icon, label, onClick, active, disabled, danger }) => (
+            <button
+              key={icon}
+              type="button"
+              title={label}
+              aria-label={label}
+              disabled={disabled}
+              onClick={() => void onClick()}
+              style={{
+                background: active ? "var(--md-sys-color-secondary-container)" : "none",
+                border: "none",
+                color: danger
+                  ? "var(--md-sys-color-error)"
+                  : active
+                  ? "var(--md-sys-color-on-secondary-container)"
+                  : "var(--md-sys-color-on-surface-variant)",
+                cursor: disabled ? "default" : "pointer",
+                opacity: disabled ? 0.4 : 1,
+                padding: "4px",
+                borderRadius: "6px",
+                display: "flex",
+                alignItems: "center",
+                lineHeight: 1,
+              }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: "18px" }}>{icon}</span>
+            </button>
+          ))}
         </div>
       </div>
 
