@@ -66,6 +66,7 @@ export function SidebarGroup({
           </button>
         ) : (
           <div className="sidebar-group-title">
+            {icon ? <span className="sidebar-group-icon">{icon}</span> : null}
             <span className="sidebar-group-label">{label}</span>
           </div>
         )}

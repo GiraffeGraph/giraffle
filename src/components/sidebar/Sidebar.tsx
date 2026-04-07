@@ -8,7 +8,7 @@ import { CommandPalette, type CommandPaletteItem } from "@/components/sidebar/Co
 import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 import { Button } from "@/components/ui/Button";
 import { TemplatePicker } from "@/components/templates/TemplatePicker";
-import { createFolderAction, moveFolderAction, relocateFolderAction } from "@/server/api/folders";
+import { createFolderAction, moveFolderAction, relocateFolderAction, updateFolderAction } from "@/server/api/folders";
 import { archiveNoteAction, createNoteAction, moveNoteAction, updateNoteAction } from "@/server/api/notes";
 import {
   DEFAULT_COLLAPSED_SECTIONS,
@@ -35,6 +35,13 @@ import { SidebarGroup } from "./SidebarGroup";
 import type { SidebarGroupAction } from "./SidebarGroup";
 import { SidebarNoteRow } from "./SidebarNoteRow";
 import { SidebarFolderItem } from "./SidebarFolderItem";
+
+type IconPickerState = {
+  target: "folder" | "note";
+  id: string;
+  value: string;
+  position: { x: number; y: number };
+};
 
 function PlusIcon() {
   return (
@@ -97,7 +104,9 @@ export function Sidebar({
   const [collapsedSections, setCollapsedSections] = useState<SidebarCollapseState>(DEFAULT_COLLAPSED_SECTIONS);
   const [hasLoadedPreferences, setHasLoadedPreferences] = useState(false);
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
+  const [iconPicker, setIconPicker] = useState<IconPickerState | null>(null);
   const folderCreationHandledRef = useRef(false);
+  const lastMenuPosRef = useRef<{ x: number; y: number } | null>(null);
 
   const normalizedPaletteQuery = paletteQuery.trim().toLowerCase();
   const currentNoteId = activeNoteId ?? extractActiveNoteId(pathname) ?? undefined;
@@ -115,7 +124,9 @@ export function Sidebar({
   const openContextMenuAtPointer = useCallback(
     (event: ReactMouseEvent<HTMLElement>, items: ContextMenuItem[]) => {
       event.preventDefault();
-      setContextMenu({ position: { x: event.clientX, y: event.clientY }, items });
+      const position = { x: event.clientX, y: event.clientY };
+      lastMenuPosRef.current = position;
+      setContextMenu({ position, items });
     },
     []
   );
@@ -125,7 +136,9 @@ export function Sidebar({
       event.preventDefault();
       event.stopPropagation();
       const rect = event.currentTarget.getBoundingClientRect();
-      setContextMenu({ position: { x: rect.right - 14, y: rect.bottom + 8 }, items });
+      const position = { x: rect.right - 14, y: rect.bottom + 8 };
+      lastMenuPosRef.current = position;
+      setContextMenu({ position, items });
     },
     []
   );
@@ -251,6 +264,16 @@ export function Sidebar({
     [router]
   );
 
+  const handleCreateSubFolder = useCallback(
+    async (parentId: string, name: string) => {
+      const trimmed = name.trim();
+      if (!trimmed) return;
+      await createFolderAction({ name: trimmed, parentId });
+      router.refresh();
+    },
+    [router]
+  );
+
   const handleMoveFolder = useCallback(
     async (folderId: string, direction: "up" | "down") => {
       await moveFolderAction(folderId, direction);
@@ -269,10 +292,44 @@ export function Sidebar({
     [router]
   );
 
+  const normalizeCustomIcon = useCallback((rawValue: string): string | null => {
+    const trimmed = rawValue.trim();
+    if (!trimmed) return null;
+    return Array.from(trimmed).slice(0, 4).join("");
+  }, []);
+
+  const openIconPicker = useCallback((target: "folder" | "note", id: string, currentIcon?: string | null) => {
+    const fallbackPosition = { x: 260, y: 180 };
+    const position = lastMenuPosRef.current ?? fallbackPosition;
+    setIconPicker({
+      target,
+      id,
+      value: currentIcon ?? "",
+      position,
+    });
+  }, []);
+
+  const closeIconPicker = useCallback(() => setIconPicker(null), []);
+
+  const handleSaveIcon = useCallback(async () => {
+    if (!iconPicker) return;
+    const nextIcon = normalizeCustomIcon(iconPicker.value);
+
+    if (iconPicker.target === "folder") {
+      await updateFolderAction(iconPicker.id, { icon: nextIcon });
+    } else {
+      await updateNoteAction(iconPicker.id, { icon: nextIcon });
+    }
+
+    setIconPicker(null);
+    router.refresh();
+  }, [iconPicker, normalizeCustomIcon, router]);
+
   // Context menus
   const buildNoteMenu = useCallback(
-    (note: { id: string; title: string; isPinned?: boolean }): ContextMenuItem[] => [
+    (note: { id: string; title: string; icon?: string | null; isPinned?: boolean }): ContextMenuItem[] => [
       { label: "Notu aç", hint: "Seçili notu düzenleyicide aç", onSelect: () => router.push(`/notes/${note.id}`) },
+      { label: "İkonu değiştir", hint: "Emoji veya kısa metin ata", onSelect: () => openIconPicker("note", note.id, note.icon) },
       {
         label: note.isPinned ? "Sabitlemeyi kaldır" : "Sabitle",
         hint: "Notu sıralı listelerde üstte tut veya bırak",
@@ -292,18 +349,19 @@ export function Sidebar({
         },
       },
     ],
-    [copyInternalLink, currentNoteId, router]
+    [copyInternalLink, currentNoteId, openIconPicker, router]
   );
 
   const buildFolderMenu = useCallback(
-    (folder: { id: string; name: string }): ContextMenuItem[] => [
+    (folder: { id: string; name: string; icon?: string | null }): ContextMenuItem[] => [
       { label: "Klasörü aç", hint: "Klasördeki notları görüntüle", onSelect: () => router.push(`/folders/${folder.id}`) },
       { label: "Bu klasöre not oluştur", hint: "Yeni notu doğrudan bu klasöre ekle", onSelect: async () => { const noteId = await createNoteAction({ folderId: folder.id }); router.push(`/notes/${noteId}`); } },
+      { label: "İkonu değiştir", hint: "Emoji veya kısa metin ata", onSelect: () => openIconPicker("folder", folder.id, folder.icon) },
       { label: "Klasör bağlantısını kopyala", hint: "Klasör adresini panoya kopyala", onSelect: () => copyInternalLink(`/folders/${folder.id}`) },
       { label: "Yukarı taşı", hint: "Klasör sırasını bir adım yukarı al", onSelect: () => handleMoveFolder(folder.id, "up") },
       { label: "Aşağı taşı", hint: "Klasör sırasını bir adım aşağı al", onSelect: () => handleMoveFolder(folder.id, "down") },
     ],
-    [copyInternalLink, handleMoveFolder, router]
+    [copyInternalLink, handleMoveFolder, openIconPicker, router]
   );
 
   // Derived / filtered data
@@ -465,7 +523,13 @@ export function Sidebar({
             <div className="sidebar-divider" />
 
             {/* Folders */}
-            <SidebarGroup label="Klasörler" collapsed={isFoldersCollapsed} onToggle={() => toggleSection("folders")} actions={folderGroupActions}>
+            <SidebarGroup
+              label="Klasörler"
+              icon={<span className="material-symbols-outlined sm" aria-hidden="true">folder</span>}
+              collapsed={isFoldersCollapsed}
+              onToggle={() => toggleSection("folders")}
+              actions={folderGroupActions}
+            >
               <div className="sidebar-folder-tree">
                 {isCreatingFolder && (
                   <div className="sidebar-inline-creator">
@@ -537,6 +601,7 @@ export function Sidebar({
                     onNoteOpen={(id) => router.push(`/notes/${id}`)}
                     onNoteContextMenu={(e, n) => openContextMenuAtPointer(e, buildNoteMenu(n))}
                     onNoteTriggerMenu={(e, n) => openContextMenuFromTrigger(e, buildNoteMenu(n))}
+                    onCreateSubFolder={handleCreateSubFolder}
                   />
                 ))}
               </div>
@@ -584,6 +649,44 @@ export function Sidebar({
 
       {!isSidebarCompact ? (
         <div className="sidebar-resize-handle" onMouseDown={handleSidebarResizeStart} role="separator" aria-orientation="vertical" aria-label="Sidebar genişliğini değiştir" />
+      ) : null}
+
+      {iconPicker ? (
+        <div className="icon-picker-overlay" onMouseDown={closeIconPicker}>
+          <div
+            className="icon-picker"
+            style={{ left: iconPicker.position.x, top: iconPicker.position.y }}
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <input
+              // eslint-disable-next-line jsx-a11y/no-autofocus
+              autoFocus
+              type="text"
+              className="icon-picker-input"
+              value={iconPicker.value}
+              maxLength={12}
+              placeholder="🙂"
+              aria-label="İkon değeri"
+              onChange={(event) => {
+                const nextValue = event.currentTarget.value;
+                setIconPicker((current) => (
+                  current ? { ...current, value: nextValue } : current
+                ));
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  void handleSaveIcon();
+                } else if (event.key === "Escape") {
+                  event.preventDefault();
+                  closeIconPicker();
+                }
+              }}
+              onBlur={closeIconPicker}
+            />
+            <div className="icon-picker-help">Enter kaydet • Esc iptal</div>
+          </div>
+        </div>
       ) : null}
 
       <ContextMenu items={contextMenu?.items ?? []} position={contextMenu?.position ?? null} onClose={closeContextMenu} />
