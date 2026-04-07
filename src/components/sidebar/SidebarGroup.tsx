@@ -35,6 +35,7 @@ export function SidebarGroup({
   meta,
   collapsed = false,
   collapsible = true,
+  showChevron = true,
   onToggle,
   actions,
   children,
@@ -45,6 +46,7 @@ export function SidebarGroup({
   meta?: string;
   collapsed?: boolean;
   collapsible?: boolean;
+  showChevron?: boolean;
   onToggle?: () => void;
   /** VS Code tarzı hover ikonları — her biri bir aksiyon butonudur */
   actions?: SidebarGroupAction[];
@@ -60,7 +62,7 @@ export function SidebarGroup({
             onClick={onToggle}
             aria-expanded={!collapsed}
           >
-            <ChevronIcon open={!collapsed} />
+            {showChevron ? <ChevronIcon open={!collapsed} /> : null}
             {icon ? <span className="sidebar-group-icon">{icon}</span> : null}
             <span className="sidebar-group-label">{label}</span>
           </button>

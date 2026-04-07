@@ -527,6 +527,7 @@ export function Sidebar({
               label="Klasörler"
               icon={<span className="material-symbols-outlined sm" aria-hidden="true">folder</span>}
               collapsed={isFoldersCollapsed}
+              showChevron={false}
               onToggle={() => toggleSection("folders")}
               actions={folderGroupActions}
             >
@@ -608,7 +609,13 @@ export function Sidebar({
             </SidebarGroup>
 
             {/* Tags */}
-            <SidebarGroup label="Etiketler" collapsed={isTagsCollapsed} onToggle={() => toggleSection("tags")}>
+            <SidebarGroup
+              label="Etiketler"
+              icon={<span className="material-symbols-outlined sm" aria-hidden="true">sell</span>}
+              collapsed={isTagsCollapsed}
+              showChevron={false}
+              onToggle={() => toggleSection("tags")}
+            >
               <div className="sidebar-tag-list">
                 {filteredTags.length === 0 ? (
                   <div className="sidebar-empty">{hasQuery ? "Eşleşen etiket yok." : "Henüz indekslenmiş etiket yok."}</div>
@@ -622,7 +629,13 @@ export function Sidebar({
             </SidebarGroup>
 
             {/* Recent notes */}
-            <SidebarGroup label={hasQuery ? "Not eşleşmeleri" : "Son notlar"} collapsed={isRecentNotesCollapsed} onToggle={() => toggleSection("recentNotes")}>
+            <SidebarGroup
+              label={hasQuery ? "Not eşleşmeleri" : "Son notlar"}
+              icon={<span className="material-symbols-outlined sm" aria-hidden="true">{hasQuery ? "search" : "history"}</span>}
+              collapsed={isRecentNotesCollapsed}
+              showChevron={false}
+              onToggle={() => toggleSection("recentNotes")}
+            >
               <nav className="sidebar-nav">
                 {filteredNotes.length === 0 ? (
                   <div className="sidebar-empty">{hasQuery ? "Eşleşen not yok." : "Henüz not yok. İlk notunu oluştur."}</div>
