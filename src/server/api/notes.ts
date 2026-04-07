@@ -16,6 +16,7 @@ import {
   insertBlock,
   moveBlock,
   moveNote,
+  relocateNote,
   saveNoteContent,
   searchNotesByTitle,
   updateBlock,
@@ -87,6 +88,20 @@ export async function moveNoteAction(
 ) {
   const { userId } = await requireAuthenticatedUser();
   await moveNote(userId, noteId, direction);
+  revalidatePath("/dashboard");
+  revalidatePath("/graph");
+  revalidatePath(`/notes/${noteId}`);
+}
+
+export async function relocateNoteAction(
+  noteId: string,
+  placement: {
+    folderId?: string | null;
+    afterNoteId?: string | null;
+  }
+) {
+  const { userId } = await requireAuthenticatedUser();
+  await relocateNote(userId, noteId, placement);
   revalidatePath("/dashboard");
   revalidatePath("/graph");
   revalidatePath(`/notes/${noteId}`);

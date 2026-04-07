@@ -14,7 +14,13 @@ import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 import { Button } from "@/components/ui/Button";
 import { TemplatePicker } from "@/components/templates/TemplatePicker";
 import { createFolderAction, relocateFolderAction } from "@/server/api/folders";
-import { archiveNoteAction, createNoteAction, moveNoteAction, updateNoteAction } from "@/server/api/notes";
+import {
+  archiveNoteAction,
+  createNoteAction,
+  moveNoteAction,
+  relocateNoteAction,
+  updateNoteAction,
+} from "@/server/api/notes";
 import {
   DEFAULT_COLLAPSED_SECTIONS,
   DEFAULT_EXPANDED_SIDEBAR_WIDTH,
@@ -28,6 +34,8 @@ import { getTemplateCategoryLabel } from "@/lib/template-category";
 import {
   isSidebarFolderDragData,
   isSidebarFolderDropData,
+  isSidebarNoteDragData,
+  isSidebarNoteDropData,
   type FolderDropTarget,
   type SidebarMenuState,
   type SidebarProps,
@@ -104,6 +112,12 @@ export function Sidebar({
   const [templatePickerOpenSignal, setTemplatePickerOpenSignal] = useState(0);
   const [draggedFolderId, setDraggedFolderId] = useState<string | null>(null);
   const [folderDropTarget, setFolderDropTarget] = useState<FolderDropTarget | null>(null);
+  const [draggedNoteId, setDraggedNoteId] = useState<string | null>(null);
+  const [noteDropTarget, setNoteDropTarget] = useState<{
+    folderId: string | null;
+    noteId: string | null;
+    mode: "inside" | "after" | "root";
+  } | null>(null);
   const [sidebarWidth, setSidebarWidth] = useState<number>(DEFAULT_EXPANDED_SIDEBAR_WIDTH);
   const [isSidebarCompact, setIsSidebarCompact] = useState(false);
   const [isSidebarResizing, setIsSidebarResizing] = useState(false);
@@ -320,14 +334,27 @@ export function Sidebar({
     return combine(
       dropTargetForElements({
         element: rootFolderDropzoneRef.current,
-        canDrop: ({ source }) => isSidebarFolderDragData(source.data),
-        getData: () => ({
-          type: "sidebar-folder-drop-target",
-          folderId: "__root__",
-          mode: "root",
-          parentId: null,
-          afterFolderId: null,
-        }),
+        canDrop: ({ source }) =>
+          isSidebarFolderDragData(source.data) || isSidebarNoteDragData(source.data),
+        getData: ({ source }) => {
+          if (isSidebarNoteDragData(source.data)) {
+            return {
+              type: "sidebar-note-drop-target",
+              folderId: null,
+              mode: "root",
+              afterNoteId: null,
+              isPinned: source.data.isPinned,
+            };
+          }
+
+          return {
+            type: "sidebar-folder-drop-target",
+            folderId: "__root__",
+            mode: "root",
+            parentId: null,
+            afterFolderId: null,
+          };
+        },
       }),
       monitorForElements({
         canMonitor: ({ source }) => isSidebarFolderDragData(source.data),
@@ -380,6 +407,56 @@ export function Sidebar({
       })
     );
   }, [handleRelocateFolder]);
+
+  useEffect(() => {
+    return monitorForElements({
+      canMonitor: ({ source }) => isSidebarNoteDragData(source.data),
+      onDragStart: ({ source }) => {
+        if (isSidebarNoteDragData(source.data)) {
+          setDraggedNoteId(source.data.noteId);
+        }
+      },
+      onDropTargetChange: ({ location }) => {
+        const currentTarget = location.current.dropTargets[0]?.data;
+
+        if (!isSidebarNoteDropData(currentTarget)) {
+          setNoteDropTarget(null);
+          return;
+        }
+
+        setNoteDropTarget({
+          folderId: currentTarget.folderId,
+          noteId: currentTarget.afterNoteId,
+          mode: currentTarget.mode,
+        });
+      },
+      onDrop: async ({ source, location }) => {
+        setDraggedNoteId(null);
+        setNoteDropTarget(null);
+
+        if (!isSidebarNoteDragData(source.data)) {
+          return;
+        }
+
+        const currentTarget = location.current.dropTargets[0]?.data;
+
+        if (!isSidebarNoteDropData(currentTarget)) {
+          return;
+        }
+
+        if (currentTarget.afterNoteId === source.data.noteId) {
+          return;
+        }
+
+        await relocateNoteAction(source.data.noteId, {
+          folderId: currentTarget.folderId,
+          afterNoteId: currentTarget.afterNoteId,
+        });
+
+        router.refresh();
+      },
+    });
+  }, [router]);
 
   // Derived / filtered data
   const flattenedFolders = useMemo(() => flattenFolderTree(folders), [folders]);
@@ -591,11 +668,12 @@ export function Sidebar({
                 )}
                 <div
                   ref={rootFolderDropzoneRef}
-                  className={`sidebar-folder-dropzone root${folderDropTarget?.folderId === "__root__" ? " active" : ""}${
-                    draggedFolderId ? " visible" : ""
+                  className={`sidebar-folder-dropzone root${
+                    folderDropTarget?.folderId === "__root__" || noteDropTarget?.mode === "root" ? " active" : ""
+                  }${
+                    draggedFolderId || draggedNoteId ? " visible" : ""
                   }`}
                 >
-                  Kök&apos;e taşı
                 </div>
                 {filteredFolders.length === 0 ? (
                   <div className="sidebar-empty">{hasQuery ? "Eşleşen klasör yok." : "Henüz klasör yok."}</div>
@@ -608,6 +686,8 @@ export function Sidebar({
                     onQuickCreate={handleCreateNoteInFolder}
                     draggedFolderId={draggedFolderId}
                     folderDropTarget={folderDropTarget}
+                    draggedNoteId={draggedNoteId}
+                    noteDropTarget={noteDropTarget}
                     allNotes={notes}
                     currentNoteId={currentNoteId}
                     onNoteOpen={(id) => router.push(`/notes/${id}`)}
@@ -658,6 +738,8 @@ export function Sidebar({
                     onOpen={(id) => router.push(`/notes/${id}`)}
                     onContextMenuOpen={(e, n) => openContextMenuAtPointer(e, buildNoteMenu(n))}
                     onTriggerMenuOpen={(e, n) => openContextMenuFromTrigger(e, buildNoteMenu(n))}
+                    draggedNoteId={draggedNoteId}
+                    noteDropTarget={noteDropTarget}
                   />
                 ))}
               </nav>

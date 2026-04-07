@@ -719,6 +719,140 @@ export async function moveNote(
   });
 }
 
+export async function relocateNote(
+  userId: string,
+  noteId: string,
+  placement: {
+    folderId?: string | null;
+    afterNoteId?: string | null;
+  }
+): Promise<void> {
+  await db.$transaction(async (tx) => {
+    const note = await tx.note.findFirst({
+      where: {
+        id: noteId,
+        userId,
+        isArchived: false,
+      },
+      select: {
+        id: true,
+        folderId: true,
+        isPinned: true,
+      },
+    });
+
+    if (!note) {
+      throw new Error("Note not found");
+    }
+
+    if (typeof placement.folderId === "string") {
+      await assertOwnedFolder(placement.folderId, userId);
+    }
+
+    const targetNote =
+      typeof placement.afterNoteId === "string"
+        ? await tx.note.findFirst({
+            where: {
+              id: placement.afterNoteId,
+              userId,
+              isArchived: false,
+            },
+            select: {
+              id: true,
+              folderId: true,
+              isPinned: true,
+            },
+          })
+        : null;
+
+    if (placement.afterNoteId && !targetNote) {
+      throw new Error("Target note not found");
+    }
+
+    if (targetNote?.id === note.id) {
+      return;
+    }
+
+    const destinationFolderId =
+      targetNote?.folderId ??
+      (Object.prototype.hasOwnProperty.call(placement, "folderId")
+        ? placement.folderId ?? null
+        : note.folderId);
+
+    const currentSiblings = await tx.note.findMany({
+      where: {
+        userId,
+        folderId: note.folderId,
+        isArchived: false,
+        isPinned: note.isPinned,
+      },
+      orderBy: [{ position: "asc" }, { createdAt: "asc" }],
+      select: {
+        id: true,
+      },
+    });
+
+    const currentSiblingIds = currentSiblings
+      .map((sibling) => sibling.id)
+      .filter((siblingId) => siblingId !== note.id);
+
+    const destinationSiblings =
+      destinationFolderId === note.folderId
+        ? currentSiblingIds
+        : (
+            await tx.note.findMany({
+              where: {
+                userId,
+                folderId: destinationFolderId,
+                isArchived: false,
+                isPinned: note.isPinned,
+              },
+              orderBy: [{ position: "asc" }, { createdAt: "asc" }],
+              select: {
+                id: true,
+              },
+            })
+          ).map((sibling) => sibling.id);
+
+    const insertIndex =
+      targetNote != null
+        ? destinationSiblings.findIndex((siblingId) => siblingId === targetNote.id) + 1
+        : destinationSiblings.length;
+
+    const nextDestinationIds = [...destinationSiblings];
+    nextDestinationIds.splice(insertIndex, 0, note.id);
+
+    if (destinationFolderId !== note.folderId) {
+      for (const [index, siblingId] of currentSiblingIds.entries()) {
+        await tx.note.update({
+          where: { id: siblingId },
+          data: {
+            position: index,
+          },
+        });
+      }
+    }
+
+    for (const [index, siblingId] of nextDestinationIds.entries()) {
+      await tx.note.update({
+        where: { id: siblingId },
+        data: {
+          folderId: siblingId === note.id ? destinationFolderId : undefined,
+          position: index,
+        },
+      });
+    }
+  });
+
+  await recordOperation({
+    userId,
+    entityType: "note",
+    entityId: noteId,
+    actionType: "relocate",
+    payload: placement,
+  });
+}
+
 type NoteMutationClient = Pick<Prisma.TransactionClient, "block" | "note">;
 
 interface BlockMutationSummary {

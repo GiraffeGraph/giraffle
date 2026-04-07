@@ -725,40 +725,59 @@
 }
 
 .sidebar-folder-dropzone {
+  position: relative;
   margin: 6px 0 6px 12px;
-  padding: 6px 10px;
-  color: var(--text-tertiary);
-  font-size: 12px;
+  padding: 0;
+  height: 0;
   max-height: 0;
   margin-top: 0;
   margin-bottom: 0;
-  padding-top: 0;
-  padding-bottom: 0;
   opacity: 0;
   overflow: hidden;
   pointer-events: none;
   transition: var(--transition-fast);
 }
 
+.sidebar-folder-dropzone::before {
+  content: "";
+  display: block;
+  height: 2px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 44%, transparent);
+  transform: scaleX(0.92);
+  transform-origin: left center;
+}
+
 .sidebar-folder-dropzone.visible {
-  max-height: 32px;
+  height: 8px;
+  max-height: 8px;
   margin-top: 6px;
   margin-bottom: 6px;
-  padding-top: 6px;
-  padding-bottom: 6px;
   opacity: 1;
   pointer-events: auto;
 }
 
 .sidebar-folder-dropzone.active,
 .sidebar-folder-dropzone:hover {
-  color: var(--accent-strong);
-  border-color: var(--accent-line);
-  background: var(--accent-subtle);
+  background: transparent;
+}
+
+.sidebar-folder-dropzone.active::before,
+.sidebar-folder-dropzone:hover::before {
+  background: var(--accent);
 }
 
 .sidebar-folder-dropzone.root {
   margin: 0 0 10px 0;
+}
+
+.sidebar-folder-dropzone.root.visible {
+  height: 10px;
+  max-height: 10px;
+}
+
+.sidebar-folder-dropzone.note-dropzone {
+  margin-left: 32px;
 }
 
 .sidebar-entity-row.drag-target .sidebar-row-main {

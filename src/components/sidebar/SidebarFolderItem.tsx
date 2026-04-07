@@ -9,6 +9,7 @@ import {
 } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import {
   isSidebarFolderDragData,
+  isSidebarNoteDragData,
   type FolderDropTarget,
   type SidebarFolder,
   type SidebarNote,
@@ -42,6 +43,8 @@ export function SidebarFolderItem({
   onQuickCreate,
   draggedFolderId,
   folderDropTarget,
+  draggedNoteId,
+  noteDropTarget,
   allNotes,
   currentNoteId,
   onNoteOpen,
@@ -55,6 +58,12 @@ export function SidebarFolderItem({
   onQuickCreate: (folderId: string) => void | Promise<void>;
   draggedFolderId: string | null;
   folderDropTarget: FolderDropTarget | null;
+  draggedNoteId: string | null;
+  noteDropTarget: {
+    folderId: string | null;
+    noteId: string | null;
+    mode: "inside" | "after" | "root";
+  } | null;
   allNotes: SidebarNote[];
   currentNoteId?: string;
   onNoteOpen: (noteId: string) => void;
@@ -77,6 +86,8 @@ export function SidebarFolderItem({
     folderDropTarget?.folderId === folder.id && folderDropTarget.mode === "inside";
   const isAfterDropTarget =
     folderDropTarget?.folderId === folder.id && folderDropTarget.mode === "after";
+  const isNoteInsideDropTarget =
+    noteDropTarget?.folderId === folder.id && noteDropTarget.mode === "inside";
 
   useEffect(() => {
     if (!rowRef.current || !afterDropzoneRef.current) {
@@ -93,15 +104,36 @@ export function SidebarFolderItem({
       }),
       dropTargetForElements({
         element: rowRef.current,
-        canDrop: ({ source }) =>
-          isSidebarFolderDragData(source.data) && source.data.folderId !== folder.id,
-        getData: () => ({
-          type: "sidebar-folder-drop-target",
-          folderId: folder.id,
-          mode: "inside",
-          parentId: folder.id,
-          afterFolderId: null,
-        }),
+        canDrop: ({ source }) => {
+          if (isSidebarFolderDragData(source.data)) {
+            return source.data.folderId !== folder.id;
+          }
+
+          if (isSidebarNoteDragData(source.data)) {
+            return source.data.folderId !== folder.id;
+          }
+
+          return false;
+        },
+        getData: ({ source }) => {
+          if (isSidebarNoteDragData(source.data)) {
+            return {
+              type: "sidebar-note-drop-target",
+              folderId: folder.id,
+              mode: "inside",
+              afterNoteId: null,
+              isPinned: source.data.isPinned,
+            };
+          }
+
+          return {
+            type: "sidebar-folder-drop-target",
+            folderId: folder.id,
+            mode: "inside",
+            parentId: folder.id,
+            afterFolderId: null,
+          };
+        },
       }),
       dropTargetForElements({
         element: afterDropzoneRef.current,
@@ -132,7 +164,7 @@ export function SidebarFolderItem({
     <div className="sidebar-folder-node">
       <div
         className={`sidebar-entity-row${isActive ? " folder-active" : ""}${
-          isInsideDropTarget ? " drag-target" : ""
+          isInsideDropTarget || isNoteInsideDropTarget ? " drag-target" : ""
         }`}
       >
         <div
@@ -208,9 +240,7 @@ export function SidebarFolderItem({
         className={`sidebar-folder-dropzone${isAfterDropTarget ? " active" : ""}${
           draggedFolderId && draggedFolderId !== folder.id ? " visible" : ""
         }`}
-      >
-        Altına bırak
-      </div>
+      />
 
       {isOpen ? (
         <div className="sidebar-folder-contents">
@@ -260,6 +290,8 @@ export function SidebarFolderItem({
               onOpen={onNoteOpen}
               onContextMenuOpen={onNoteContextMenu}
               onTriggerMenuOpen={onNoteTriggerMenu}
+              draggedNoteId={draggedNoteId}
+              noteDropTarget={noteDropTarget}
             />
           ))}
 
@@ -273,6 +305,8 @@ export function SidebarFolderItem({
                   onQuickCreate={onQuickCreate}
                   draggedFolderId={draggedFolderId}
                   folderDropTarget={folderDropTarget}
+                  draggedNoteId={draggedNoteId}
+                  noteDropTarget={noteDropTarget}
                   allNotes={allNotes}
                   currentNoteId={currentNoteId}
                   onNoteOpen={onNoteOpen}

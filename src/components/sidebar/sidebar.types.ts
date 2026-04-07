@@ -64,12 +64,27 @@ export interface SidebarFolderDragData {
   folderId: string;
 }
 
+export interface SidebarNoteDragData {
+  type: "sidebar-note";
+  noteId: string;
+  folderId: string | null;
+  isPinned: boolean;
+}
+
 export interface SidebarFolderDropData {
   type: "sidebar-folder-drop-target";
   folderId: string;
   mode: "inside" | "after" | "root";
   parentId: string | null;
   afterFolderId: string | null;
+}
+
+export interface SidebarNoteDropData {
+  type: "sidebar-note-drop-target";
+  folderId: string | null;
+  mode: "inside" | "after" | "root";
+  afterNoteId: string | null;
+  isPinned: boolean;
 }
 
 export function isSidebarFolderDragData(value: unknown): value is SidebarFolderDragData {
@@ -80,6 +95,20 @@ export function isSidebarFolderDragData(value: unknown): value is SidebarFolderD
     "folderId" in value &&
     (value as SidebarFolderDragData).type === "sidebar-folder" &&
     typeof (value as SidebarFolderDragData).folderId === "string"
+  );
+}
+
+export function isSidebarNoteDragData(value: unknown): value is SidebarNoteDragData {
+  return Boolean(
+    value &&
+    typeof value === "object" &&
+    "type" in value &&
+    "noteId" in value &&
+    "folderId" in value &&
+    "isPinned" in value &&
+    (value as SidebarNoteDragData).type === "sidebar-note" &&
+    typeof (value as SidebarNoteDragData).noteId === "string" &&
+    typeof (value as SidebarNoteDragData).isPinned === "boolean"
   );
 }
 
@@ -97,5 +126,25 @@ export function isSidebarFolderDropData(value: unknown): value is SidebarFolderD
     ((value as SidebarFolderDropData).mode === "inside" ||
       (value as SidebarFolderDropData).mode === "after" ||
       (value as SidebarFolderDropData).mode === "root")
+  );
+}
+
+export function isSidebarNoteDropData(value: unknown): value is SidebarNoteDropData {
+  return Boolean(
+    value &&
+    typeof value === "object" &&
+    "type" in value &&
+    "mode" in value &&
+    "afterNoteId" in value &&
+    "isPinned" in value &&
+    (value as SidebarNoteDropData).type === "sidebar-note-drop-target" &&
+    (typeof (value as SidebarNoteDropData).folderId === "string" ||
+      (value as SidebarNoteDropData).folderId === null) &&
+    ((value as SidebarNoteDropData).mode === "inside" ||
+      (value as SidebarNoteDropData).mode === "after" ||
+      (value as SidebarNoteDropData).mode === "root") &&
+    (typeof (value as SidebarNoteDropData).afterNoteId === "string" ||
+      (value as SidebarNoteDropData).afterNoteId === null) &&
+    typeof (value as SidebarNoteDropData).isPinned === "boolean"
   );
 }
