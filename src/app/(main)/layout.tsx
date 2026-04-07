@@ -1,4 +1,5 @@
 import { Sidebar } from "@/components/sidebar/Sidebar";
+import { RightRail } from "@/components/right-rail/RightRail";
 import { auth } from "@/lib/auth";
 import { getFoldersAction } from "@/server/api/folders";
 import { getNotesAction } from "@/server/api/notes";
@@ -48,6 +49,7 @@ export default async function MainLayout({
       <main className="main-content">
         <div className="main-content-inner">{children}</div>
       </main>
+      <RightRail />
     </div>
   );
 }
