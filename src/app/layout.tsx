@@ -15,6 +15,17 @@ import "@/styles/components/list.css";
 import "@/styles/components/chip.css";
 import "@/styles/components/dialog.css";
 import "@/styles/components/navigation.css";
+import "@/styles/components/command-palette.css";
+import "@/styles/layouts/app-layout.css";
+import "@/styles/layouts/sidebar.css";
+import "@/styles/layouts/pages.css";
+import "@/styles/layouts/shell.css";
+import "@/styles/layouts/editor.css";
+import "@/styles/layouts/sidebar-rail.css";
+import "@/styles/layouts/enterprise.css";
+import "@/styles/layouts/sidebar-v2.css";
+import "@/styles/layouts/agent-canvas.css";
+import "@/styles/layouts/sidebar-rail-v2.css";
 import "./globals.css";
 
 export const metadata: Metadata = {
