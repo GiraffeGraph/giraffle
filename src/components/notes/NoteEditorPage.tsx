@@ -591,11 +591,11 @@ export function NoteEditorPage({
 
       {backlinks.length > 0 ? (
         <div style={{ maxWidth: "800px", margin: "48px auto 0", padding: "0 32px" }}>
-          <Card variant="outlined">
-            <CardHeader>
-              <CardTitle style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <span>Bag</span>
-                Geri bağlantılar ({backlinks.length})
+            <Card variant="outlined">
+              <CardHeader>
+                <CardTitle style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span className="material-symbols-outlined" aria-hidden="true">link</span>
+                  Geri bağlantılar ({backlinks.length})
               </CardTitle>
             </CardHeader>
             <CardContent style={{ padding: 0 }}>

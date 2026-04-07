@@ -46,6 +46,7 @@ import {
 import { SidebarGroup } from "./SidebarGroup";
 import { SidebarNoteRow } from "./SidebarNoteRow";
 import { SidebarFolderItem } from "./SidebarFolderItem";
+import { GraphIcon } from "./GraphIcon";
 
 function PlusIcon() {
   return (
@@ -403,29 +404,29 @@ export function Sidebar({
   // Palette items
   const paletteItems = useMemo<CommandPaletteItem[]>(() => {
     const actionItems: CommandPaletteItem[] = [
-      { id: "action-new-note", group: "Hızlı işlemler", title: "Yeni not oluştur", description: "Boş bir not aç", icon: "+", hint: "Enter", onSelect: async () => { const id = await createNoteAction(); router.push(`/notes/${id}`); } },
-      { id: "action-new-folder", group: "Hızlı işlemler", title: "Yeni klasör oluştur", description: "Çalışma alanına yeni klasör ekle", icon: "K", onSelect: async () => { const name = window.prompt("Klasör adı", "Yeni Klasör")?.trim(); if (!name) return; const id = await createFolderAction({ name }); router.push(`/folders/${id}`); } },
-      { id: "action-template-note", group: "Hızlı işlemler", title: "Şablondan not oluştur", description: "Şablon seçiciyi aç", icon: "T", onSelect: async () => { setTemplatePickerOpenSignal((v) => v + 1); } },
-      { id: "action-dashboard", group: "Geçişler", title: "Panoya git", description: "Ana çalışma alanı görünümü", icon: "Ana", onSelect: async () => { router.push("/dashboard"); } },
-      { id: "action-graph", group: "Geçişler", title: "Bağlantı ağına git", description: "Not grafiği görünümü", icon: "Ağ", onSelect: async () => { router.push("/graph"); } },
-      { id: "action-inbox", group: "Geçişler", title: "Gelen kutusuna git", description: "Klasörsüz notları aç", icon: "In", onSelect: async () => { router.push("/inbox"); } },
-      { id: "action-search", group: "Geçişler", title: "Arama çalışma alanını aç", description: "Filtreli arama sayfası", icon: "Ara", onSelect: async () => { router.push("/search"); } },
-      { id: "action-templates", group: "Geçişler", title: "Şablon kütüphanesi", description: "Şablon yönetim alanını aç", icon: "Tpl", onSelect: async () => { router.push("/templates"); } },
-      { id: "action-publish", group: "Geçişler", title: "Yayın alanı", description: "Yayımdaki notları ve dışa aktarımları gör", icon: "Yay", onSelect: async () => { router.push("/publish"); } },
-      { id: "action-proposals", group: "Geçişler", title: "Öneri kuyruğu", description: "YZ öneri inceleme alanını aç", icon: "YZ", onSelect: async () => { router.push("/proposals"); } },
-      { id: "action-settings", group: "Geçişler", title: "Ayarlar", description: "Tema, yerel kuyruk ve tercihleri aç", icon: "Ay", onSelect: async () => { router.push("/settings"); } },
-      { id: "action-account", group: "Geçişler", title: "Hesap", description: "Profil ve şifre işlemleri", icon: "Hs", onSelect: async () => { router.push("/account"); } },
+      { id: "action-new-note", group: "Hızlı işlemler", title: "Yeni not oluştur", description: "Boş bir not aç", icon: "\uE145", hint: "Enter", onSelect: async () => { const id = await createNoteAction(); router.push(`/notes/${id}`); } },
+      { id: "action-new-folder", group: "Hızlı işlemler", title: "Yeni klasör oluştur", description: "Çalışma alanına yeni klasör ekle", icon: "\uE2C7", onSelect: async () => { const name = window.prompt("Klasör adı", "Yeni Klasör")?.trim(); if (!name) return; const id = await createFolderAction({ name }); router.push(`/folders/${id}`); } },
+      { id: "action-template-note", group: "Hızlı işlemler", title: "Şablondan not oluştur", description: "Şablon seçiciyi aç", icon: "\uE02F", onSelect: async () => { setTemplatePickerOpenSignal((v) => v + 1); } },
+      { id: "action-dashboard", group: "Geçişler", title: "Panoya git", description: "Ana çalışma alanı görünümü", icon: "\uE88A", onSelect: async () => { router.push("/dashboard"); } },
+      { id: "action-graph", group: "Geçişler", title: "Bağlantı ağına git", description: "Not grafiği görünümü", icon: "__graph__", onSelect: async () => { router.push("/graph"); } },
+      { id: "action-inbox", group: "Geçişler", title: "Gelen kutusuna git", description: "Klasörsüz notları aç", icon: "\uE156", onSelect: async () => { router.push("/inbox"); } },
+      { id: "action-search", group: "Geçişler", title: "Arama çalışma alanını aç", description: "Filtreli arama sayfası", icon: "\uE8B6", onSelect: async () => { router.push("/search"); } },
+      { id: "action-templates", group: "Geçişler", title: "Şablon kütüphanesi", description: "Şablon yönetim alanını aç", icon: "\uE02F", onSelect: async () => { router.push("/templates"); } },
+      { id: "action-publish", group: "Geçişler", title: "Yayın alanı", description: "Yayımdaki notları ve dışa aktarımları gör", icon: "\uE255", onSelect: async () => { router.push("/publish"); } },
+      { id: "action-proposals", group: "Geçişler", title: "Öneri kuyruğu", description: "YZ öneri inceleme alanını aç", icon: "\uE65F", onSelect: async () => { router.push("/proposals"); } },
+      { id: "action-settings", group: "Geçişler", title: "Ayarlar", description: "Tema, yerel kuyruk ve tercihleri aç", icon: "\uE8B8", onSelect: async () => { router.push("/settings"); } },
+      { id: "action-account", group: "Geçişler", title: "Hesap", description: "Profil ve şifre işlemleri", icon: "\uF20B", onSelect: async () => { router.push("/account"); } },
     ];
 
     const noteItems = notes
       .filter((n) => !normalizedPaletteQuery || n.title.toLowerCase().includes(normalizedPaletteQuery))
       .slice(0, normalizedPaletteQuery ? 8 : 5)
-      .map<CommandPaletteItem>((n) => ({ id: `note-${n.id}`, group: "Notlar", title: n.title, description: "Notu düzenleyicide aç", icon: n.icon ?? "Not", onSelect: async () => { router.push(`/notes/${n.id}`); } }));
+      .map<CommandPaletteItem>((n) => ({ id: `note-${n.id}`, group: "Notlar", title: n.title, description: "Notu düzenleyicide aç", icon: n.icon ?? "\uE873", onSelect: async () => { router.push(`/notes/${n.id}`); } }));
 
     const folderItems = flattenedFolders
       .filter((f) => !normalizedPaletteQuery || f.name.toLowerCase().includes(normalizedPaletteQuery))
       .slice(0, normalizedPaletteQuery ? 8 : 5)
-      .map<CommandPaletteItem>((f) => ({ id: `folder-${f.id}`, group: "Klasörler", title: f.name, description: "Klasör görünümünü aç", icon: f.icon ?? "Kls", onSelect: async () => { router.push(`/folders/${f.id}`); } }));
+      .map<CommandPaletteItem>((f) => ({ id: `folder-${f.id}`, group: "Klasörler", title: f.name, description: "Klasör görünümünü aç", icon: f.icon ?? "\uE2C7", onSelect: async () => { router.push(`/folders/${f.id}`); } }));
 
     const tagItems = tags
       .filter((t) => !normalizedPaletteQuery || t.name.toLowerCase().includes(normalizedPaletteQuery))
@@ -435,7 +436,7 @@ export function Sidebar({
     const templateItems = templates
       .filter((t) => !normalizedPaletteQuery || `${t.name} ${t.description ?? ""}`.toLowerCase().includes(normalizedPaletteQuery))
       .slice(0, normalizedPaletteQuery ? 6 : 4)
-      .map<CommandPaletteItem>((t) => ({ id: `template-${t.id}`, group: "Şablonlar", title: t.name, description: t.description ?? `${getTemplateCategoryLabel(t.category)} şablonu`, icon: t.icon ?? "Tpl", onSelect: async () => { router.push(`/templates?selected=${t.id}`); } }));
+      .map<CommandPaletteItem>((t) => ({ id: `template-${t.id}`, group: "Şablonlar", title: t.name, description: t.description ?? `${getTemplateCategoryLabel(t.category)} şablonu`, icon: t.icon ?? "\uE02F", onSelect: async () => { router.push(`/templates?selected=${t.id}`); } }));
 
     if (!normalizedPaletteQuery) return [...actionItems, ...noteItems, ...folderItems, ...tagItems, ...templateItems];
 
@@ -476,9 +477,11 @@ export function Sidebar({
             <button type="button" className="sidebar-compact-button" onClick={() => openPalette()} aria-label="Komut paletini aç">
               <span className="material-symbols-outlined sm" aria-hidden="true">&#xE8B6;</span>
             </button>
-            <button type="button" className="sidebar-compact-button" onClick={handleCreateNote} aria-label="Yeni not oluştur">+</button>
+            <button type="button" className="sidebar-compact-button" onClick={handleCreateNote} aria-label="Yeni not oluştur">
+              <PlusIcon />
+            </button>
             <button type="button" className={`sidebar-compact-button ${pathname === "/graph" ? "active" : ""}`} onClick={() => router.push("/graph")} aria-label="Bağlantı ağına git">
-              <span className="material-symbols-outlined sm" aria-hidden="true">&#xF1E2;</span>
+              <GraphIcon size={16} />
             </button>
           </div>
           <div className="sidebar-compact-footer">
@@ -511,7 +514,7 @@ export function Sidebar({
               onClick={() => openPalette()}
               aria-label="Arama veya komut paleti"
             >
-              <span style={{ fontSize: "14px", opacity: 0.5 }}>○</span>
+              <span className="material-symbols-outlined sm" aria-hidden="true">&#xE8B6;</span>
               <span style={{ flex: 1, textAlign: "left", fontSize: "12px" }}>Ara veya komut çalıştır...</span>
               <kbd className="sidebar-search-kbd">⌘K</kbd>
             </button>
@@ -524,13 +527,13 @@ export function Sidebar({
               {([
                 { path: "/dashboard", icon: "\uE88A", label: "Pano", info: "Son dokunulan notlara, taslaklara ve çalışma alanının ana akışına hızlıca geri dön.", actions: [{ label: "Yeni not", onClick: () => void handleCreateNote(), primary: true }, { label: "Şablondan oluştur", onClick: () => setTemplatePickerOpenSignal((s) => s + 1) }] },
                 { path: "/inbox", icon: "\uE156", label: "Gelen kutusu", info: `${notes.filter((n) => !n.folderId).length} klasörsüz not`, actions: [{ label: "Yeni not", onClick: () => void handleCreateNote(), primary: true }, { label: "Şablondan oluştur", onClick: () => setTemplatePickerOpenSignal((s) => s + 1) }] },
-                { path: "/graph", icon: "\uF1E2", label: "Bağlantı ağı", info: "Notlar arasındaki wikilink projeksiyonu" },
+                { path: "/graph", icon: "__graph__", label: "Bağlantı ağı", info: "Notlar arasındaki wikilink projeksiyonu" },
               ] as Array<{ path: string; icon: string; label: string; info: string; actions?: Array<{ label: string; onClick: () => void; primary?: boolean }> }>).map(({ path, icon, label, info, actions }) => (
                 <div key={path}>
                   <div className="sidebar-nav-item-row">
                     <button className={`sidebar-item${pathname === path ? " active" : ""}`} onClick={() => { closeNavModal(); router.push(path); }}>
                       <span className="sidebar-item-icon" aria-hidden="true">
-                        <span className="material-symbols-outlined" style={{ fontSize: "16px", lineHeight: 1 }}>{icon}</span>
+                        {icon === "__graph__" ? <GraphIcon size={16} /> : <span className="material-symbols-outlined" style={{ fontSize: "16px", lineHeight: 1 }}>{icon}</span>}
                       </span>
                       <span className="sidebar-item-label">{label}</span>
                     </button>
@@ -539,6 +542,17 @@ export function Sidebar({
                   {path === "/dashboard" && notes.length > 0 && (
                     <div className="sidebar-nested-items">
                       {notes.slice(0, 5).map((note) => (
+                        <button key={note.id} type="button" className={`sidebar-item sidebar-nested-item${note.id === currentNoteId ? " active" : ""}`} onClick={() => { closeNavModal(); router.push(`/notes/${note.id}`); }}>
+                          <span className="sidebar-item-icon" aria-hidden="true">{note.icon ?? <span style={{ fontSize: "8px", opacity: 0.4 }}>●</span>}</span>
+                          <span className="sidebar-item-label">{note.title || "Adsız"}</span>
+                          <span className="sidebar-nested-item-date">{formatDate(new Date(note.updatedAt))}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {path === "/inbox" && notes.filter((n) => !n.folderId).length > 0 && (
+                    <div className="sidebar-nested-items">
+                      {notes.filter((n) => !n.folderId).slice(0, 5).map((note) => (
                         <button key={note.id} type="button" className={`sidebar-item sidebar-nested-item${note.id === currentNoteId ? " active" : ""}`} onClick={() => { closeNavModal(); router.push(`/notes/${note.id}`); }}>
                           <span className="sidebar-item-icon" aria-hidden="true">{note.icon ?? <span style={{ fontSize: "8px", opacity: 0.4 }}>●</span>}</span>
                           <span className="sidebar-item-label">{note.title || "Adsız"}</span>
