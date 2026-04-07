@@ -1,5 +1,5 @@
 import { Metadata } from 'next';
-import { notFound, redirect } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import { getCanvasAction } from '@/server/api/canvas';
 import { requireAuthenticatedUser } from '@/lib/auth-session';
 import { CanvasEditor } from '@/components/canvas/CanvasEditor';
@@ -22,7 +22,7 @@ export default async function CanvasPage({
   }
 
   // Convert Prisma models to React Flow properties
-  const initialNodes = canvas.nodes.map((n: any) => ({
+  const initialNodes = canvas.nodes.map((n) => ({
     id: n.id,
     type: n.type,
     position: { x: n.x, y: n.y },
@@ -32,7 +32,7 @@ export default async function CanvasPage({
     }
   }));
 
-  const initialEdges = canvas.edges.map((e: any) => ({
+  const initialEdges = canvas.edges.map((e) => ({
     id: e.id,
     source: e.sourceNodeId,
     target: e.targetNodeId,
