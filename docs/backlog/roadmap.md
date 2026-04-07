@@ -1,4 +1,4 @@
-# Graffle Roadmap
+# Giraffle Roadmap
 
 Updated: 2026-04-04
 

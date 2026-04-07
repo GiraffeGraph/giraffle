@@ -24,7 +24,7 @@ export default function LoginPage() {
         <div className="auth-header">
           <span className="auth-logo">G</span>
           <h1 className="auth-title">Tekrar hoş geldin</h1>
-          <p className="auth-subtitle">Graffle çalışma alanına giriş yap</p>
+          <p className="auth-subtitle">Giraffle çalışma alanına giriş yap</p>
         </div>
 
         <form action={handleSubmit} className="auth-form">

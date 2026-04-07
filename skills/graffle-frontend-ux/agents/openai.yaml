@@ -1,4 +1,4 @@
 interface:
-  display_name: "Graffle Frontend UX"
-  short_description: "Graffle Turkish UI and UX work"
-  default_prompt: "Use $graffle-frontend-ux to continue the next safe Graffle frontend localization, design, sidebar, or context-menu task in the giraffle repo."
+  display_name: "Giraffle Frontend UX"
+  short_description: "Giraffle Turkish UI and UX work"
+  default_prompt: "Use $graffle-frontend-ux to continue the next safe Giraffle frontend localization, design, sidebar, or context-menu task in the giraffle repo."

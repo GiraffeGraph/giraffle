@@ -1,9 +1,9 @@
 ---
 name: graffle-backlog-executor
-description: Continue Graffle work from the repository backlog with small, reviewable implementation slices. Use when choosing the next ready task, reading the task brief, executing it safely, updating task status, splitting oversized work into new tasks, and leaving validation results in the repo. Prefer this skill whenever the user asks to continue from where previous Graffle work stopped.
+description: Continue Giraffle work from the repository backlog with small, reviewable implementation slices. Use when choosing the next ready task, reading the task brief, executing it safely, updating task status, splitting oversized work into new tasks, and leaving validation results in the repo. Prefer this skill whenever the user asks to continue from where previous Giraffle work stopped.
 ---
 
-# Graffle Backlog Executor
+# Giraffle Backlog Executor
 
 Read `references/task-workflow.md` first.
 

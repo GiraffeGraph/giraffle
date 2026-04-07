@@ -980,7 +980,7 @@ export function Sidebar({
             >
               <div className="sidebar-workspace-logo" style={{ width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--md-sys-color-primary)", color: "var(--md-sys-color-on-primary)", borderRadius: "var(--md-sys-shape-small)", fontWeight: "bold" }}>G</div>
               <div className="sidebar-workspace-copy" style={{ display: "flex", flexDirection: "column" }}>
-                <span className="sidebar-workspace-name" style={{ fontSize: "var(--md-sys-typescale-label-large-size)", fontWeight: "bold", color: "var(--md-sys-color-on-surface)" }}>Graffle</span>
+                <span className="sidebar-workspace-name" style={{ fontSize: "var(--md-sys-typescale-label-large-size)", fontWeight: "bold", color: "var(--md-sys-color-on-surface)" }}>Giraffle</span>
                 <span className="sidebar-workspace-meta" style={{ fontSize: "var(--md-sys-typescale-body-small-size)", color: "var(--md-sys-color-on-surface-variant)" }}>
                   Kişisel bilgi alanı
                 </span>
@@ -1264,7 +1264,7 @@ export function Sidebar({
               </div>
               <div style={{ display: "flex", flexDirection: "column", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
                 <div style={{ fontSize: "var(--md-sys-typescale-body-medium-size)", fontWeight: "var(--md-sys-typescale-body-medium-weight)", color: "var(--md-sys-color-on-surface)", overflow: "hidden", textOverflow: "ellipsis" }}>
-                  {user.name ?? user.email ?? "Graffle Kullanıcı"}
+                  {user.name ?? user.email ?? "Giraffle Kullanıcı"}
                 </div>
                 {user.email ? (
                   <div style={{ fontSize: "var(--md-sys-typescale-body-small-size)", color: "var(--md-sys-color-on-surface-variant)", overflow: "hidden", textOverflow: "ellipsis" }}>

@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 
 export const LEGACY_BOOTSTRAP_USER_ID = "legacy-bootstrap-user";
-export const LEGACY_BOOTSTRAP_USER_EMAIL = "legacy-import@graffle.local";
+export const LEGACY_BOOTSTRAP_USER_EMAIL = "legacy-import@giraffle.local";
 
 export async function requireAuthenticatedUser() {
   const session = await auth();

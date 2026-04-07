@@ -1,4 +1,4 @@
-# Graffle Backlog Workflow
+# Giraffle Backlog Workflow
 
 ## Pick the Task
 

@@ -1,4 +1,4 @@
-# Graffle Frontend Principles
+# Giraffle Frontend Principles
 
 ## Product Language
 

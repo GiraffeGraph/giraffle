@@ -1,11 +1,11 @@
-# Graffle Task Summary
+# Giraffle Task Summary
 
 Updated: 2026-04-07
 Source: Consolidated from the former `docs/backlog/tasks/TASK-*.md` files.
 
 ## Roadmap Snapshot
 
-- Graffle already has its core stack in place: Next.js 16, Prisma/PostgreSQL, NextAuth, Tiptap, canonical block storage, wikilinks, backlinks, templates, folders, publish/export, graph, search, and deployment foundations.
+- Giraffle already has its core stack in place: Next.js 16, Prisma/PostgreSQL, NextAuth, Tiptap, canonical block storage, wikilinks, backlinks, templates, folders, publish/export, graph, search, and deployment foundations.
 - The roadmap marks `TASK-001` through `TASK-027` as completed.
 - The product evolved in clear phases: data-model hardening, editor capabilities, navigation and information architecture, publishing and search, account and settings flows, local-first/sync boundaries, AI-assisted editing, and production operations.
 - The next layer is refinement work rather than missing platform basics: richer table UX, stronger template ergonomics, better graph filtering, semantic search, and deeper local-first sync.

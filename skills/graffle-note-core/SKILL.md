@@ -1,9 +1,9 @@
 ---
 name: graffle-note-core
-description: Continue implementation of Graffle's note and editor core in the giraffle repository. Use when changing canonical block persistence, Tiptap extensions, slash commands, wikilinks, link indexing, backlinks, templates, folder placement, markdown or MDX serialization boundaries, or note navigation. Prefer this skill for work touching src/domain/note, src/domain/link, src/domain/template, src/components/editor, Prisma note models, or related server actions.
+description: Continue implementation of Giraffle's note and editor core in the giraffle repository. Use when changing canonical block persistence, Tiptap extensions, slash commands, wikilinks, link indexing, backlinks, templates, folder placement, markdown or MDX serialization boundaries, or note navigation. Prefer this skill for work touching src/domain/note, src/domain/link, src/domain/template, src/components/editor, Prisma note models, or related server actions.
 ---
 
-# Graffle Note Core
+# Giraffle Note Core
 
 Read `references/architecture.md` before changing note or editor code.
 

@@ -1,4 +1,4 @@
-# Graffle Note Core Architecture
+# Giraffle Note Core Architecture
 
 ## Current Foundation
 

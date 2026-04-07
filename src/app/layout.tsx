@@ -18,7 +18,7 @@ import "@/styles/components/navigation.css";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Graffle — Bilgi Grafiği Editörü",
+  title: "Giraffle — Bilgi Grafiği Editörü",
   description:
     "Bağlantılı notlar, wikilinkler ve bilgi grafiği yapısıyla blok tabanlı bir bilgi editörü.",
 };

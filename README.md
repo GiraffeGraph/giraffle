@@ -1,6 +1,6 @@
-# Graffle
+# Giraffle
 
-Graffle is a block-based knowledge editor that combines:
+Giraffle is a block-based knowledge editor that combines:
 
 - Notion-like block editing
 - Obsidian-like wikilinks and backlinks

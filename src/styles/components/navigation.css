@@ -25,7 +25,7 @@
   height: calc(100vh - 36px);
   background-color: var(--md-sys-color-shell-sidebar);
   box-shadow: var(--md-sys-elevation-level1);
-  backdrop-filter: blur(14px); /* Graffle glass touch */
+  backdrop-filter: blur(14px); /* Giraffle glass touch */
   flex-shrink: 0;
   transition: width var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard);
 }
