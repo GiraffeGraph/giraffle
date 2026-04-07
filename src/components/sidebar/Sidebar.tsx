@@ -29,6 +29,7 @@ import {
   type SidebarCollapseState,
 } from "@/lib/workspace-preferences";
 import { getTemplateCategoryLabel } from "@/lib/template-category";
+import { formatDate } from "@/lib/utils";
 import type { FolderDropTarget, SidebarMenuState, SidebarProps, SidebarSectionKey } from "./sidebar.types";
 import {
   areSidebarCollapseStatesEqual,
@@ -536,11 +537,12 @@ export function Sidebar({
                     <button type="button" className={`sidebar-nav-menu${navModal?.key === path ? " active" : ""}`} onClick={(e) => openNavModal(path, label, e, { info, actions })} aria-label={`${label} menüsü`}>···</button>
                   </div>
                   {path === "/dashboard" && notes.length > 0 && (
-                    <div className="sidebar-nav-subtabs">
+                    <div className="sidebar-nested-items">
                       {notes.slice(0, 5).map((note) => (
-                        <button key={note.id} type="button" className={`sidebar-item sidebar-nav-subtab${note.id === currentNoteId ? " active" : ""}`} onClick={() => { closeNavModal(); router.push(`/notes/${note.id}`); }}>
+                        <button key={note.id} type="button" className={`sidebar-item sidebar-nested-item${note.id === currentNoteId ? " active" : ""}`} onClick={() => { closeNavModal(); router.push(`/notes/${note.id}`); }}>
                           <span className="sidebar-item-icon" aria-hidden="true">{note.icon ?? <span style={{ fontSize: "8px", opacity: 0.4 }}>●</span>}</span>
                           <span className="sidebar-item-label">{note.title || "Adsız"}</span>
+                          <span className="sidebar-nested-item-date">{formatDate(new Date(note.updatedAt))}</span>
                         </button>
                       ))}
                     </div>
