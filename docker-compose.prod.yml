@@ -28,9 +28,7 @@ services:
       start_period: 10s
 
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ${APP_IMAGE:-giraffle:local}
     restart: unless-stopped
     depends_on:
       postgres:
