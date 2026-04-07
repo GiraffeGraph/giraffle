@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { GraphIcon } from "./GraphIcon";
 
 export interface CommandPaletteItem {
   id: string;
@@ -213,28 +214,5 @@ export function CommandPalette({
       </div>
     </div>,
     document.body
-  );
-}
-
-function GraphIcon() {
-  return (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.9"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <circle cx="6" cy="17" r="2.1"></circle>
-      <circle cx="12" cy="7" r="2.1"></circle>
-      <circle cx="18" cy="13" r="2.1"></circle>
-      <path d="M7.8 15.9 10.2 8.2"></path>
-      <path d="M13.9 8.5 16.4 11.5"></path>
-      <path d="M8 16.2 15.7 14"></path>
-    </svg>
   );
 }
