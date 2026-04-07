@@ -136,11 +136,19 @@ $EDITOR .env.production
 ./scripts/prod-up.sh
 ```
 
-Then open `http://localhost:3000` for a local production smoke test, or point your domain at the server and set `NEXTAUTH_URL` accordingly.
+Set `APP_IMAGE` to the Docker Hub image you want to deploy, for example `docker.io/efekurucay/giraffle:latest`.
+
+Then open `http://localhost:3000` for a production smoke test, or point your domain at the server and set `NEXTAUTH_URL` accordingly.
+
+If you want to build from source on the target machine instead of pulling from Docker Hub, use:
+
+```bash
+./scripts/prod-build-up.sh
+```
 
 ### What The Production Stack Does
 
-- builds Next.js in `standalone` mode
+- pulls the app image from Docker Hub via `APP_IMAGE`
 - runs `prisma migrate deploy` on startup
 - publishes the app directly on `APP_PORT` (default `3000`)
 - exposes `/api/health` for health checks
@@ -150,6 +158,7 @@ Then open `http://localhost:3000` for a local production smoke test, or point yo
 
 ### Required Environment Variables
 
+- `APP_IMAGE`
 - `DATABASE_URL`
 - `AUTH_SECRET`
 - `NEXTAUTH_URL`
@@ -172,10 +181,32 @@ $EDITOR .env.production
 
 ```bash
 ./scripts/prod-logs.sh
+./scripts/prod-build-up.sh
 docker compose --env-file .env.production -f docker-compose.prod.yml ps
 docker compose --env-file .env.production -f docker-compose.prod.yml restart app
 docker compose --env-file .env.production -f docker-compose.prod.yml down
 ```
+
+### Publish To Docker Hub With GitHub Actions
+
+The workflow file is already included at `.github/workflows/docker-publish.yml`.
+
+It publishes Docker images when you:
+
+- push to `main`
+- push a tag like `v1.0.0`
+- run the workflow manually from GitHub Actions
+
+Configure these GitHub repository secrets first:
+
+- `DOCKERHUB_USERNAME` → `efekurucay`
+- `DOCKERHUB_TOKEN` → a Docker Hub access token with write access
+
+The workflow pushes these tags automatically:
+
+- `efekurucay/giraffle:latest` on `main`
+- `efekurucay/giraffle:sha-<commit>` for each published commit
+- `efekurucay/giraffle:vX.Y.Z` when you push a matching git tag
 
 `NEXTAUTH_URL` must match the public URL you actually use, for example `http://203.0.113.10` or `https://notes.example.com`.
 
