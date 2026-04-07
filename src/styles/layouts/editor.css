@@ -38,9 +38,11 @@
 
 .sidebar-item,
 .sidebar-tag-item {
+  position: relative;
   min-height: 30px;
   padding-top: 5px;
   padding-bottom: 5px;
+  padding-right: 6px;
 }
 
 .sidebar-item-icon {
@@ -186,9 +188,7 @@
   padding-left: 2px;
 }
 
-.backlinks-section {
-  max-width: 720px;
-}
+
 
 @media (max-width: 760px) {
   .dashboard,
@@ -341,11 +341,7 @@
   gap: 4px;
 }
 
-.sidebar-item,
-.sidebar-tag-item {
-  position: relative;
-  padding-right: 6px;
-}
+
 
 .sidebar-item::before,
 .sidebar-tag-item::before {

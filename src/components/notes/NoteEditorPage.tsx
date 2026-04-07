@@ -429,151 +429,148 @@ export function NoteEditorPage({
 
   return (
     <div className="note-page">
-      <div className="note-header" onContextMenu={openContextMenuAtPointer}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 32px", borderBottom: "1px solid var(--md-sys-color-outline-variant)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "var(--md-sys-typescale-body-medium-size)", color: "var(--md-sys-color-on-surface-variant)" }}>
+      <div
+        className="note-topbar"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          height: "36px",
+          padding: "0 16px",
+          borderBottom: "1px solid var(--md-sys-color-outline-variant)",
+          fontSize: "12px",
+          color: "var(--md-sys-color-on-surface-variant)",
+          flexShrink: 0,
+        }}
+        onContextMenu={openContextMenuAtPointer}
+      >
+        {/* Breadcrumb */}
+        <div style={{ display: "flex", alignItems: "center", gap: "4px", minWidth: 0, overflow: "hidden" }}>
+          <button
+            type="button"
+            style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", padding: "2px 4px", borderRadius: "4px", fontSize: "12px", whiteSpace: "nowrap" }}
+            onClick={() => router.push("/dashboard")}
+          >
+            Çalışma alanı
+          </button>
+          <span style={{ opacity: 0.4 }}>/</span>
+          <div ref={folderMenuRef} style={{ position: "relative" }}>
             <button
               type="button"
-              style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", padding: "4px 8px", borderRadius: "8px" }}
-              onClick={() => router.push("/dashboard")}
-            >
-              Çalışma alanı
-            </button>
-            <span>/</span>
-            <div className="note-folder-picker" ref={folderMenuRef} style={{ position: "relative" }}>
-              <button
-                type="button"
-                style={{ background: "var(--md-sys-color-surface-container-low)", border: "1px solid var(--md-sys-color-outline)", color: "var(--md-sys-color-on-surface)", cursor: "pointer", padding: "4px 12px", borderRadius: "16px", display: "flex", alignItems: "center", gap: "4px", fontSize: "14px" }}
-                onClick={() =>
-                  setIsFolderMenuOpen((currentValue) => !currentValue)
-                }
-                aria-haspopup="menu"
-                aria-expanded={isFolderMenuOpen}
-              >
-                <span>{currentFolderId ? currentFolderLabel : "Kök klasör"}</span>
-                <ChevronDownIcon />
-              </button>
-
-              {isFolderMenuOpen ? (
-                <div style={{ position: "absolute", top: "100%", left: 0, marginTop: "8px", background: "var(--md-sys-color-surface-container-high)", borderRadius: "12px", padding: "8px", boxShadow: "var(--md-sys-elevation-3)", zIndex: 100, minWidth: "200px" }} role="menu">
-                  <button
-                    type="button"
-                    style={{ width: "100%", textAlign: "left", padding: "8px 12px", background: currentFolderId === null ? "var(--md-sys-color-secondary-container)" : "transparent", color: currentFolderId === null ? "var(--md-sys-color-on-secondary-container)" : "var(--md-sys-color-on-surface)", border: "none", borderRadius: "8px", cursor: "pointer", display: "flex", flexDirection: "column" }}
-                    onClick={() => void handleSelectFolder(null)}
-                  >
-                    <span style={{ fontWeight: "bold" }}>Kök klasör</span>
-                    <span style={{ fontSize: "12px", opacity: 0.8 }}>Çalışma alanı</span>
-                  </button>
-
-                  {folderOptions.map((folder) => (
-                    <button
-                      key={folder.id}
-                      type="button"
-                      style={{ width: "100%", textAlign: "left", padding: "8px 12px", background: folder.id === currentFolderId ? "var(--md-sys-color-secondary-container)" : "transparent", color: folder.id === currentFolderId ? "var(--md-sys-color-on-secondary-container)" : "var(--md-sys-color-on-surface)", border: "none", borderRadius: "8px", cursor: "pointer", display: "flex", flexDirection: "column", marginTop: "4px" }}
-                      onClick={() => void handleSelectFolder(folder.id)}
-                    >
-                      <span style={{ fontWeight: "bold" }}>
-                        {folder.name.split(" / ").at(-1) ?? folder.name}
-                      </span>
-                      <span style={{ fontSize: "12px", opacity: 0.8 }}>{folder.name}</span>
-                    </button>
-                  ))}
-                </div>
-              ) : null}
-            </div>
-            <span>/</span>
-            <span style={{ color: "var(--md-sys-color-on-surface)", fontWeight: "500" }}>{effectiveTitle}</span>
-          </div>
-
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <Button
-              variant={isPinned ? "filled" : "tonal"}
-              icon
-              onClick={() => void handlePinToggle()}
-              aria-label={isPinned ? "Sabitlemeyi kaldır" : "Sabitle"}
-              aria-pressed={isPinned}
-              title={isPinned ? "Sabitlemeyi kaldır" : "Sabitle"}
-            >
-              <PinIcon />
-            </Button>
-            <Button
-              variant="filled"
-              onClick={() => void handlePublishToggle()}
-            >
-              {isPublished ? "Yayımdan kaldır" : "Yayımla"}
-            </Button>
-            <Button
-              variant="text"
-              icon
-              onClick={openContextMenuFromTrigger}
-              aria-label="Not menüsünü aç"
+              style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", padding: "2px 4px", borderRadius: "4px", fontSize: "12px", display: "flex", alignItems: "center", gap: "2px", whiteSpace: "nowrap" }}
+              onClick={() => setIsFolderMenuOpen((v) => !v)}
               aria-haspopup="menu"
+              aria-expanded={isFolderMenuOpen}
             >
-              ...
-            </Button>
-          </div>
-        </div>
-
-        <div style={{ padding: "32px 32px 0", maxWidth: "800px", margin: "0 auto" }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <span style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "var(--md-sys-shape-full)", backgroundColor: isPublished ? "var(--md-sys-color-primary)" : "var(--md-sys-color-outline)" }} />
-              <span style={{ fontSize: "var(--md-sys-typescale-label-medium-size)", fontWeight: "var(--md-sys-typescale-label-medium-weight)", color: "var(--md-sys-color-on-surface-variant)" }}>
-                {isPublished ? "Yayında" : "Taslak"}
-              </span>
-              {isPinned ? (
-                <span style={{ fontSize: "var(--md-sys-typescale-label-small-size)", padding: "2px 6px", background: "var(--md-sys-color-surface-container-high)", borderRadius: "4px", color: "var(--md-sys-color-on-surface-variant)" }}>Pinli</span>
-              ) : null}
-            </div>
-
-            <input
-              value={title}
-              onChange={(event) => handleTitleChange(event.target.value)}
-              placeholder={DEFAULT_NOTE_TITLE}
-              spellCheck={false}
-              style={{ fontSize: "var(--md-sys-typescale-display-small-size)", fontWeight: "var(--md-sys-typescale-display-small-weight)", color: "var(--md-sys-color-on-background)", border: "none", background: "transparent", outline: "none", width: "100%", padding: 0 }}
-            />
-
-            {note.tags.length > 0 ? (
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                {note.tags.map((tag) => (
+              <span>{currentFolderId ? currentFolderLabel : "Kök klasör"}</span>
+              <ChevronDownIcon />
+            </button>
+            {isFolderMenuOpen ? (
+              <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, background: "var(--md-sys-color-surface-container-high)", borderRadius: "10px", padding: "6px", boxShadow: "var(--md-sys-elevation-3)", zIndex: 100, minWidth: "180px" }} role="menu">
+                <button
+                  type="button"
+                  style={{ width: "100%", textAlign: "left", padding: "6px 10px", background: currentFolderId === null ? "var(--md-sys-color-secondary-container)" : "transparent", color: currentFolderId === null ? "var(--md-sys-color-on-secondary-container)" : "var(--md-sys-color-on-surface)", border: "none", borderRadius: "6px", cursor: "pointer", fontSize: "12px" }}
+                  onClick={() => void handleSelectFolder(null)}
+                >
+                  Kök klasör
+                </button>
+                {folderOptions.map((folder) => (
                   <button
-                    key={tag}
+                    key={folder.id}
                     type="button"
-                    style={{ background: "var(--md-sys-color-secondary-container)", color: "var(--md-sys-color-on-secondary-container)", border: "none", padding: "4px 12px", borderRadius: "8px", fontSize: "var(--md-sys-typescale-label-large-size)", cursor: "pointer" }}
-                    onClick={() => router.push(`/tags/${tag}`)}
+                    style={{ width: "100%", textAlign: "left", padding: "6px 10px", background: folder.id === currentFolderId ? "var(--md-sys-color-secondary-container)" : "transparent", color: folder.id === currentFolderId ? "var(--md-sys-color-on-secondary-container)" : "var(--md-sys-color-on-surface)", border: "none", borderRadius: "6px", cursor: "pointer", marginTop: "2px", fontSize: "12px" }}
+                    onClick={() => void handleSelectFolder(folder.id)}
                   >
-                    #{tag}
+                    {folder.name.split(" / ").at(-1) ?? folder.name}
                   </button>
                 ))}
               </div>
             ) : null}
-
-            {isMetaPanelOpen ? (
-              <Card variant="outlined" style={{ marginTop: "16px" }}>
-                <CardContent>
-                  <div className="md-text-field md-text-field--outlined md-text-field--has-value" style={{ width: "100%" }}>
-                    <div className="md-text-field-container">
-                      <input
-                        className="md-text-field-input"
-                        value={slug ?? ""}
-                        onChange={(event) => setSlug(event.target.value)}
-                        onBlur={(event) => void handleSlugChange(event.target.value)}
-                        placeholder="yayin-adresi"
-                        spellCheck={false}
-                      />
-                      <span className="md-text-field-label">Yayın Adresi</span>
-                    </div>
-                  </div>
-                  <p style={{ marginTop: "8px", fontSize: "var(--md-sys-typescale-body-small-size)", color: "var(--md-sys-color-on-surface-variant)" }}>
-                    {slug?.trim()
-                      ? `Yayın yolu: /published/${slug}`
-                      : "Yayımlandığında otomatik bir adres oluşturulur."}
-                  </p>
-                </CardContent>
-              </Card>
-            ) : null}
           </div>
+          <span style={{ opacity: 0.4 }}>/</span>
+          <span style={{ color: "var(--md-sys-color-on-surface)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "240px" }}>{effectiveTitle}</span>
+        </div>
+
+        {/* Actions */}
+        <div style={{ display: "flex", alignItems: "center", gap: "4px", flexShrink: 0 }}>
+          <button
+            type="button"
+            onClick={() => void handlePinToggle()}
+            aria-label={isPinned ? "Sabitlemeyi kaldır" : "Sabitle"}
+            aria-pressed={isPinned}
+            title={isPinned ? "Sabitlemeyi kaldır" : "Sabitle"}
+            style={{ background: isPinned ? "var(--md-sys-color-secondary-container)" : "none", border: "none", color: isPinned ? "var(--md-sys-color-on-secondary-container)" : "var(--md-sys-color-on-surface-variant)", cursor: "pointer", padding: "4px", borderRadius: "6px", display: "flex", alignItems: "center", lineHeight: 1 }}
+          >
+            <PinIcon />
+          </button>
+          <button
+            type="button"
+            onClick={() => void handlePublishToggle()}
+            style={{ background: "none", border: "none", color: isPublished ? "var(--md-sys-color-primary)" : "var(--md-sys-color-on-surface-variant)", cursor: "pointer", padding: "3px 8px", borderRadius: "6px", fontSize: "12px", fontWeight: "500" }}
+          >
+            {isPublished ? "Yayımdan kaldır" : "Yayımla"}
+          </button>
+          <button
+            type="button"
+            onClick={openContextMenuFromTrigger}
+            aria-label="Not menüsünü aç"
+            aria-haspopup="menu"
+            style={{ background: "none", border: "none", color: "var(--md-sys-color-on-surface-variant)", cursor: "pointer", padding: "3px 6px", borderRadius: "6px", fontSize: "16px", lineHeight: 1, letterSpacing: "1px" }}
+          >
+            ···
+          </button>
+        </div>
+      </div>
+
+      <div style={{ maxWidth: "800px", margin: "0 auto", padding: "0 32px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px", paddingTop: "48px", paddingBottom: "16px" }}>
+          <input
+            value={title}
+            onChange={(event) => handleTitleChange(event.target.value)}
+            placeholder={DEFAULT_NOTE_TITLE}
+            spellCheck={false}
+            style={{ fontSize: "var(--md-sys-typescale-display-small-size)", fontWeight: "var(--md-sys-typescale-display-small-weight)", color: "var(--md-sys-color-on-background)", border: "none", background: "transparent", outline: "none", width: "100%", padding: 0 }}
+          />
+
+          {note.tags.length > 0 ? (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+              {note.tags.map((tag) => (
+                <button
+                  key={tag}
+                  type="button"
+                  style={{ background: "var(--md-sys-color-secondary-container)", color: "var(--md-sys-color-on-secondary-container)", border: "none", padding: "2px 10px", borderRadius: "6px", fontSize: "12px", cursor: "pointer" }}
+                  onClick={() => router.push(`/tags/${tag}`)}
+                >
+                  #{tag}
+                </button>
+              ))}
+            </div>
+          ) : null}
+
+          {isMetaPanelOpen ? (
+            <Card variant="outlined" style={{ marginTop: "8px" }}>
+              <CardContent>
+                <div className="md-text-field md-text-field--outlined md-text-field--has-value" style={{ width: "100%" }}>
+                  <div className="md-text-field-container">
+                    <input
+                      className="md-text-field-input"
+                      value={slug ?? ""}
+                      onChange={(event) => setSlug(event.target.value)}
+                      onBlur={(event) => void handleSlugChange(event.target.value)}
+                      placeholder="yayin-adresi"
+                      spellCheck={false}
+                    />
+                    <span className="md-text-field-label">Yayın Adresi</span>
+                  </div>
+                </div>
+                <p style={{ marginTop: "8px", fontSize: "var(--md-sys-typescale-body-small-size)", color: "var(--md-sys-color-on-surface-variant)" }}>
+                  {slug?.trim()
+                    ? `Yayın yolu: /published/${slug}`
+                    : "Yayımlandığında otomatik bir adres oluşturulur."}
+                </p>
+              </CardContent>
+            </Card>
+          ) : null}
         </div>
       </div>
 
