@@ -1,5 +1,6 @@
 import type { MouseEvent as ReactMouseEvent } from "react";
 import type { SidebarNote } from "./sidebar.types";
+import { renderStoredIcon } from "./sidebar-icon-utils";
 
 function MoreHorizontalIcon() {
   return (
@@ -41,11 +42,9 @@ export function SidebarNoteRow({
         onContextMenu={(event) => onContextMenuOpen(event, note)}
       >
         <span className="sidebar-item-icon">
-          {note.icon ? (
-            note.icon
-          ) : (
-            <span className="material-symbols-outlined sm" aria-hidden="true">description</span>
-          )}
+          {renderStoredIcon(note.icon, {
+            fallback: <span className="material-symbols-outlined sm" aria-hidden="true">description</span>,
+          })}
         </span>
         <span className="sidebar-item-label">{note.title || "Adsız"}</span>
         {note.isPinned ? (

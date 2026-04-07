@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { GraphIcon } from "./GraphIcon";
+import { decodeStoredIcon } from "./sidebar-icon-utils";
 
 export interface CommandPaletteItem {
   id: string;
@@ -128,6 +129,29 @@ export function CommandPalette({
 
   let flatIndex = -1;
 
+  const renderItemIcon = (icon: string) => {
+    if (icon === "__graph__") {
+      return {
+        className: "md-list-item-start",
+        content: <GraphIcon />,
+      };
+    }
+
+    const decoded = decodeStoredIcon(icon);
+
+    if (decoded.kind === "material" && decoded.value) {
+      return {
+        className: "md-list-item-start material-symbols-outlined",
+        content: decoded.value,
+      };
+    }
+
+    return {
+      className: "md-list-item-start",
+      content: icon,
+    };
+  };
+
   return createPortal(
     <div className="md-dialog-scrim" role="presentation" style={{ alignItems: "flex-start", paddingTop: "12vh" }}>
       <div
@@ -166,6 +190,7 @@ export function CommandPalette({
                   {groupItems.map((item) => {
                     flatIndex += 1;
                     const isActive = flatIndex === selectedIndex;
+                    const iconView = renderItemIcon(item.icon);
 
                     return (
                       <li key={item.id} style={{ display: "block", marginBottom: "2px" }}>
@@ -180,7 +205,7 @@ export function CommandPalette({
                           }}
                         >
                           <div
-                            className={item.icon === "__graph__" ? "md-list-item-start" : "md-list-item-start material-symbols-outlined"}
+                            className={iconView.className}
                             style={{
                               fontSize: "24px",
                               lineHeight: 1,
@@ -189,7 +214,7 @@ export function CommandPalette({
                             }}
                             aria-hidden="true"
                           >
-                            {item.icon === "__graph__" ? <GraphIcon /> : item.icon}
+                            {iconView.content}
                           </div>
                           <div className="md-list-item-content">
                             <span className="md-list-item-headline" style={{ color: isActive ? "var(--md-sys-color-on-secondary-container)" : "var(--md-sys-color-on-surface)", display: "flex", alignItems: "center", gap: "8px" }}>

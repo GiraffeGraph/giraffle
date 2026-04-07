@@ -32,14 +32,16 @@ import {
   loadSidebarWidth,
 } from "./sidebar.utils";
 import { SidebarGroup } from "./SidebarGroup";
+import { SidebarIconPicker } from "./SidebarIconPicker";
 import type { SidebarGroupAction } from "./SidebarGroup";
 import { SidebarNoteRow } from "./SidebarNoteRow";
 import { SidebarFolderItem } from "./SidebarFolderItem";
+import { encodeMaterialSymbol } from "./sidebar-icon-utils";
 
 type IconPickerState = {
   target: "folder" | "note";
   id: string;
-  value: string;
+  currentIcon: string | null;
   position: { x: number; y: number };
 };
 
@@ -292,28 +294,21 @@ export function Sidebar({
     [router]
   );
 
-  const normalizeCustomIcon = useCallback((rawValue: string): string | null => {
-    const trimmed = rawValue.trim();
-    if (!trimmed) return null;
-    return Array.from(trimmed).slice(0, 4).join("");
-  }, []);
-
   const openIconPicker = useCallback((target: "folder" | "note", id: string, currentIcon?: string | null) => {
     const fallbackPosition = { x: 260, y: 180 };
     const position = lastMenuPosRef.current ?? fallbackPosition;
     setIconPicker({
       target,
       id,
-      value: currentIcon ?? "",
+      currentIcon: currentIcon ?? null,
       position,
     });
   }, []);
 
   const closeIconPicker = useCallback(() => setIconPicker(null), []);
 
-  const handleSaveIcon = useCallback(async () => {
+  const handleSaveIcon = useCallback(async (nextIcon: string | null) => {
     if (!iconPicker) return;
-    const nextIcon = normalizeCustomIcon(iconPicker.value);
 
     if (iconPicker.target === "folder") {
       await updateFolderAction(iconPicker.id, { icon: nextIcon });
@@ -323,13 +318,13 @@ export function Sidebar({
 
     setIconPicker(null);
     router.refresh();
-  }, [iconPicker, normalizeCustomIcon, router]);
+  }, [iconPicker, router]);
 
   // Context menus
   const buildNoteMenu = useCallback(
     (note: { id: string; title: string; icon?: string | null; isPinned?: boolean }): ContextMenuItem[] => [
       { label: "Notu aç", hint: "Seçili notu düzenleyicide aç", onSelect: () => router.push(`/notes/${note.id}`) },
-      { label: "İkonu değiştir", hint: "Emoji veya kısa metin ata", onSelect: () => openIconPicker("note", note.id, note.icon) },
+      { label: "İkonu değiştir", hint: "Emoji veya Material Symbol ata", onSelect: () => openIconPicker("note", note.id, note.icon) },
       {
         label: note.isPinned ? "Sabitlemeyi kaldır" : "Sabitle",
         hint: "Notu sıralı listelerde üstte tut veya bırak",
@@ -356,7 +351,7 @@ export function Sidebar({
     (folder: { id: string; name: string; icon?: string | null }): ContextMenuItem[] => [
       { label: "Klasörü aç", hint: "Klasördeki notları görüntüle", onSelect: () => router.push(`/folders/${folder.id}`) },
       { label: "Bu klasöre not oluştur", hint: "Yeni notu doğrudan bu klasöre ekle", onSelect: async () => { const noteId = await createNoteAction({ folderId: folder.id }); router.push(`/notes/${noteId}`); } },
-      { label: "İkonu değiştir", hint: "Emoji veya kısa metin ata", onSelect: () => openIconPicker("folder", folder.id, folder.icon) },
+      { label: "İkonu değiştir", hint: "Emoji veya Material Symbol ata", onSelect: () => openIconPicker("folder", folder.id, folder.icon) },
       { label: "Klasör bağlantısını kopyala", hint: "Klasör adresini panoya kopyala", onSelect: () => copyInternalLink(`/folders/${folder.id}`) },
       { label: "Yukarı taşı", hint: "Klasör sırasını bir adım yukarı al", onSelect: () => handleMoveFolder(folder.id, "up") },
       { label: "Aşağı taşı", hint: "Klasör sırasını bir adım aşağı al", onSelect: () => handleMoveFolder(folder.id, "down") },
@@ -390,29 +385,29 @@ export function Sidebar({
   // Palette items
   const paletteItems = useMemo<CommandPaletteItem[]>(() => {
     const actionItems: CommandPaletteItem[] = [
-      { id: "action-new-note", group: "Hızlı işlemler", title: "Yeni not oluştur", description: "Boş bir not aç", icon: "\uE145", hint: "Enter", onSelect: async () => { const id = await createNoteAction(); router.push(`/notes/${id}`); } },
-      { id: "action-new-folder", group: "Hızlı işlemler", title: "Yeni klasör oluştur", description: "Çalışma alanına yeni klasör ekle", icon: "\uE2C7", onSelect: async () => { closePalette(); handleStartCreateFolder(); } },
-      { id: "action-template-note", group: "Hızlı işlemler", title: "Şablondan not oluştur", description: "Şablon seçiciyi aç", icon: "\uE02F", onSelect: async () => { setTemplatePickerOpenSignal((v) => v + 1); } },
-      { id: "action-dashboard", group: "Geçişler", title: "Panoya git", description: "Ana çalışma alanı görünümü", icon: "\uE88A", onSelect: async () => { router.push("/dashboard"); } },
-      { id: "action-graph", group: "Geçişler", title: "Bağlantı ağına git", description: "Not grafiği görünümü", icon: "\uE92B", onSelect: async () => { router.push("/graph"); } },
-      { id: "action-inbox", group: "Geçişler", title: "Gelen kutusuna git", description: "Klasörsüz notları aç", icon: "\uE156", onSelect: async () => { router.push("/inbox"); } },
-      { id: "action-search", group: "Geçişler", title: "Arama çalışma alanını aç", description: "Filtreli arama sayfası", icon: "\uE8B6", onSelect: async () => { router.push("/search"); } },
-      { id: "action-templates", group: "Geçişler", title: "Şablon kütüphanesi", description: "Şablon yönetim alanını aç", icon: "\uE02F", onSelect: async () => { router.push("/templates"); } },
-      { id: "action-publish", group: "Geçişler", title: "Yayın alanı", description: "Yayımdaki notları ve dışa aktarımları gör", icon: "\uE255", onSelect: async () => { router.push("/publish"); } },
-      { id: "action-proposals", group: "Geçişler", title: "Öneri kuyruğu", description: "YZ öneri inceleme alanını aç", icon: "\uE65F", onSelect: async () => { router.push("/proposals"); } },
-      { id: "action-settings", group: "Geçişler", title: "Ayarlar", description: "Tema, yerel kuyruk ve tercihleri aç", icon: "\uE8B8", onSelect: async () => { router.push("/settings"); } },
-      { id: "action-account", group: "Geçişler", title: "Hesap", description: "Profil ve şifre işlemleri", icon: "\uF20B", onSelect: async () => { router.push("/account"); } },
+      { id: "action-new-note", group: "Hızlı işlemler", title: "Yeni not oluştur", description: "Boş bir not aç", icon: encodeMaterialSymbol("add"), hint: "Enter", onSelect: async () => { const id = await createNoteAction(); router.push(`/notes/${id}`); } },
+      { id: "action-new-folder", group: "Hızlı işlemler", title: "Yeni klasör oluştur", description: "Çalışma alanına yeni klasör ekle", icon: encodeMaterialSymbol("create_new_folder"), onSelect: async () => { closePalette(); handleStartCreateFolder(); } },
+      { id: "action-template-note", group: "Hızlı işlemler", title: "Şablondan not oluştur", description: "Şablon seçiciyi aç", icon: encodeMaterialSymbol("tooltip"), onSelect: async () => { setTemplatePickerOpenSignal((v) => v + 1); } },
+      { id: "action-dashboard", group: "Geçişler", title: "Panoya git", description: "Ana çalışma alanı görünümü", icon: encodeMaterialSymbol("dashboard"), onSelect: async () => { router.push("/dashboard"); } },
+      { id: "action-graph", group: "Geçişler", title: "Bağlantı ağına git", description: "Not grafiği görünümü", icon: "__graph__", onSelect: async () => { router.push("/graph"); } },
+      { id: "action-inbox", group: "Geçişler", title: "Gelen kutusuna git", description: "Klasörsüz notları aç", icon: encodeMaterialSymbol("inbox"), onSelect: async () => { router.push("/inbox"); } },
+      { id: "action-search", group: "Geçişler", title: "Arama çalışma alanını aç", description: "Filtreli arama sayfası", icon: encodeMaterialSymbol("search"), onSelect: async () => { router.push("/search"); } },
+      { id: "action-templates", group: "Geçişler", title: "Şablon kütüphanesi", description: "Şablon yönetim alanını aç", icon: encodeMaterialSymbol("tooltip"), onSelect: async () => { router.push("/templates"); } },
+      { id: "action-publish", group: "Geçişler", title: "Yayın alanı", description: "Yayımdaki notları ve dışa aktarımları gör", icon: encodeMaterialSymbol("publish"), onSelect: async () => { router.push("/publish"); } },
+      { id: "action-proposals", group: "Geçişler", title: "Öneri kuyruğu", description: "YZ öneri inceleme alanını aç", icon: encodeMaterialSymbol("auto_awesome"), onSelect: async () => { router.push("/proposals"); } },
+      { id: "action-settings", group: "Geçişler", title: "Ayarlar", description: "Tema, yerel kuyruk ve tercihleri aç", icon: encodeMaterialSymbol("settings"), onSelect: async () => { router.push("/settings"); } },
+      { id: "action-account", group: "Geçişler", title: "Hesap", description: "Profil ve şifre işlemleri", icon: encodeMaterialSymbol("account_circle"), onSelect: async () => { router.push("/account"); } },
     ];
 
     const noteItems = notes
       .filter((n) => !normalizedPaletteQuery || n.title.toLowerCase().includes(normalizedPaletteQuery))
       .slice(0, normalizedPaletteQuery ? 8 : 5)
-      .map<CommandPaletteItem>((n) => ({ id: `note-${n.id}`, group: "Notlar", title: n.title, description: "Notu düzenleyicide aç", icon: n.icon ?? "\uE873", onSelect: async () => { router.push(`/notes/${n.id}`); } }));
+      .map<CommandPaletteItem>((n) => ({ id: `note-${n.id}`, group: "Notlar", title: n.title, description: "Notu düzenleyicide aç", icon: n.icon ?? encodeMaterialSymbol("description"), onSelect: async () => { router.push(`/notes/${n.id}`); } }));
 
     const folderItems = flattenedFolders
       .filter((f) => !normalizedPaletteQuery || f.name.toLowerCase().includes(normalizedPaletteQuery))
       .slice(0, normalizedPaletteQuery ? 8 : 5)
-      .map<CommandPaletteItem>((f) => ({ id: `folder-${f.id}`, group: "Klasörler", title: f.name, description: "Klasör görünümünü aç", icon: f.icon ?? "\uE2C7", onSelect: async () => { router.push(`/folders/${f.id}`); } }));
+      .map<CommandPaletteItem>((f) => ({ id: `folder-${f.id}`, group: "Klasörler", title: f.name, description: "Klasör görünümünü aç", icon: f.icon ?? encodeMaterialSymbol("folder"), onSelect: async () => { router.push(`/folders/${f.id}`); } }));
 
     const tagItems = tags
       .filter((t) => !normalizedPaletteQuery || t.name.toLowerCase().includes(normalizedPaletteQuery))
@@ -422,7 +417,7 @@ export function Sidebar({
     const templateItems = templates
       .filter((t) => !normalizedPaletteQuery || `${t.name} ${t.description ?? ""}`.toLowerCase().includes(normalizedPaletteQuery))
       .slice(0, normalizedPaletteQuery ? 6 : 4)
-      .map<CommandPaletteItem>((t) => ({ id: `template-${t.id}`, group: "Şablonlar", title: t.name, description: t.description ?? `${getTemplateCategoryLabel(t.category)} şablonu`, icon: t.icon ?? "\uE02F", onSelect: async () => { router.push(`/templates?selected=${t.id}`); } }));
+      .map<CommandPaletteItem>((t) => ({ id: `template-${t.id}`, group: "Şablonlar", title: t.name, description: t.description ?? `${getTemplateCategoryLabel(t.category)} şablonu`, icon: t.icon ?? encodeMaterialSymbol("tooltip"), onSelect: async () => { router.push(`/templates?selected=${t.id}`); } }));
 
     if (!normalizedPaletteQuery) return [...actionItems, ...noteItems, ...folderItems, ...tagItems, ...templateItems];
 
@@ -665,41 +660,12 @@ export function Sidebar({
       ) : null}
 
       {iconPicker ? (
-        <div className="icon-picker-overlay" onMouseDown={closeIconPicker}>
-          <div
-            className="icon-picker"
-            style={{ left: iconPicker.position.x, top: iconPicker.position.y }}
-            onMouseDown={(event) => event.stopPropagation()}
-          >
-            <input
-              // eslint-disable-next-line jsx-a11y/no-autofocus
-              autoFocus
-              type="text"
-              className="icon-picker-input"
-              value={iconPicker.value}
-              maxLength={12}
-              placeholder="🙂"
-              aria-label="İkon değeri"
-              onChange={(event) => {
-                const nextValue = event.currentTarget.value;
-                setIconPicker((current) => (
-                  current ? { ...current, value: nextValue } : current
-                ));
-              }}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  event.preventDefault();
-                  void handleSaveIcon();
-                } else if (event.key === "Escape") {
-                  event.preventDefault();
-                  closeIconPicker();
-                }
-              }}
-              onBlur={closeIconPicker}
-            />
-            <div className="icon-picker-help">Enter kaydet • Esc iptal</div>
-          </div>
-        </div>
+        <SidebarIconPicker
+          position={iconPicker.position}
+          currentIcon={iconPicker.currentIcon}
+          onClose={closeIconPicker}
+          onSelect={handleSaveIcon}
+        />
       ) : null}
 
       <ContextMenu items={contextMenu?.items ?? []} position={contextMenu?.position ?? null} onClose={closeContextMenu} />

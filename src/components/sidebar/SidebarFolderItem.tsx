@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import type { MouseEvent as ReactMouseEvent } from "react";
 import type { FolderDropTarget, SidebarFolder, SidebarNote } from "./sidebar.types";
 import { SidebarNoteRow } from "./SidebarNoteRow";
+import { renderStoredIcon } from "./sidebar-icon-utils";
 
 function PlusIcon() {
   return (
@@ -96,7 +97,9 @@ export function SidebarFolderItem({
 
   // Özel ikon varsa onu göster, yoksa material folder/folder_open
   const folderIcon = folder.icon ? (
-    <span style={{ fontSize: "14px", lineHeight: 1 }}>{folder.icon}</span>
+    renderStoredIcon(folder.icon, {
+      emojiStyle: { fontSize: "14px", lineHeight: 1 },
+    })
   ) : (
     <span className="material-symbols-outlined sm" aria-hidden="true">
       {hasContent && isOpen ? "folder_open" : "folder"}
