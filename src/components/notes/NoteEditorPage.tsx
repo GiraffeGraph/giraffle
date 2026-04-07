@@ -686,16 +686,6 @@ export function NoteEditorPage({
   );
 }
 
-function PinIcon() {
-  return (
-    <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-      <path
-        d="M5.5 2.25c0-.41.34-.75.75-.75h3.5c.41 0 .75.34.75.75v1.08c0 .23.11.45.3.59l1.03.77c.48.35.23 1.11-.36 1.11H9.8v3.61l1.12 1.12a.75.75 0 0 1-.53 1.28H8.75v2.5a.75.75 0 0 1-1.5 0v-2.5H5.61a.75.75 0 0 1-.53-1.28L6.2 9.41V5.8H3.78c-.59 0-.84-.76-.36-1.11l1.03-.77a.74.74 0 0 0 .3-.59V2.25Z"
-        fill="currentColor"
-      />
-    </svg>
-  );
-}
 
 
 function ChevronDownIcon() {
