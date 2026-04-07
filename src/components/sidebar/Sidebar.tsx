@@ -521,18 +521,30 @@ export function Sidebar({
             {/* Primary nav */}
             <div className="sidebar-primary-nav">
               {([
-                { path: "/dashboard", icon: "\uE88A", label: "Pano", info: `${notes.length} not · ${templates.length} şablon`, actions: [{ label: "Yeni not", onClick: () => void handleCreateNote(), primary: true }, { label: "Şablondan oluştur", onClick: () => setTemplatePickerOpenSignal((s) => s + 1) }] },
+                { path: "/dashboard", icon: "\uE88A", label: "Pano", info: "Son dokunulan notlara, taslaklara ve çalışma alanının ana akışına hızlıca geri dön.", actions: [{ label: "Yeni not", onClick: () => void handleCreateNote(), primary: true }, { label: "Şablondan oluştur", onClick: () => setTemplatePickerOpenSignal((s) => s + 1) }] },
                 { path: "/inbox", icon: "\uE156", label: "Gelen kutusu", info: `${notes.filter((n) => !n.folderId).length} klasörsüz not`, actions: [{ label: "Yeni not", onClick: () => void handleCreateNote(), primary: true }, { label: "Şablondan oluştur", onClick: () => setTemplatePickerOpenSignal((s) => s + 1) }] },
                 { path: "/graph", icon: "\uF1E2", label: "Bağlantı ağı", info: "Notlar arasındaki wikilink projeksiyonu" },
               ] as Array<{ path: string; icon: string; label: string; info: string; actions?: Array<{ label: string; onClick: () => void; primary?: boolean }> }>).map(({ path, icon, label, info, actions }) => (
-                <div key={path} className="sidebar-nav-item-row">
-                  <button className={`sidebar-item${pathname === path ? " active" : ""}`} onClick={() => { closeNavModal(); router.push(path); }}>
-                    <span className="sidebar-item-icon" aria-hidden="true">
-                      <span className="material-symbols-outlined" style={{ fontSize: "16px", lineHeight: 1 }}>{icon}</span>
-                    </span>
-                    <span className="sidebar-item-label">{label}</span>
-                  </button>
-                  <button type="button" className={`sidebar-nav-menu${navModal?.key === path ? " active" : ""}`} onClick={(e) => openNavModal(path, label, e, { info, actions })} aria-label={`${label} menüsü`}>···</button>
+                <div key={path}>
+                  <div className="sidebar-nav-item-row">
+                    <button className={`sidebar-item${pathname === path ? " active" : ""}`} onClick={() => { closeNavModal(); router.push(path); }}>
+                      <span className="sidebar-item-icon" aria-hidden="true">
+                        <span className="material-symbols-outlined" style={{ fontSize: "16px", lineHeight: 1 }}>{icon}</span>
+                      </span>
+                      <span className="sidebar-item-label">{label}</span>
+                    </button>
+                    <button type="button" className={`sidebar-nav-menu${navModal?.key === path ? " active" : ""}`} onClick={(e) => openNavModal(path, label, e, { info, actions })} aria-label={`${label} menüsü`}>···</button>
+                  </div>
+                  {path === "/dashboard" && notes.length > 0 && (
+                    <div className="sidebar-nav-subtabs">
+                      {notes.slice(0, 5).map((note) => (
+                        <button key={note.id} type="button" className={`sidebar-item sidebar-nav-subtab${note.id === currentNoteId ? " active" : ""}`} onClick={() => { closeNavModal(); router.push(`/notes/${note.id}`); }}>
+                          <span className="sidebar-item-icon" aria-hidden="true">{note.icon ?? <span style={{ fontSize: "8px", opacity: 0.4 }}>●</span>}</span>
+                          <span className="sidebar-item-label">{note.title || "Adsız"}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
