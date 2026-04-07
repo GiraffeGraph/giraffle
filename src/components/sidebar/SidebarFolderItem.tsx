@@ -113,25 +113,8 @@ export function SidebarFolderItem({
           isInsideDropTarget ? " drag-target" : ""
         }`}
       >
-        {/* Klasör ikonu — içerik varsa aç/kapat, yoksa navigate */}
-        <button
-          type="button"
-          className="sidebar-folder-icon-btn"
-          onClick={
-            hasContent
-              ? (e) => { e.stopPropagation(); setIsOpen((v) => !v); }
-              : () => onOpen(folder.id)
-          }
-          aria-label={isOpen ? "Klasörü kapat" : "Klasörü aç"}
-        >
-          {folderIcon}
-        </button>
-
-        {/* Klasör adı */}
-        <button
-          type="button"
-          className={`sidebar-folder-name${isActive ? " active" : ""}`}
-          onClick={() => onOpen(folder.id)}
+        <div
+          className={`sidebar-item sidebar-row-main sidebar-folder-main${isActive ? " active" : ""}`}
           onContextMenu={(event) => onContextMenuOpen(event, folder)}
           draggable
           onDragStart={() => onDragFolderChange(folder.id)}
@@ -153,8 +136,45 @@ export function SidebarFolderItem({
             });
           }}
         >
-          {folder.name}
-        </button>
+          <button
+            type="button"
+            className={`sidebar-folder-icon-btn${hasContent ? " collapsible" : ""}`}
+            onClick={
+              hasContent
+                ? (event) => {
+                    event.stopPropagation();
+                    setIsOpen((value) => !value);
+                  }
+                : (event) => {
+                    event.stopPropagation();
+                    onOpen(folder.id);
+                  }
+            }
+            aria-label={hasContent ? (isOpen ? "Klasörü kapat" : "Klasörü aç") : "Klasöre git"}
+          >
+            <span className="sidebar-folder-icon-stack" aria-hidden="true">
+              <span className="sidebar-folder-icon-visual sidebar-folder-icon-default">
+                {folderIcon}
+              </span>
+              {hasContent ? (
+                <span className={`sidebar-folder-icon-visual sidebar-folder-icon-chevron${isOpen ? " open" : ""}`}>
+                  <span className="material-symbols-outlined sm sidebar-folder-chevron-symbol">chevron_right</span>
+                </span>
+              ) : null}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            className={`sidebar-folder-name${isActive ? " active" : ""}`}
+            onClick={(event) => {
+              event.stopPropagation();
+              onOpen(folder.id);
+            }}
+          >
+            {folder.name}
+          </button>
+        </div>
 
         {/* Hover aksiyonları: +Not | +Klasör | ··· */}
         <div className="sidebar-row-actions">
@@ -223,7 +243,6 @@ export function SidebarFolderItem({
                 <span className="material-symbols-outlined sm">folder</span>
               </span>
               <input
-                // eslint-disable-next-line jsx-a11y/no-autofocus
                 autoFocus
                 type="text"
                 className="sidebar-inline-creator-input"
