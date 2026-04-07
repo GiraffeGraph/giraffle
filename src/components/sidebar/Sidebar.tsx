@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import type { MouseEvent as ReactMouseEvent } from "react";
 import {
   useCallback,
@@ -916,10 +917,10 @@ export function Sidebar({
             <button
               type="button"
               className="sidebar-compact-button sidebar-compact-brand"
-              onClick={() => router.push("/dashboard")}
-              aria-label="Panoya git"
+              onClick={toggleSidebarCompact}
+              aria-label="Sidebarı genişlet"
             >
-              G
+              <Image src="/apple-icon.png" alt="Giraffle" width={24} height={24} />
             </button>
             <button
               type="button"
@@ -927,7 +928,7 @@ export function Sidebar({
               onClick={() => openPalette(searchQuery)}
               aria-label="Komut paletini aç"
             >
-              Ara
+              <span className="material-symbols-outlined sm" aria-hidden="true">&#xE8B6;</span>
             </button>
             <button
               type="button"
@@ -945,19 +946,11 @@ export function Sidebar({
               onClick={() => router.push("/graph")}
               aria-label="Bağlantı ağına git"
             >
-              Ağ
+              <span className="material-symbols-outlined sm" aria-hidden="true">&#xF1E2;</span>
             </button>
           </div>
 
           <div className="sidebar-compact-footer">
-            <button
-              type="button"
-              className="sidebar-compact-button"
-              onClick={toggleSidebarCompact}
-              aria-label="Sidebarı genişlet"
-            >
-              {">"}
-            </button>
             <button
               type="button"
               className="sidebar-compact-avatar"
@@ -978,7 +971,9 @@ export function Sidebar({
               onClick={() => router.push("/dashboard")}
               style={{ display: "flex", alignItems: "center", gap: "12px", cursor: "pointer" }}
             >
-              <div className="sidebar-workspace-logo" style={{ width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--md-sys-color-primary)", color: "var(--md-sys-color-on-primary)", borderRadius: "var(--md-sys-shape-small)", fontWeight: "bold" }}>G</div>
+              <div className="sidebar-workspace-logo" style={{ width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", borderRadius: "var(--md-sys-shape-small)" }}>
+                <Image src="/apple-icon.png" alt="Giraffle" width={32} height={32} />
+              </div>
               <div className="sidebar-workspace-copy" style={{ display: "flex", flexDirection: "column" }}>
                 <span className="sidebar-workspace-name" style={{ fontSize: "var(--md-sys-typescale-label-large-size)", fontWeight: "bold", color: "var(--md-sys-color-on-surface)" }}>Giraffle</span>
                 <span className="sidebar-workspace-meta" style={{ fontSize: "var(--md-sys-typescale-body-small-size)", color: "var(--md-sys-color-on-surface-variant)" }}>
@@ -1025,7 +1020,7 @@ export function Sidebar({
               {([
                 {
                   path: "/dashboard",
-                  icon: "Ana",
+                  icon: "\uE88A",
                   label: "Pano",
                   info: `${notes.length} not · ${templates.length} şablon`,
                   actions: [
@@ -1035,7 +1030,7 @@ export function Sidebar({
                 },
                 {
                   path: "/inbox",
-                  icon: "In",
+                  icon: "\uE156",
                   label: "Gelen kutusu",
                   info: `${notes.filter((n) => !n.folderId).length} klasörsüz not`,
                   actions: [
@@ -1045,7 +1040,7 @@ export function Sidebar({
                 },
                 {
                   path: "/graph",
-                  icon: "Ağ",
+                  icon: "\uF1E2",
                   label: "Bağlantı ağı",
                   info: "Notlar arasındaki wikilink projeksiyonu",
                 },
@@ -1062,7 +1057,7 @@ export function Sidebar({
                     style={{ flex: 1, borderRadius: "var(--md-sys-shape-medium)", minHeight: "48px", padding: "0 12px" }}
                     onClick={() => { closeNavModal(); router.push(path); }}
                   >
-                    <div className="md-list-item-start" style={{ marginRight: "16px", width: "24px", justifyContent: "center", fontSize: "var(--md-sys-typescale-label-small-size)", opacity: 0.7 }}>{icon}</div>
+                    <div className="md-list-item-start material-symbols-outlined sm" style={{ marginRight: "16px", width: "24px", justifyContent: "center", opacity: 0.7 }} aria-hidden="true">{icon}</div>
                     <div className="md-list-item-content">
                       <span className="md-list-item-headline" style={{ fontSize: "var(--md-sys-typescale-label-large-size)" }}>{label}</span>
                     </div>
@@ -1085,11 +1080,6 @@ export function Sidebar({
 
             <SidebarGroup
               label="Klasörler"
-              meta={
-                hasQuery
-                  ? `${visibleFolderCount}/${countFolders(folders)}`
-                  : `${countFolders(folders)}`
-              }
               collapsed={isFoldersCollapsed}
               onToggle={() => toggleSection("folders")}
               onAdd={handleCreateFolder}
@@ -1160,11 +1150,6 @@ export function Sidebar({
 
             <SidebarGroup
               label="Etiketler"
-              meta={
-                hasQuery
-                  ? `${filteredTags.length}/${tags.length}`
-                  : `${tags.length}`
-              }
               collapsed={isTagsCollapsed}
               onToggle={() => toggleSection("tags")}
             >
@@ -1185,7 +1170,6 @@ export function Sidebar({
                       onClick={() => router.push(`/tags/${tag.name}`)}
                     >
                       <span className="sidebar-tag-label">#{tag.name}</span>
-                      <span className="sidebar-tag-count">{tag.noteCount}</span>
                     </button>
                   ))
                 )}
@@ -1194,11 +1178,6 @@ export function Sidebar({
 
             <SidebarGroup
               label={hasQuery ? "Not eşleşmeleri" : "Son notlar"}
-              meta={
-                hasQuery
-                  ? `${filteredNotes.length}/${notes.length}`
-                  : `${notes.length}`
-              }
               collapsed={isRecentNotesCollapsed}
               onToggle={() => toggleSection("recentNotes")}
             >
@@ -1452,7 +1431,15 @@ function SidebarNoteRow({
         onClick={() => onOpen(note.id)}
         onContextMenu={(event) => onContextMenuOpen(event, note)}
       >
-        <span className="sidebar-item-icon">{note.icon ?? "Not"}</span>
+        <span className="sidebar-item-icon">
+          {note.icon ? (
+            note.icon
+          ) : (
+            <span className="material-symbols-outlined sm" aria-hidden="true">
+              description
+            </span>
+          )}
+        </span>
         <span className="sidebar-item-label">
           {note.title}
           {note.isPinned ? " *" : ""}
@@ -1565,9 +1552,16 @@ function SidebarFolderItem({
             });
           }}
         >
-          <span className="sidebar-item-icon">{folder.icon ?? "Kls"}</span>
+          <span className="sidebar-item-icon">
+            {folder.icon ? (
+              folder.icon
+            ) : (
+              <span className="material-symbols-outlined sm" aria-hidden="true">
+                folder
+              </span>
+            )}
+          </span>
           <span className="sidebar-item-label">{folder.name}</span>
-          <span className="sidebar-folder-count">{folder._count?.notes ?? 0}</span>
         </button>
         <div className="sidebar-row-actions">
           <button
