@@ -2,6 +2,8 @@
 
 Updated: 2026-04-04
 
+Detailed task summaries are consolidated in `docs/backlog/tasks.md`.
+
 ## Current Foundation
 
 - Next.js 16 app shell, Prisma/PostgreSQL, NextAuth, and Tiptap are in place.
