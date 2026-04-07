@@ -300,6 +300,10 @@
   padding-left: 0;
 }
 
+.sidebar-folder-tree {
+  padding-left: 12px;
+}
+
 .sidebar-folder-children {
   display: flex;
   flex-direction: column;
