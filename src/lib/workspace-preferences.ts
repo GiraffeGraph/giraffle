@@ -3,10 +3,10 @@ export const SIDEBAR_WIDTH_STORAGE_KEY = "graffle.sidebar.width";
 export const SIDEBAR_COMPACT_STORAGE_KEY = "graffle.sidebar.compact";
 export const LOCAL_SYNC_QUEUE_STORAGE_KEY = "graffle.localSync.queue";
 
-export const DEFAULT_EXPANDED_SIDEBAR_WIDTH = 272;
-export const SIDEBAR_MIN_WIDTH = 240;
+export const DEFAULT_EXPANDED_SIDEBAR_WIDTH = 248;
+export const SIDEBAR_MIN_WIDTH = 224;
 export const SIDEBAR_MAX_WIDTH = 420;
-export const SIDEBAR_COMPACT_WIDTH = 68;
+export const SIDEBAR_COMPACT_WIDTH = 64;
 
 export interface SidebarCollapseState {
   folders: boolean;

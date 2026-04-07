@@ -1,7 +1,14 @@
 "use client";
 
 import type { MouseEvent as ReactMouseEvent } from "react";
-import { useCallback, useMemo, useState, useTransition } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import { useRouter } from "next/navigation";
 import { Editor } from "@/components/editor/Editor";
 import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
@@ -70,6 +77,9 @@ export function NoteEditorPage({
     y: number;
   } | null>(null);
   const [isExportPending, startExportTransition] = useTransition();
+  const [isFolderMenuOpen, setIsFolderMenuOpen] = useState(false);
+  const [isMetaPanelOpen, setIsMetaPanelOpen] = useState(false);
+  const folderMenuRef = useRef<HTMLDivElement | null>(null);
   const router = useRouter();
 
   const folderOptions = useMemo(
@@ -89,6 +99,32 @@ export function NoteEditorPage({
   );
 
   const effectiveTitle = title.trim() || DEFAULT_NOTE_TITLE;
+
+  useEffect(() => {
+    if (!isFolderMenuOpen) {
+      return;
+    }
+
+    const handlePointerDown = (event: MouseEvent) => {
+      if (!folderMenuRef.current?.contains(event.target as Node)) {
+        setIsFolderMenuOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsFolderMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isFolderMenuOpen]);
 
   const handleTitleChange = useCallback(
     async (newTitle: string) => {
@@ -119,6 +155,14 @@ export function NoteEditorPage({
       resolveLocalMutation(mutationId);
     },
     [note.id]
+  );
+
+  const handleSelectFolder = useCallback(
+    async (nextFolderId: string | null) => {
+      setIsFolderMenuOpen(false);
+      await handleFolderChange(nextFolderId ?? "");
+    },
+    [handleFolderChange]
   );
 
   const handlePublishToggle = useCallback(async () => {
@@ -213,7 +257,9 @@ export function NoteEditorPage({
   }, [isPublished, slug]);
 
   const handleCopyNoteLink = useCallback(async () => {
-    await navigator.clipboard.writeText(`${window.location.origin}/notes/${note.id}`);
+    await navigator.clipboard.writeText(
+      `${window.location.origin}/notes/${note.id}`
+    );
   }, [note.id]);
 
   const handleArchiveNote = useCallback(async () => {
@@ -272,6 +318,10 @@ export function NoteEditorPage({
     setContextMenuPosition(null);
   }, []);
 
+  const toggleMetaPanel = useCallback(() => {
+    setIsMetaPanelOpen((currentValue) => !currentValue);
+  }, []);
+
   const openContextMenuAtPointer = useCallback(
     (event: ReactMouseEvent<HTMLElement>) => {
       event.preventDefault();
@@ -309,6 +359,11 @@ export function NoteEditorPage({
         onSelect: handlePublishToggle,
       },
       {
+        label: isMetaPanelOpen ? "Sayfa ayarlarını gizle" : "Sayfa ayarları",
+        hint: "Yayın adresi ve ikincil seçenekleri aç",
+        onSelect: toggleMetaPanel,
+      },
+      {
         label: "Kanvasta Aç",
         hint: "Bu notu merkez alarak uzamsal haritasını çıkar",
         onSelect: handleOpenInCanvas,
@@ -331,11 +386,13 @@ export function NoteEditorPage({
       {
         label: "Markdown kopyala",
         hint: "Dışa aktarılan Markdown sürümünü kopyala",
+        disabled: isExportPending,
         onSelect: () => handleCopyExport("markdown"),
       },
       {
         label: "MDX kopyala",
         hint: "Dışa aktarılan MDX sürümünü kopyala",
+        disabled: isExportPending,
         onSelect: () => handleCopyExport("mdx"),
       },
       {
@@ -356,94 +413,103 @@ export function NoteEditorPage({
       handleCopyExport,
       handleCopyNoteLink,
       handleMoveNote,
+      handleOpenInCanvas,
       handleOpenPublishedPage,
       handlePinToggle,
       handlePublishToggle,
+      isExportPending,
+      isMetaPanelOpen,
       isPinned,
       isPublished,
+      toggleMetaPanel,
     ]
   );
 
   return (
     <div className="note-page">
       <div className="note-header" onContextMenu={openContextMenuAtPointer}>
-        <div className="note-breadcrumb-row">
-          <button
-            type="button"
-            className="note-breadcrumb"
-            onClick={() => router.push("/dashboard")}
-          >
-            Çalışma alanı
-          </button>
-          <span className="note-breadcrumb-separator">/</span>
-          {currentFolderId ? (
-            <>
+        <div className="note-topbar">
+          <div className="note-breadcrumb-row">
+            <button
+              type="button"
+              className="note-breadcrumb"
+              onClick={() => router.push("/dashboard")}
+            >
+              Çalışma alanı
+            </button>
+            <span className="note-breadcrumb-separator">/</span>
+            <div className="note-folder-picker" ref={folderMenuRef}>
               <button
                 type="button"
-                className="note-breadcrumb"
-                onClick={() => router.push(`/folders/${currentFolderId}`)}
+                className="note-breadcrumb note-breadcrumb-folder"
+                onClick={() =>
+                  setIsFolderMenuOpen((currentValue) => !currentValue)
+                }
+                aria-haspopup="menu"
+                aria-expanded={isFolderMenuOpen}
               >
-                {currentFolderLabel}
+                <span>{currentFolderId ? currentFolderLabel : "Kök klasör"}</span>
+                <ChevronDownIcon />
               </button>
-              <span className="note-breadcrumb-separator">/</span>
-            </>
-          ) : null}
-          <span className="note-breadcrumb current">{effectiveTitle}</span>
-        </div>
 
-        <div className="note-topbar">
-          <div className="note-topbar-left">
-            <select
-              className="note-folder-select"
-              value={currentFolderId ?? ""}
-              onChange={(event) => handleFolderChange(event.target.value)}
-            >
-              <option value="">Çalışma alanı kökü</option>
-              {folderOptions.map((folder) => (
-                <option key={folder.id} value={folder.id}>
-                  {folder.name}
-                </option>
-              ))}
-            </select>
+              {isFolderMenuOpen ? (
+                <div className="note-folder-popover" role="menu">
+                  <button
+                    type="button"
+                    className={`note-folder-option ${
+                      currentFolderId === null ? "active" : ""
+                    }`}
+                    onClick={() => void handleSelectFolder(null)}
+                  >
+                    <span className="note-folder-option-label">Kök klasör</span>
+                    <span className="note-folder-option-path">Çalışma alanı</span>
+                  </button>
+
+                  {folderOptions.map((folder) => (
+                    <button
+                      key={folder.id}
+                      type="button"
+                      className={`note-folder-option ${
+                        folder.id === currentFolderId ? "active" : ""
+                      }`}
+                      onClick={() => void handleSelectFolder(folder.id)}
+                    >
+                      <span className="note-folder-option-label">
+                        {folder.name.split(" / ").at(-1) ?? folder.name}
+                      </span>
+                      <span className="note-folder-option-path">{folder.name}</span>
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+            <span className="note-breadcrumb-separator">/</span>
+            <span className="note-breadcrumb current">{effectiveTitle}</span>
           </div>
 
-          <div className="note-toolbar">
-            <button className="note-toolbar-btn primary" onClick={handlePublishToggle}>
+          <div className="note-toolbar note-toolbar-minimal">
+            <button
+              type="button"
+              className={`note-toolbar-btn icon-only${isPinned ? " active" : ""}`}
+              onClick={() => void handlePinToggle()}
+              aria-label={isPinned ? "Sabitlemeyi kaldır" : "Sabitle"}
+              aria-pressed={isPinned}
+              title={isPinned ? "Sabitlemeyi kaldır" : "Sabitle"}
+            >
+              <PinIcon />
+            </button>
+            <button
+              type="button"
+              className="note-toolbar-btn primary"
+              onClick={() => void handlePublishToggle()}
+            >
               {isPublished ? "Yayımdan kaldır" : "Yayımla"}
-            </button>
-            <button className="note-toolbar-btn" onClick={handlePinToggle}>
-              {isPinned ? "Pini kaldır" : "Sabitle"}
-            </button>
-            <button
-              className="note-toolbar-btn"
-              onClick={() => handleMoveNote("up")}
-            >
-              Yukarı
-            </button>
-            <button
-              className="note-toolbar-btn"
-              onClick={() => handleMoveNote("down")}
-            >
-              Aşağı
-            </button>
-            <button
-              className="note-toolbar-btn"
-              disabled={isExportPending}
-              onClick={() => handleCopyExport("markdown")}
-            >
-              Markdown
-            </button>
-            <button
-              className="note-toolbar-btn"
-              disabled={isExportPending}
-              onClick={() => handleCopyExport("mdx")}
-            >
-              MDX
             </button>
             <button
               className="context-trigger"
               onClick={openContextMenuFromTrigger}
               aria-label="Not menüsünü aç"
+              aria-haspopup="menu"
             >
               ...
             </button>
@@ -451,18 +517,18 @@ export function NoteEditorPage({
         </div>
 
         <div className="note-title-row">
-          <div className="note-page-symbol">{note.icon ?? "Not"}</div>
-
           <div className="note-title-stack">
-            <div className="note-status-row">
-              <span
-                className={`note-status-pill ${isPublished ? "published" : "draft"}`}
-              >
+            <div className="note-status-row minimal">
+              <span className="note-status-inline">
                 {isPublished ? "Yayında" : "Taslak"}
               </span>
               {isPinned ? (
-                <span className="note-status-pill pinned">Pinli</span>
+                <>
+                  <span className="note-status-separator">·</span>
+                  <span className="note-status-inline subtle">Pinli</span>
+                </>
               ) : null}
+              <span className="note-status-separator">·</span>
               <span className="note-status-text">Otomatik kaydetme açık</span>
             </div>
 
@@ -489,17 +555,26 @@ export function NoteEditorPage({
               </div>
             ) : null}
 
-            <label className="note-slug-field">
-              <span>Yayın adresi</span>
-              <input
-                className="note-slug-input"
-                value={slug ?? ""}
-                onChange={(event) => setSlug(event.target.value)}
-                onBlur={(event) => void handleSlugChange(event.target.value)}
-                placeholder="yayin-adresi"
-                spellCheck={false}
-              />
-            </label>
+            {isMetaPanelOpen ? (
+              <div className="note-settings-panel">
+                <label className="note-slug-field">
+                  <span>Yayın adresi</span>
+                  <input
+                    className="note-slug-input"
+                    value={slug ?? ""}
+                    onChange={(event) => setSlug(event.target.value)}
+                    onBlur={(event) => void handleSlugChange(event.target.value)}
+                    placeholder="yayin-adresi"
+                    spellCheck={false}
+                  />
+                </label>
+                <p className="note-settings-help">
+                  {slug?.trim()
+                    ? `Yayın yolu: /published/${slug}`
+                    : "Yayımlandığında otomatik bir adres oluşturulur."}
+                </p>
+              </div>
+            ) : null}
           </div>
         </div>
       </div>
@@ -595,6 +670,32 @@ export function NoteEditorPage({
         onClose={closeContextMenu}
       />
     </div>
+  );
+}
+
+function PinIcon() {
+  return (
+    <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+      <path
+        d="M5.5 2.25c0-.41.34-.75.75-.75h3.5c.41 0 .75.34.75.75v1.08c0 .23.11.45.3.59l1.03.77c.48.35.23 1.11-.36 1.11H9.8v3.61l1.12 1.12a.75.75 0 0 1-.53 1.28H8.75v2.5a.75.75 0 0 1-1.5 0v-2.5H5.61a.75.75 0 0 1-.53-1.28L6.2 9.41V5.8H3.78c-.59 0-.84-.76-.36-1.11l1.03-.77a.74.74 0 0 0 .3-.59V2.25Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}
+
+function ChevronDownIcon() {
+  return (
+    <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+      <path
+        d="m4.22 6.47 3.25 3.25a.75.75 0 0 0 1.06 0l3.25-3.25"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.5"
+      />
+    </svg>
   );
 }
 

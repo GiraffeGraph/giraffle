@@ -31,6 +31,7 @@ import {
   ToggleNode,
   WikilinkMark,
   defaultSlashCommands,
+  type SlashCommandItem,
 } from "./extensions";
 import { SlashCommandMenu } from "./toolbar/SlashCommandMenu";
 
@@ -119,7 +120,27 @@ export function Editor({
   const [draggedBlockId, setDraggedBlockId] = useState<string | null>(null);
   const [blockDropIndicator, setBlockDropIndicator] =
     useState<BlockDropIndicatorState | null>(null);
-  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [, setIsUploadingImage] = useState(false);
+
+  const handleImageUpload = useCallback(() => {
+    imageInputRef.current?.click();
+  }, []);
+
+  const slashCommandItems = useMemo<SlashCommandItem[]>(
+    () => [
+      {
+        title: "Görsel yükle",
+        description: "Cihazından görsel seç ve nota ekle",
+        icon: "UP",
+        shortcut: "/upload",
+        command: () => {
+          handleImageUpload();
+        },
+      },
+      ...defaultSlashCommands,
+    ],
+    [handleImageUpload]
+  );
 
   const updateSlashMenu = useCallback(
     (instance: TiptapEditor) => {
@@ -146,7 +167,7 @@ export function Editor({
       }
 
       const query = match[1] ?? "";
-      const matchingItems = defaultSlashCommands.filter((item) =>
+      const matchingItems = slashCommandItems.filter((item) =>
         item.title.toLowerCase().includes(query.toLowerCase())
       );
 
@@ -170,7 +191,7 @@ export function Editor({
         },
       });
     },
-    [editable]
+    [editable, slashCommandItems]
   );
 
   const updateWikilinkMenu = useCallback(
@@ -227,10 +248,10 @@ export function Editor({
       return [];
     }
 
-    return defaultSlashCommands.filter((item) =>
+    return slashCommandItems.filter((item) =>
       item.title.toLowerCase().includes(slashMenu.query.toLowerCase())
     );
-  }, [slashMenu]);
+  }, [slashCommandItems, slashMenu]);
 
   useEffect(() => {
     if (!wikilinkMenu || !searchWikilinkNotes) {
@@ -295,7 +316,7 @@ export function Editor({
         allowBase64: false,
       }),
       Placeholder.configure({
-        placeholder: 'Komutlar için "/" yaz ya da notunu yazmaya başla...',
+        placeholder: "Yazmaya başla...\n/ ile blok ekle · [[ ile sayfa bağla",
         emptyEditorClass: "is-editor-empty",
       }),
       BlockIdExtension,
@@ -771,10 +792,6 @@ export function Editor({
     setIsBlockMenuOpen(false);
   }, [applyDocumentMutation, blockToolbar]);
 
-  const handleImageUpload = useCallback(async () => {
-    imageInputRef.current?.click();
-  }, []);
-
   const handleImageFileChange = useCallback(
     async (event: React.ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0];
@@ -932,24 +949,6 @@ export function Editor({
         onChange={handleImageFileChange}
       />
 
-      {editable ? (
-        <div className="editor-surface-bar">
-          <span className="editor-surface-hint">/ ile blok ekle</span>
-          <span className="editor-surface-divider" />
-          <span className="editor-surface-hint">[[ ile bağlantı oluştur</span>
-          <span className="editor-surface-divider" />
-          <span className="editor-surface-meta">
-            Metin seçince hızlı biçimlendirme açılır
-          </span>
-          <button
-            type="button"
-            className="editor-surface-upload"
-            onClick={() => void handleImageUpload()}
-          >
-            {isUploadingImage ? "Yükleniyor..." : "Görsel yükle"}
-          </button>
-        </div>
-      ) : null}
 
       {editable && blockToolbar ? (
         <div
