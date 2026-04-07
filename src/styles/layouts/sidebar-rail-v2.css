@@ -718,6 +718,8 @@
 }
 
 .icon-picker-scroll {
+  min-height: 0;
+  flex: 1;
   overflow-y: auto;
   padding: 14px 18px 20px;
 }
@@ -794,4 +796,49 @@
   color: var(--text-muted);
   font-size: 13px;
   text-align: center;
+}
+
+.icon-picker-emoji-shell {
+  flex: 1;
+  min-height: 0;
+  padding: 14px 18px 18px;
+}
+
+.icon-picker-emoji-panel.EmojiPickerReact {
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 18px;
+  border: 1px solid var(--border-color);
+  box-shadow: none;
+  overflow: hidden;
+  background: var(--surface-glass);
+  --epr-bg-color: var(--surface-glass);
+  --epr-text-color: var(--text-primary);
+  --epr-hover-bg-color: var(--surface-highlight);
+  --epr-search-input-bg-color: var(--surface-glass);
+  --epr-search-input-text-color: var(--text-primary);
+  --epr-search-input-placeholder-color: var(--text-muted);
+  --epr-search-border-color: var(--border-color);
+  --epr-search-border-color-active: var(--accent-line);
+  --epr-search-input-bg-color-active: var(--surface-glass-strong);
+  --epr-category-label-bg-color: var(--surface-glass);
+  --epr-category-label-text-color: var(--text-secondary);
+  --epr-picker-border-color: transparent;
+  --epr-focus-bg-color: rgb(var(--accent-rgb) / 0.16);
+  --epr-highlight-color: var(--accent);
+  --epr-category-icon-active-color: var(--accent);
+  --epr-emoji-size: 23px;
+  --epr-emoji-gap: 8px;
+}
+
+.icon-picker-emoji-panel .epr-header {
+  padding-bottom: 8px;
+}
+
+.icon-picker-emoji-panel .epr-search-container input {
+  font-family: inherit;
+}
+
+.icon-picker-emoji-panel .epr-category-nav {
+  padding-top: 10px;
 }

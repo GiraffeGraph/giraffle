@@ -1,14 +1,24 @@
 "use client";
 
+import dynamic from "next/dynamic";
+import {
+  EmojiStyle,
+  SuggestionMode,
+  Theme,
+} from "emoji-picker-react";
+import type {
+  EmojiClickData,
+} from "emoji-picker-react";
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   decodeStoredIcon,
   encodeMaterialSymbol,
   renderStoredIcon,
-  SIDEBAR_ICON_EMOJI_SECTIONS,
   SIDEBAR_ICON_MATERIAL_SYMBOLS,
 } from "./sidebar-icon-utils";
+
+const EmojiPicker = dynamic(() => import("emoji-picker-react"), { ssr: false });
 
 const RECENT_ICONS_STORAGE_KEY = "giraffle.sidebar.icon-picker.recent";
 const MAX_RECENT_ICONS = 16;
@@ -42,6 +52,7 @@ export function SidebarIconPicker({
   const [query, setQuery] = useState("");
   const [recentIcons, setRecentIcons] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [pickerTheme, setPickerTheme] = useState<Theme>(Theme.LIGHT);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -68,6 +79,23 @@ export function SidebarIconPicker({
     }
   }, []);
 
+  useEffect(() => {
+    const resolveTheme = () => {
+      const colorScheme = window.getComputedStyle(document.documentElement).colorScheme;
+      setPickerTheme(colorScheme === "dark" ? Theme.DARK : Theme.LIGHT);
+    };
+
+    resolveTheme();
+
+    const observer = new MutationObserver(resolveTheme);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme", "style"],
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
   const panelStyle = useMemo(() => {
     if (typeof window === "undefined") {
       return { left: position.x, top: position.y };
@@ -81,22 +109,9 @@ export function SidebarIconPicker({
   }, [position.x, position.y]);
 
   const normalizedQuery = query.trim().toLowerCase();
-  const visibleRecentIcons = recentIcons.filter((icon) => {
-    const decoded = decodeStoredIcon(icon);
-    if (activeTab === "emoji") {
-      return decoded.kind === "emoji";
-    }
-
-    return decoded.kind === "material";
-  });
-
-  const filteredEmojiSections = useMemo(() => {
-    if (activeTab !== "emoji") return [];
-    return SIDEBAR_ICON_EMOJI_SECTIONS.map((section) => ({
-      ...section,
-      icons: section.icons.filter((icon) => !normalizedQuery || icon.includes(normalizedQuery)),
-    })).filter((section) => section.icons.length > 0);
-  }, [activeTab, normalizedQuery]);
+  const visibleRecentIcons = recentIcons.filter(
+    (icon) => decodeStoredIcon(icon).kind === "material"
+  );
 
   const filteredMaterialIcons = useMemo(() => {
     if (activeTab !== "icons") return [];
@@ -120,6 +135,10 @@ export function SidebarIconPicker({
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleEmojiClick = async (emojiData: EmojiClickData) => {
+    await commitSelection(emojiData.emoji);
   };
 
   if (typeof document === "undefined") {
@@ -162,66 +181,63 @@ export function SidebarIconPicker({
           </button>
         </div>
 
-        <div className="icon-picker-toolbar">
-          <label className="icon-picker-search">
-            <SearchIcon />
-            <input
-              // eslint-disable-next-line jsx-a11y/no-autofocus
-              autoFocus
-              type="text"
-              value={query}
-              disabled={isSaving}
-              onChange={(event) => setQuery(event.currentTarget.value)}
-              placeholder={activeTab === "emoji" ? "Emoji filtrele..." : "Material Symbols filtrele..."}
+        {activeTab === "emoji" ? (
+          <div className="icon-picker-emoji-shell">
+            <EmojiPicker
+              onEmojiClick={(emojiData) => void handleEmojiClick(emojiData)}
+              autoFocusSearch
+              searchPlaceholder="Emoji ara"
+              suggestedEmojisMode={SuggestionMode.RECENT}
+              emojiStyle={EmojiStyle.NATIVE}
+              previewConfig={{ showPreview: false }}
+              lazyLoadEmojis
+              theme={pickerTheme}
+              width="100%"
+              height="100%"
+              className="icon-picker-emoji-panel"
             />
-          </label>
-        </div>
+          </div>
+        ) : (
+          <>
+            <div className="icon-picker-toolbar">
+              <label className="icon-picker-search">
+                <SearchIcon />
+                <input
+                  // eslint-disable-next-line jsx-a11y/no-autofocus
+                  autoFocus
+                  type="text"
+                  value={query}
+                  disabled={isSaving}
+                  onChange={(event) => setQuery(event.currentTarget.value)}
+                  placeholder="Material Symbols filtrele..."
+                />
+              </label>
+            </div>
 
-        <div className="icon-picker-scroll">
-          {visibleRecentIcons.length > 0 ? (
-            <section className="icon-picker-section">
-              <div className="icon-picker-section-title">Recent</div>
-              <div className="icon-picker-grid">
-                {visibleRecentIcons.map((icon) => (
-                  <button
-                    key={icon}
-                    type="button"
-                    className={`icon-picker-choice${icon === currentIcon ? " active" : ""}`}
-                    disabled={isSaving}
-                    onClick={() => void commitSelection(icon)}
-                    title={decodeStoredIcon(icon).value ?? "icon"}
-                  >
-                    {renderStoredIcon(icon, {
-                      materialClassName: "material-symbols-outlined",
-                      emojiStyle: { fontSize: "26px", lineHeight: 1 },
-                    })}
-                  </button>
-                ))}
-              </div>
-            </section>
-          ) : null}
-
-          {activeTab === "emoji"
-            ? filteredEmojiSections.map((section) => (
-                <section key={section.label} className="icon-picker-section">
-                  <div className="icon-picker-section-title">{section.label}</div>
+            <div className="icon-picker-scroll">
+              {visibleRecentIcons.length > 0 ? (
+                <section className="icon-picker-section">
+                  <div className="icon-picker-section-title">Recent</div>
                   <div className="icon-picker-grid">
-                    {section.icons.map((icon) => (
+                    {visibleRecentIcons.map((icon) => (
                       <button
                         key={icon}
                         type="button"
                         className={`icon-picker-choice${icon === currentIcon ? " active" : ""}`}
                         disabled={isSaving}
                         onClick={() => void commitSelection(icon)}
-                        title={icon}
+                        title={decodeStoredIcon(icon).value ?? "icon"}
                       >
-                        <span className="icon-picker-emoji" aria-hidden="true">{icon}</span>
+                        {renderStoredIcon(icon, {
+                          materialClassName: "material-symbols-outlined",
+                          emojiStyle: { fontSize: "26px", lineHeight: 1 },
+                        })}
                       </button>
                     ))}
                   </div>
                 </section>
-              ))
-            : (
+              ) : null}
+
               <section className="icon-picker-section">
                 <div className="icon-picker-section-title">Icons</div>
                 <div className="icon-picker-grid">
@@ -242,13 +258,13 @@ export function SidebarIconPicker({
                   })}
                 </div>
               </section>
-            )}
+            </div>
 
-          {((activeTab === "emoji" && filteredEmojiSections.length === 0) ||
-            (activeTab === "icons" && filteredMaterialIcons.length === 0)) ? (
-            <div className="icon-picker-empty">Bu filtre icin sonuc yok.</div>
-          ) : null}
-        </div>
+              {filteredMaterialIcons.length === 0 ? (
+                <div className="icon-picker-empty">Bu filtre icin sonuc yok.</div>
+              ) : null}
+            </>
+          )}
       </div>
     </div>,
     document.body

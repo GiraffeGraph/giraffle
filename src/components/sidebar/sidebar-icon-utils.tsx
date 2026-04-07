@@ -2,25 +2,6 @@ import type { CSSProperties, ReactNode } from "react";
 
 export const MATERIAL_SYMBOL_PREFIX = "ms:";
 
-export const SIDEBAR_ICON_EMOJI_SECTIONS = [
-  {
-    label: "People",
-    icons: ["😀", "😄", "😁", "😎", "🥳", "🤔", "😍", "😴", "🥲", "😶", "🤝", "🙌"],
-  },
-  {
-    label: "Nature",
-    icons: ["🌱", "🌿", "🍀", "🌵", "🌸", "🌻", "🌕", "☀️", "🌧️", "🔥", "🌊", "⛰️"],
-  },
-  {
-    label: "Objects",
-    icons: ["📌", "📎", "📁", "📚", "🧠", "💡", "🛠️", "🧩", "🎯", "🧪", "🗂️", "🧭"],
-  },
-  {
-    label: "Places",
-    icons: ["🏠", "🏢", "🏫", "🌆", "✈️", "🚀", "🚲", "🛵", "🚗", "🛰️", "🗺️", "🏝️"],
-  },
-] as const;
-
 export const SIDEBAR_ICON_MATERIAL_SYMBOLS = [
   "description",
   "folder",
