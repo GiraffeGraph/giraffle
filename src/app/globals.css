@@ -1819,14 +1819,14 @@
   --text-tertiary: #8f8d85;
   --text-muted: #b4b3ad;
 
-  --accent: #2f6f63;
-  --accent-strong: #26584f;
-  --accent-rgb: 47 111 99;
-  --accent-subtle: rgba(47, 111, 99, 0.08);
-  --accent-warm: #8d6c3f;
-  --accent-warm-rgb: 141 108 63;
-  --accent-warm-subtle: rgba(141, 108, 63, 0.12);
-  --accent-line: rgba(47, 111, 99, 0.18);
+  --accent: #e1a63e;
+  --accent-strong: #c8911f;
+  --accent-rgb: 225 166 62;
+  --accent-subtle: rgba(225, 166, 62, 0.08);
+  --accent-warm: #d4882a;
+  --accent-warm-rgb: 212 136 42;
+  --accent-warm-subtle: rgba(212, 136, 42, 0.12);
+  --accent-line: rgba(225, 166, 62, 0.18);
   --color-wikilink: #275e76;
   --color-success: #2f6f63;
   --color-warning: #9a6b21;
@@ -1855,11 +1855,11 @@
   --surface-overlay-soft: #ffffff;
   --shell-main-bg: #ffffff;
   --shell-sidebar-bg: #f7f7f5;
-  --surface-accent-blend: rgba(47, 111, 99, 0.08);
-  --surface-accent-blend-strong: rgba(47, 111, 99, 0.12);
-  --logo-accent-end: #7b837e;
+  --surface-accent-blend: rgba(225, 166, 62, 0.08);
+  --surface-accent-blend-strong: rgba(225, 166, 62, 0.12);
+  --logo-accent-end: #e1a63e;
   --page-grid-rgb: 55 53 47;
-  --text-on-accent: #ffffff;
+  --text-on-accent: #1a1200;
   --heading-ink: #111111;
   --code-block-bg-start: #1f2428;
   --code-block-bg-end: #15191d;

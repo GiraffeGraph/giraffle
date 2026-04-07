@@ -24,15 +24,15 @@
 :root {
   color-scheme: light;
 
-  /* ── md.sys.color — Primary (teal-green) ─────────────────────────────── */
-  --md-sys-color-primary:                  #1a6d60;
-  --md-sys-color-on-primary:               #fffdf8;
-  --md-sys-color-primary-container:        rgba(26, 109, 96, 0.1);
-  --md-sys-color-on-primary-container:     #002020;
-  --md-sys-color-primary-fixed:            #6FF7F6;
-  --md-sys-color-primary-fixed-dim:        #4DDADA;
-  --md-sys-color-on-primary-fixed:         #002020;
-  --md-sys-color-on-primary-fixed-variant: #004F50;
+  /* ── md.sys.color — Primary (giraffe gold) ──────────────────────────── */
+  --md-sys-color-primary:                  #e1a63e;
+  --md-sys-color-on-primary:               #1a1200;
+  --md-sys-color-primary-container:        rgba(225, 166, 62, 0.1);
+  --md-sys-color-on-primary-container:     #2c1f00;
+  --md-sys-color-primary-fixed:            #f6cd7b;
+  --md-sys-color-primary-fixed-dim:        #e8b84b;
+  --md-sys-color-on-primary-fixed:         #2c1f00;
+  --md-sys-color-on-primary-fixed-variant: #5c3d00;
 
   /* ── md.sys.color — Secondary (warm amber) ───────────────────────────── */
   --md-sys-color-secondary:                #c46a44;
