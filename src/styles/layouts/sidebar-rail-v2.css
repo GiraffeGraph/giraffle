@@ -238,6 +238,10 @@
 
 .sidebar-group-label {
   text-align: left;
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 .sidebar-group-icon {
