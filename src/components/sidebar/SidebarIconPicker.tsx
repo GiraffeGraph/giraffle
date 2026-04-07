@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   decodeStoredIcon,
   encodeMaterialSymbol,
@@ -121,7 +122,11 @@ export function SidebarIconPicker({
     }
   };
 
-  return (
+  if (typeof document === "undefined") {
+    return null;
+  }
+
+  return createPortal(
     <div className="icon-picker-overlay" onClick={onClose}>
       <div
         className="icon-picker"
@@ -245,6 +250,7 @@ export function SidebarIconPicker({
           ) : null}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

@@ -612,7 +612,7 @@
 .icon-picker-overlay {
   position: fixed;
   inset: 0;
-  z-index: 330;
+  z-index: 10020;
   background: color-mix(in srgb, var(--surface-overlay-soft) 58%, transparent);
 }
 
