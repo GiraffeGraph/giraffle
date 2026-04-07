@@ -31,7 +31,12 @@
   align-items: center;
   min-height: 56px;
   padding: 12px 16px;
+  border: 0;
+  border-radius: 0;
+  overflow: hidden;
+  isolation: isolate;
   color: var(--md-sys-color-on-surface);
+  background-color: transparent;
   text-decoration: none;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
@@ -42,6 +47,7 @@
   content: '';
   position: absolute;
   inset: 0;
+  border-radius: inherit;
   background: var(--md-sys-color-on-surface);
   opacity: 0;
   pointer-events: none;
