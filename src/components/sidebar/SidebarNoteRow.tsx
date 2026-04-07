@@ -53,12 +53,11 @@ export function SidebarNoteRow({
   } | null;
 }) {
   const rowRef = useRef<HTMLDivElement | null>(null);
-  const afterDropzoneRef = useRef<HTMLDivElement | null>(null);
   const isAfterDropTarget =
     noteDropTarget?.noteId === note.id && noteDropTarget.mode === "after";
 
   useEffect(() => {
-    if (!rowRef.current || !afterDropzoneRef.current) {
+    if (!rowRef.current) {
       return;
     }
 
@@ -73,7 +72,7 @@ export function SidebarNoteRow({
         }),
       }),
       dropTargetForElements({
-        element: afterDropzoneRef.current,
+        element: rowRef.current,
         canDrop: ({ source }) =>
           isSidebarNoteDragData(source.data) &&
           source.data.noteId !== note.id &&
@@ -90,44 +89,41 @@ export function SidebarNoteRow({
   }, [note.folderId, note.id, note.isPinned]);
 
   return (
-    <>
-      <div ref={rowRef} className={`sidebar-entity-row ${active ? "active" : ""}`}>
+    <div
+      ref={rowRef}
+      className={`sidebar-entity-row ${active ? "active" : ""}${isAfterDropTarget ? " drag-target-after" : ""}${
+        draggedNoteId && draggedNoteId === note.id ? " drag-source" : ""
+      }`}
+    >
+      <button
+        type="button"
+        className={`sidebar-item sidebar-row-main ${active ? "active" : ""}`}
+        onClick={() => onOpen(note.id)}
+        onContextMenu={(event) => onContextMenuOpen(event, note)}
+      >
+        <span className="sidebar-item-icon">
+          {renderStoredIcon(note.icon, {
+            fallback: <span className="material-symbols-outlined sm" aria-hidden="true">description</span>,
+          })}
+        </span>
+        <span className="sidebar-item-label">{note.title || "Adsız"}</span>
+        {note.isPinned ? (
+          <span className="sidebar-pin-indicator" aria-label="Sabitlenmiş" title="Sabitlenmiş">
+            <PinIcon />
+          </span>
+        ) : null}
+      </button>
+      <div className="sidebar-row-actions">
         <button
           type="button"
-          className={`sidebar-item sidebar-row-main ${active ? "active" : ""}`}
-          onClick={() => onOpen(note.id)}
-          onContextMenu={(event) => onContextMenuOpen(event, note)}
+          className="context-trigger sidebar-row-action"
+          onClick={(event) => onTriggerMenuOpen(event, note)}
+          aria-label={`${note.title} menüsünü aç`}
+          title="Seçenekler"
         >
-          <span className="sidebar-item-icon">
-            {renderStoredIcon(note.icon, {
-              fallback: <span className="material-symbols-outlined sm" aria-hidden="true">description</span>,
-            })}
-          </span>
-          <span className="sidebar-item-label">{note.title || "Adsız"}</span>
-          {note.isPinned ? (
-            <span className="sidebar-pin-indicator" aria-label="Sabitlenmiş" title="Sabitlenmiş">
-              <PinIcon />
-            </span>
-          ) : null}
+          <MoreHorizontalIcon />
         </button>
-        <div className="sidebar-row-actions">
-          <button
-            type="button"
-            className="context-trigger sidebar-row-action"
-            onClick={(event) => onTriggerMenuOpen(event, note)}
-            aria-label={`${note.title} menüsünü aç`}
-            title="Seçenekler"
-          >
-            <MoreHorizontalIcon />
-          </button>
-        </div>
       </div>
-      <div
-        ref={afterDropzoneRef}
-        className={`sidebar-folder-dropzone note-dropzone${isAfterDropTarget ? " active" : ""}${
-          draggedNoteId && draggedNoteId !== note.id ? " visible" : ""
-        }`}
-      />
-    </>
+    </div>
   );
 }

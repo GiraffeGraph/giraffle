@@ -785,6 +785,16 @@
   background: var(--accent-subtle);
 }
 
+.sidebar-entity-row.drag-target-after .sidebar-row-main {
+  background:
+    linear-gradient(to bottom, transparent calc(100% - 2px), var(--accent) 0),
+    var(--accent-subtle);
+}
+
+.sidebar-entity-row.drag-source .sidebar-row-main {
+  opacity: 0.55;
+}
+
 .graph-toolbar {
   margin-top: 18px;
   padding: 14px;

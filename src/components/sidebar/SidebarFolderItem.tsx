@@ -75,7 +75,6 @@ export function SidebarFolderItem({
   const [isCreatingSubFolder, setIsCreatingSubFolder] = useState(false);
   const subFolderHandledRef = useRef(false);
   const rowRef = useRef<HTMLDivElement | null>(null);
-  const afterDropzoneRef = useRef<HTMLDivElement | null>(null);
 
   const folderNotes = allNotes.filter((n) => n.folderId === folder.id);
   const hasChildren = (folder.children ?? []).length > 0;
@@ -90,7 +89,7 @@ export function SidebarFolderItem({
     noteDropTarget?.folderId === folder.id && noteDropTarget.mode === "inside";
 
   useEffect(() => {
-    if (!rowRef.current || !afterDropzoneRef.current) {
+    if (!rowRef.current) {
       return;
     }
 
@@ -115,7 +114,7 @@ export function SidebarFolderItem({
 
           return false;
         },
-        getData: ({ source }) => {
+        getData: ({ source, input, element }) => {
           if (isSidebarNoteDragData(source.data)) {
             return {
               type: "sidebar-note-drop-target",
@@ -126,27 +125,19 @@ export function SidebarFolderItem({
             };
           }
 
+          const rect = (element as HTMLElement).getBoundingClientRect();
+          const relativeY = input.clientY - rect.top;
+          const mode = relativeY > rect.height * 0.7 ? "after" : "inside";
+
           return {
             type: "sidebar-folder-drop-target",
             folderId: folder.id,
-            mode: "inside",
-            parentId: folder.id,
-            afterFolderId: null,
+            mode,
+            parentId: mode === "inside" ? folder.id : folder.parentId ?? null,
+            afterFolderId: mode === "after" ? folder.id : null,
           };
         },
       }),
-      dropTargetForElements({
-        element: afterDropzoneRef.current,
-        canDrop: ({ source }) =>
-          isSidebarFolderDragData(source.data) && source.data.folderId !== folder.id,
-        getData: () => ({
-          type: "sidebar-folder-drop-target",
-          folderId: folder.id,
-          mode: "after",
-          parentId: folder.parentId ?? null,
-          afterFolderId: folder.id,
-        }),
-      })
     );
   }, [folder.id, folder.parentId]);
 
@@ -165,7 +156,7 @@ export function SidebarFolderItem({
       <div
         className={`sidebar-entity-row${isActive ? " folder-active" : ""}${
           isInsideDropTarget || isNoteInsideDropTarget ? " drag-target" : ""
-        }`}
+        }${isAfterDropTarget ? " drag-target-after" : ""}`}
       >
         <div
           ref={rowRef}
@@ -234,13 +225,6 @@ export function SidebarFolderItem({
           </button>
         </div>
       </div>
-
-      <div
-        ref={afterDropzoneRef}
-        className={`sidebar-folder-dropzone${isAfterDropTarget ? " active" : ""}${
-          draggedFolderId && draggedFolderId !== folder.id ? " visible" : ""
-        }`}
-      />
 
       {isOpen ? (
         <div className="sidebar-folder-contents">

@@ -125,7 +125,7 @@ export function Sidebar({
   const [hasLoadedPreferences, setHasLoadedPreferences] = useState(false);
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const folderCreationHandledRef = useRef(false);
-  const rootFolderDropzoneRef = useRef<HTMLDivElement | null>(null);
+  const folderTreeRef = useRef<HTMLDivElement | null>(null);
 
   const normalizedPaletteQuery = paletteQuery.trim().toLowerCase();
   const currentNoteId = activeNoteId ?? extractActiveNoteId(pathname) ?? undefined;
@@ -327,13 +327,13 @@ export function Sidebar({
   );
 
   useEffect(() => {
-    if (!rootFolderDropzoneRef.current) {
+    if (!folderTreeRef.current) {
       return;
     }
 
     return combine(
       dropTargetForElements({
-        element: rootFolderDropzoneRef.current,
+        element: folderTreeRef.current,
         canDrop: ({ source }) =>
           isSidebarFolderDragData(source.data) || isSidebarNoteDragData(source.data),
         getData: ({ source }) => {
@@ -624,12 +624,15 @@ export function Sidebar({
               onToggle={() => toggleSection("folders")}
               actions={folderGroupActions}
             >
-              <div className="sidebar-folder-tree">
+              <div
+                ref={folderTreeRef}
+                className="sidebar-folder-tree"
+              >
                 {isCreatingFolder && (
                   <div className="sidebar-inline-creator">
                     {/* İkon alanı — .sidebar-folder-icon-btn ile aynı genişlik */}
                     <span className="sidebar-folder-icon-btn sidebar-folder-icon-btn--static" aria-hidden="true">
-                    <span className="material-symbols-outlined sm">folder</span>
+                      <span className="material-symbols-outlined sm">folder</span>
                     </span>
                     <input
                       autoFocus
@@ -666,15 +669,6 @@ export function Sidebar({
                     />
                   </div>
                 )}
-                <div
-                  ref={rootFolderDropzoneRef}
-                  className={`sidebar-folder-dropzone root${
-                    folderDropTarget?.folderId === "__root__" || noteDropTarget?.mode === "root" ? " active" : ""
-                  }${
-                    draggedFolderId || draggedNoteId ? " visible" : ""
-                  }`}
-                >
-                </div>
                 {filteredFolders.length === 0 ? (
                   <div className="sidebar-empty">{hasQuery ? "Eşleşen klasör yok." : "Henüz klasör yok."}</div>
                 ) : filteredFolders.map((folder) => (
