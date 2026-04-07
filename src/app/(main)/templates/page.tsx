@@ -4,8 +4,11 @@ import {
   markdownToBlocks,
 } from "@/domain/note/note.serializer";
 import {
+  documentToTemplateBlocks,
+  templateBlocksToDocument,
+} from "@/domain/template/template.document";
+import {
   TEMPLATE_CATEGORIES,
-  type TemplateBlock,
   type TemplateVariable,
 } from "@/domain/template/template.types";
 import { getTemplateCategoryLabel } from "@/lib/template-category";
@@ -33,9 +36,9 @@ export default async function TemplatesPage({ searchParams }: TemplatesPageProps
       description: String(formData.get("description") ?? "").trim() || undefined,
       category: String(formData.get("category") ?? "custom"),
       icon: String(formData.get("icon") ?? "").trim() || undefined,
-      blocks: markdownToBlocks(
-        String(formData.get("markdown") ?? "")
-      ).content as unknown as TemplateBlock[],
+      blocks: documentToTemplateBlocks(
+        markdownToBlocks(String(formData.get("markdown") ?? ""))
+      ),
       variables: parseTemplateVariables(String(formData.get("variablesJson") ?? "")),
     });
   }
@@ -53,9 +56,9 @@ export default async function TemplatesPage({ searchParams }: TemplatesPageProps
       description: String(formData.get("description") ?? "").trim() || null,
       category: String(formData.get("category") ?? "custom"),
       icon: String(formData.get("icon") ?? "").trim() || null,
-      blocks: markdownToBlocks(
-        String(formData.get("markdown") ?? "")
-      ).content as unknown as TemplateBlock[],
+      blocks: documentToTemplateBlocks(
+        markdownToBlocks(String(formData.get("markdown") ?? ""))
+      ),
       variables: parseTemplateVariables(String(formData.get("variablesJson") ?? "")),
     });
   }
@@ -186,10 +189,9 @@ export default async function TemplatesPage({ searchParams }: TemplatesPageProps
                   <textarea
                     name="markdown"
                     rows={12}
-                    defaultValue={blocksToMarkdown({
-                      type: "doc",
-                      content: selectedTemplate.blocks as unknown as never[],
-                    } as never)}
+                    defaultValue={blocksToMarkdown(
+                      templateBlocksToDocument(selectedTemplate.blocks)
+                    )}
                   />
                 </label>
                 <button type="submit" className="dashboard-empty-btn">

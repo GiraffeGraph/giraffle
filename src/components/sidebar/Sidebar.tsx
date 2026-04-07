@@ -137,15 +137,14 @@ export function Sidebar({
   const [searchQuery, setSearchQuery] = useState("");
   const [activeThemeId, setActiveThemeId] =
     useState<AppThemeId>(DEFAULT_APP_THEME);
-  const [sidebarWidth, setSidebarWidth] = useState<number>(() =>
-    loadSidebarWidth()
+  const [sidebarWidth, setSidebarWidth] = useState<number>(
+    DEFAULT_EXPANDED_SIDEBAR_WIDTH
   );
-  const [isSidebarCompact, setIsSidebarCompact] = useState<boolean>(() =>
-    loadSidebarCompactState()
-  );
+  const [isSidebarCompact, setIsSidebarCompact] = useState(false);
   const [isSidebarResizing, setIsSidebarResizing] = useState(false);
   const [collapsedSections, setCollapsedSections] =
-    useState<SidebarCollapseState>(() => loadSidebarCollapseState());
+    useState<SidebarCollapseState>(DEFAULT_COLLAPSED_SECTIONS);
+  const [hasLoadedPreferences, setHasLoadedPreferences] = useState(false);
   const [navModal, setNavModal] = useState<{
     key: string;
     label: string;
@@ -253,6 +252,31 @@ export function Sidebar({
   }, []);
 
   useEffect(() => {
+    const frameId = window.requestAnimationFrame(() => {
+      const nextSidebarWidth = loadSidebarWidth();
+      const nextSidebarCompact = loadSidebarCompactState();
+      const nextCollapsedSections = loadSidebarCollapseState();
+
+      setSidebarWidth((currentWidth) =>
+        currentWidth === nextSidebarWidth ? currentWidth : nextSidebarWidth
+      );
+      setIsSidebarCompact((currentCompact) =>
+        currentCompact === nextSidebarCompact
+          ? currentCompact
+          : nextSidebarCompact
+      );
+      setCollapsedSections((currentSections) =>
+        areSidebarCollapseStatesEqual(currentSections, nextCollapsedSections)
+          ? currentSections
+          : nextCollapsedSections
+      );
+      setHasLoadedPreferences(true);
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, []);
+
+  useEffect(() => {
     const currentTheme = document.documentElement.dataset.theme;
     let nextTheme = DEFAULT_APP_THEME;
 
@@ -281,7 +305,7 @@ export function Sidebar({
   }, [activeThemeId]);
 
   useEffect(() => {
-    if (typeof window === "undefined") {
+    if (!hasLoadedPreferences || typeof window === "undefined") {
       return;
     }
 
@@ -289,18 +313,18 @@ export function Sidebar({
       SIDEBAR_COLLAPSE_STORAGE_KEY,
       JSON.stringify(collapsedSections)
     );
-  }, [collapsedSections]);
+  }, [collapsedSections, hasLoadedPreferences]);
 
   useEffect(() => {
-    if (typeof window === "undefined") {
+    if (!hasLoadedPreferences || typeof window === "undefined") {
       return;
     }
 
     localStorage.setItem(SIDEBAR_WIDTH_STORAGE_KEY, String(sidebarWidth));
-  }, [sidebarWidth]);
+  }, [hasLoadedPreferences, sidebarWidth]);
 
   useEffect(() => {
-    if (typeof window === "undefined") {
+    if (!hasLoadedPreferences || typeof window === "undefined") {
       return;
     }
 
@@ -308,7 +332,7 @@ export function Sidebar({
       SIDEBAR_COMPACT_STORAGE_KEY,
       JSON.stringify(isSidebarCompact)
     );
-  }, [isSidebarCompact]);
+  }, [hasLoadedPreferences, isSidebarCompact]);
 
   useEffect(() => {
     document.documentElement.style.setProperty(
@@ -1644,6 +1668,17 @@ function extractActiveNoteId(pathname: string | null) {
 
   const [, , noteId] = pathname.split("/");
   return noteId ?? null;
+}
+
+function areSidebarCollapseStatesEqual(
+  left: SidebarCollapseState,
+  right: SidebarCollapseState
+) {
+  return (
+    left.folders === right.folders &&
+    left.tags === right.tags &&
+    left.recentNotes === right.recentNotes
+  );
 }
 
 function loadSidebarCollapseState(): SidebarCollapseState {

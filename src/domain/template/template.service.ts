@@ -13,8 +13,8 @@ import {
   documentToPersistedBlocks,
 } from "@/domain/note/block-tree";
 import { DEFAULT_NOTE_TITLE } from "@/domain/note/note.types";
-import type { BlockNodeContent, TiptapNode } from "@/domain/note/note.types";
 import { slugify } from "@/lib/utils";
+import { templateBlocksToDocument } from "./template.document";
 import type {
   ApplyTemplateInput,
   TemplateBlock,
@@ -491,36 +491,10 @@ function resolveTemplateVariables(
   return JSON.parse(resolved);
 }
 
-function templateBlocksToDocument(blocks: TemplateBlock[]) {
-  return {
-    type: "doc" as const,
-    content: blocks.map(templateBlockToNode),
-  };
-}
-
-function templateBlockToNode(block: TemplateBlock): BlockNodeContent {
-  const sourceContent = isRecord(block.content) ? block.content : {};
-  const inlineContent = toTemplateNodes(sourceContent.content).filter(
-    (node) => !isTemplateChildBlock(node)
-  );
-  const childBlocks = (block.children ?? []).map(templateBlockToNode);
-  const attrs = {
-    ...toAttributes(sourceContent.attrs),
-    ...(block.attributes ?? {}),
-  };
-  const content = [...inlineContent, ...childBlocks];
-
-  return {
-    type: block.type,
-    ...(Object.keys(attrs).length > 0 ? { attrs } : {}),
-    ...(content.length > 0 ? { content } : {}),
-  };
-}
-
 async function createTemplateBlocks(
   client: Pick<typeof db, "block">,
   noteId: string,
-  document: { type: "doc"; content: BlockNodeContent[] }
+  document: ReturnType<typeof templateBlocksToDocument>
 ) {
   const persistedBlocks = documentToPersistedBlocks(noteId, document);
   const blocksByDepth = new Map<number, typeof persistedBlocks>();
@@ -546,49 +520,6 @@ async function createTemplateBlocks(
       })),
     });
   }
-}
-
-function toTemplateNodes(value: unknown): TiptapNode[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-
-  return value.filter(
-    (item): item is TiptapNode =>
-      isRecord(item) && typeof item.type === "string"
-  );
-}
-
-function isTemplateChildBlock(node: TiptapNode): node is BlockNodeContent {
-  return (
-    node.type !== "text" &&
-    [
-      "paragraph",
-      "heading",
-      "bulletList",
-      "orderedList",
-      "listItem",
-      "codeBlock",
-      "blockquote",
-      "callout",
-      "toggle",
-      "image",
-      "horizontalRule",
-      "table",
-    ].includes(node.type)
-  );
-}
-
-function toAttributes(value: unknown): Record<string, unknown> {
-  if (!isRecord(value)) {
-    return {};
-  }
-
-  return { ...value };
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
 }
 
 async function ensureUniqueNoteSlug(
