@@ -5921,3 +5921,157 @@ body::before {
   border-color: var(--border-soft);
   color: var(--text-primary);
 }
+
+/* --- Agent Inline UI --- */
+.graffle-agent-block {
+  margin: 1.5rem 0;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-card);
+  background: var(--surface-glass);
+  box-shadow: var(--shadow-soft);
+  overflow: hidden;
+  font-family: inherit;
+}
+
+.GraffleAgentBlock_Inner {
+  display: flex;
+  flex-direction: column;
+}
+
+.GraffleAgentBlock_Header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--surface-glass-muted);
+  border-bottom: 1px solid var(--border-soft);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.GraffleAgent_Icon {
+  font-size: 14px;
+}
+
+.GraffleAgentBlock_Body {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.GraffleAgent_InputRow {
+  display: flex;
+  gap: 8px;
+}
+
+.GraffleAgent_Input {
+  flex: 1;
+  background: var(--bg-page-deep);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-control);
+  padding: 8px 12px;
+  color: var(--text-primary);
+  font-size: 14px;
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.GraffleAgent_Input:focus {
+  border-color: var(--accent);
+}
+
+.GraffleAgent_BtnRun {
+  background: var(--accent);
+  color: var(--text-on-accent);
+  border: none;
+  border-radius: var(--radius-control);
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity var(--transition-fast);
+}
+.GraffleAgent_BtnRun:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.GraffleAgent_StatusRow {
+  font-size: 13px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.GraffleAgent_OutputRow {
+  background: var(--bg-page-deep);
+  padding: 12px;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--border-soft);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-primary);
+  position: relative;
+}
+
+.GraffleAgent_Cursor {
+  display: inline-block;
+  width: 2px;
+  height: 14px;
+  background: var(--accent);
+  vertical-align: middle;
+  margin-left: 2px;
+  animation: blink 1s step-start infinite;
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+.GraffleAgent_ActionsRow {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.GraffleAgent_BtnAction {
+  background: var(--surface-highlight);
+  color: var(--text-primary);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-control);
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.GraffleAgent_BtnAction:hover {
+  background: var(--surface-glass-hover);
+}
+
+.GraffleAgent_BtnAction.ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--text-muted);
+}
+.GraffleAgent_BtnAction.ghost:hover {
+  background: var(--surface-glass-soft);
+  color: var(--text-secondary);
+}
+
+/* --- Ghost Highlight --- */
+.ghost-highlight {
+  background: var(--accent-warm-subtle);
+  border-bottom: 1px dashed var(--accent-warm);
+  cursor: help;
+  transition: background var(--transition-fast);
+  border-radius: 2px;
+}
+
+.ghost-highlight:hover {
+  background: rgba(var(--accent-warm-rgb), 0.24);
+}

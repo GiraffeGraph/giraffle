@@ -23,12 +23,14 @@ import type {
 } from "@/domain/note/note.types";
 import { generateId } from "@/lib/utils";
 import {
+  AgentBlockNode,
   BlockIdExtension,
   CalloutNode,
-  defaultSlashCommands,
+  GhostHighlightPlugin,
   TableBlockNode,
   ToggleNode,
   WikilinkMark,
+  defaultSlashCommands,
 } from "./extensions";
 import { SlashCommandMenu } from "./toolbar/SlashCommandMenu";
 
@@ -301,6 +303,8 @@ export function Editor({
       TableBlockNode,
       ToggleNode,
       WikilinkMark,
+      AgentBlockNode,
+      GhostHighlightPlugin,
     ],
     content: initialContent ?? {
       type: "doc",

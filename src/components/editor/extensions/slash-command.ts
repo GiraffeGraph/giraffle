@@ -13,6 +13,15 @@ export interface SlashCommandItem {
 
 export const defaultSlashCommands: SlashCommandItem[] = [
   {
+    title: "AI Asistan",
+    description: "Inline bağlantı ve bağlam ajanı",
+    icon: "✨",
+    shortcut: "/agent",
+    command: (editor) => {
+      editor.chain().focus().insertContent({ type: "agentBlock" }).run();
+    },
+  },
+  {
     title: "Metin",
     description: "Düz metin bloğu",
     icon: "TXT",
