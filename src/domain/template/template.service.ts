@@ -12,9 +12,13 @@ import {
   createEmptyDocument,
   documentToPersistedBlocks,
 } from "@/domain/note/block-tree";
+import { getNote } from "@/domain/note/note.service";
 import { DEFAULT_NOTE_TITLE } from "@/domain/note/note.types";
 import { slugify } from "@/lib/utils";
-import { templateBlocksToDocument } from "./template.document";
+import {
+  documentToTemplateBlocks,
+  templateBlocksToDocument,
+} from "./template.document";
 import type {
   ApplyTemplateInput,
   TemplateBlock,
@@ -317,6 +321,32 @@ export async function createTemplate(input: {
       blocks: (input.blocks ?? []) as object[],
       variables: (input.variables ?? []) as object[],
     },
+  });
+}
+
+export async function createTemplateFromNote(
+  userId: string,
+  noteId: string,
+  input: {
+    name?: string;
+    description?: string | null;
+    category?: string;
+    icon?: string | null;
+  }
+) {
+  const note = await getNote(userId, noteId);
+
+  if (!note) {
+    throw new Error("Note not found");
+  }
+
+  return createTemplate({
+    name: input.name?.trim() || note.title || DEFAULT_NOTE_TITLE,
+    description: input.description?.trim() || undefined,
+    category: input.category?.trim() || "custom",
+    icon: input.icon?.trim() || note.icon || undefined,
+    blocks: documentToTemplateBlocks(note.document),
+    variables: [],
   });
 }
 

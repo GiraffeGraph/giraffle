@@ -9,9 +9,15 @@ export const BLOCK_TYPES = [
   "blockquote",
   "callout",
   "toggle",
+  "kanban",
   "image",
   "horizontalRule",
   "table",
+  "tableRow",
+  "tableHeader",
+  "tableCell",
+  "taskList",
+  "taskItem",
 ] as const;
 
 export type BlockType = (typeof BLOCK_TYPES)[number];
@@ -62,6 +68,13 @@ export interface Note {
   icon: string | null;
   coverImage: string | null;
   folderId: string | null;
+  categoryId?: string | null;
+  category?: {
+    id: string;
+    name: string;
+    color: string;
+    icon: string | null;
+  } | null;
   templateId: string | null;
   position: number;
   isPinned: boolean;
@@ -85,6 +98,7 @@ export interface CreateNoteInput {
   title?: string;
   icon?: string;
   folderId?: string;
+  categoryId?: string;
   templateId?: string;
 }
 
@@ -94,6 +108,7 @@ export interface UpdateNoteInput {
   icon?: string | null;
   coverImage?: string | null;
   folderId?: string | null;
+  categoryId?: string | null;
   position?: number;
   isPinned?: boolean;
   isArchived?: boolean;

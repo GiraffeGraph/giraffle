@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { getAllFoldersAction } from "@/server/api/folders";
+import { getNoteCategoriesAction } from "@/server/api/categories";
 import { getNoteAction, getBacklinksAction } from "@/server/api/notes";
 import { getNoteProposalsAction } from "@/server/api/proposals";
 import { NoteEditorPage } from "@/components/notes/NoteEditorPage";
@@ -10,11 +11,12 @@ interface NotePageProps {
 
 export default async function NotePage({ params }: NotePageProps) {
   const { noteId } = await params;
-  const [note, backlinks, folders, proposals] = await Promise.all([
+  const [note, backlinks, folders, proposals, categories] = await Promise.all([
     getNoteAction(noteId),
     getBacklinksAction(noteId),
     getAllFoldersAction(),
     getNoteProposalsAction(noteId),
+    getNoteCategoriesAction(),
   ]);
 
   if (!note) {
@@ -27,6 +29,7 @@ export default async function NotePage({ params }: NotePageProps) {
     slug: note.slug,
     icon: note.icon,
     folderId: note.folderId,
+    category: note.category ?? null,
     isPinned: note.isPinned,
     isPublished: note.isPublished,
     tags: note.tags ?? [],
@@ -37,6 +40,7 @@ export default async function NotePage({ params }: NotePageProps) {
     <NoteEditorPage
       note={noteData}
       folders={folders}
+      categories={categories}
       backlinks={backlinks}
       proposals={proposals.map((proposal) => ({
         id: proposal.id,

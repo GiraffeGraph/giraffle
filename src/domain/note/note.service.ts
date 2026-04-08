@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { extractAndSaveLinks, resolveLinksForNote } from "@/domain/link/link.service";
 import { normalizeWikilinkTarget } from "@/domain/link/wikilink.parser";
 import { getAllFolders } from "@/domain/folder/folder.service";
+import { normalizeNoteCategoryColor } from "@/domain/category/category.types";
 import { recordOperation } from "@/domain/sync/operation-log.service";
 import { syncNoteTags } from "@/domain/tag/tag.service";
 import { slugify } from "@/lib/utils";
@@ -53,6 +54,17 @@ async function assertOwnedFolder(folderId: string, userId: string) {
   }
 }
 
+async function assertOwnedCategory(categoryId: string, userId: string) {
+  const category = await db.noteCategory.findFirst({
+    where: { id: categoryId, userId },
+    select: { id: true },
+  });
+
+  if (!category) {
+    throw new Error("Category not found");
+  }
+}
+
 /**
  * Create a new note with optional initial content.
  */
@@ -62,6 +74,10 @@ export async function createNote(
 ): Promise<string> {
   if (input.folderId) {
     await assertOwnedFolder(input.folderId, userId);
+  }
+
+  if (input.categoryId) {
+    await assertOwnedCategory(input.categoryId, userId);
   }
 
   const nextTitle = input.title ?? DEFAULT_NOTE_TITLE;
@@ -77,6 +93,7 @@ export async function createNote(
         slug,
         icon: input.icon,
         folderId: input.folderId,
+        categoryId: input.categoryId,
         templateId: input.templateId,
         position: nextPosition,
         userId,
@@ -122,6 +139,14 @@ export async function getNote(userId: string, noteId: string) {
           tag: true,
         },
       },
+      category: {
+        select: {
+          id: true,
+          name: true,
+          color: true,
+          icon: true,
+        },
+      },
     },
   });
 
@@ -132,6 +157,14 @@ export async function getNote(userId: string, noteId: string) {
   return {
     ...note,
     tags: note.tags.map((noteTag) => noteTag.tag.name),
+    category: note.category
+      ? {
+          id: note.category.id,
+          name: note.category.name,
+          color: normalizeNoteCategoryColor(note.category.color),
+          icon: note.category.icon,
+        }
+      : null,
     document: persistedBlocksToDocument(
       note.blocks.map((block) => ({
         id: block.id,
@@ -259,6 +292,10 @@ export async function updateNote(
 
   if (typeof input.folderId === "string") {
     await assertOwnedFolder(input.folderId, userId);
+  }
+
+  if (typeof input.categoryId === "string") {
+    await assertOwnedCategory(input.categoryId, userId);
   }
 
   const updateData: UpdateNoteInput = { ...input };
@@ -437,6 +474,14 @@ export async function getPublicNote(noteId: string) {
           tag: true,
         },
       },
+      category: {
+        select: {
+          id: true,
+          name: true,
+          color: true,
+          icon: true,
+        },
+      },
     },
   });
 
@@ -447,6 +492,14 @@ export async function getPublicNote(noteId: string) {
   return {
     ...note,
     tags: note.tags.map((noteTag) => noteTag.tag.name),
+    category: note.category
+      ? {
+          id: note.category.id,
+          name: note.category.name,
+          color: normalizeNoteCategoryColor(note.category.color),
+          icon: note.category.icon,
+        }
+      : null,
     document: persistedBlocksToDocument(
       note.blocks.map((block) => ({
         id: block.id,
@@ -483,6 +536,14 @@ export async function getPublicNoteBySlug(slug: string) {
           parentId: true,
         },
       },
+      category: {
+        select: {
+          id: true,
+          name: true,
+          color: true,
+          icon: true,
+        },
+      },
     },
   }).then((note) => {
     if (!note) {
@@ -492,6 +553,14 @@ export async function getPublicNoteBySlug(slug: string) {
     return {
       ...note,
       tags: note.tags.map((noteTag) => noteTag.tag.name),
+      category: note.category
+        ? {
+            id: note.category.id,
+            name: note.category.name,
+            color: normalizeNoteCategoryColor(note.category.color),
+            icon: note.category.icon,
+          }
+        : null,
       document: persistedBlocksToDocument(
         note.blocks.map((block) => ({
           id: block.id,

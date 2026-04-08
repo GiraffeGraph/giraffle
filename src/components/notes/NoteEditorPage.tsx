@@ -1,6 +1,9 @@
 "use client";
 
-import type { MouseEvent as ReactMouseEvent } from "react";
+import type {
+  CSSProperties,
+  MouseEvent as ReactMouseEvent,
+} from "react";
 import {
   useCallback,
   useEffect,
@@ -17,9 +20,15 @@ import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 import { Button } from "@/components/ui/Button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import { TopbarPathNavigator } from "@/components/ui/TopbarPathNavigator";
+import {
+  NOTE_CATEGORY_COLOR_OPTIONS,
+  getNoteCategoryColorTokens,
+  type NoteCategorySummary,
+} from "@/domain/category/category.types";
 import type { BacklinkResult } from "@/domain/link/link.types";
 import { DEFAULT_NOTE_TITLE } from "@/domain/note/note.types";
 import type { NoteReference, TiptapDocument } from "@/domain/note/note.types";
+import { TEMPLATE_CATEGORIES } from "@/domain/template/template.types";
 import {
   moveNoteAction,
   archiveNoteAction,
@@ -30,11 +39,14 @@ import {
   saveNoteContentAction,
   searchNotesByTitleAction,
 } from "@/server/api/notes";
+import { createNoteCategoryAction } from "@/server/api/categories";
 import {
   applyProposalAction,
   rejectProposalAction,
 } from "@/server/api/proposals";
 import { createMapFromNoteAction } from "@/server/api/canvas";
+import { createTemplateFromNoteAction } from "@/server/api/templates";
+import { getTemplateCategoryLabel } from "@/lib/template-category";
 import { queueLocalMutation, resolveLocalMutation } from "@/lib/local-sync";
 
 interface NoteEditorPageProps {
@@ -44,6 +56,7 @@ interface NoteEditorPageProps {
     slug: string | null;
     icon: string | null;
     folderId: string | null;
+    category: NoteCategorySummary | null;
     isPinned: boolean;
     isPublished: boolean;
     tags: string[];
@@ -54,6 +67,7 @@ interface NoteEditorPageProps {
     name: string;
     parentId: string | null;
   }>;
+  categories: NoteCategorySummary[];
   backlinks: BacklinkResult[];
   proposals: Array<{
     id: string;
@@ -64,15 +78,23 @@ interface NoteEditorPageProps {
   }>;
 }
 
+type SaveStatus = "saved" | "saving" | "pending";
+
 export function NoteEditorPage({
   note,
   folders,
+  categories,
   backlinks,
   proposals,
 }: NoteEditorPageProps) {
   const [title, setTitle] = useState(note.title);
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(
     note.folderId
+  );
+  const [availableCategories, setAvailableCategories] =
+    useState<NoteCategorySummary[]>(categories);
+  const [currentCategoryId, setCurrentCategoryId] = useState<string | null>(
+    note.category?.id ?? null
   );
   const [slug, setSlug] = useState(note.slug);
   const [isPinned, setIsPinned] = useState(note.isPinned);
@@ -82,14 +104,36 @@ export function NoteEditorPage({
     y: number;
   } | null>(null);
   const [isExportPending, startExportTransition] = useTransition();
+  const [isCategoryPending, startCategoryTransition] = useTransition();
+  const [isTemplatePending, startTemplateTransition] = useTransition();
   const [isFolderMenuOpen, setIsFolderMenuOpen] = useState(false);
   const [isMetaPanelOpen, setIsMetaPanelOpen] = useState(false);
+  const [isCreateCategoryOpen, setIsCreateCategoryOpen] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [newCategoryColor, setNewCategoryColor] = useState<
+    (typeof NOTE_CATEGORY_COLOR_OPTIONS)[number]
+  >("slate");
+  const [newCategoryIcon, setNewCategoryIcon] = useState("");
+  const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
+  const [templateName, setTemplateName] = useState(note.title);
+  const [templateDescription, setTemplateDescription] = useState("");
+  const [templateCategory, setTemplateCategory] = useState<string>("custom");
+  const [templateIcon, setTemplateIcon] = useState(note.icon ?? "");
   const [noteIcon, setNoteIcon] = useState<string | null>(note.icon);
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
   const [iconPickerPosition, setIconPickerPosition] = useState<{
     x: number;
     y: number;
   } | null>(null);
   const folderMenuRef = useRef<HTMLDivElement | null>(null);
+  const titleSaveTimeoutRef = useRef<number | null>(null);
+  const pendingTitleRef = useRef(note.title);
+  const persistedTitleRef = useRef(note.title);
+  const titleSaveQueuedRef = useRef(false);
+  const titleSaveInFlightRef = useRef(false);
+  const queuedDocumentRef = useRef<TiptapDocument | null>(null);
+  const documentSaveQueuedRef = useRef(false);
+  const documentSaveInFlightRef = useRef(false);
   const router = useRouter();
 
   const folderOptions = useMemo(
@@ -108,7 +152,56 @@ export function NoteEditorPage({
     [currentFolderId, folderOptions]
   );
 
+  const currentCategory = useMemo(
+    () =>
+      availableCategories.find((category) => category.id === currentCategoryId) ??
+      null,
+    [availableCategories, currentCategoryId]
+  );
+  const currentCategoryTokens = useMemo(
+    () => getNoteCategoryColorTokens(currentCategory?.color),
+    [currentCategory?.color]
+  );
+
   const effectiveTitle = title.trim() || DEFAULT_NOTE_TITLE;
+  const saveStatusMeta = useMemo(() => {
+    switch (saveStatus) {
+      case "saving":
+        return {
+          label: "Kaydediliyor...",
+          color: "var(--md-sys-color-primary)",
+        };
+      case "pending":
+        return {
+          label: "Kaydetme bekliyor",
+          color: "var(--md-sys-color-tertiary)",
+        };
+      default:
+        return {
+          label: "Kaydedildi",
+          color: "var(--md-sys-color-on-surface-variant)",
+        };
+    }
+  }, [saveStatus]);
+
+  const normalizeNoteTitle = useCallback(
+    (value: string) => value.trim() || DEFAULT_NOTE_TITLE,
+    []
+  );
+
+  const refreshSaveStatus = useCallback(() => {
+    if (titleSaveInFlightRef.current || documentSaveInFlightRef.current) {
+      setSaveStatus("saving");
+      return;
+    }
+
+    if (titleSaveQueuedRef.current || documentSaveQueuedRef.current) {
+      setSaveStatus("pending");
+      return;
+    }
+
+    setSaveStatus("saved");
+  }, []);
 
   useEffect(() => {
     if (!isFolderMenuOpen) {
@@ -136,20 +229,89 @@ export function NoteEditorPage({
     };
   }, [isFolderMenuOpen]);
 
+  useEffect(() => {
+    return () => {
+      if (titleSaveTimeoutRef.current !== null) {
+        window.clearTimeout(titleSaveTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const flushTitleSave = useCallback(async () => {
+    if (titleSaveInFlightRef.current) {
+      titleSaveQueuedRef.current = true;
+      refreshSaveStatus();
+      return;
+    }
+
+    titleSaveInFlightRef.current = true;
+    refreshSaveStatus();
+
+    try {
+      while (true) {
+        const normalizedTitle = normalizeNoteTitle(pendingTitleRef.current);
+
+        if (normalizedTitle === persistedTitleRef.current) {
+          titleSaveQueuedRef.current = false;
+          break;
+        }
+
+        titleSaveQueuedRef.current = false;
+        refreshSaveStatus();
+
+        const mutationId = queueLocalMutation({
+          entityType: "note",
+          entityId: note.id,
+          actionType: "update-title",
+          payload: { title: normalizedTitle },
+        });
+
+        try {
+          await updateNoteAction(note.id, { title: normalizedTitle });
+          persistedTitleRef.current = normalizedTitle;
+        } finally {
+          resolveLocalMutation(mutationId);
+        }
+
+        if (normalizeNoteTitle(pendingTitleRef.current) === persistedTitleRef.current) {
+          break;
+        }
+
+        titleSaveQueuedRef.current = true;
+      }
+    } finally {
+      titleSaveInFlightRef.current = false;
+      refreshSaveStatus();
+    }
+  }, [normalizeNoteTitle, note.id, refreshSaveStatus]);
+
   const handleTitleChange = useCallback(
-    async (newTitle: string) => {
+    (newTitle: string) => {
       setTitle(newTitle);
-      const mutationId = queueLocalMutation({
-        entityType: "note",
-        entityId: note.id,
-        actionType: "update-title",
-        payload: { title: newTitle || DEFAULT_NOTE_TITLE },
-      });
-      await updateNoteAction(note.id, { title: newTitle || DEFAULT_NOTE_TITLE });
-      resolveLocalMutation(mutationId);
+      pendingTitleRef.current = newTitle;
+      titleSaveQueuedRef.current = true;
+      refreshSaveStatus();
+
+      if (titleSaveTimeoutRef.current !== null) {
+        window.clearTimeout(titleSaveTimeoutRef.current);
+      }
+
+      titleSaveTimeoutRef.current = window.setTimeout(() => {
+        titleSaveTimeoutRef.current = null;
+        void flushTitleSave();
+      }, 450);
     },
-    [note.id]
+    [flushTitleSave, refreshSaveStatus]
   );
+
+  const handleTitleBlur = useCallback(() => {
+    if (titleSaveTimeoutRef.current !== null) {
+      window.clearTimeout(titleSaveTimeoutRef.current);
+      titleSaveTimeoutRef.current = null;
+    }
+
+    void flushTitleSave();
+  }, [flushTitleSave]);
 
   const handleFolderChange = useCallback(
     async (nextFolderId: string) => {
@@ -163,6 +325,26 @@ export function NoteEditorPage({
       });
       await updateNoteAction(note.id, { folderId: normalizedFolderId });
       resolveLocalMutation(mutationId);
+    },
+    [note.id]
+  );
+
+  const handleCategoryChange = useCallback(
+    async (nextCategoryId: string | null) => {
+      const normalizedCategoryId = nextCategoryId || null;
+      setCurrentCategoryId(normalizedCategoryId);
+      const mutationId = queueLocalMutation({
+        entityType: "note",
+        entityId: note.id,
+        actionType: "set-category",
+        payload: { categoryId: normalizedCategoryId },
+      });
+
+      try {
+        await updateNoteAction(note.id, { categoryId: normalizedCategoryId });
+      } finally {
+        resolveLocalMutation(mutationId);
+      }
     },
     [note.id]
   );
@@ -286,20 +468,126 @@ export function NoteEditorPage({
     }
   }, [note.id, router]);
 
-  const handleSave = useCallback(
-    async (content: TiptapDocument) => {
+  const handleOpenTemplateDialog = useCallback(() => {
+    setTemplateName(effectiveTitle);
+    setTemplateDescription("");
+    setTemplateCategory("custom");
+    setTemplateIcon(noteIcon ?? currentCategory?.icon ?? "");
+    setIsTemplateDialogOpen(true);
+  }, [currentCategory?.icon, effectiveTitle, noteIcon]);
+
+  const handleCreateCategory = useCallback(() => {
+    const normalizedName = newCategoryName.trim();
+
+    if (!normalizedName) {
+      return;
+    }
+
+    startCategoryTransition(async () => {
+      const category = await createNoteCategoryAction({
+        name: normalizedName,
+        color: newCategoryColor,
+        icon: newCategoryIcon.trim() || null,
+      });
+
+      setAvailableCategories((currentValue) =>
+        sortCategories([
+          ...currentValue.filter((item) => item.id !== category.id),
+          category,
+        ])
+      );
+      setCurrentCategoryId(category.id);
+      setNewCategoryName("");
+      setNewCategoryColor("slate");
+      setNewCategoryIcon("");
+      setIsCreateCategoryOpen(false);
+
       const mutationId = queueLocalMutation({
         entityType: "note",
         entityId: note.id,
-        actionType: "save-document",
-        payload: {
-          blockCount: content.content.length,
-        },
+        actionType: "set-category",
+        payload: { categoryId: category.id },
       });
-      await saveNoteContentAction(note.id, content);
-      resolveLocalMutation(mutationId);
+
+      try {
+        await updateNoteAction(note.id, { categoryId: category.id });
+      } finally {
+        resolveLocalMutation(mutationId);
+      }
+    });
+  }, [newCategoryColor, newCategoryIcon, newCategoryName, note.id]);
+
+  const handleSaveTemplate = useCallback(() => {
+    startTemplateTransition(async () => {
+      const template = await createTemplateFromNoteAction(note.id, {
+        name: templateName.trim() || effectiveTitle,
+        description: templateDescription.trim() || null,
+        category: templateCategory,
+        icon: templateIcon.trim() || null,
+      });
+
+      setIsTemplateDialogOpen(false);
+      router.push(`/templates?selected=${template.id}`);
+    });
+  }, [
+    effectiveTitle,
+    note.id,
+    router,
+    templateCategory,
+    templateDescription,
+    templateIcon,
+    templateName,
+  ]);
+
+  const flushDocumentSave = useCallback(async () => {
+    if (documentSaveInFlightRef.current) {
+      documentSaveQueuedRef.current = true;
+      refreshSaveStatus();
+      return;
+    }
+
+    documentSaveInFlightRef.current = true;
+    refreshSaveStatus();
+
+    try {
+      while (queuedDocumentRef.current) {
+        const nextDocument = queuedDocumentRef.current;
+        queuedDocumentRef.current = null;
+        documentSaveQueuedRef.current = false;
+        refreshSaveStatus();
+
+        const mutationId = queueLocalMutation({
+          entityType: "note",
+          entityId: note.id,
+          actionType: "save-document",
+          payload: {
+            blockCount: nextDocument.content.length,
+          },
+        });
+
+        try {
+          await saveNoteContentAction(note.id, nextDocument);
+        } finally {
+          resolveLocalMutation(mutationId);
+        }
+      }
+    } finally {
+      documentSaveInFlightRef.current = false;
+      refreshSaveStatus();
+    }
+  }, [note.id, refreshSaveStatus]);
+
+  const handleSave = useCallback(
+    (content: TiptapDocument) => {
+      queuedDocumentRef.current = content;
+      documentSaveQueuedRef.current = true;
+      refreshSaveStatus();
+
+      if (!documentSaveInFlightRef.current) {
+        void flushDocumentSave();
+      }
     },
-    [note.id]
+    [flushDocumentSave, refreshSaveStatus]
   );
 
   const handleSearchWikilinks = useCallback(async (query: string) => {
@@ -564,7 +852,16 @@ export function NoteEditorPage({
         </div>
 
         {/* Actions */}
-        <div style={{ display: "flex", alignItems: "center", gap: "4px", flexShrink: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
+          <span
+            style={{
+              fontSize: "11px",
+              color: saveStatusMeta.color,
+              whiteSpace: "nowrap",
+            }}
+          >
+            {saveStatusMeta.label}
+          </span>
           {(
             [
               { icon: "share", label: isPublished ? "Yayımdan kaldır" : "Yayımla", onClick: handlePublishToggle, active: isPublished, disabled: false, danger: false },
@@ -615,13 +912,35 @@ export function NoteEditorPage({
           <input
             value={title}
             onChange={(event) => handleTitleChange(event.target.value)}
+            onBlur={handleTitleBlur}
             placeholder={DEFAULT_NOTE_TITLE}
             spellCheck={false}
             style={{ fontSize: "var(--md-sys-typescale-display-small-size)", fontWeight: "var(--md-sys-typescale-display-small-weight)", color: "var(--md-sys-color-on-background)", border: "none", background: "transparent", outline: "none", width: "100%", padding: 0 }}
           />
 
-          {note.tags.length > 0 ? (
+          {currentCategory || note.tags.length > 0 ? (
             <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+              {currentCategory ? (
+                <button
+                  type="button"
+                  style={{
+                    background: currentCategoryTokens.background,
+                    color: currentCategoryTokens.foreground,
+                    border: "none",
+                    padding: "2px 10px",
+                    borderRadius: "999px",
+                    fontSize: "12px",
+                    cursor: "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                  }}
+                  onClick={() => setIsMetaPanelOpen(true)}
+                >
+                  <span aria-hidden="true">{currentCategory.icon ?? "•"}</span>
+                  <span>{currentCategory.name}</span>
+                </button>
+              ) : null}
               {note.tags.map((tag) => (
                 <button
                   key={tag}
@@ -638,6 +957,198 @@ export function NoteEditorPage({
           {isMetaPanelOpen ? (
             <Card variant="outlined" style={{ marginTop: "8px" }}>
               <CardContent>
+                <div
+                  style={{
+                    display: "grid",
+                    gap: "12px",
+                    paddingBottom: "16px",
+                    marginBottom: "16px",
+                    borderBottom:
+                      "1px solid var(--md-sys-color-outline-variant)",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      gap: "12px",
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <div>
+                      <div
+                        style={{
+                          fontSize:
+                            "var(--md-sys-typescale-title-small-size)",
+                          fontWeight: 600,
+                          color: "var(--md-sys-color-on-surface)",
+                        }}
+                      >
+                        Kategori
+                      </div>
+                      <div
+                        style={{
+                          fontSize:
+                            "var(--md-sys-typescale-body-small-size)",
+                          color: "var(--md-sys-color-on-surface-variant)",
+                        }}
+                      >
+                        Notu taglerden ayri bir ana gruba yerlestir.
+                      </div>
+                    </div>
+                    <Button
+                      variant="text"
+                      onClick={() =>
+                        setIsCreateCategoryOpen((currentValue) => !currentValue)
+                      }
+                    >
+                      {isCreateCategoryOpen ? "Kapat" : "Yeni kategori"}
+                    </Button>
+                  </div>
+
+                  <div
+                    style={{
+                      display: "flex",
+                      flexWrap: "wrap",
+                      gap: "8px",
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => void handleCategoryChange(null)}
+                      disabled={isCategoryPending}
+                      style={buildCategoryChipStyle(
+                        currentCategoryId === null,
+                        {
+                          background:
+                            "var(--md-sys-color-surface-container-highest)",
+                          foreground: "var(--md-sys-color-on-surface)",
+                        }
+                      )}
+                    >
+                      Kategori yok
+                    </button>
+                    {availableCategories.map((category) => (
+                      <button
+                        key={category.id}
+                        type="button"
+                        onClick={() => void handleCategoryChange(category.id)}
+                        disabled={isCategoryPending}
+                        style={buildCategoryChipStyle(
+                          category.id === currentCategoryId,
+                          getNoteCategoryColorTokens(category.color)
+                        )}
+                      >
+                        <span aria-hidden="true">{category.icon ?? "•"}</span>
+                        <span>{category.name}</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  {isCreateCategoryOpen ? (
+                    <div
+                      style={{
+                        display: "grid",
+                        gap: "12px",
+                        padding: "12px",
+                        borderRadius: "12px",
+                        background:
+                          "var(--md-sys-color-surface-container-low)",
+                      }}
+                    >
+                      <div
+                        className="md-text-field md-text-field--outlined md-text-field--has-value"
+                        style={{ width: "100%" }}
+                      >
+                        <div className="md-text-field-container">
+                          <input
+                            className="md-text-field-input"
+                            value={newCategoryName}
+                            onChange={(event) =>
+                              setNewCategoryName(event.target.value)
+                            }
+                            placeholder=" "
+                          />
+                          <span className="md-text-field-label">
+                            Kategori adi
+                          </span>
+                        </div>
+                      </div>
+
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "minmax(0, 1fr) 160px",
+                          gap: "12px",
+                        }}
+                      >
+                        <div
+                          className="md-text-field md-text-field--outlined md-text-field--has-value"
+                          style={{ width: "100%" }}
+                        >
+                          <div className="md-text-field-container">
+                            <input
+                              className="md-text-field-input"
+                              value={newCategoryIcon}
+                              onChange={(event) =>
+                                setNewCategoryIcon(event.target.value)
+                              }
+                              placeholder=" "
+                            />
+                            <span className="md-text-field-label">
+                              Ikon (opsiyonel)
+                            </span>
+                          </div>
+                        </div>
+
+                        <label
+                          style={{
+                            display: "grid",
+                            gap: "4px",
+                            fontSize:
+                              "var(--md-sys-typescale-label-medium-size)",
+                            color: "var(--md-sys-color-on-surface-variant)",
+                          }}
+                        >
+                          <span>Renk</span>
+                          <select
+                            value={newCategoryColor}
+                            onChange={(event) =>
+                              setNewCategoryColor(
+                                event.target.value as (typeof NOTE_CATEGORY_COLOR_OPTIONS)[number]
+                              )
+                            }
+                            style={buildSelectStyle()}
+                          >
+                            {NOTE_CATEGORY_COLOR_OPTIONS.map((colorOption) => (
+                              <option key={colorOption} value={colorOption}>
+                                {colorOption}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      </div>
+
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "flex-end",
+                          gap: "8px",
+                        }}
+                      >
+                        <Button
+                          variant="filled"
+                          disabled={!newCategoryName.trim() || isCategoryPending}
+                          onClick={handleCreateCategory}
+                        >
+                          {isCategoryPending ? "Olusturuluyor..." : "Kategori olustur"}
+                        </Button>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+
                 <div className="md-text-field md-text-field--outlined md-text-field--has-value" style={{ width: "100%" }}>
                   <div className="md-text-field-container">
                     <input
@@ -656,6 +1167,47 @@ export function NoteEditorPage({
                     ? `Yayın yolu: /published/${slug}`
                     : "Yayımlandığında otomatik bir adres oluşturulur."}
                 </p>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: "12px",
+                    marginTop: "16px",
+                    paddingTop: "16px",
+                    borderTop:
+                      "1px solid var(--md-sys-color-outline-variant)",
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <div>
+                    <div
+                      style={{
+                        fontSize: "var(--md-sys-typescale-title-small-size)",
+                        fontWeight: 600,
+                        color: "var(--md-sys-color-on-surface)",
+                      }}
+                    >
+                      Template akisi
+                    </div>
+                    <div
+                      style={{
+                        fontSize:
+                          "var(--md-sys-typescale-body-small-size)",
+                        color: "var(--md-sys-color-on-surface-variant)",
+                      }}
+                    >
+                      Bu notu tekrar kullanilabilir bir baslangic olarak kaydet.
+                    </div>
+                  </div>
+                  <Button
+                    variant="tonal"
+                    onClick={handleOpenTemplateDialog}
+                    disabled={isTemplatePending}
+                  >
+                    Template olarak kaydet
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ) : null}
@@ -757,6 +1309,111 @@ export function NoteEditorPage({
         </div>
       ) : null}
 
+      {isTemplateDialogOpen ? (
+        <div
+          className="md-dialog-scrim"
+          onClick={() => setIsTemplateDialogOpen(false)}
+        >
+          <div
+            className="md-dialog"
+            style={{ maxWidth: "560px", width: "90vw" }}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h2 className="md-dialog-headline">Template olarak kaydet</h2>
+            <div className="md-dialog-content" style={{ display: "grid", gap: "16px" }}>
+              <div className="md-text-field md-text-field--outlined md-text-field--has-value">
+                <div className="md-text-field-container">
+                  <input
+                    className="md-text-field-input"
+                    value={templateName}
+                    onChange={(event) => setTemplateName(event.target.value)}
+                    placeholder=" "
+                  />
+                  <span className="md-text-field-label">Template adi</span>
+                </div>
+              </div>
+
+              <div className="md-text-field md-text-field--outlined md-text-field--has-value">
+                <div
+                  className="md-text-field-container"
+                  style={{ height: "auto", minHeight: "88px", padding: "12px 16px" }}
+                >
+                  <textarea
+                    className="md-text-field-input"
+                    value={templateDescription}
+                    onChange={(event) =>
+                      setTemplateDescription(event.target.value)
+                    }
+                    rows={3}
+                    placeholder=" "
+                    style={{ resize: "vertical", paddingTop: 0 }}
+                  />
+                  <span className="md-text-field-label">Aciklama</span>
+                </div>
+              </div>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "minmax(0, 1fr) 180px",
+                  gap: "12px",
+                }}
+              >
+                <label
+                  style={{
+                    display: "grid",
+                    gap: "4px",
+                    fontSize: "var(--md-sys-typescale-label-medium-size)",
+                    color: "var(--md-sys-color-on-surface-variant)",
+                  }}
+                >
+                  <span>Template kategorisi</span>
+                  <select
+                    value={templateCategory}
+                    onChange={(event) => setTemplateCategory(event.target.value)}
+                    style={buildSelectStyle()}
+                  >
+                    {TEMPLATE_CATEGORIES.map((category) => (
+                      <option key={category} value={category}>
+                        {getTemplateCategoryLabel(category)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <div className="md-text-field md-text-field--outlined md-text-field--has-value">
+                  <div className="md-text-field-container">
+                    <input
+                      className="md-text-field-input"
+                      value={templateIcon}
+                      onChange={(event) => setTemplateIcon(event.target.value)}
+                      placeholder=" "
+                    />
+                    <span className="md-text-field-label">Ikon</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="md-dialog-actions">
+              <Button
+                variant="text"
+                onClick={() => setIsTemplateDialogOpen(false)}
+              >
+                Vazgec
+              </Button>
+              <Button
+                variant="filled"
+                disabled={!templateName.trim() || isTemplatePending}
+                onClick={handleSaveTemplate}
+              >
+                {isTemplatePending ? "Kaydediliyor..." : "Template kaydet"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {iconPickerPosition ? (
         <SidebarIconPicker
           position={iconPickerPosition}
@@ -814,4 +1471,45 @@ function buildFolderLabel(
   }
 
   return labels.join(" / ");
+}
+
+function buildCategoryChipStyle(
+  isActive: boolean,
+  colors: { background: string; foreground: string }
+) {
+  return {
+    background: isActive
+      ? colors.background
+      : "var(--md-sys-color-surface-container-low)",
+    color: isActive
+      ? colors.foreground
+      : "var(--md-sys-color-on-surface-variant)",
+    border: "none",
+    padding: "6px 10px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    cursor: "pointer",
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "6px",
+    opacity: 1,
+  } satisfies CSSProperties;
+}
+
+function buildSelectStyle(): CSSProperties {
+  return {
+    width: "100%",
+    padding: "12px 16px",
+    borderRadius: "12px",
+    border: "1px solid var(--md-sys-color-outline)",
+    background: "transparent",
+    color: "var(--md-sys-color-on-surface)",
+    fontSize: "14px",
+  };
+}
+
+function sortCategories(categories: NoteCategorySummary[]) {
+  return [...categories].sort((left, right) =>
+    left.name.localeCompare(right.name, "tr")
+  );
 }

@@ -36,6 +36,7 @@ export interface SidebarTemplate {
   description: string | null;
   category: string;
   icon: string | null;
+  previewText?: string;
   variables: TemplateVariable[];
 }
 

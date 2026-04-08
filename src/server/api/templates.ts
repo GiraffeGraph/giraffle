@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import {
   applyTemplate,
   createTemplate,
+  createTemplateFromNote,
   deleteTemplate,
   getTemplate,
   getTemplates,
@@ -45,6 +46,25 @@ export async function createTemplateAction(input: {
   await requireAuthenticatedUser();
   const template = await createTemplate(input);
   revalidatePath("/templates");
+  return template;
+}
+
+export async function createTemplateFromNoteAction(
+  noteId: string,
+  input: {
+    name?: string;
+    description?: string | null;
+    category?: string;
+    icon?: string | null;
+  }
+) {
+  const { userId } = await requireAuthenticatedUser();
+  const template = await createTemplateFromNote(userId, noteId, input);
+
+  revalidatePath("/dashboard");
+  revalidatePath("/search");
+  revalidatePath("/templates");
+
   return template;
 }
 

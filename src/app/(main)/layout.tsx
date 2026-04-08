@@ -1,5 +1,6 @@
 import { Sidebar } from "@/components/sidebar/Sidebar";
 import { RightRail } from "@/components/right-rail/RightRail";
+import { buildTemplatePreviewFromBlocks } from "@/domain/template/template.preview";
 import { auth } from "@/lib/auth";
 import { getFoldersAction } from "@/server/api/folders";
 import { getNotesAction } from "@/server/api/notes";
@@ -35,6 +36,7 @@ export default async function MainLayout({
           description: template.description,
           category: template.category,
           icon: template.icon,
+          previewText: buildTemplatePreviewFromBlocks(template.blocks),
           variables: template.variables as Array<{
             name: string;
             label: string;

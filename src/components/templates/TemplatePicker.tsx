@@ -1,6 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  useTransition,
+} from "react";
 import { useRouter } from "next/navigation";
 import { applyTemplateAction } from "@/server/api/templates";
 import type { TemplateVariable } from "@/domain/template/template.types";
@@ -13,6 +19,7 @@ interface TemplateSummary {
   description: string | null;
   category: string;
   icon: string | null;
+  previewText?: string;
   variables: TemplateVariable[];
 }
 
@@ -37,12 +44,59 @@ export function TemplatePicker({
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(
     templates[0]?.id ?? null
   );
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [title, setTitle] = useState("");
-  const [variableValues, setVariableValues] = useState<Record<string, string>>({});
+  const [variableValues, setVariableValues] = useState<Record<string, string>>(
+    {}
+  );
+
+  const categoryOptions = useMemo(
+    () =>
+      Array.from(new Set(templates.map((template) => template.category))).sort(
+        (left, right) => left.localeCompare(right, "tr")
+      ),
+    [templates]
+  );
+
+  const filteredTemplates = useMemo(() => {
+    const normalizedQuery = searchQuery.trim().toLowerCase();
+
+    return templates.filter((template) => {
+      if (selectedCategory !== "all" && template.category !== selectedCategory) {
+        return false;
+      }
+
+      if (!normalizedQuery) {
+        return true;
+      }
+
+      return [
+        template.name,
+        template.description ?? "",
+        template.previewText ?? "",
+        getTemplateCategoryLabel(template.category),
+      ]
+        .join(" ")
+        .toLowerCase()
+        .includes(normalizedQuery);
+    });
+  }, [searchQuery, selectedCategory, templates]);
+
+  const activeTemplateId = useMemo(
+    () =>
+      filteredTemplates.some((template) => template.id === selectedTemplateId)
+        ? selectedTemplateId
+        : filteredTemplates[0]?.id ?? null,
+    [filteredTemplates, selectedTemplateId]
+  );
 
   const selectedTemplate = useMemo(
-    () => templates.find((template) => template.id === selectedTemplateId) ?? null,
-    [selectedTemplateId, templates]
+    () =>
+      filteredTemplates.find((template) => template.id === activeTemplateId) ??
+      templates.find((template) => template.id === activeTemplateId) ??
+      null,
+    [activeTemplateId, filteredTemplates, templates]
   );
 
   const openPicker = useCallback(() => {
@@ -92,11 +146,7 @@ export function TemplatePicker({
 
   return (
     <>
-      <Button
-        variant="tonal"
-        className={buttonClassName}
-        onClick={openPicker}
-      >
+      <Button variant="tonal" className={buttonClassName} onClick={openPicker}>
         {buttonLabel}
       </Button>
 
@@ -104,117 +154,366 @@ export function TemplatePicker({
         <div className="md-dialog-scrim" onClick={closePicker}>
           <div
             className="md-dialog"
-            style={{ maxWidth: "800px", width: "90vw", flexDirection: "row", padding: "0", overflow: "hidden", minHeight: "500px" }}
+            style={{
+              maxWidth: "960px",
+              width: "94vw",
+              minHeight: "560px",
+              padding: 0,
+              overflow: "hidden",
+            }}
             onClick={(event) => event.stopPropagation()}
           >
-            {/* Sidebar / List area */}
-            <div style={{ flex: "1", borderRight: "1px solid var(--md-sys-color-outline-variant)", display: "flex", flexDirection: "column", background: "var(--md-sys-color-surface-container-low)" }}>
-              <div style={{ padding: "24px 24px 16px" }}>
-                <h2 className="md-dialog-headline" style={{ marginBottom: "4px" }}>Şablondan Oluştur</h2>
-                <p style={{ margin: 0, color: "var(--md-sys-color-on-surface-variant)", fontSize: "var(--md-sys-typescale-body-medium-size)" }}>
-                  Boş sayfa yerine hazır bir yapıyla başla.
-                </p>
-              </div>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "320px minmax(0, 1fr)",
+                minHeight: "560px",
+              }}
+            >
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateRows: "auto auto auto minmax(0, 1fr)",
+                  gap: "12px",
+                  padding: "24px 18px 18px",
+                  borderRight: "1px solid var(--md-sys-color-outline-variant)",
+                  background: "var(--md-sys-color-surface-container-low)",
+                }}
+              >
+                <div>
+                  <h2 className="md-dialog-headline" style={{ marginBottom: "4px" }}>
+                    Sablondan not olustur
+                  </h2>
+                  <p
+                    style={{
+                      margin: 0,
+                      color: "var(--md-sys-color-on-surface-variant)",
+                      fontSize: "var(--md-sys-typescale-body-medium-size)",
+                    }}
+                  >
+                    Arama yap, kategoriye gore daralt ve onizlemeyi incele.
+                  </p>
+                </div>
 
-              <div style={{ flex: "1", overflowY: "auto", padding: "0 12px 16px 12px" }}>
-                <ul className="md-list">
-                  {templates.map((template) => {
-                    const isActive = template.id === selectedTemplate?.id;
-                    return (
-                      <li
-                        key={template.id}
-                        className={`md-list-item ${isActive ? "md-list-item--active" : ""}`}
-                        style={{ borderRadius: "var(--md-sys-shape-medium)", marginBottom: "4px" }}
-                        onClick={() => handleTemplateChange(template.id)}
-                      >
-                        <div className="md-list-item-start" style={{ fontSize: "24px" }}>
-                          {template.icon ?? getTemplateCategoryLabel(template.category).slice(0, 1).toUpperCase()}
-                        </div>
-                        <div className="md-list-item-content">
-                          <h3 className="md-list-item-headline">{template.name}</h3>
-                          <p className="md-list-item-supporting-text">
-                            {template.description ?? `${getTemplateCategoryLabel(template.category)} şablonu`}
-                          </p>
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            </div>
+                <div className="md-text-field md-text-field--outlined md-text-field--has-value">
+                  <div className="md-text-field-container">
+                    <input
+                      className="md-text-field-input"
+                      value={searchQuery}
+                      onChange={(event) => setSearchQuery(event.target.value)}
+                      placeholder=" "
+                    />
+                    <span className="md-text-field-label">Template ara</span>
+                  </div>
+                </div>
 
-            {/* Details / Form area */}
-            <div style={{ flex: "1.5", display: "flex", flexDirection: "column", padding: "24px", background: "var(--md-sys-color-surface)" }}>
-               <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "16px" }}>
-                 <Button variant="text" icon onClick={closePicker} leadingIcon="close" aria-label="Kapat" />
-               </div>
+                <label
+                  style={{
+                    display: "grid",
+                    gap: "4px",
+                    fontSize: "var(--md-sys-typescale-label-medium-size)",
+                    color: "var(--md-sys-color-on-surface-variant)",
+                  }}
+                >
+                  <span>Kategori</span>
+                  <select
+                    value={selectedCategory}
+                    onChange={(event) => setSelectedCategory(event.target.value)}
+                    style={buildTemplateSelectStyle()}
+                  >
+                    <option value="all">Tum kategoriler</option>
+                    {categoryOptions.map((category) => (
+                      <option key={category} value={category}>
+                        {getTemplateCategoryLabel(category)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
 
-              {selectedTemplate ? (
-                <div style={{ display: "flex", flexDirection: "column", gap: "24px", flex: "1" }}>
-                  <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
-                    <div style={{ width: "48px", height: "48px", borderRadius: "var(--md-sys-shape-medium)", background: "var(--md-sys-color-primary-container)", color: "var(--md-sys-color-on-primary-container)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "24px" }}>
-                      {selectedTemplate.icon ?? getTemplateCategoryLabel(selectedTemplate.category).slice(0, 1).toUpperCase()}
+                <div style={{ overflowY: "auto", paddingRight: "4px" }}>
+                  {filteredTemplates.length > 0 ? (
+                    <ul className="md-list">
+                      {filteredTemplates.map((template) => {
+                        const isActive = template.id === selectedTemplate?.id;
+                        return (
+                          <li
+                            key={template.id}
+                            className={`md-list-item ${isActive ? "md-list-item--active" : ""}`}
+                            style={{
+                              borderRadius: "12px",
+                              marginBottom: "6px",
+                            }}
+                            onClick={() => handleTemplateChange(template.id)}
+                          >
+                            <div
+                              className="md-list-item-start"
+                              style={{
+                                width: "36px",
+                                height: "36px",
+                                borderRadius: "10px",
+                                display: "grid",
+                                placeItems: "center",
+                                background: "var(--md-sys-color-surface-container-high)",
+                                fontSize: "18px",
+                              }}
+                            >
+                              {template.icon ??
+                                getTemplateCategoryLabel(template.category)
+                                  .slice(0, 1)
+                                  .toUpperCase()}
+                            </div>
+                            <div className="md-list-item-content">
+                              <h3 className="md-list-item-headline">{template.name}</h3>
+                              <p className="md-list-item-supporting-text">
+                                {template.description ??
+                                  `${getTemplateCategoryLabel(template.category)} template`}
+                              </p>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  ) : (
+                    <div
+                      style={{
+                        padding: "24px 12px",
+                        borderRadius: "14px",
+                        textAlign: "center",
+                        color: "var(--md-sys-color-on-surface-variant)",
+                        background: "var(--md-sys-color-surface)",
+                      }}
+                    >
+                      Filtrelere uyan template bulunamadi.
                     </div>
+                  )}
+                </div>
+              </div>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateRows: "auto minmax(0, 1fr) auto",
+                  padding: "24px",
+                  gap: "20px",
+                  background: "var(--md-sys-color-surface)",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "flex-start",
+                    gap: "16px",
+                  }}
+                >
+                  <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
+                    <div
+                      style={{
+                        width: "52px",
+                        height: "52px",
+                        borderRadius: "16px",
+                        background: "var(--md-sys-color-primary-container)",
+                        color: "var(--md-sys-color-on-primary-container)",
+                        display: "grid",
+                        placeItems: "center",
+                        fontSize: "24px",
+                        flexShrink: 0,
+                      }}
+                    >
+                      {selectedTemplate?.icon ??
+                        (selectedTemplate
+                          ? getTemplateCategoryLabel(selectedTemplate.category)
+                              .slice(0, 1)
+                              .toUpperCase()
+                          : "T")}
+                    </div>
+
                     <div>
-                        <h3 style={{ margin: "0", color: "var(--md-sys-color-on-surface)", fontSize: "var(--md-sys-typescale-title-large-size)" }}>{selectedTemplate.name}</h3>
-                        <p style={{ margin: "4px 0 0 0", color: "var(--md-sys-color-on-surface-variant)", fontSize: "var(--md-sys-typescale-body-medium-size)" }}>
-                          {selectedTemplate.description ?? `${getTemplateCategoryLabel(selectedTemplate.category)} şablonu`}
-                        </p>
+                      <h3
+                        style={{
+                          margin: 0,
+                          color: "var(--md-sys-color-on-surface)",
+                          fontSize: "var(--md-sys-typescale-title-large-size)",
+                        }}
+                      >
+                        {selectedTemplate?.name ?? "Template sec"}
+                      </h3>
+                      <p
+                        style={{
+                          margin: "4px 0 0 0",
+                          color: "var(--md-sys-color-on-surface-variant)",
+                          fontSize: "var(--md-sys-typescale-body-medium-size)",
+                        }}
+                      >
+                        {selectedTemplate
+                          ? selectedTemplate.description ??
+                            `${getTemplateCategoryLabel(selectedTemplate.category)} template`
+                          : "Soldaki listeden bir template sec."}
+                      </p>
                     </div>
                   </div>
 
-                  <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                    {/* Native Input replaced with Outlined Text Field pattern */}
-                    <div className="md-text-field md-text-field--outlined">
-                      <div className="md-text-field-container">
-                        <input
-                          className="md-text-field-input"
-                          placeholder=" "
-                          value={title}
-                          onChange={(e) => setTitle(e.target.value)}
-                        />
-                        <span className="md-text-field-label">Not başlığı (opsiyonel)</span>
+                  <Button
+                    variant="text"
+                    icon
+                    onClick={closePicker}
+                    leadingIcon="close"
+                    aria-label="Kapat"
+                  />
+                </div>
+
+                {selectedTemplate ? (
+                  <div
+                    style={{
+                      display: "grid",
+                      gap: "20px",
+                      alignContent: "start",
+                      overflowY: "auto",
+                      paddingRight: "4px",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "grid",
+                        gap: "8px",
+                        padding: "16px",
+                        borderRadius: "16px",
+                        background: "var(--md-sys-color-surface-container-low)",
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: "var(--md-sys-typescale-label-medium-size)",
+                          color: "var(--md-sys-color-on-surface-variant)",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.04em",
+                        }}
+                      >
+                        Onizleme
+                      </div>
+                      <div
+                        style={{
+                          color: "var(--md-sys-color-on-surface)",
+                          lineHeight: 1.7,
+                          whiteSpace: "pre-wrap",
+                        }}
+                      >
+                        {selectedTemplate.previewText ??
+                          selectedTemplate.description ??
+                          "Bu template icin onizleme yok."}
                       </div>
                     </div>
 
-                    {selectedTemplate.variables.map((variable) => (
-                       <div key={variable.name} className="md-text-field md-text-field--outlined">
-                         <div className="md-text-field-container">
-                           <input
-                             className="md-text-field-input"
-                             placeholder=" "
-                             value={variableValues[variable.name] ?? ""}
-                             onChange={(e) =>
-                               setVariableValues((currentValue) => ({
-                                 ...currentValue,
-                                 [variable.name]: e.target.value,
-                               }))
-                             }
-                           />
-                           <span className="md-text-field-label">{variable.label}</span>
-                         </div>
-                       </div>
-                    ))}
-                  </div>
-
-                  <div className="md-dialog-actions" style={{ marginTop: "auto" }}>
-                    <Button variant="text" onClick={closePicker}>
-                      İptal
-                    </Button>
-                    <Button
-                      variant="filled"
-                      disabled={isPending}
-                      onClick={handleCreateNote}
+                    <div
+                      style={{
+                        display: "grid",
+                        gap: "16px",
+                      }}
                     >
-                      {isPending ? "Oluşturuluyor..." : "Not Oluştur"}
-                    </Button>
+                      <div className="md-text-field md-text-field--outlined md-text-field--has-value">
+                        <div className="md-text-field-container">
+                          <input
+                            className="md-text-field-input"
+                            placeholder=" "
+                            value={title}
+                            onChange={(event) => setTitle(event.target.value)}
+                          />
+                          <span className="md-text-field-label">
+                            Not basligi (opsiyonel)
+                          </span>
+                        </div>
+                      </div>
+
+                      {selectedTemplate.variables.length > 0 ? (
+                        <div style={{ display: "grid", gap: "12px" }}>
+                          {selectedTemplate.variables.map((variable) => (
+                            <div
+                              key={variable.name}
+                              className="md-text-field md-text-field--outlined md-text-field--has-value"
+                            >
+                              <div className="md-text-field-container">
+                                <input
+                                  className="md-text-field-input"
+                                  placeholder=" "
+                                  value={variableValues[variable.name] ?? ""}
+                                  onChange={(event) =>
+                                    setVariableValues((currentValue) => ({
+                                      ...currentValue,
+                                      [variable.name]: event.target.value,
+                                    }))
+                                  }
+                                />
+                                <span className="md-text-field-label">
+                                  {variable.label}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            padding: "12px 14px",
+                            borderRadius: "12px",
+                            background:
+                              "var(--md-sys-color-surface-container-low)",
+                            color: "var(--md-sys-color-on-surface-variant)",
+                          }}
+                        >
+                          <span className="material-symbols-outlined" aria-hidden="true">
+                            inventory_2
+                          </span>
+                          Bu template degisken istemiyor.
+                        </div>
+                      )}
+                    </div>
                   </div>
+                ) : (
+                  <div
+                    style={{
+                      display: "grid",
+                      placeItems: "center",
+                      borderRadius: "18px",
+                      background: "var(--md-sys-color-surface-container-low)",
+                      color: "var(--md-sys-color-on-surface-variant)",
+                    }}
+                  >
+                    Filtrelere uyan bir template sec.
+                  </div>
+                )}
+
+                <div className="md-dialog-actions" style={{ marginTop: "auto" }}>
+                  <Button variant="text" onClick={closePicker}>
+                    Vazgec
+                  </Button>
+                  <Button
+                    variant="filled"
+                    disabled={isPending || !selectedTemplate}
+                    onClick={handleCreateNote}
+                  >
+                    {isPending ? "Olusturuluyor..." : "Not olustur"}
+                  </Button>
                 </div>
-              ) : null}
+              </div>
             </div>
           </div>
         </div>
       ) : null}
     </>
   );
+}
+
+function buildTemplateSelectStyle() {
+  return {
+    width: "100%",
+    padding: "12px 16px",
+    borderRadius: "12px",
+    border: "1px solid var(--md-sys-color-outline)",
+    background: "transparent",
+    color: "var(--md-sys-color-on-surface)",
+    fontSize: "14px",
+  } as const;
 }
