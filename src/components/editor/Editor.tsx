@@ -2,8 +2,18 @@
 
 import type { Editor as TiptapEditor } from "@tiptap/core";
 import CodeBlock from "@tiptap/extension-code-block";
+import Color from "@tiptap/extension-color";
+import Highlight from "@tiptap/extension-highlight";
 import Image from "@tiptap/extension-image";
 import Placeholder from "@tiptap/extension-placeholder";
+import { Table } from "@tiptap/extension-table";
+import { TableCell } from "./extensions/table-cell";
+import { TableHeader } from "./extensions/table-header";
+import TableRow from "@tiptap/extension-table-row";
+import TaskItem from "@tiptap/extension-task-item";
+import TaskList from "@tiptap/extension-task-list";
+import TextAlign from "@tiptap/extension-text-align";
+import { TextStyle } from "@tiptap/extension-text-style";
 import { EditorContent, useEditor } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
 import StarterKit from "@tiptap/starter-kit";
@@ -22,58 +32,48 @@ import type {
   TiptapDocument,
 } from "@/domain/note/note.types";
 import { generateId } from "@/lib/utils";
+import { Button } from "@/components/ui/Button";
 import {
   AgentBlockNode,
   BlockIdExtension,
   CalloutNode,
   GhostHighlightPlugin,
-  TableBlockNode,
+  KanbanNode,
   ToggleNode,
   WikilinkMark,
   defaultSlashCommands,
   type SlashCommandItem,
 } from "./extensions";
+import { ColorPicker, type ColorPickerTab } from "./toolbar/ColorPicker";
 import { SlashCommandMenu } from "./toolbar/SlashCommandMenu";
+
+/* ─── State types ─────────────────────────────────────────────── */
 
 interface SlashMenuState {
   query: string;
-  range: {
-    from: number;
-    to: number;
-  };
-  position: {
-    top: number;
-    left: number;
-  };
+  range: { from: number; to: number };
+  position: { top: number; left: number };
 }
 
 interface WikilinkMenuState {
   query: string;
   target: string;
-  range: {
-    from: number;
-    to: number;
-  };
-  position: {
-    top: number;
-    left: number;
-  };
+  range: { from: number; to: number };
+  position: { top: number; left: number };
 }
 
 interface WikilinkMenuItem {
   title: string;
   description: string;
   icon: string;
+  menuKey?: string;
   note?: NoteReference;
   createTarget?: string;
 }
 
 interface BlockToolbarState {
   blockId: string;
-  position: {
-    top: number;
-    left: number;
-  };
+  position: { top: number; left: number };
 }
 
 interface BlockDropIndicatorState {
@@ -83,6 +83,8 @@ interface BlockDropIndicatorState {
   targetBlockId: string;
   mode: "before" | "after";
 }
+
+/* ─── Props ───────────────────────────────────────────────────── */
 
 interface EditorProps {
   noteId?: string;
@@ -94,6 +96,8 @@ interface EditorProps {
   createWikilinkNote?: (target: string) => Promise<NoteReference>;
   onNavigateToNote?: (noteId: string) => void;
 }
+
+/* ─── Component ───────────────────────────────────────────────── */
 
 export function Editor({
   noteId,
@@ -123,10 +127,26 @@ export function Editor({
   const [draggedBlockId, setDraggedBlockId] = useState<string | null>(null);
   const [blockDropIndicator, setBlockDropIndicator] =
     useState<BlockDropIndicatorState | null>(null);
-  const [, setIsUploadingImage] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [isImageDialogOpen, setIsImageDialogOpen] = useState(false);
+  const [imageUrl, setImageUrl] = useState("");
+  const [imageAlt, setImageAlt] = useState("");
+  const [imageError, setImageError] = useState<string | null>(null);
+  const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false);
+  const [linkUrl, setLinkUrl] = useState("");
+  const linkSelectionRef = useRef<{ from: number; to: number } | null>(null);
+  const colorSelectionRef = useRef<{ from: number; to: number } | null>(null);
 
   const handleImageUpload = useCallback(() => {
     imageInputRef.current?.click();
+  }, []);
+
+  const openImageDialog = useCallback(() => {
+    setImageUrl("");
+    setImageAlt("");
+    setImageError(null);
+    setIsImageDialogOpen(true);
   }, []);
 
   const slashCommandItems = useMemo<SlashCommandItem[]>(
@@ -134,16 +154,20 @@ export function Editor({
       {
         title: "Görsel yükle",
         description: "Cihazından görsel seç ve nota ekle",
-        icon: "UP",
-        shortcut: "/upload",
+        icon: "IMG",
+        shortcut: "/image",
         command: () => {
-          handleImageUpload();
+          openImageDialog();
         },
       },
-      ...defaultSlashCommands,
+      ...defaultSlashCommands.filter(
+        (item) => item.shortcut !== "/image"
+      ),
     ],
-    [handleImageUpload]
+    [openImageDialog]
   );
+
+  /* ─── Slash menu ───────────────────────────────────────────── */
 
   const updateSlashMenu = useCallback(
     (instance: TiptapEditor) => {
@@ -196,6 +220,8 @@ export function Editor({
     },
     [editable, slashCommandItems]
   );
+
+  /* ─── Wikilink menu ────────────────────────────────────────── */
 
   const updateWikilinkMenu = useCallback(
     (instance: TiptapEditor) => {
@@ -256,6 +282,8 @@ export function Editor({
     );
   }, [slashCommandItems, slashMenu]);
 
+  /* ─── Block toolbar ────────────────────────────────────────── */
+
   const clearBlockToolbarIntent = useCallback(() => {
     if (blockToolbarDelayRef.current !== null) {
       window.clearTimeout(blockToolbarDelayRef.current);
@@ -282,6 +310,8 @@ export function Editor({
     [blockToolbar?.blockId, clearBlockToolbarIntent]
   );
 
+  /* ─── Wikilink search effect ───────────────────────────────── */
+
   useEffect(() => {
     if (!wikilinkMenu || !searchWikilinkNotes) {
       return;
@@ -302,6 +332,7 @@ export function Editor({
         title: note.title,
         description: "Var olan nota bağlan",
         icon: "[[",
+        menuKey: `note:${note.id}`,
         note,
       }));
 
@@ -316,6 +347,7 @@ export function Editor({
           title: `"${currentTarget}" notunu oluştur`,
           description: "Not oluştur ve çözümlenmiş wikilink ekle",
           icon: "+",
+          menuKey: `create:${normalizedTarget}`,
           createTarget: currentTarget,
         });
       }
@@ -329,11 +361,21 @@ export function Editor({
     };
   }, [createWikilinkNote, searchWikilinkNotes, wikilinkMenu]);
 
+  /* ─── Tiptap editor instance ───────────────────────────────── */
+
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
       StarterKit.configure({
         codeBlock: false,
+        link: {
+          autolink: true,
+          openOnClick: true,
+          HTMLAttributes: {
+            rel: "noopener noreferrer nofollow",
+            target: "_blank",
+          },
+        },
       }),
       CodeBlock.configure({
         HTMLAttributes: {
@@ -348,9 +390,39 @@ export function Editor({
         placeholder: "Yazmaya başla...\n/ ile blok ekle · [[ ile sayfa bağla",
         emptyEditorClass: "is-editor-empty",
       }),
+      // ─── Text styling ───────────────────────
+      TextStyle,
+      Color,
+      Highlight.configure({ multicolor: true }),
+      TextAlign.configure({
+        types: ["heading", "paragraph"],
+      }),
+      // ─── Table (official Tiptap) ────────────
+      Table.configure({
+        resizable: true,
+        HTMLAttributes: {
+          class: "giraffle-table",
+        },
+      }),
+      TableRow,
+      TableHeader,
+      TableCell,
+      // ─── Task list ──────────────────────────
+      TaskList.configure({
+        HTMLAttributes: {
+          class: "giraffle-task-list",
+        },
+      }),
+      TaskItem.configure({
+        nested: true,
+        HTMLAttributes: {
+          class: "giraffle-task-item",
+        },
+      }),
+      // ─── Custom extensions ──────────────────
       BlockIdExtension,
       CalloutNode,
-      TableBlockNode,
+      KanbanNode,
       ToggleNode,
       WikilinkMark,
       AgentBlockNode,
@@ -392,6 +464,8 @@ export function Editor({
     },
   });
 
+  /* ─── Cleanup ──────────────────────────────────────────────── */
+
   useEffect(() => {
     return () => {
       if (saveTimeoutRef.current) {
@@ -402,8 +476,16 @@ export function Editor({
     };
   }, [clearBlockToolbarIntent, editable]);
 
+  /* ─── Global keyboard handlers ─────────────────────────────── */
+
   useEffect(() => {
-    if (!slashMenu && !wikilinkMenu && !isBlockMenuOpen) {
+    if (
+      !slashMenu &&
+      !wikilinkMenu &&
+      !isBlockMenuOpen &&
+      !isImageDialogOpen &&
+      !isLinkDialogOpen
+    ) {
       return;
     }
 
@@ -412,12 +494,22 @@ export function Editor({
         setSlashMenu(null);
         setWikilinkMenu(null);
         setIsBlockMenuOpen(false);
+        setShowColorPicker(false);
+        setIsImageDialogOpen(false);
+        setIsLinkDialogOpen(false);
       }
     };
 
     document.addEventListener("keydown", handleEscape);
     return () => document.removeEventListener("keydown", handleEscape);
-  }, [isBlockMenuOpen, slashMenu, wikilinkMenu]);
+  }, [
+    isBlockMenuOpen,
+    isImageDialogOpen,
+    isLinkDialogOpen,
+    showColorPicker,
+    slashMenu,
+    wikilinkMenu,
+  ]);
 
   useEffect(() => {
     if (!isBlockMenuOpen) {
@@ -444,6 +536,8 @@ export function Editor({
     document.addEventListener("mousedown", handlePointerDown);
     return () => document.removeEventListener("mousedown", handlePointerDown);
   }, [isBlockMenuOpen]);
+
+  /* ─── Click handler (wikilinks) ────────────────────────────── */
 
   const handleClick = useCallback(
     async (event: React.MouseEvent) => {
@@ -491,8 +585,10 @@ export function Editor({
     [createWikilinkNote, onNavigateToNote, resolveWikilinkNote]
   );
 
+  /* ─── Slash / wikilink command handlers ────────────────────── */
+
   const handleSlashCommand = useCallback(
-    (commandItem: (typeof defaultSlashCommands)[number]) => {
+    (commandItem: SlashCommandItem) => {
       if (!editor || !slashMenu) {
         return;
       }
@@ -560,6 +656,8 @@ export function Editor({
     [createWikilinkNote, insertResolvedWikilink, wikilinkMenu]
   );
 
+  /* ─── Bubble menu action ───────────────────────────────────── */
+
   const handleBubbleAction = useCallback(
     (runAction: (instance: TiptapEditor) => void) => {
       if (!editor) {
@@ -570,6 +668,141 @@ export function Editor({
     },
     [editor]
   );
+
+  const handleOpenLinkDialog = useCallback(() => {
+    if (!editor) {
+      return;
+    }
+
+    const { from, to } = editor.state.selection;
+    linkSelectionRef.current = { from, to };
+    setLinkUrl(editor.getAttributes("link")?.href ?? "https://");
+    setIsLinkDialogOpen(true);
+  }, [editor]);
+
+  const handlePrepareColorPicker = useCallback(() => {
+    if (!editor) {
+      return;
+    }
+
+    const { from, to } = editor.state.selection;
+    colorSelectionRef.current = { from, to };
+  }, [editor]);
+
+  const handleOpenColorPicker = useCallback(() => {
+    setShowColorPicker(true);
+  }, []);
+
+  const handleCloseColorPicker = useCallback(() => {
+    setShowColorPicker(false);
+  }, []);
+
+  const handleApplyTextColor = useCallback(
+    (color: string | null) => {
+      if (!editor) {
+        return;
+      }
+
+      const chain = editor.chain().focus();
+      const selectionRange = resolveColorSelectionRange(
+        editor,
+        colorSelectionRef.current
+      );
+
+      if (selectionRange) {
+        chain.setTextSelection(selectionRange);
+      }
+
+      if (color) {
+        chain.setColor(color).run();
+        return;
+      }
+
+      chain.unsetColor().run();
+    },
+    [editor]
+  );
+
+  const handleApplyHighlightColor = useCallback(
+    (color: string | null) => {
+      if (!editor) {
+        return;
+      }
+
+      const chain = editor.chain().focus();
+      const selectionRange = resolveColorSelectionRange(
+        editor,
+        colorSelectionRef.current
+      );
+
+      if (selectionRange) {
+        chain.setTextSelection(selectionRange);
+      }
+
+      if (color) {
+        chain.setHighlight({ color }).run();
+        return;
+      }
+
+      chain.unsetHighlight().run();
+    },
+    [editor]
+  );
+
+  const handleApplyLink = useCallback(() => {
+    if (!editor) {
+      return;
+    }
+
+    const normalizedUrl = linkUrl.trim();
+    const chain = editor.chain().focus();
+
+    if (linkSelectionRef.current) {
+      chain.setTextSelection(linkSelectionRef.current);
+    }
+
+    if (!normalizedUrl) {
+      chain.extendMarkRange("link").unsetLink().run();
+    } else {
+      chain
+        .extendMarkRange("link")
+        .setLink({
+          href: normalizedUrl,
+        })
+        .run();
+    }
+
+    setIsLinkDialogOpen(false);
+  }, [editor, linkUrl]);
+
+  const handleInsertImageFromUrl = useCallback(() => {
+    const normalizedUrl = imageUrl.trim();
+
+    if (!editor) {
+      return;
+    }
+
+    if (!normalizedUrl) {
+      setImageError("Bir gÃ¶rsel URL'si gir.");
+      return;
+    }
+
+    editor
+      .chain()
+      .focus()
+      .setImage({
+        src: normalizedUrl,
+        alt: imageAlt.trim(),
+      })
+      .run();
+
+    setImageError(null);
+    setImageUrl("");
+    setImageAlt("");
+    setIsImageDialogOpen(false);
+  }, [editor, imageAlt, imageUrl]);
+
+  /* ─── Document mutation helper ─────────────────────────────── */
 
   const applyDocumentMutation = useCallback(
     (
@@ -601,6 +834,8 @@ export function Editor({
     },
     [blockToolbar?.blockId, editor]
   );
+
+  /* ─── Block toolbar mouse handlers ─────────────────────────── */
 
   const handleBlockToolbarMouseMove = useCallback(
     (event: React.MouseEvent<HTMLDivElement>) => {
@@ -704,6 +939,8 @@ export function Editor({
     setBlockToolbar(null);
     setIsBlockMenuOpen(false);
   }, [clearBlockToolbarIntent]);
+
+  /* ─── Block mutation handlers ──────────────────────────────── */
 
   const handleInsertBlockBelow = useCallback(() => {
     if (!blockToolbar) {
@@ -832,7 +1069,7 @@ export function Editor({
           nextAttrs.tone =
             typeof nextAttrs.tone === "string" ? nextAttrs.tone : "info";
           nextAttrs.title =
-            typeof nextAttrs.title === "string" ? nextAttrs.title : "Vurgu";
+            typeof nextAttrs.title === "string" ? nextAttrs.title : "Bilgi";
         }
 
         if (nextType === "toggle") {
@@ -859,50 +1096,7 @@ export function Editor({
     [applyDocumentMutation, blockToolbar]
   );
 
-  const handleEditTableBlock = useCallback(() => {
-    if (!blockToolbar) {
-      return;
-    }
-
-    applyDocumentMutation((document) => {
-      const location = findBlockLocation(document.content, blockToolbar.blockId);
-
-      if (!location || location.block.type !== "table") {
-        return document;
-      }
-
-      const currentRows = getTableRows(location.block);
-      const initialValue = currentRows
-        .map((row) => row.join(" | "))
-        .join("\n");
-      const nextValue = window.prompt(
-        "Tablo satırlarını düzenle. Her satır yeni satır, hücreler | ile ayrılır.",
-        initialValue
-      );
-
-      if (nextValue === null) {
-        return document;
-      }
-
-      const nextRows = parseTableRows(nextValue);
-      const nextCaption = window.prompt(
-        "Tablo başlığı/açıklaması",
-        typeof location.block.attrs?.caption === "string"
-          ? location.block.attrs.caption
-          : ""
-      );
-
-      return updateBlockInDocument(document, blockToolbar.blockId, {
-        attrs: {
-          ...(location.block.attrs ?? {}),
-          blockId: blockToolbar.blockId,
-          rows: nextRows,
-          caption: nextCaption?.trim() || null,
-        },
-      });
-    });
-    setIsBlockMenuOpen(false);
-  }, [applyDocumentMutation, blockToolbar]);
+  /* ─── Image upload ─────────────────────────────────────────── */
 
   const handleImageFileChange = useCallback(
     async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -917,6 +1111,9 @@ export function Editor({
       try {
         const formData = new FormData();
         formData.append("file", file);
+        if (imageAlt.trim()) {
+          formData.append("altText", imageAlt.trim());
+        }
 
         if (noteId) {
           formData.append("noteId", noteId);
@@ -941,16 +1138,22 @@ export function Editor({
           .focus()
           .setImage({
             src: payload.src,
-            alt: payload.alt ?? file.name,
+            alt: payload.alt ?? (imageAlt.trim() || file.name),
           })
           .run();
+        setImageError(null);
+        setImageUrl("");
+        setImageAlt("");
+        setIsImageDialogOpen(false);
       } finally {
         event.target.value = "";
         setIsUploadingImage(false);
       }
     },
-    [editable, editor, noteId]
+    [editable, editor, imageAlt, noteId]
   );
+
+  /* ─── Block drag & drop ────────────────────────────────────── */
 
   const handleBlockDragOver = useCallback(
     (event: React.DragEvent<HTMLDivElement>) => {
@@ -1029,6 +1232,8 @@ export function Editor({
     [applyDocumentMutation, blockDropIndicator, draggedBlockId]
   );
 
+  /* ─── Loading state ────────────────────────────────────────── */
+
   if (!editor) {
     return (
       <div className="editor-loading">
@@ -1038,6 +1243,14 @@ export function Editor({
       </div>
     );
   }
+
+  /* ─── Render ───────────────────────────────────────────────── */
+
+  const selectedText = editor.state.doc
+    .textBetween(editor.state.selection.from, editor.state.selection.to, " ")
+    .trim();
+  const colorPickerDefaultTab: ColorPickerTab =
+    editor.isActive("table") && selectedText.length === 0 ? "cell" : "text";
 
   return (
     <div
@@ -1061,6 +1274,7 @@ export function Editor({
         onChange={handleImageFileChange}
       />
 
+      {/* ── Block toolbar ─────────────────────────────────────── */}
 
       {editable && blockToolbar ? (
         <div
@@ -1095,6 +1309,8 @@ export function Editor({
           </button>
         </div>
       ) : null}
+
+      {/* ── Block context menu ────────────────────────────────── */}
 
       {editable && blockToolbar && isBlockMenuOpen ? (
         <div
@@ -1144,6 +1360,7 @@ export function Editor({
           >
             Kopyasını oluştur
           </button>
+          <div className="editor-block-context-divider" />
           <button
             type="button"
             onMouseDown={(event) => event.preventDefault()}
@@ -1172,13 +1389,7 @@ export function Editor({
           >
             Açılır bölüm yap
           </button>
-          <button
-            type="button"
-            onMouseDown={(event) => event.preventDefault()}
-            onClick={handleEditTableBlock}
-          >
-            Tabloyu düzenle
-          </button>
+          <div className="editor-block-context-divider" />
           <button
             type="button"
             className="danger"
@@ -1193,6 +1404,8 @@ export function Editor({
         </div>
       ) : null}
 
+      {/* ── Bubble menu (expanded) ────────────────────────────── */}
+
       {editable ? (
         <BubbleMenu
           editor={editor}
@@ -1201,7 +1414,19 @@ export function Editor({
             placement: "top",
           }}
           shouldShow={({ editor: currentEditor, from, to }) => {
-            if (!editable || !currentEditor.isFocused || from === to) {
+            if (!editable) {
+              return false;
+            }
+
+            if (currentEditor.isActive("table")) {
+              return true;
+            }
+
+            if (!currentEditor.isFocused) {
+              return false;
+            }
+
+            if (from === to) {
               return false;
             }
 
@@ -1212,6 +1437,7 @@ export function Editor({
             return selectedText.length > 0;
           }}
         >
+          {/* Bold */}
           <button
             type="button"
             className={`editor-bubble-button ${
@@ -1223,9 +1449,12 @@ export function Editor({
                 instance.chain().focus().toggleBold().run();
               });
             }}
+            title="Kalın (Ctrl+B)"
           >
             B
           </button>
+
+          {/* Italic */}
           <button
             type="button"
             className={`editor-bubble-button ${
@@ -1237,9 +1466,46 @@ export function Editor({
                 instance.chain().focus().toggleItalic().run();
               });
             }}
+            title="İtalik (Ctrl+I)"
           >
-            I
+            <em>I</em>
           </button>
+
+          {/* Underline */}
+          <button
+            type="button"
+            className={`editor-bubble-button ${
+              editor.isActive("underline") ? "active" : ""
+            }`}
+            onMouseDown={(event) => {
+              event.preventDefault();
+              handleBubbleAction((instance) => {
+                instance.chain().focus().toggleUnderline().run();
+              });
+            }}
+            title="Altı Çizili (Ctrl+U)"
+          >
+            <u>U</u>
+          </button>
+
+          {/* Strikethrough */}
+          <button
+            type="button"
+            className={`editor-bubble-button ${
+              editor.isActive("strike") ? "active" : ""
+            }`}
+            onMouseDown={(event) => {
+              event.preventDefault();
+              handleBubbleAction((instance) => {
+                instance.chain().focus().toggleStrike().run();
+              });
+            }}
+            title="Üstü Çizili"
+          >
+            <s>S</s>
+          </button>
+
+          {/* Code */}
           <button
             type="button"
             className={`editor-bubble-button ${
@@ -1251,8 +1517,42 @@ export function Editor({
                 instance.chain().focus().toggleCode().run();
               });
             }}
+            title="Kod"
           >
             {"</>"}
+          </button>
+
+          <button
+            type="button"
+            className={`editor-bubble-button ${
+              editor.isActive("link") ? "active" : ""
+            }`}
+            onMouseDown={(event) => {
+              event.preventDefault();
+              handleOpenLinkDialog();
+            }}
+            title="Link ekle veya dÃ¼zenle"
+          >
+            LN
+          </button>
+
+          <div className="editor-bubble-divider" />
+
+          {/* Heading buttons */}
+          <button
+            type="button"
+            className={`editor-bubble-button ${
+              editor.isActive("heading", { level: 1 }) ? "active" : ""
+            }`}
+            onMouseDown={(event) => {
+              event.preventDefault();
+              handleBubbleAction((instance) => {
+                instance.chain().focus().toggleHeading({ level: 1 }).run();
+              });
+            }}
+            title="Başlık 1"
+          >
+            H1
           </button>
           <button
             type="button"
@@ -1265,9 +1565,29 @@ export function Editor({
                 instance.chain().focus().toggleHeading({ level: 2 }).run();
               });
             }}
+            title="Başlık 2"
           >
             H2
           </button>
+          <button
+            type="button"
+            className={`editor-bubble-button ${
+              editor.isActive("heading", { level: 3 }) ? "active" : ""
+            }`}
+            onMouseDown={(event) => {
+              event.preventDefault();
+              handleBubbleAction((instance) => {
+                instance.chain().focus().toggleHeading({ level: 3 }).run();
+              });
+            }}
+            title="Başlık 3"
+          >
+            H3
+          </button>
+
+          <div className="editor-bubble-divider" />
+
+          {/* Lists */}
           <button
             type="button"
             className={`editor-bubble-button ${
@@ -1279,6 +1599,7 @@ export function Editor({
                 instance.chain().focus().toggleBulletList().run();
               });
             }}
+            title="Madde Listesi"
           >
             UL
           </button>
@@ -1293,13 +1614,187 @@ export function Editor({
                 instance.chain().focus().toggleBlockquote().run();
               });
             }}
+            title="Alıntı"
           >
             QT
           </button>
+
+          {editor.isActive("table") ? (
+            <>
+              <div className="editor-bubble-divider" />
+              <button
+                type="button"
+                className="editor-bubble-button"
+                onMouseDown={(event) => {
+                  event.preventDefault();
+                  handleBubbleAction((instance) => {
+                    instance.chain().focus().addRowAfter().run();
+                  });
+                }}
+                title="SatÄ±r ekle"
+              >
+                +R
+              </button>
+              <button
+                type="button"
+                className="editor-bubble-button"
+                onMouseDown={(event) => {
+                  event.preventDefault();
+                  handleBubbleAction((instance) => {
+                    instance.chain().focus().addColumnAfter().run();
+                  });
+                }}
+                title="SÃ¼tun ekle"
+              >
+                +C
+              </button>
+              <button
+                type="button"
+                className="editor-bubble-button"
+                onMouseDown={(event) => {
+                  event.preventDefault();
+                  handleBubbleAction((instance) => {
+                    instance.chain().focus().toggleHeaderRow().run();
+                  });
+                }}
+                title="BaÅŸlÄ±k satÄ±rÄ±"
+              >
+                HR
+              </button>
+              <button
+                type="button"
+                className="editor-bubble-button"
+                onMouseDown={(event) => {
+                  event.preventDefault();
+                  handleBubbleAction((instance) => {
+                    instance.chain().focus().deleteRow().run();
+                  });
+                }}
+                title="SatÄ±r sil"
+              >
+                -R
+              </button>
+              <button
+                type="button"
+                className="editor-bubble-button"
+                onMouseDown={(event) => {
+                  event.preventDefault();
+                  handleBubbleAction((instance) => {
+                    instance.chain().focus().deleteColumn().run();
+                  });
+                }}
+                title="SÃ¼tun sil"
+              >
+                -C
+              </button>
+              <button
+                type="button"
+                className="editor-bubble-button"
+                onMouseDown={(event) => {
+                  event.preventDefault();
+                  handleBubbleAction((instance) => {
+                    instance.chain().focus().deleteTable().run();
+                  });
+                }}
+                title="Tabloyu sil"
+              >
+                TB
+              </button>
+            </>
+          ) : null}
+
+          <div className="editor-bubble-divider" />
+
+          {/* Color picker toggle */}
+          <div style={{ position: "relative" }}>
+            <button
+              type="button"
+              className={`editor-bubble-button ${showColorPicker ? "active" : ""}`}
+              onMouseDown={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                handlePrepareColorPicker();
+              }}
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                handleOpenColorPicker();
+              }}
+              title="Yazı & Arka Plan Rengi"
+            >
+              <span
+                style={{
+                  display: "inline-flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  lineHeight: 1,
+                }}
+              >
+                <span style={{ fontSize: "13px", fontWeight: 700 }}>A</span>
+                <span
+                  style={{
+                    width: "14px",
+                    height: "3px",
+                    borderRadius: "1px",
+                    background:
+                      editor.getAttributes("textStyle")?.color ||
+                      "var(--accent)",
+                  }}
+                />
+              </span>
+            </button>
+          </div>
         </BubbleMenu>
       ) : null}
 
+      {showColorPicker ? (
+        <div
+          className="md-dialog-scrim"
+          onClick={handleCloseColorPicker}
+        >
+          <div
+            className="md-dialog"
+            style={{ maxWidth: "340px", width: "92vw" }}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h2 className="md-dialog-headline">Renkler</h2>
+            <div className="md-dialog-content" style={{ paddingTop: "4px" }}>
+              <ColorPicker
+                currentTextColor={editor.getAttributes("textStyle")?.color ?? undefined}
+                currentHighlightColor={editor.getAttributes("highlight")?.color ?? undefined}
+                defaultTab={colorPickerDefaultTab}
+                allowCellColor={editor.isActive("table")}
+                currentCellColor={
+                  editor.getAttributes("tableCell")?.backgroundColor ??
+                  editor.getAttributes("tableHeader")?.backgroundColor ??
+                  undefined
+                }
+                onCellColor={(color) => {
+                  if (color === null) {
+                    editor.chain().focus().setCellAttribute("backgroundColor", null).run();
+                  } else {
+                    editor.chain().focus().setCellAttribute("backgroundColor", color).run();
+                  }
+                }}
+                onTextColor={handleApplyTextColor}
+                onHighlightColor={handleApplyHighlightColor}
+                onClose={handleCloseColorPicker}
+              />
+            </div>
+            <div className="md-dialog-actions">
+              <Button variant="text" onClick={handleCloseColorPicker}>
+                Kapat
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* ── Editor content ────────────────────────────────────── */}
+
       <EditorContent editor={editor} />
+
+      {/* ── Drop indicator ────────────────────────────────────── */}
 
       {blockDropIndicator ? (
         <div
@@ -1311,6 +1806,8 @@ export function Editor({
           }}
         />
       ) : null}
+
+      {/* ── Wikilink menu ─────────────────────────────────────── */}
 
       {wikilinkMenu && wikilinkItems.length > 0 ? (
         <SlashCommandMenu
@@ -1325,6 +1822,8 @@ export function Editor({
         />
       ) : null}
 
+      {/* ── Slash menu ────────────────────────────────────────── */}
+
       {slashMenu && slashItems.length > 0 && !wikilinkMenu ? (
         <SlashCommandMenu
           items={slashItems}
@@ -1337,8 +1836,210 @@ export function Editor({
           }}
         />
       ) : null}
+
+      {isImageDialogOpen ? (
+        <div
+          className="md-dialog-scrim"
+          onClick={() => setIsImageDialogOpen(false)}
+        >
+          <div
+            className="md-dialog"
+            style={{ maxWidth: "520px", width: "90vw" }}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h2 className="md-dialog-headline">GÃ¶rsel ekle</h2>
+            <div className="md-dialog-content" style={{ display: "grid", gap: "16px" }}>
+              <div className="md-text-field md-text-field--outlined md-text-field--has-value">
+                <div className="md-text-field-container">
+                  <input
+                    className="md-text-field-input"
+                    value={imageUrl}
+                    onChange={(event) => {
+                      setImageUrl(event.target.value);
+                      if (imageError) {
+                        setImageError(null);
+                      }
+                    }}
+                    placeholder=" "
+                  />
+                  <span className="md-text-field-label">GÃ¶rsel URL&apos;si</span>
+                </div>
+              </div>
+
+              <div className="md-text-field md-text-field--outlined md-text-field--has-value">
+                <div className="md-text-field-container">
+                  <input
+                    className="md-text-field-input"
+                    value={imageAlt}
+                    onChange={(event) => setImageAlt(event.target.value)}
+                    placeholder=" "
+                  />
+                  <span className="md-text-field-label">Alt metin</span>
+                </div>
+              </div>
+
+              {imageError ? (
+                <div
+                  style={{
+                    color: "var(--md-sys-color-error)",
+                    fontSize: "var(--md-sys-typescale-body-small-size)",
+                  }}
+                >
+                  {imageError}
+                </div>
+              ) : null}
+
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: "12px",
+                  flexWrap: "wrap",
+                }}
+              >
+                <Button
+                  variant="outlined"
+                  onClick={handleImageUpload}
+                  disabled={isUploadingImage}
+                >
+                  {isUploadingImage ? "YÃ¼kleniyor..." : "Cihazdan seÃ§"}
+                </Button>
+                <div className="md-dialog-actions" style={{ margin: 0 }}>
+                  <Button
+                    variant="text"
+                    onClick={() => setIsImageDialogOpen(false)}
+                  >
+                    VazgeÃ§
+                  </Button>
+                  <Button variant="filled" onClick={handleInsertImageFromUrl}>
+                    URL ile ekle
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {isLinkDialogOpen ? (
+        <div
+          className="md-dialog-scrim"
+          onClick={() => setIsLinkDialogOpen(false)}
+        >
+          <div
+            className="md-dialog"
+            style={{ maxWidth: "480px", width: "88vw" }}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h2 className="md-dialog-headline">Link dÃ¼zenle</h2>
+            <div className="md-dialog-content" style={{ display: "grid", gap: "16px" }}>
+              <div className="md-text-field md-text-field--outlined md-text-field--has-value">
+                <div className="md-text-field-container">
+                  <input
+                    className="md-text-field-input"
+                    value={linkUrl}
+                    onChange={(event) => setLinkUrl(event.target.value)}
+                    placeholder=" "
+                  />
+                  <span className="md-text-field-label">URL</span>
+                </div>
+              </div>
+            </div>
+            <div className="md-dialog-actions">
+              <Button
+                variant="text"
+                onClick={() => {
+                  setLinkUrl("");
+                  handleApplyLink();
+                }}
+              >
+                Linki kaldÄ±r
+              </Button>
+              <Button
+                variant="text"
+                onClick={() => setIsLinkDialogOpen(false)}
+              >
+                VazgeÃ§
+              </Button>
+              <Button variant="filled" onClick={handleApplyLink}>
+                Uygula
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
+}
+
+/* ─── Utility Functions ────────────────────────────────────────── */
+
+function resolveColorSelectionRange(
+  editor: TiptapEditor,
+  range: { from: number; to: number } | null
+) {
+  const fallbackRange = range ?? {
+    from: editor.state.selection.from,
+    to: editor.state.selection.to,
+  };
+
+  if (fallbackRange.from !== fallbackRange.to) {
+    return fallbackRange;
+  }
+
+  const resolvedPosition = editor.state.doc.resolve(fallbackRange.from);
+
+  if (!resolvedPosition.parent.isTextblock) {
+    return fallbackRange;
+  }
+
+  const text = resolvedPosition.parent.textContent ?? "";
+
+  if (!text.trim()) {
+    return fallbackRange;
+  }
+
+  let cursor = Math.max(
+    0,
+    Math.min(resolvedPosition.parentOffset, text.length)
+  );
+
+  if (cursor === text.length && cursor > 0) {
+    cursor -= 1;
+  }
+
+  const isBoundary = (character: string | undefined) =>
+    !character || /\s/.test(character);
+
+  if (isBoundary(text[cursor]) && cursor > 0 && !isBoundary(text[cursor - 1])) {
+    cursor -= 1;
+  }
+
+  if (isBoundary(text[cursor])) {
+    return fallbackRange;
+  }
+
+  let start = cursor;
+  let end = cursor + 1;
+
+  while (start > 0 && !isBoundary(text[start - 1])) {
+    start -= 1;
+  }
+
+  while (end < text.length && !isBoundary(text[end])) {
+    end += 1;
+  }
+
+  if (start === end) {
+    return fallbackRange;
+  }
+
+  const offset = resolvedPosition.start();
+
+  return {
+    from: offset + start,
+    to: offset + end,
+  };
 }
 
 function getClosestBlockElement(
@@ -1454,38 +2155,4 @@ function cloneBlockTree(block: BlockNodeContent): BlockNodeContent {
       child.type === "text" ? { ...child } : cloneBlockTree(child)
     ),
   };
-}
-
-function getTableRows(block: BlockNodeContent): string[][] {
-  const rows = block.attrs?.rows;
-
-  if (!Array.isArray(rows)) {
-    return [
-      ["Sütun 1", "Sütun 2"],
-      ["Değer", "Değer"],
-    ];
-  }
-
-  return rows.map((row) =>
-    Array.isArray(row) ? row.map((cell) => String(cell ?? "")) : [String(row)]
-  );
-}
-
-function parseTableRows(value: string): string[][] {
-  const rows = value
-    .split("\n")
-    .map((line) =>
-      line
-        .split("|")
-        .map((cell) => cell.trim())
-        .filter((cell, index, cells) => cell.length > 0 || cells.length === 1)
-    )
-    .filter((row) => row.length > 0);
-
-  return rows.length > 0
-    ? rows
-    : [
-        ["Sütun 1", "Sütun 2"],
-        ["Değer", "Değer"],
-      ];
 }

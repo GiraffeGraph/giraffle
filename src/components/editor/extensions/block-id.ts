@@ -12,8 +12,12 @@ const BLOCK_NODE_TYPES = [
   "blockquote",
   "callout",
   "toggle",
+  "kanban",
   "image",
   "horizontalRule",
+  "table",
+  "taskList",
+  "taskItem",
 ] as const;
 
 export const BlockIdExtension = Extension.create({

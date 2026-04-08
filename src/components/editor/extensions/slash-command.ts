@@ -108,26 +108,14 @@ export const defaultSlashCommands: SlashCommandItem[] = [
     icon: "!",
     shortcut: "/callout",
     command: (editor) => {
-      const tone =
-        typeof window === "undefined"
-          ? "info"
-          : window
-              .prompt("Vurgu tonu (info, tip, warning, danger)", "info")
-              ?.trim()
-              .toLowerCase() || "info";
-      const title =
-        typeof window === "undefined"
-          ? "Vurgu"
-          : window.prompt("Vurgu başlığı", "Önemli nokta")?.trim() || "Vurgu";
-
       editor
         .chain()
         .focus()
         .insertContent({
           type: "callout",
           attrs: {
-            tone,
-            title,
+            tone: "info",
+            title: "Bilgi",
           },
           content: [
             {
@@ -144,19 +132,13 @@ export const defaultSlashCommands: SlashCommandItem[] = [
     icon: "+/-",
     shortcut: "/toggle",
     command: (editor) => {
-      const summary =
-        typeof window === "undefined"
-          ? "Açılır Blok"
-          : window.prompt("Açılır blok özeti", "Ayrıntılar")?.trim() ||
-            "Açılır Blok";
-
       editor
         .chain()
         .focus()
         .insertContent({
           type: "toggle",
           attrs: {
-            summary,
+            summary: "Ayrıntılar",
           },
           content: [
             {
@@ -182,30 +164,57 @@ export const defaultSlashCommands: SlashCommandItem[] = [
         return;
       }
 
-      const alt =
-        typeof window === "undefined"
-          ? ""
-          : window.prompt("Alt metin", "")?.trim() || "";
-
-      editor.chain().focus().setImage({ src, alt }).run();
+      editor.chain().focus().setImage({ src, alt: "" }).run();
     },
   },
   {
     title: "Tablo",
-    description: "Yapısal tablo bloğu ekle",
+    description: "Düzenlenebilir tablo ekle",
     icon: "TB",
     shortcut: "/table",
     command: (editor) => {
       editor
         .chain()
         .focus()
-        .insertTableBlock({
-          rows: [
-            ["Sütun 1", "Sütun 2"],
-            ["Değer", "Değer"],
+        .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
+        .run();
+    },
+  },
+  {
+    title: "Yapılacaklar",
+    description: "Kontrol listesi bloğu",
+    icon: "☑",
+    shortcut: "/todo",
+    command: (editor) => {
+      editor
+        .chain()
+        .focus()
+        .insertContent({
+          type: "taskList",
+          content: [
+            {
+              type: "taskItem",
+              attrs: {
+                checked: false,
+              },
+              content: [
+                {
+                  type: "paragraph",
+                },
+              ],
+            },
           ],
         })
         .run();
+    },
+  },
+  {
+    title: "Kanban",
+    description: "Suruklenebilir gorev panosu",
+    icon: "KB",
+    shortcut: "/kanban",
+    command: (editor) => {
+      editor.chain().focus().insertKanban().run();
     },
   },
 ];

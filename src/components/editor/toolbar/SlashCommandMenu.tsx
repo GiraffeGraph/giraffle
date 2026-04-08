@@ -8,6 +8,7 @@ export interface CommandMenuItem {
   description: string;
   icon: string;
   shortcut?: string;
+  menuKey?: string;
 }
 
 interface SlashCommandMenuProps<T extends CommandMenuItem> {
@@ -25,7 +26,14 @@ export function SlashCommandMenu<T extends CommandMenuItem>({
   title = "Komutlar",
   subtitle = "Yön tuşları ile gezin, Enter ile uygula",
 }: SlashCommandMenuProps<T>) {
-  const itemsKey = items.map((item) => item.title).join("|");
+  const getItemKey = useCallback(
+    (item: T, index: number) =>
+      item.menuKey?.trim().length
+        ? item.menuKey
+        : `${item.title}-${item.shortcut ?? item.description}-${index}`,
+    []
+  );
+  const itemsKey = items.map((item, index) => getItemKey(item, index)).join("|");
   const [selection, setSelection] = useState({ itemsKey, index: 0 });
   const selectedIndex =
     selection.itemsKey === itemsKey && selection.index < items.length
@@ -84,7 +92,7 @@ export function SlashCommandMenu<T extends CommandMenuItem>({
       <div className="slash-menu-list">
         {items.map((item, index) => (
           <button
-            key={`${item.title}-${item.shortcut ?? ""}`}
+            key={getItemKey(item, index)}
             className={`slash-menu-item ${index === selectedIndex ? "active" : ""}`}
             onClick={() => command(item)}
             onMouseEnter={() => setSelection({ itemsKey, index })}

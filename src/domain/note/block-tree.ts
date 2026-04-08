@@ -16,9 +16,15 @@ const PERSISTED_BLOCK_NODE_TYPES = new Set([
   "blockquote",
   "callout",
   "toggle",
+  "kanban",
   "image",
   "horizontalRule",
   "table",
+  "tableRow",
+  "tableHeader",
+  "tableCell",
+  "taskList",
+  "taskItem",
 ]);
 
 export interface PersistedBlockRecord {

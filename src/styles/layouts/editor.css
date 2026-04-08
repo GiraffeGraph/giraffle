@@ -446,12 +446,510 @@
   color: var(--text-primary);
 }
 
+.color-picker {
+  display: grid;
+  gap: 12px;
+  min-width: 248px;
+  padding: 12px;
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface-glass-strong) 94%, transparent);
+  box-shadow: var(--shadow-lift);
+  backdrop-filter: blur(18px);
+}
+
+.color-picker-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.color-picker-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.color-picker-tab:hover,
+.color-picker-tab.active {
+  background: var(--surface-glass-hover);
+  color: var(--text-primary);
+}
+
+.color-picker-tab-preview {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  line-height: 1;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.color-picker-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.color-picker-swatch {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 38px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
+}
+
+.color-picker-swatch:hover,
+.color-picker-swatch.active {
+  border-color: var(--accent-line);
+  background: var(--surface-glass-hover);
+}
+
+.color-picker-swatch-letter,
+.color-picker-swatch-fill {
+  flex-shrink: 0;
+}
+
+.color-picker-swatch-letter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.color-picker-swatch-fill {
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+}
+
+.color-picker-swatch-label {
+  min-width: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.color-picker-swatch:hover .color-picker-swatch-label,
+.color-picker-swatch.active .color-picker-swatch-label {
+  color: var(--text-primary);
+}
+
+.giraffle-editor-content .tableWrapper {
+  margin: 1.5rem 0;
+  overflow-x: auto;
+}
+
+.giraffle-editor-content table,
+.giraffle-editor-content .giraffle-table {
+  border-collapse: collapse !important;
+  table-layout: fixed !important;
+  width: 100% !important;
+  margin: 0 !important;
+  overflow: visible !important;
+}
+
+.giraffle-editor-content td,
+.giraffle-editor-content th,
+.giraffle-editor-content .giraffle-table td,
+.giraffle-editor-content .giraffle-table th {
+  min-width: 1em;
+  border: 1px solid #777777 !important;
+  padding: 8px 12px !important;
+  vertical-align: top !important;
+  box-sizing: border-box !important;
+  position: relative;
+}
+
+.giraffle-editor-content td p,
+.giraffle-editor-content th p,
+.giraffle-editor-content .giraffle-table p {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.giraffle-editor-content th,
+.giraffle-editor-content .giraffle-table th {
+  background: var(--md-sys-color-surface-variant, rgba(128, 128, 128, 0.15));
+  color: var(--text-primary) !important;
+  font-weight: 600 !important;
+  text-align: left !important;
+}
+
+.giraffle-editor-content .giraffle-table .selectedCell:after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: rgb(var(--accent-rgb) / 0.12);
+  pointer-events: none;
+}
+
+.giraffle-editor-content .giraffle-table .column-resize-handle {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: -2px;
+  width: 4px;
+  background-color: rgb(var(--accent-rgb) / 0.7);
+  pointer-events: none;
+  z-index: 20;
+}
+
+.giraffle-editor .resize-cursor {
+  cursor: col-resize;
+}
+
+/* Task lists (checkboxes) */
+.giraffle-editor-content .giraffle-task-list {
+  padding-left: 0;
+  margin-left: 0;
+  margin: 0.5rem 0;
+}
+
+.giraffle-editor-content .giraffle-task-item {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 0.25rem;
+}
+
+.giraffle-editor-content .giraffle-task-item > label {
+  flex: 0 0 auto;
+  margin-right: 0.5rem;
+  user-select: none;
+  margin-top: 0.25rem; /* align checkbox with first line of text */
+}
+
+.giraffle-editor-content .giraffle-task-item > label input[type="checkbox"] {
+  cursor: pointer;
+  accent-color: var(--accent);
+  width: 1.1em;
+  height: 1.1em;
+}
+
+.giraffle-editor-content .giraffle-task-item > div {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.giraffle-editor-content .giraffle-task-item[data-checked="true"] > div {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+.giraffle-kanban-board {
+  margin: 1rem 0;
+}
+
+.giraffle-kanban-shell {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid var(--border-soft);
+  border-radius: 22px;
+  background: var(--surface-glass-strong);
+  box-shadow: var(--shadow-panel);
+}
+
+.giraffle-kanban-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.giraffle-kanban-title-stack {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.giraffle-kanban-eyebrow {
+  color: var(--text-tertiary);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.giraffle-kanban-title-input,
+.giraffle-kanban-column-input,
+.giraffle-kanban-card-input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  outline: none;
+  resize: none;
+}
+
+.giraffle-kanban-title-input {
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.giraffle-kanban-add-column,
+.giraffle-kanban-add-card,
+.giraffle-kanban-card-action,
+.giraffle-kanban-column-remove,
+.giraffle-kanban-column-grip,
+.giraffle-kanban-card-grip {
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  background: var(--surface-glass);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.giraffle-kanban-add-column,
+.giraffle-kanban-add-card {
+  min-height: 36px;
+  padding: 0 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.giraffle-kanban-card-action,
+.giraffle-kanban-column-remove,
+.giraffle-kanban-column-grip,
+.giraffle-kanban-card-grip {
+  min-height: 28px;
+  padding: 0 10px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.giraffle-kanban-add-column:hover,
+.giraffle-kanban-add-card:hover,
+.giraffle-kanban-card-action:hover,
+.giraffle-kanban-column-remove:hover,
+.giraffle-kanban-column-grip:hover,
+.giraffle-kanban-card-grip:hover {
+  background: var(--surface-glass-hover);
+  color: var(--text-primary);
+}
+
+.giraffle-kanban-card-action.danger:hover,
+.giraffle-kanban-column-remove:hover:not(:disabled) {
+  border-color: rgb(212 76 71 / 0.28);
+  color: #d44c47;
+}
+
+.giraffle-kanban-column-remove:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.giraffle-kanban-columns {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.giraffle-kanban-column-slot {
+  display: flex;
+  align-items: stretch;
+  gap: 14px;
+}
+
+.giraffle-kanban-column {
+  --kanban-tone: rgb(var(--accent-rgb) / 0.12);
+  --kanban-line: rgb(var(--accent-rgb) / 0.22);
+  display: grid;
+  grid-template-rows: auto auto minmax(180px, 1fr) auto;
+  gap: 12px;
+  flex: 0 0 clamp(240px, 32vw, 280px);
+  min-height: 320px;
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--kanban-line) 70%, var(--border-soft));
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--surface-glass) 90%, var(--kanban-tone));
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--surface-highlight) 34%, transparent);
+}
+
+.giraffle-kanban-column.is-dragging {
+  opacity: 0.68;
+}
+
+.giraffle-kanban-column[data-tone="warm"] {
+  --kanban-tone: rgb(var(--accent-warm-rgb) / 0.12);
+  --kanban-line: rgb(var(--accent-warm-rgb) / 0.24);
+}
+
+.giraffle-kanban-column[data-tone="sky"] {
+  --kanban-tone: rgb(64 145 255 / 0.12);
+  --kanban-line: rgb(64 145 255 / 0.24);
+}
+
+.giraffle-kanban-column[data-tone="rose"] {
+  --kanban-tone: rgb(214 77 126 / 0.12);
+  --kanban-line: rgb(214 77 126 / 0.24);
+}
+
+.giraffle-kanban-column[data-tone="emerald"] {
+  --kanban-tone: rgb(59 167 118 / 0.12);
+  --kanban-line: rgb(59 167 118 / 0.24);
+}
+
+.giraffle-kanban-column-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.giraffle-kanban-column-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.giraffle-kanban-column-grip,
+.giraffle-kanban-card-grip {
+  flex: 0 0 auto;
+  cursor: grab;
+  user-select: none;
+}
+
+.giraffle-kanban-column-grip:active,
+.giraffle-kanban-card-grip:active {
+  cursor: grabbing;
+}
+
+.giraffle-kanban-column-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--kanban-line) 100%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--kanban-tone) 100%, transparent);
+}
+
+.giraffle-kanban-column-input {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.giraffle-kanban-card-count {
+  color: var(--text-tertiary);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.giraffle-kanban-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.giraffle-kanban-card-slot {
+  display: grid;
+  gap: 10px;
+}
+
+.giraffle-kanban-dropzone {
+  height: 12px;
+  border-radius: 999px;
+  background: transparent;
+  transition:
+    background var(--transition-fast),
+    transform var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.giraffle-kanban-dropzone.column {
+  width: 14px;
+  min-width: 14px;
+  height: auto;
+  align-self: stretch;
+}
+
+.giraffle-kanban-dropzone.active,
+.giraffle-kanban-dropzone.empty {
+  background: color-mix(in srgb, var(--accent) 28%, transparent);
+}
+
+.giraffle-kanban-dropzone.empty {
+  min-height: 56px;
+  border: 1px dashed color-mix(in srgb, var(--accent) 28%, transparent);
+}
+
+.giraffle-kanban-dropzone.active {
+  transform: scaleY(1.1);
+}
+
+.giraffle-kanban-dropzone.column.active {
+  transform: scaleX(1.1);
+}
+
+.giraffle-kanban-card {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--border-soft);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--surface-glass-strong) 94%, transparent);
+  box-shadow: var(--shadow-soft);
+}
+
+.giraffle-kanban-card.is-dragging {
+  opacity: 0.62;
+}
+
+.giraffle-kanban-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.giraffle-kanban-card-input {
+  min-height: 48px;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.giraffle-kanban-card-input::placeholder,
+.giraffle-kanban-title-input::placeholder,
+.giraffle-kanban-column-input::placeholder {
+  color: var(--text-muted);
+}
+
+.giraffle-kanban-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
 .slash-menu {
   min-width: 320px;
-  max-width: min(360px, calc(100vw - 32px));
-  padding: 10px;
-  border-radius: var(--radius-panel);
-  box-shadow: var(--shadow-lift);
 }
 
 .slash-menu-header {

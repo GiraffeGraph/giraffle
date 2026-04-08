@@ -2,6 +2,7 @@ export { BlockIdExtension } from "./block-id";
 export { CalloutNode } from "./callout";
 export { WikilinkMark } from "./wikilink";
 export { ToggleNode } from "./toggle";
+export { KanbanNode } from "./kanban";
 export { TableBlockNode } from "./table";
 export { AgentBlockNode } from "./agent-block";
 export { GhostHighlightPlugin } from "./ghost-highlight";
