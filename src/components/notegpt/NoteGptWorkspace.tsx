@@ -1,51 +1,29 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Button } from "@/components/ui/Button";
-
-interface NoteGptWorkspaceProps {
-  notes: Array<{
-    id: string;
-    title: string;
-    icon: string | null;
-    folderId: string | null;
-    updatedAtLabel: string;
-  }>;
-  folders: Array<{
-    id: string;
-    name: string;
-    icon: string | null;
-    parentId: string | null;
-  }>;
-}
-
-interface ChatMessage {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-}
-
-const STARTER_PROMPTS = [
-  "Bu kutuphaneyi ozetle",
-  "Tum notlar icin odak alanlarini cikar",
-  "Klasor yapisini daha iyi nasil duzenlerim",
-];
+import { useMemo, useRef, useState } from "react";
+import { ConversationThread } from "./ConversationThread";
+import { NoteGptHero } from "./NoteGptHero";
+import { PromptComposer } from "./PromptComposer";
+import { PromptSuggestions } from "./PromptSuggestions";
+import { StarterCards } from "./StarterCards";
+import styles from "./NoteGptWorkspace.module.css";
+import {
+  PROMPT_MODES,
+  PROMPT_SUGGESTIONS,
+  STARTER_CARDS,
+  type ChatMessage,
+  type NoteGptWorkspaceProps,
+  type PromptModeId,
+} from "./notegpt.types";
 
 export function NoteGptWorkspace({
   notes,
   folders,
 }: NoteGptWorkspaceProps) {
   const composerRef = useRef<HTMLTextAreaElement | null>(null);
-  const scrollRef = useRef<HTMLDivElement | null>(null);
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: "welcome",
-      role: "assistant",
-      content:
-        "NoteGPT hazir. Calisma alanindaki notlar ve klasorler uzerinden ozet, plan, siniflandirma ve yeni fikirler isteyebilirsin.",
-    },
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState("");
+  const [activeMode, setActiveMode] = useState<PromptModeId>("general");
   const [isStreaming, setIsStreaming] = useState(false);
 
   const folderMeta = useMemo(() => {
@@ -55,32 +33,28 @@ export function NoteGptWorkspace({
         {
           ...folder,
           path: "",
-          depth: 0,
         },
       ])
     );
 
-    const resolveFolder = (folderId: string): { path: string; depth: number } => {
+    const resolvePath = (folderId: string): string => {
       const current = byId.get(folderId);
 
       if (!current) {
-        return { path: "", depth: 0 };
+        return "";
       }
 
       if (current.path) {
-        return { path: current.path, depth: current.depth };
+        return current.path;
       }
 
-      const parent = current.parentId ? resolveFolder(current.parentId) : null;
-      current.depth = parent ? parent.depth + 1 : 0;
-      current.path = parent?.path
-        ? `${parent.path} / ${current.name}`
-        : current.name;
-      return { path: current.path, depth: current.depth };
+      const parentPath = current.parentId ? resolvePath(current.parentId) : "";
+      current.path = parentPath ? `${parentPath} / ${current.name}` : current.name;
+      return current.path;
     };
 
     for (const folder of folders) {
-      resolveFolder(folder.id);
+      resolvePath(folder.id);
     }
 
     return byId;
@@ -88,36 +62,43 @@ export function NoteGptWorkspace({
 
   const workspaceContext = useMemo(() => {
     const folderLines = folders
-      .map((folder) => ({
-        name: folderMeta.get(folder.id)?.path ?? folder.name,
-      }))
-      .sort((left, right) => left.name.localeCompare(right.name, "tr"))
-      .map((folder) => `- ${folder.name}`);
-    const noteLines = notes.map((note) => {
-      const folderPath = note.folderId
-        ? folderMeta.get(note.folderId)?.path ?? "Klasorsuz"
-        : "Klasorsuz";
-      return `- ${note.title} [${folderPath}]`;
-    });
+      .map((folder) => folderMeta.get(folder.id)?.path ?? folder.name)
+      .sort((left, right) => left.localeCompare(right, "tr"))
+      .map((folderPath) => `- ${folderPath}`);
+
+    const noteLines = notes
+      .map((note) => {
+        const folderPath = note.folderId
+          ? folderMeta.get(note.folderId)?.path ?? "Klasörsüz"
+          : "Klasörsüz";
+
+        return `- ${note.title} [${folderPath}]`;
+      })
+      .sort((left, right) => left.localeCompare(right, "tr"));
 
     return [
-      "Klasorler:",
-      ...(folderLines.length > 0 ? folderLines : ["- Klasor yok"]),
+      "Klasörler:",
+      ...(folderLines.length > 0 ? folderLines : ["- Klasör yok"]),
       "",
       "Notlar:",
       ...(noteLines.length > 0 ? noteLines : ["- Not yok"]),
     ].join("\n");
   }, [folderMeta, folders, notes]);
 
-  useEffect(() => {
-    if (!scrollRef.current) {
-      return;
+  const latestActivityLabel = useMemo(() => {
+    if (notes.length === 0) {
+      return "Boş";
     }
 
-    scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-  }, [messages]);
+    const latest = [...notes].sort((left, right) =>
+      right.updatedAtLabel.localeCompare(left.updatedAtLabel)
+    )[0];
 
-  const handlePromptSelect = (prompt: string) => {
+    return latest ? formatRelativeTime(latest.updatedAtLabel) : "Boş";
+  }, [notes]);
+
+  const handlePromptSelect = (prompt: string, mode: PromptModeId) => {
+    setActiveMode(mode);
     setDraft(prompt);
     composerRef.current?.focus();
   };
@@ -135,9 +116,10 @@ export function NoteGptWorkspace({
       content: trimmed,
     };
     const assistantMessageId = `assistant-${Date.now()}`;
+    const mode = PROMPT_MODES.find((item) => item.id === activeMode) ?? PROMPT_MODES[0];
     const recentTranscript = [...messages, userMessage]
       .slice(-8)
-      .map((message) => `${message.role === "user" ? "Kullanici" : "NoteGPT"}: ${message.content}`)
+      .map((message) => `${message.role === "user" ? "Kullanıcı" : "NoteGPT"}: ${message.content}`)
       .join("\n\n");
 
     setDraft("");
@@ -160,7 +142,7 @@ export function NoteGptWorkspace({
         },
         body: JSON.stringify({
           mode: "workspace",
-          prompt: recentTranscript,
+          prompt: `[${mode.promptPrefix}]\n${recentTranscript}`,
           context: workspaceContext,
         }),
       });
@@ -202,7 +184,7 @@ export function NoteGptWorkspace({
             ? {
                 ...message,
                 content:
-                  "Yanitta bir hata olustu. Istegi tekrar dene ya da baglamini daha kisa yaz.",
+                  "Yanıtta bir hata oluştu. İsteği tekrar dene ya da bağlamı biraz daha daralt.",
               }
             : message
         )
@@ -213,88 +195,62 @@ export function NoteGptWorkspace({
   };
 
   return (
-    <div className="notegpt-page">
-      <div className="notegpt-shell">
-        <section className="notegpt-chat-panel">
-          <div className="notegpt-chat-header">
-            <div>
-              <div className="notegpt-kicker">Workspace Copilot</div>
-              <h1 className="notegpt-title">NoteGPT</h1>
-              <p className="notegpt-subtitle">
-                Calisma alanin uzerinden sor, plan cikart ve duzen onerileri al.
-              </p>
-            </div>
-            <div className="notegpt-stat-row">
-              <div className="notegpt-stat-card">
-                <span className="notegpt-stat-number">{notes.length}</span>
-                <span className="notegpt-stat-label">Not</span>
-              </div>
-              <div className="notegpt-stat-card">
-                <span className="notegpt-stat-number">{folders.length}</span>
-                <span className="notegpt-stat-label">Klasor</span>
-              </div>
-            </div>
-          </div>
+    <div className={styles.page}>
+      <div className={styles.pageInner}>
+        <NoteGptHero
+          notesCount={notes.length}
+          foldersCount={folders.length}
+          latestActivityLabel={latestActivityLabel}
+        />
 
-          <div className="notegpt-prompt-row">
-            {STARTER_PROMPTS.map((prompt) => (
-              <button
-                key={prompt}
-                type="button"
-                className="notegpt-prompt-chip"
-                onClick={() => handlePromptSelect(prompt)}
-              >
-                {prompt}
-              </button>
-            ))}
-          </div>
+        <PromptComposer
+          composerRef={composerRef}
+          draft={draft}
+          isStreaming={isStreaming}
+          notesCount={notes.length}
+          foldersCount={folders.length}
+          activeMode={activeMode}
+          onDraftChange={setDraft}
+          onModeChange={setActiveMode}
+          onSend={() => void handleSend()}
+        />
 
-          <div ref={scrollRef} className="notegpt-message-stream">
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`notegpt-message ${message.role === "assistant" ? "assistant" : "user"}`}
-              >
-                <div className="notegpt-message-role">
-                  {message.role === "assistant" ? "NoteGPT" : "Sen"}
-                </div>
-                <div className="notegpt-message-body">
-                  {message.content || (isStreaming && message.role === "assistant"
-                    ? "Dusunuyor..."
-                    : "")}
-                </div>
-              </div>
-            ))}
-          </div>
+        <PromptSuggestions
+          items={PROMPT_SUGGESTIONS}
+          onSelect={handlePromptSelect}
+        />
 
-          <div className="notegpt-composer">
-            <textarea
-              ref={composerRef}
-              className="notegpt-composer-input"
-              value={draft}
-              onChange={(event) => setDraft(event.target.value)}
-              onKeyDown={(event) => {
-                if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
-                  event.preventDefault();
-                  void handleSend();
-                }
-              }}
-              placeholder="NoteGPT'ye bir soru sor ya da bir gorev ver..."
-              rows={4}
-            />
-            <div className="notegpt-composer-actions">
-              <span className="notegpt-composer-hint">Ctrl/Cmd + Enter</span>
-              <Button
-                variant="filled"
-                onClick={() => void handleSend()}
-                disabled={!draft.trim() || isStreaming}
-              >
-                {isStreaming ? "Yanitlaniyor..." : "Gonder"}
-              </Button>
-            </div>
-          </div>
-        </section>
+        {messages.length > 0 || isStreaming ? (
+          <ConversationThread messages={messages} isStreaming={isStreaming} />
+        ) : (
+          <StarterCards items={STARTER_CARDS} onSelect={handlePromptSelect} />
+        )}
       </div>
     </div>
   );
+}
+
+function formatRelativeTime(input: string) {
+  const now = Date.now();
+  const target = new Date(input).getTime();
+  const diff = target - now;
+  const absSeconds = Math.round(Math.abs(diff) / 1000);
+  const rtf = new Intl.RelativeTimeFormat("tr", { numeric: "auto" });
+
+  if (absSeconds < 3600) {
+    return rtf.format(Math.round(diff / (1000 * 60)), "minute");
+  }
+
+  if (absSeconds < 86400) {
+    return rtf.format(Math.round(diff / (1000 * 60 * 60)), "hour");
+  }
+
+  if (absSeconds < 86400 * 7) {
+    return rtf.format(Math.round(diff / (1000 * 60 * 60 * 24)), "day");
+  }
+
+  return new Intl.DateTimeFormat("tr", {
+    month: "short",
+    day: "numeric",
+  }).format(new Date(input));
 }
