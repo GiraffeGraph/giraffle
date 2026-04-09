@@ -1,6 +1,6 @@
 "use server";
 
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { extractAndSaveLinks, resolveLinksForNote } from "@/domain/link/link.service";
 import { normalizeWikilinkTarget } from "@/domain/link/wikilink.parser";
@@ -81,29 +81,54 @@ export async function createNote(
   }
 
   const nextTitle = input.title ?? DEFAULT_NOTE_TITLE;
-  const [slug, nextPosition] = await Promise.all([
-    ensureUniqueNoteSlug(userId, nextTitle),
-    getNextNotePosition(userId, input.folderId ?? null),
-  ]);
+  let note: {
+    id: string;
+    title: string;
+    folderId: string | null;
+    slug: string | null;
+  } | null = null;
 
-  const note = await db.$transaction(async (tx) => {
-    const createdNote = await tx.note.create({
-      data: {
-        title: nextTitle,
-        slug,
-        icon: input.icon,
-        folderId: input.folderId,
-        categoryId: input.categoryId,
-        templateId: input.templateId,
-        position: nextPosition,
-        userId,
-      },
-    });
+  for (let attempt = 0; attempt < MAX_SLUG_ATTEMPTS; attempt += 1) {
+    const [slug, nextPosition] = await Promise.all([
+      ensureUniqueNoteSlug(nextTitle),
+      getNextNotePosition(userId, input.folderId ?? null),
+    ]);
 
-    await replaceNoteBlocks(tx, createdNote.id, createEmptyDocument());
+    try {
+      note = await db.$transaction(async (tx) => {
+        const createdNote = await tx.note.create({
+          data: {
+            title: nextTitle,
+            slug,
+            icon: input.icon,
+            folderId: input.folderId,
+            categoryId: input.categoryId,
+            templateId: input.templateId,
+            position: nextPosition,
+            userId,
+          },
+        });
 
-    return createdNote;
-  });
+        await replaceNoteBlocks(tx, createdNote.id, createEmptyDocument());
+
+        return createdNote;
+      });
+      break;
+    } catch (error) {
+      if (
+        attempt < MAX_SLUG_ATTEMPTS - 1 &&
+        isSlugUniqueConstraintError(error)
+      ) {
+        continue;
+      }
+
+      throw error;
+    }
+  }
+
+  if (!note) {
+    throw new Error("Failed to create note with a unique slug");
+  }
 
   if (note.title !== DEFAULT_NOTE_TITLE) {
     await resolveLinksForNote(userId, note.id, note.title);
@@ -298,43 +323,67 @@ export async function updateNote(
     await assertOwnedCategory(input.categoryId, userId);
   }
 
-  const updateData: UpdateNoteInput = { ...input };
-
-  if (typeof input.title === "string" && input.title.trim()) {
-    updateData.slug = await ensureUniqueNoteSlug(
-      userId,
-      input.title,
-      noteId,
-      input.slug ?? oldNote.slug ?? undefined
-    );
-  } else if (typeof input.slug === "string") {
-    updateData.slug = await ensureUniqueNoteSlug(userId, input.slug, noteId);
-  }
-
-  if (
+  const needsSlugGeneration =
+    (typeof input.title === "string" && input.title.trim().length > 0) ||
+    typeof input.slug === "string" ||
+    Boolean(input.isPublished);
+  const shouldRecalculatePosition =
     Object.prototype.hasOwnProperty.call(input, "folderId") &&
     input.folderId !== oldNote.folderId &&
-    typeof input.position !== "number"
-  ) {
-    updateData.position = await getNextNotePosition(
-      userId,
-      input.folderId ?? null
-    );
+    typeof input.position !== "number";
+
+  let updateData: UpdateNoteInput | null = null;
+
+  for (let attempt = 0; attempt < MAX_SLUG_ATTEMPTS; attempt += 1) {
+    updateData = { ...input };
+
+    if (typeof input.title === "string" && input.title.trim()) {
+      updateData.slug = await ensureUniqueNoteSlug(
+        input.title,
+        noteId,
+        input.slug ?? oldNote.slug ?? undefined
+      );
+    } else if (typeof input.slug === "string") {
+      updateData.slug = await ensureUniqueNoteSlug(input.slug, noteId);
+    }
+
+    if (shouldRecalculatePosition) {
+      updateData.position = await getNextNotePosition(
+        userId,
+        input.folderId ?? null
+      );
+    }
+
+    if (input.isPublished && !updateData.slug) {
+      updateData.slug = await ensureUniqueNoteSlug(
+        input.title ?? oldNote.title,
+        noteId,
+        oldNote.slug ?? undefined
+      );
+    }
+
+    try {
+      await db.note.update({
+        where: { id: noteId },
+        data: updateData,
+      });
+      break;
+    } catch (error) {
+      if (
+        needsSlugGeneration &&
+        attempt < MAX_SLUG_ATTEMPTS - 1 &&
+        isSlugUniqueConstraintError(error)
+      ) {
+        continue;
+      }
+
+      throw error;
+    }
   }
 
-  if (input.isPublished && !updateData.slug) {
-    updateData.slug = await ensureUniqueNoteSlug(
-      userId,
-      input.title ?? oldNote.title,
-      noteId,
-      oldNote.slug ?? undefined
-    );
+  if (!updateData) {
+    throw new Error("Failed to update note");
   }
-
-  await db.note.update({
-    where: { id: noteId },
-    data: updateData,
-  });
 
   if (input.title && input.title !== oldNote.title) {
     await resolveLinksForNote(userId, noteId, input.title);
@@ -1121,7 +1170,6 @@ async function getOwnedNoteDocument(userId: string, noteId: string) {
 }
 
 async function ensureUniqueNoteSlug(
-  userId: string,
   input: string,
   noteIdToExclude?: string,
   preferredSlug?: string
@@ -1134,7 +1182,6 @@ async function ensureUniqueNoteSlug(
   while (true) {
     const existingNote = await db.note.findFirst({
       where: {
-        userId,
         slug: candidateSlug,
         ...(noteIdToExclude ? { id: { not: noteIdToExclude } } : {}),
       },
@@ -1149,6 +1196,26 @@ async function ensureUniqueNoteSlug(
     suffix += 1;
   }
 }
+
+function isSlugUniqueConstraintError(error: unknown) {
+  if (!(error instanceof Prisma.PrismaClientKnownRequestError)) {
+    return false;
+  }
+
+  if (error.code !== "P2002") {
+    return false;
+  }
+
+  const target = error.meta?.target;
+
+  if (Array.isArray(target)) {
+    return target.includes("slug");
+  }
+
+  return target === "slug";
+}
+
+const MAX_SLUG_ATTEMPTS = 5;
 
 async function getNextNotePosition(userId: string, folderId: string | null) {
   const lastNote = await db.note.findFirst({

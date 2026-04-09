@@ -488,6 +488,8 @@ export function Sidebar({
       { id: "action-new-folder", group: "Hızlı işlemler", title: "Yeni klasör oluştur", description: "Çalışma alanına yeni klasör ekle", icon: encodeMaterialSymbol("create_new_folder"), onSelect: async () => { closePalette(); handleStartCreateFolder(); } },
       { id: "action-template-note", group: "Hızlı işlemler", title: "Şablondan not oluştur", description: "Şablon seçiciyi aç", icon: encodeMaterialSymbol("tooltip"), onSelect: async () => { setTemplatePickerOpenSignal((v) => v + 1); } },
       { id: "action-dashboard", group: "Geçişler", title: "Panoya git", description: "Ana çalışma alanı görünümü", icon: encodeMaterialSymbol("dashboard"), onSelect: async () => { router.push("/dashboard"); } },
+      { id: "action-library", group: "Geçişler", title: "Kütüphane", description: "Tüm notlar ve klasörleri tek sayfada aç", icon: encodeMaterialSymbol("library_books"), onSelect: async () => { router.push("/library"); } },
+      { id: "action-notegpt", group: "Geçişler", title: "NoteGPT", description: "Çalışma alanı copilotunu aç", icon: encodeMaterialSymbol("smart_toy"), onSelect: async () => { router.push("/notegpt"); } },
       { id: "action-graph", group: "Geçişler", title: "Bağlantı ağına git", description: "Not grafiği görünümü", icon: "__graph__", onSelect: async () => { router.push("/graph"); } },
       { id: "action-inbox", group: "Geçişler", title: "Gelen kutusuna git", description: "Klasörsüz notları aç", icon: encodeMaterialSymbol("inbox"), onSelect: async () => { router.push("/inbox"); } },
       { id: "action-search", group: "Geçişler", title: "Arama çalışma alanını aç", description: "Filtreli arama sayfası", icon: encodeMaterialSymbol("search"), onSelect: async () => { router.push("/search"); } },
@@ -598,6 +600,8 @@ export function Sidebar({
               {([
                 { path: "/dashboard", icon: "\uE88A", label: "Pano" },
                 { path: "/inbox", icon: "\uE156", label: "Gelen kutusu", badge: inboxCount > 0 ? inboxCount : undefined },
+                { path: "/library", icon: "library_books", label: "Kütüphane" },
+                { path: "/notegpt", icon: "smart_toy", label: "NoteGPT" },
               ] as Array<{ path: string; icon: string; label: string; badge?: number }>).map(({ path, icon, label, badge }) => (
                 <button
                   key={path}

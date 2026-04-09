@@ -16,7 +16,8 @@
 
 .dashboard,
 .note-page,
-.graph-page {
+.graph-page,
+.library-page {
   width: min(100%, 1100px);
   margin: 0 auto;
   padding: 34px 34px 54px;
@@ -26,7 +27,9 @@
 .graph-header,
 .note-header,
 .published-shell,
-.auth-card {
+.auth-card,
+.library-hero,
+.library-panel {
   border: 1px solid var(--border-soft);
   border-radius: 32px;
   background: var(--surface-overlay);
@@ -36,6 +39,87 @@
 
 .dashboard-hero {
   padding: 34px;
+}
+
+.library-hero,
+.library-panel {
+  padding: 28px;
+}
+
+.library-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 22px;
+}
+
+.library-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.library-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.library-list {
+  display: grid;
+  gap: 10px;
+}
+
+.library-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--border-soft);
+  border-radius: 20px;
+  background: var(--surface-glass);
+  color: inherit;
+}
+
+.library-item:hover {
+  transform: translateY(-1px);
+  color: inherit;
+  box-shadow: var(--shadow-soft);
+  background: var(--surface-glass-hover);
+}
+
+.library-item-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--accent) 18%, var(--surface-glass));
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.library-item-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.library-item-title {
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.library-item-meta {
+  color: var(--text-tertiary);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .dashboard-header {
@@ -670,6 +754,329 @@
   align-items: center;
   gap: 10px;
   margin-bottom: 14px;
+}
+
+.notegpt-page {
+  width: min(100%, 1280px);
+  margin: 0 auto;
+  padding: 34px 34px 54px;
+}
+
+.notegpt-shell {
+  display: block;
+}
+
+.notegpt-chat-panel,
+.notegpt-library-panel {
+  border: 1px solid var(--border-soft);
+  border-radius: 28px;
+  background: var(--surface-overlay);
+  box-shadow: var(--shadow-panel);
+  backdrop-filter: blur(16px);
+}
+
+.notegpt-chat-panel {
+  display: grid;
+  gap: 16px;
+  padding: 24px;
+  min-height: 78vh;
+}
+
+.notegpt-library-panel {
+  position: sticky;
+  top: 24px;
+  display: grid;
+  gap: 18px;
+  padding: 20px;
+  max-height: calc(100vh - 56px);
+  overflow: hidden;
+}
+
+.notegpt-chat-header,
+.notegpt-library-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.notegpt-kicker,
+.notegpt-library-section-title {
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  font-weight: 800;
+}
+
+.notegpt-title,
+.notegpt-library-title {
+  font-family: var(--font-display);
+  color: var(--text-primary);
+}
+
+.notegpt-title {
+  font-size: clamp(2.1rem, 4vw, 3rem);
+  line-height: 0.96;
+  letter-spacing: -0.05em;
+  margin-top: 6px;
+}
+
+.notegpt-library-title {
+  font-size: 1.1rem;
+  margin-top: 6px;
+}
+
+.notegpt-subtitle {
+  margin-top: 10px;
+  max-width: 620px;
+  color: var(--text-secondary);
+}
+
+.notegpt-stat-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.notegpt-stat-card {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 88px;
+  padding: 12px 14px;
+  border: 1px solid var(--border-soft);
+  border-radius: 18px;
+  background: var(--surface-glass-muted);
+}
+
+.notegpt-stat-number {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.notegpt-stat-label,
+.notegpt-composer-hint,
+.notegpt-library-item-meta,
+.notegpt-message-role {
+  color: var(--text-tertiary);
+}
+
+.notegpt-stat-label,
+.notegpt-composer-hint {
+  font-size: 12px;
+}
+
+.notegpt-prompt-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.notegpt-prompt-chip {
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  background: var(--surface-glass);
+  color: var(--text-secondary);
+  padding: 10px 14px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.notegpt-prompt-chip:hover,
+.notegpt-library-item:hover {
+  background: var(--surface-glass-hover);
+  color: var(--text-primary);
+}
+
+.notegpt-message-stream {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  min-height: 0;
+  padding-right: 6px;
+  overflow: auto;
+}
+
+.notegpt-message {
+  display: grid;
+  gap: 6px;
+  max-width: 88%;
+}
+
+.notegpt-message.assistant {
+  justify-self: start;
+}
+
+.notegpt-message.user {
+  justify-self: end;
+}
+
+.notegpt-message-body {
+  white-space: pre-wrap;
+  padding: 14px 16px;
+  border-radius: 20px;
+  border: 1px solid var(--border-soft);
+  line-height: 1.6;
+  background: var(--surface-glass);
+  color: var(--text-primary);
+}
+
+.notegpt-message.user .notegpt-message-body {
+  background: color-mix(in srgb, var(--accent) 20%, var(--surface-glass));
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--border-soft));
+}
+
+.notegpt-composer {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--border-soft);
+  border-radius: 24px;
+  background: var(--surface-glass-muted);
+}
+
+.notegpt-composer-input,
+.notegpt-library-search {
+  width: 100%;
+  border: 1px solid var(--border-soft);
+  border-radius: 18px;
+  background: var(--surface-glass);
+  color: var(--text-primary);
+  outline: none;
+}
+
+.notegpt-composer-input {
+  min-height: 104px;
+  resize: vertical;
+  padding: 14px 16px;
+  line-height: 1.6;
+}
+
+.notegpt-library-search {
+  min-height: 44px;
+  max-width: 220px;
+  padding: 0 14px;
+}
+
+.notegpt-composer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.notegpt-library-section {
+  display: grid;
+  gap: 10px;
+  min-height: 0;
+}
+
+.notegpt-library-list {
+  display: grid;
+  gap: 8px;
+  overflow: auto;
+}
+
+.notegpt-library-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--border-soft);
+  border-radius: 18px;
+  background: var(--surface-glass);
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.notegpt-library-item-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent) 16%, var(--surface-glass));
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.notegpt-library-item-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.notegpt-library-item-title {
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.notegpt-library-item-meta {
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.notegpt-library-empty {
+  padding: 12px 4px;
+  color: var(--text-tertiary);
+  font-size: 13px;
+}
+
+@media (max-width: 1080px) {
+  .notegpt-library-panel {
+    position: static;
+    max-height: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .notegpt-page {
+    padding: 20px 16px 40px;
+  }
+
+  .library-page {
+    padding: 20px 16px 40px;
+  }
+
+  .notegpt-chat-panel,
+  .notegpt-library-panel {
+    border-radius: 22px;
+  }
+
+  .notegpt-chat-panel {
+    padding: 18px;
+    min-height: auto;
+  }
+
+  .notegpt-chat-header,
+  .notegpt-library-header,
+  .notegpt-composer-actions {
+    grid-template-columns: 1fr;
+    display: grid;
+  }
+
+  .notegpt-library-search {
+    max-width: none;
+  }
+
+  .notegpt-message {
+    max-width: 100%;
+  }
+
+  .library-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .backlinks-icon {

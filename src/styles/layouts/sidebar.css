@@ -326,6 +326,45 @@
   gap: 6px;
 }
 
+.sidebar-library-block {
+  display: grid;
+  gap: 12px;
+}
+
+.sidebar-library-subhead {
+  padding: 4px 12px 0;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+.sidebar-library-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sidebar-library-entry {
+  align-items: flex-start;
+}
+
+.sidebar-library-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  text-align: left;
+}
+
+.sidebar-library-meta {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .sidebar-folder-count {
   margin-left: auto;
   display: inline-flex;
