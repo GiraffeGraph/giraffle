@@ -588,7 +588,6 @@ export function Sidebar({
               aria-label="Arama veya komut paleti"
             >
               <span className="material-symbols-outlined sm" aria-hidden="true">&#xE8B6;</span>
-              <span style={{ flex: 1, textAlign: "left", fontSize: "12px" }}>Ara veya komut çalıştır...</span>
               <kbd className="sidebar-search-kbd">⌘K</kbd>
             </button>
           </div>

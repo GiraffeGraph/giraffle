@@ -54,22 +54,12 @@ a:hover {
 }
 
 /* Scrollbar styling */
+* {
+  scrollbar-width: none;
+}
+
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--md-sys-color-outline-variant);
-  border-radius: var(--md-sys-shape-full);
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--md-sys-color-outline);
+  display: none;
 }
 
 /* Selection */

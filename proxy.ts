@@ -1,22 +1,30 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 
-const protectedPrefixes = ["/dashboard", "/notes", "/folders", "/tags", "/graph"];
-const authRoutes = new Set(["/login", "/register"]);
+// Routes accessible without authentication
+const PUBLIC_PATHS = new Set(["/login", "/register", "/forgot-password"]);
+const PUBLIC_PREFIXES = ["/published/", "/p/", "/reset-password/", "/api/auth/", "/api/health"];
+
+// Auth pages that redirect authenticated users away
+const AUTH_REDIRECT_PATHS = new Set(["/login", "/register"]);
 
 export default auth((request) => {
-  const pathname = request.nextUrl.pathname;
+  const { pathname } = request.nextUrl;
   const isAuthenticated = Boolean(request.auth);
-  const isProtectedRoute = protectedPrefixes.some(
-    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
-  );
 
-  if (isProtectedRoute && !isAuthenticated) {
-    return NextResponse.redirect(new URL("/login", request.url));
+  const isPublic =
+    PUBLIC_PATHS.has(pathname) ||
+    PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+
+  if (isPublic) {
+    if (AUTH_REDIRECT_PATHS.has(pathname) && isAuthenticated) {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
+    return NextResponse.next();
   }
 
-  if (authRoutes.has(pathname) && isAuthenticated) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+  if (!isAuthenticated) {
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
   return NextResponse.next();
@@ -24,12 +32,6 @@ export default auth((request) => {
 
 export const config = {
   matcher: [
-    "/dashboard/:path*",
-    "/notes/:path*",
-    "/folders/:path*",
-    "/tags/:path*",
-    "/graph/:path*",
-    "/login",
-    "/register",
+    "/((?!_next/static|_next/image|favicon\\.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };

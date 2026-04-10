@@ -39,6 +39,7 @@ export async function createNoteAction(input?: CreateNoteInput) {
   const noteId = await createNote(userId, input);
   revalidatePath("/dashboard");
   revalidatePath("/graph");
+  revalidatePath("/inbox");
   return noteId;
 }
 
@@ -57,6 +58,7 @@ export async function updateNoteAction(noteId: string, input: UpdateNoteInput) {
   await updateNote(userId, noteId, input);
   revalidatePath("/dashboard");
   revalidatePath("/graph");
+  revalidatePath("/inbox");
   revalidatePath(`/notes/${noteId}`);
   revalidatePath(`/p/${noteId}`);
   revalidatePath("/published");
@@ -80,6 +82,7 @@ export async function archiveNoteAction(noteId: string) {
   await archiveNote(userId, noteId);
   revalidatePath("/dashboard");
   revalidatePath("/graph");
+  revalidatePath("/inbox");
 }
 
 export async function moveNoteAction(
@@ -90,6 +93,7 @@ export async function moveNoteAction(
   await moveNote(userId, noteId, direction);
   revalidatePath("/dashboard");
   revalidatePath("/graph");
+  revalidatePath("/inbox");
   revalidatePath(`/notes/${noteId}`);
 }
 
@@ -104,6 +108,7 @@ export async function relocateNoteAction(
   await relocateNote(userId, noteId, placement);
   revalidatePath("/dashboard");
   revalidatePath("/graph");
+  revalidatePath("/inbox");
   revalidatePath(`/notes/${noteId}`);
 }
 
@@ -112,6 +117,7 @@ export async function deleteNoteAction(noteId: string) {
   await deleteNote(userId, noteId);
   revalidatePath("/dashboard");
   revalidatePath("/graph");
+  revalidatePath("/inbox");
 }
 
 export async function getBacklinksAction(noteId: string) {
@@ -157,6 +163,7 @@ export async function createNoteFromWikilinkAction(
 
   revalidatePath("/dashboard");
   revalidatePath("/graph");
+  revalidatePath("/inbox");
   revalidatePath(`/notes/${noteId}`);
 
   return {
