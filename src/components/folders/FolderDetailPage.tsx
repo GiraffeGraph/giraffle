@@ -6,7 +6,6 @@ import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { SidebarIconPicker } from "@/components/sidebar/SidebarIconPicker";
 import { renderStoredIcon } from "@/components/sidebar/sidebar-icon-utils";
-import { TopbarPathNavigator } from "@/components/ui/TopbarPathNavigator";
 import { formatDate } from "@/lib/utils";
 import { updateFolderAction } from "@/server/api/folders";
 
@@ -204,10 +203,6 @@ export function FolderDetailPage({ folder, allFolders }: FolderDetailPageProps) 
               </div>
             );
           })}
-        </div>
-
-        <div style={{ flex: "0 1 320px", minWidth: 0 }}>
-          <TopbarPathNavigator key={folder.id} currentPath={`/folders/${folder.id}`} />
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "4px", flexShrink: 0 }}>

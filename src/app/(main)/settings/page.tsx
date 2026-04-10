@@ -9,7 +9,7 @@ export default async function SettingsPage() {
 
   return (
     <>
-      <PageTopbar icon="settings" label="Ayarlar" currentPath="/settings" />
+      <PageTopbar icon="settings" label="Ayarlar" />
       <div className="dashboard settings-page app-page">
 
       <SettingsWorkspace

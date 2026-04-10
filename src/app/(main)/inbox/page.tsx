@@ -9,7 +9,7 @@ export default async function InboxPage() {
 
   return (
     <>
-      <PageTopbar icon="inbox" label="Gelen kutusu" currentPath="/inbox" />
+      <PageTopbar icon="inbox" label="Gelen kutusu" />
       <div className="dashboard search-page app-page">
 
       <section className="search-section">

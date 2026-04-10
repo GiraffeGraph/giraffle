@@ -11,7 +11,7 @@ export default async function NoteGptPage() {
 
   return (
     <>
-      <PageTopbar icon="smart_toy" label="NoteGPT" currentPath="/notegpt" />
+      <PageTopbar icon="smart_toy" label="NoteGPT" />
       <NoteGptWorkspace
       notes={notes.map((note) => ({
         id: note.id,

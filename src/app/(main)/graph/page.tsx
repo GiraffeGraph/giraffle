@@ -13,7 +13,7 @@ export default async function GraphPage() {
 
   return (
     <>
-      <PageTopbar icon="hub" label="Bağlantı ağı" currentPath="/graph" />
+      <PageTopbar icon="hub" label="Bağlantı ağı" />
       <GraphView graph={graph} unresolvedLinks={unresolvedLinks} />
     </>
   );

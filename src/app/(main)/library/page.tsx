@@ -7,7 +7,7 @@ export default async function LibraryPage() {
 
   return (
     <>
-      <PageTopbar icon="library_books" label="Kütüphane" currentPath="/library" />
+      <PageTopbar icon="library_books" label="Kütüphane" />
       <LibraryWorkspace {...seed} />
     </>
   );

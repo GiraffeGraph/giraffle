@@ -1,16 +1,12 @@
-"use client";
-
 import Link from "next/link";
-import { TopbarPathNavigator } from "./TopbarPathNavigator";
 
 interface PageTopbarProps {
   icon: string;
   label: string;
-  currentPath: string;
   actions?: React.ReactNode;
 }
 
-export function PageTopbar({ icon, label, currentPath, actions }: PageTopbarProps) {
+export function PageTopbar({ icon, label, actions }: PageTopbarProps) {
   return (
     <div
       style={{
@@ -43,10 +39,6 @@ export function PageTopbar({ icon, label, currentPath, actions }: PageTopbarProp
         <span style={{ color: "var(--md-sys-color-on-surface)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {label}
         </span>
-      </div>
-
-      <div style={{ flex: "0 1 320px", minWidth: 0 }}>
-        <TopbarPathNavigator currentPath={currentPath} />
       </div>
 
       {actions ? (

@@ -14,7 +14,7 @@ export default async function TagPage({ params }: TagPageProps) {
 
   return (
     <>
-      <PageTopbar icon="label" label={`#${tagName}`} currentPath={`/tags/${tagName}`} />
+      <PageTopbar icon="label" label={`#${tagName}`} />
       <div className="dashboard">
       {notes.length === 0 ? (
         <div className="dashboard-empty">

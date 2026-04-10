@@ -19,7 +19,6 @@ import { renderStoredIcon } from "@/components/sidebar/sidebar-icon-utils";
 import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 import { Button } from "@/components/ui/Button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
-import { TopbarPathNavigator } from "@/components/ui/TopbarPathNavigator";
 import {
   NOTE_CATEGORY_COLOR_OPTIONS,
   getNoteCategoryColorTokens,
@@ -845,10 +844,6 @@ export function NoteEditorPage({
           </div>
           <span style={{ opacity: 0.4 }}>/</span>
           <span style={{ color: "var(--md-sys-color-on-surface)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "240px" }}>{effectiveTitle}</span>
-        </div>
-
-        <div style={{ flex: "0 1 320px", minWidth: 0 }}>
-          <TopbarPathNavigator key={note.id} currentPath={`/notes/${note.id}`} />
         </div>
 
         {/* Actions */}

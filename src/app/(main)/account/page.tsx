@@ -26,7 +26,7 @@ export default async function AccountPage() {
 
   return (
     <>
-      <PageTopbar icon="account_circle" label="Hesap" currentPath="/account" />
+      <PageTopbar icon="account_circle" label="Hesap" />
       <div className="dashboard account-page app-page">
 
       <div className="templates-layout">

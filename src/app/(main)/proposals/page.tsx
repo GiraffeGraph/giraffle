@@ -7,7 +7,7 @@ export default async function ProposalsPage() {
 
   return (
     <>
-      <PageTopbar icon="auto_awesome" label="Öneriler" currentPath="/proposals" />
+      <PageTopbar icon="auto_awesome" label="Öneriler" />
       <div className="dashboard proposals-page app-page">
 
       {proposals.length === 0 ? (

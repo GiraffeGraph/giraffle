@@ -85,7 +85,7 @@ export default async function TemplatesPage({ searchParams }: TemplatesPageProps
 
   return (
     <>
-      <PageTopbar icon="tooltip" label="Şablonlar" currentPath="/templates" />
+      <PageTopbar icon="tooltip" label="Şablonlar" />
       <div className="dashboard templates-page app-page">
       <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "24px", padding: "24px 32px 32px", maxWidth: "1200px", margin: "0 auto" }}>
         

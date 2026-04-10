@@ -7,7 +7,7 @@ export default async function PublishPage() {
 
   return (
     <>
-      <PageTopbar icon="publish" label="Yayınlar" currentPath="/publish" />
+      <PageTopbar icon="publish" label="Yayınlar" />
       <div className="dashboard publish-page app-page">
 
       <div className="search-result-grid">
