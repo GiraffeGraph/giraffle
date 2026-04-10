@@ -42,12 +42,17 @@ export function SlashCommandMenu<T extends CommandMenuItem>({
 
   const handleKeyDown = useCallback(
     (event: KeyboardEvent) => {
-      if (items.length === 0) {
+      if (event.isComposing || items.length === 0) {
         return;
       }
 
-      if (event.key === "ArrowDown") {
+      const consumeEvent = () => {
         event.preventDefault();
+        event.stopPropagation();
+      };
+
+      if (event.key === "ArrowDown") {
+        consumeEvent();
         setSelection({
           itemsKey,
           index: (selectedIndex + 1) % items.length,
@@ -55,7 +60,7 @@ export function SlashCommandMenu<T extends CommandMenuItem>({
       }
 
       if (event.key === "ArrowUp") {
-        event.preventDefault();
+        consumeEvent();
         setSelection({
           itemsKey,
           index: (selectedIndex - 1 + items.length) % items.length,
@@ -63,7 +68,7 @@ export function SlashCommandMenu<T extends CommandMenuItem>({
       }
 
       if (event.key === "Enter") {
-        event.preventDefault();
+        consumeEvent();
 
         if (items[selectedIndex]) {
           command(items[selectedIndex]);
@@ -74,8 +79,8 @@ export function SlashCommandMenu<T extends CommandMenuItem>({
   );
 
   useEffect(() => {
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
+    document.addEventListener("keydown", handleKeyDown, true);
+    return () => document.removeEventListener("keydown", handleKeyDown, true);
   }, [handleKeyDown]);
 
   if (items.length === 0) {
