@@ -41,76 +41,76 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   const unresolvedResults = unresolved.filter((item) =>
     query ? item.targetRaw.toLowerCase().includes(query) : true
   );
-  const totalResults =
-    noteResults.length +
-    folderResults.length +
-    templateResults.length +
-    unresolvedResults.length;
-
   return (
     <>
-      <PageTopbar icon=”search” label=”Arama” currentPath=”/search” />
-      <div className=”dashboard search-page app-page”>
+      <PageTopbar icon="search" label="Arama" />
+      <div className="dashboard search-page app-page">
 
-      {(scope === "all" || scope === "notes") && (
-        <SearchSection title="Notlar" count={noteResults.length}>
-          {noteResults.map((note) => (
-            <Link key={note.id} href={`/notes/${note.id}`} className="search-result-card">
-              <span className="search-result-title">{note.title}</span>
-              <span className="search-result-meta">
-                {note.isPinned ? "Pinli" : "Not"}
-              </span>
-            </Link>
-          ))}
-        </SearchSection>
-      )}
+        {(scope === "all" || scope === "notes") && (
+          <SearchSection title="Notlar" count={noteResults.length}>
+            {noteResults.map((note) => (
+              <Link
+                key={note.id}
+                href={`/notes/${note.id}`}
+                className="search-result-card"
+              >
+                <span className="search-result-title">{note.title}</span>
+                <span className="search-result-meta">
+                  {note.isPinned ? "Pinli" : "Not"}
+                </span>
+              </Link>
+            ))}
+          </SearchSection>
+        )}
 
-      {(scope === "all" || scope === "folders") && (
-        <SearchSection title="Klasörler" count={folderResults.length}>
-          {folderResults.map((folder) => (
-            <Link
-              key={folder.id}
-              href={`/folders/${folder.id}`}
-              className="search-result-card"
-            >
-              <span className="search-result-title">{folder.name}</span>
-              <span className="search-result-meta">Klasör</span>
-            </Link>
-          ))}
-        </SearchSection>
-      )}
+        {(scope === "all" || scope === "folders") && (
+          <SearchSection title="Klasörler" count={folderResults.length}>
+            {folderResults.map((folder) => (
+              <Link
+                key={folder.id}
+                href={`/folders/${folder.id}`}
+                className="search-result-card"
+              >
+                <span className="search-result-title">{folder.name}</span>
+                <span className="search-result-meta">Klasör</span>
+              </Link>
+            ))}
+          </SearchSection>
+        )}
 
-      {(scope === "all" || scope === "templates") && (
-        <SearchSection title="Şablonlar" count={templateResults.length}>
-          {templateResults.map((template) => (
-            <Link
-              key={template.id}
-              href={`/templates?selected=${template.id}`}
-              className="search-result-card"
-            >
-              <span className="search-result-title">{template.name}</span>
-              <span className="search-result-meta">
-                {getTemplateCategoryLabel(template.category)}
-              </span>
-            </Link>
-          ))}
-        </SearchSection>
-      )}
+        {(scope === "all" || scope === "templates") && (
+          <SearchSection title="Şablonlar" count={templateResults.length}>
+            {templateResults.map((template) => (
+              <Link
+                key={template.id}
+                href={`/templates?selected=${template.id}`}
+                className="search-result-card"
+              >
+                <span className="search-result-title">{template.name}</span>
+                <span className="search-result-meta">
+                  {getTemplateCategoryLabel(template.category)}
+                </span>
+              </Link>
+            ))}
+          </SearchSection>
+        )}
 
-      {(scope === "all" || scope === "unresolved") && (
-        <SearchSection
-          title="Çözülmemiş bağlantılar"
-          count={unresolvedResults.length}
-        >
-          {unresolvedResults.map((item) => (
-            <div key={item.targetRaw} className="search-result-card">
-              <span className="search-result-title">{item.targetRaw}</span>
-              <span className="search-result-meta">{item.count} notta geçiyor</span>
-            </div>
-          ))}
-        </SearchSection>
-      )}
-    </div>
+        {(scope === "all" || scope === "unresolved") && (
+          <SearchSection
+            title="Çözülmemiş bağlantılar"
+            count={unresolvedResults.length}
+          >
+            {unresolvedResults.map((item) => (
+              <div key={item.targetRaw} className="search-result-card">
+                <span className="search-result-title">{item.targetRaw}</span>
+                <span className="search-result-meta">
+                  {item.count} notta geçiyor
+                </span>
+              </div>
+            ))}
+          </SearchSection>
+        )}
+      </div>
     </>
   );
 }

@@ -12,6 +12,7 @@ export interface NoteGptWorkspaceProps {
     icon: string | null;
     parentId: string | null;
   }>;
+  embedded?: boolean;
 }
 
 export interface ChatMessage {
