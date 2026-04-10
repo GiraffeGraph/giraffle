@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AppPageHeader } from "@/components/ui/AppPageHeader";
+import { PageTopbar } from "@/components/ui/PageTopbar";
 import { getAllFoldersAction } from "@/server/api/folders";
 import { getUnresolvedLinksAction } from "@/server/api/graph";
 import { getNotesAction } from "@/server/api/notes";
@@ -48,17 +48,9 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     unresolvedResults.length;
 
   return (
-    <div className="dashboard search-page app-page">
-      <AppPageHeader
-        eyebrow="Keşif"
-        title="Arama"
-        description={
-          query
-            ? `“${params.q}” için kapsam genelinde sonuçlar.`
-            : "Notlar, klasörler, şablonlar ve çözülmemiş bağlantılar tek akışta."
-        }
-        meta={`${totalResults} sonuç`}
-      />
+    <>
+      <PageTopbar icon=”search” label=”Arama” currentPath=”/search” />
+      <div className=”dashboard search-page app-page”>
 
       {(scope === "all" || scope === "notes") && (
         <SearchSection title="Notlar" count={noteResults.length}>
@@ -119,6 +111,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         </SearchSection>
       )}
     </div>
+    </>
   );
 }
 

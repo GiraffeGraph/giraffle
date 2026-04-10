@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AppPageHeader } from "@/components/ui/AppPageHeader";
+import { PageTopbar } from "@/components/ui/PageTopbar";
 import { formatDate } from "@/lib/utils";
 import { getNotesAction } from "@/server/api/notes";
 
@@ -8,13 +8,9 @@ export default async function InboxPage() {
   const inboxNotes = notes.filter((note) => !note.folderId);
 
   return (
-    <div className="dashboard search-page app-page">
-      <AppPageHeader
-        eyebrow="Klasörsüz notlar"
-        title="Gelen kutusu"
-        description="Henüz klasöre yerleştirilmemiş tüm notlar burada listelenir."
-        meta={`${inboxNotes.length} not`}
-      />
+    <>
+      <PageTopbar icon="inbox" label="Gelen kutusu" currentPath="/inbox" />
+      <div className="dashboard search-page app-page">
 
       <section className="search-section">
         <div className="dashboard-section-head search-section-head">
@@ -43,5 +39,6 @@ export default async function InboxPage() {
         </div>
       </section>
     </div>
+    </>
   );
 }

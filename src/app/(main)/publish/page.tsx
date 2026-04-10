@@ -1,18 +1,14 @@
 import Link from "next/link";
-import { AppPageHeader } from "@/components/ui/AppPageHeader";
+import { PageTopbar } from "@/components/ui/PageTopbar";
 import { getPublishedExportsAction } from "@/server/api/notes";
 
 export default async function PublishPage() {
   const exports = await getPublishedExportsAction();
 
   return (
-    <div className="dashboard publish-page app-page">
-      <AppPageHeader
-        eyebrow="Dağıtım"
-        title="Yayınlar"
-        description="Paylaşıma açılmış notları ve erişilebilir yollarını tek yerden yönet."
-        meta={`${exports.length} yayın`}
-      />
+    <>
+      <PageTopbar icon="publish" label="Yayınlar" currentPath="/publish" />
+      <div className="dashboard publish-page app-page">
 
       <div className="search-result-grid">
         {exports.length === 0 ? (
@@ -33,5 +29,6 @@ export default async function PublishPage() {
         )}
       </div>
     </div>
+    </>
   );
 }

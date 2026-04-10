@@ -19,10 +19,19 @@
 
 <p align="center">
   <a href="#why-giraffle">Why Giraffle</a> •
+  <a href="#ui-screenshots">UI Screenshots</a> •
   <a href="#features">Features</a> •
   <a href="#local-development">Local Development</a> •
   <a href="#production-deployment">Production Deployment</a> •
   <a href="#project-structure">Project Structure</a>
+</p>
+
+## UI Screenshots
+
+<p align="center">
+  <img src="./docs/screenshots/ui-dark-1.png" alt="Giraffle dark theme screenshot 1" width="31%" />
+  <img src="./docs/screenshots/ui-light.png" alt="Giraffle light theme screenshot" width="31%" />
+  <img src="./docs/screenshots/ui-dark-2.png" alt="Giraffle dark theme screenshot 2" width="31%" />
 </p>
 
 ## Why Giraffle

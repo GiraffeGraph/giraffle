@@ -1,3 +1,4 @@
+import { PageTopbar } from "@/components/ui/PageTopbar";
 import { GraphView } from "@/components/graph/GraphView";
 import {
   getGraphProjectionAction,
@@ -10,5 +11,10 @@ export default async function GraphPage() {
     getUnresolvedLinksAction(),
   ]);
 
-  return <GraphView graph={graph} unresolvedLinks={unresolvedLinks} />;
+  return (
+    <>
+      <PageTopbar icon="hub" label="Bağlantı ağı" currentPath="/graph" />
+      <GraphView graph={graph} unresolvedLinks={unresolvedLinks} />
+    </>
+  );
 }

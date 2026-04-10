@@ -5,7 +5,7 @@ import {
   getTemplatesAction,
   updateTemplateAction,
 } from "@/server/api/templates";
-import { AppPageHeader } from "@/components/ui/AppPageHeader";
+import { PageTopbar } from "@/components/ui/PageTopbar";
 import {
   blocksToMarkdown,
   markdownToBlocks,
@@ -19,7 +19,7 @@ import {
   type TemplateVariable,
 } from "@/domain/template/template.types";
 import { getTemplateCategoryLabel } from "@/lib/template-category";
-import { Card, CardHeader, CardTitle, CardContent, CardActions } from "@/components/ui/Card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 
 interface TemplatesPageProps {
@@ -84,15 +84,10 @@ export default async function TemplatesPage({ searchParams }: TemplatesPageProps
   }
 
   return (
-    <div className="dashboard templates-page app-page">
-      <AppPageHeader
-        eyebrow="Sistem"
-        title="Şablonlar"
-        description="Tekrarlanan not başlangıçlarını, ritüelleri ve ekip formatlarını tutarlı hale getir."
-        meta={`${templates.length} şablon`}
-      />
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "24px", padding: "0 32px 32px", maxWidth: "1200px", margin: "0 auto" }}>
+    <>
+      <PageTopbar icon="tooltip" label="Şablonlar" currentPath="/templates" />
+      <div className="dashboard templates-page app-page">
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "24px", padding: "24px 32px 32px", maxWidth: "1200px", margin: "0 auto" }}>
         
         {/* Left Column: Library */}
         <section style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
@@ -264,6 +259,7 @@ export default async function TemplatesPage({ searchParams }: TemplatesPageProps
         </section>
       </div>
     </div>
+    </>
   );
 }
 

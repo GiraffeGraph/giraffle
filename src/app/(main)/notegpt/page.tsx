@@ -1,3 +1,4 @@
+import { PageTopbar } from "@/components/ui/PageTopbar";
 import { NoteGptWorkspace } from "@/components/notegpt/NoteGptWorkspace";
 import { getAllFoldersAction } from "@/server/api/folders";
 import { getNotesAction } from "@/server/api/notes";
@@ -9,7 +10,9 @@ export default async function NoteGptPage() {
   ]);
 
   return (
-    <NoteGptWorkspace
+    <>
+      <PageTopbar icon="smart_toy" label="NoteGPT" currentPath="/notegpt" />
+      <NoteGptWorkspace
       notes={notes.map((note) => ({
         id: note.id,
         title: note.title,
@@ -24,5 +27,6 @@ export default async function NoteGptPage() {
         parentId: folder.parentId ?? null,
       }))}
     />
+    </>
   );
 }

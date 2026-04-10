@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PageTopbar } from "@/components/ui/PageTopbar";
 import { renderStoredIcon } from "@/components/sidebar/sidebar-icon-utils";
 import { getNotesForTagAction } from "@/server/api/tags";
 import { formatDate } from "@/lib/utils";
@@ -12,7 +13,9 @@ export default async function TagPage({ params }: TagPageProps) {
   const notes = await getNotesForTagAction(tagName);
 
   return (
-    <div className="dashboard">
+    <>
+      <PageTopbar icon="label" label={`#${tagName}`} currentPath={`/tags/${tagName}`} />
+      <div className="dashboard">
       {notes.length === 0 ? (
         <div className="dashboard-empty">
           <p className="dashboard-empty-text">Bu etiket için not bulunamadı.</p>
@@ -41,5 +44,6 @@ export default async function TagPage({ params }: TagPageProps) {
         </div>
       )}
     </div>
+    </>
   );
 }

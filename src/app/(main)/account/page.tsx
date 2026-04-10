@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AppPageHeader } from "@/components/ui/AppPageHeader";
+import { PageTopbar } from "@/components/ui/PageTopbar";
 import {
   changePasswordAction,
   getAccountProfileAction,
@@ -25,13 +25,9 @@ export default async function AccountPage() {
   }
 
   return (
-    <div className="dashboard account-page app-page">
-      <AppPageHeader
-        eyebrow="Kimlik"
-        title="Hesap"
-        description="Profil bilgilerini güncelle, giriş bilgilerini düzenle ve kurtarma akışına eriş."
-        meta={profile?.email ?? "Hesap"}
-      />
+    <>
+      <PageTopbar icon="account_circle" label="Hesap" currentPath="/account" />
+      <div className="dashboard account-page app-page">
 
       <div className="templates-layout">
         <section className="templates-column">
@@ -77,5 +73,6 @@ export default async function AccountPage() {
         </section>
       </div>
     </div>
+    </>
   );
 }
