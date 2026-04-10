@@ -5,6 +5,15 @@ import type { NodeProps } from "@xyflow/react";
 import { renderStoredIcon } from "@/components/sidebar/sidebar-icon-utils";
 import type { UniverseNoteNode as UniverseNoteNodeType } from "./universe.types";
 
+function stopCanvasPointerPropagation(
+  event:
+    | React.PointerEvent<HTMLButtonElement>
+    | React.MouseEvent<HTMLButtonElement>
+    | React.TouchEvent<HTMLButtonElement>
+) {
+  event.stopPropagation();
+}
+
 export function UniverseNoteNode({
   data,
 }: NodeProps<UniverseNoteNodeType>) {
@@ -13,7 +22,10 @@ export function UniverseNoteNode({
   return (
     <button
       type="button"
-      className="universe-note-node nodrag"
+      className="universe-note-node nodrag nopan"
+      onPointerDownCapture={stopCanvasPointerPropagation}
+      onMouseDownCapture={stopCanvasPointerPropagation}
+      onTouchStartCapture={stopCanvasPointerPropagation}
       onClick={() => router.push(`/notes/${data.noteId}`)}
     >
       <div className="universe-note-node__header">

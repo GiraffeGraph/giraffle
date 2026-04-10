@@ -4,6 +4,16 @@ import dynamic from "next/dynamic";
 import type { NodeProps } from "@xyflow/react";
 import type { UniverseModuleNode as UniverseModuleNodeType } from "./universe.types";
 
+function stopCanvasPointerPropagation(
+  event:
+    | React.PointerEvent<HTMLDivElement>
+    | React.MouseEvent<HTMLDivElement>
+    | React.TouchEvent<HTMLDivElement>
+    | React.WheelEvent<HTMLDivElement>
+) {
+  event.stopPropagation();
+}
+
 const InboxUniverseModule = dynamic(
   () =>
     import("./modules/ContentModules").then((mod) => mod.InboxUniverseModule),
@@ -68,9 +78,13 @@ export function UniverseModuleNode({
 }: NodeProps<UniverseModuleNodeType>) {
   return (
     <div
-      className={`universe-panel-node nowheel nodrag ${
+      className={`universe-panel-node nowheel nodrag nopan ${
         data.moduleId === "notegpt" ? "universe-panel-node--notegpt" : ""
       }`}
+      onPointerDownCapture={stopCanvasPointerPropagation}
+      onMouseDownCapture={stopCanvasPointerPropagation}
+      onTouchStartCapture={stopCanvasPointerPropagation}
+      onWheelCapture={stopCanvasPointerPropagation}
     >
       <div className="universe-panel-header">
         <span className="material-symbols-outlined" aria-hidden="true">

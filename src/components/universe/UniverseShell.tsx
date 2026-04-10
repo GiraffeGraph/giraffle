@@ -58,6 +58,8 @@ const CAMERA_EPSILON = {
   zoom: 0.002,
 } as const;
 
+type UniverseCursorMode = "interact" | "move";
+
 interface UniverseModuleLayout {
   moduleId: UniverseModuleId;
   regionId: string;
@@ -453,6 +455,7 @@ function UniverseCanvas({
   const lastSavedRef = useRef(initialCamera);
   const [paletteQuery, setPaletteQuery] = useState("");
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
+  const [cursorMode, setCursorMode] = useState<UniverseCursorMode>("interact");
   const deferredQuery = useDeferredValue(paletteQuery);
   const normalizedQuery = deferredQuery.trim().toLowerCase();
 
@@ -590,7 +593,7 @@ function UniverseCanvas({
   };
 
   return (
-    <div className="universe-shell">
+    <div className="universe-shell" data-cursor-mode={cursorMode}>
       <ReactFlow
         nodes={nodes}
         edges={[]}
@@ -602,6 +605,7 @@ function UniverseCanvas({
         panOnScroll
         zoomOnScroll={false}
         zoomOnPinch
+        panOnDrag={cursorMode === "move"}
         nodesDraggable={false}
         nodesConnectable={false}
         elementsSelectable={false}
@@ -646,6 +650,40 @@ function UniverseCanvas({
             <span className="material-symbols-outlined">search</span>
           </button>
           <ThemeSelector vertical />
+          <div className="universe-toolbar__mode-stack" aria-label="Cursor mode">
+            <button
+              type="button"
+              className={`universe-toolbar__mode-button ${
+                cursorMode === "interact"
+                  ? "universe-toolbar__mode-button--active"
+                  : ""
+              }`}
+              onClick={() => setCursorMode("interact")}
+              aria-label="İçerik modu"
+              aria-pressed={cursorMode === "interact"}
+              title="İçerik modu"
+            >
+              <span className="material-symbols-outlined" aria-hidden="true">
+                ads_click
+              </span>
+            </button>
+            <button
+              type="button"
+              className={`universe-toolbar__mode-button ${
+                cursorMode === "move"
+                  ? "universe-toolbar__mode-button--active"
+                  : ""
+              }`}
+              onClick={() => setCursorMode("move")}
+              aria-label="Taşıma modu"
+              aria-pressed={cursorMode === "move"}
+              title="Taşıma modu"
+            >
+              <span className="material-symbols-outlined" aria-hidden="true">
+                pan_tool_alt
+              </span>
+            </button>
+          </div>
         </Panel>
 
         <Panel position="top-left" className="universe-dev-badge">

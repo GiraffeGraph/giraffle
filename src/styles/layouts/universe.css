@@ -57,12 +57,16 @@
   background: transparent;
 }
 
-.universe-shell .react-flow__pane {
+.universe-shell[data-cursor-mode="move"] .react-flow__pane {
   cursor: grab;
 }
 
-.universe-shell .react-flow__pane:active {
+.universe-shell[data-cursor-mode="move"] .react-flow__pane:active {
   cursor: grabbing;
+}
+
+.universe-shell[data-cursor-mode="interact"] .react-flow__pane {
+  cursor: default;
 }
 
 .universe-region-frame {
@@ -609,6 +613,46 @@
 .universe-toolbar .md-icon-button--tonal {
   background: var(--universe-chip-bg-strong);
   color: var(--text-primary);
+}
+
+.universe-toolbar__mode-stack {
+  width: auto;
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--universe-outline);
+}
+
+.universe-toolbar__mode-button {
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--universe-outline);
+  border-radius: 14px;
+  background: var(--universe-chip-bg);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    border-color var(--transition-fast),
+    background var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.universe-toolbar__mode-button:hover,
+.universe-toolbar__mode-button:focus-visible,
+.universe-toolbar__mode-button--active {
+  border-color: var(--universe-outline-strong);
+  background: var(--universe-chip-bg-strong);
+  color: var(--text-primary);
+  outline: none;
+}
+
+.universe-toolbar__mode-button .material-symbols-outlined {
+  font-size: 18px;
 }
 
 @media (max-width: 1100px) {
