@@ -124,6 +124,11 @@ export function NoteEditorPage({
     x: number;
     y: number;
   } | null>(null);
+  const [headings, setHeadings] = useState<TocHeading[]>(() =>
+    extractHeadings(note.document)
+  );
+  const [activeHeadingIndex, setActiveHeadingIndex] = useState<number>(-1);
+  const [isTocVisible, setIsTocVisible] = useState(false);
   const folderMenuRef = useRef<HTMLDivElement | null>(null);
   const titleSaveTimeoutRef = useRef<number | null>(null);
   const pendingTitleRef = useRef(note.title);
@@ -235,6 +240,48 @@ export function NoteEditorPage({
       }
     };
   }, []);
+
+  useEffect(() => {
+    const check = () => setIsTocVisible(window.innerWidth >= 1280);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  useEffect(() => {
+    if (headings.length === 0) return;
+
+    const selectors = headings
+      .map((h) =>
+        h.blockId
+          ? `[data-block-id="${h.blockId}"]`
+          : null
+      )
+      .filter(Boolean)
+      .join(", ");
+
+    if (!selectors) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            const blockId = entry.target.getAttribute("data-block-id");
+            const idx = headings.findIndex((h) => h.blockId === blockId);
+            if (idx !== -1) {
+              setActiveHeadingIndex(idx);
+              break;
+            }
+          }
+        }
+      },
+      { rootMargin: "-10% 0px -80% 0px" }
+    );
+
+    const elements = document.querySelectorAll(selectors);
+    elements.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, [headings]);
 
   const flushTitleSave = useCallback(async () => {
     if (titleSaveInFlightRef.current) {
@@ -581,6 +628,7 @@ export function NoteEditorPage({
       queuedDocumentRef.current = content;
       documentSaveQueuedRef.current = true;
       refreshSaveStatus();
+      setHeadings(extractHeadings(content));
 
       if (!documentSaveInFlightRef.current) {
         void flushDocumentSave();
@@ -609,6 +657,28 @@ export function NoteEditorPage({
       router.push(`/notes/${noteId}`);
     },
     [router]
+  );
+
+  const scrollToHeading = useCallback(
+    (blockId: string | null, text: string) => {
+      let el: Element | null = null;
+      if (blockId) {
+        el = document.querySelector(`[data-block-id="${blockId}"]`);
+      }
+      if (!el) {
+        const headingEls = document.querySelectorAll(
+          ".giraffle-editor-content h1, .giraffle-editor-content h2, .giraffle-editor-content h3, .giraffle-editor-content h4, .giraffle-editor-content h5, .giraffle-editor-content h6"
+        );
+        for (const heading of headingEls) {
+          if (heading.textContent?.trim() === text) {
+            el = heading;
+            break;
+          }
+        }
+      }
+      el?.scrollIntoView({ behavior: "smooth", block: "start" });
+    },
+    []
   );
 
   const closeContextMenu = useCallback(() => {
@@ -902,7 +972,10 @@ export function NoteEditorPage({
         </div>
       </div>
 
-      <div style={{ maxWidth: "800px", margin: "0 auto", padding: "0 32px" }}>
+      <div style={{ display: "flex", justifyContent: "center", padding: "0 24px" }}>
+        <div style={{ flex: "1 1 0", maxWidth: "800px", minWidth: 0 }}>
+
+      <div style={{ padding: "0 32px" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: "8px", paddingTop: "48px", paddingBottom: "16px" }}>
           <input
             value={title}
@@ -1209,7 +1282,7 @@ export function NoteEditorPage({
         </div>
       </div>
 
-      <div style={{ maxWidth: "800px", margin: "0 auto", padding: "0 32px 32px", minHeight: "60vh" }}>
+      <div style={{ padding: "0 32px 32px", minHeight: "60vh" }}>
         <Editor
           noteId={note.id}
           initialContent={note.document}
@@ -1222,7 +1295,7 @@ export function NoteEditorPage({
       </div>
 
       {backlinks.length > 0 ? (
-        <div style={{ maxWidth: "800px", margin: "48px auto 0", padding: "0 32px" }}>
+        <div style={{ marginTop: "48px", padding: "0 32px" }}>
           <Card variant="outlined">
             <CardHeader>
               <CardTitle style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -1254,7 +1327,7 @@ export function NoteEditorPage({
       ) : null}
 
       {proposals.length > 0 ? (
-        <div style={{ maxWidth: "800px", margin: "32px auto 64px", padding: "0 32px" }}>
+        <div style={{ margin: "32px 0 64px", padding: "0 32px" }}>
           <Card variant="outlined" style={{ borderColor: "var(--md-sys-color-tertiary)" }}>
             <CardHeader>
               <CardTitle style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--md-sys-color-tertiary)" }}>
@@ -1303,6 +1376,66 @@ export function NoteEditorPage({
           </Card>
         </div>
       ) : null}
+
+        </div>{/* end main content column */}
+
+        {isTocVisible ? (
+          <aside style={{ width: "180px", flexShrink: 0 }}>
+            <div style={{ position: "sticky", top: "56px", paddingTop: "64px" }}>
+              {headings.length > 0 ? (
+                <nav aria-label="İçindekiler">
+                  <div
+                    style={{
+                      fontSize: "11px",
+                      fontWeight: 600,
+                      letterSpacing: "0.08em",
+                      textTransform: "uppercase",
+                      color: "var(--md-sys-color-on-surface-variant)",
+                      marginBottom: "10px",
+                    }}
+                  >
+                    İçindekiler
+                  </div>
+                  <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: "1px" }}>
+                    {headings.map((heading, idx) => (
+                      <li key={`${heading.blockId ?? heading.text}-${idx}`}>
+                        <button
+                          type="button"
+                          onClick={() => scrollToHeading(heading.blockId, heading.text)}
+                          title={heading.text}
+                          style={{
+                            display: "block",
+                            width: "100%",
+                            textAlign: "left",
+                            background: "transparent",
+                            color: activeHeadingIndex === idx
+                              ? "var(--md-sys-color-on-surface)"
+                              : "var(--md-sys-color-on-surface-variant)",
+                            border: "none",
+                            padding: "3px 0",
+                            paddingLeft: `${(heading.level - 1) * 10}px`,
+                            fontSize: "12px",
+                            lineHeight: "1.4",
+                            cursor: "pointer",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                            fontWeight: activeHeadingIndex === idx ? 500 : 400,
+                            transition: "color 0.15s",
+                          }}
+                        >
+                          {heading.text}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </nav>
+              ) : null}
+            </div>
+          </aside>
+        ) : null}
+
+      </div>{/* end flex layout wrapper */}
 
       {isTemplateDialogOpen ? (
         <div
@@ -1423,6 +1556,7 @@ export function NoteEditorPage({
         position={contextMenuPosition}
         onClose={closeContextMenu}
       />
+
     </>
   );
 }
@@ -1507,4 +1641,30 @@ function sortCategories(categories: NoteCategorySummary[]) {
   return [...categories].sort((left, right) =>
     left.name.localeCompare(right.name, "tr")
   );
+}
+
+interface TocHeading {
+  level: number;
+  text: string;
+  blockId: string | null;
+}
+
+function extractHeadings(doc: TiptapDocument): TocHeading[] {
+  const headings: TocHeading[] = [];
+  for (const node of doc.content) {
+    if (node.type === "heading" && node.content) {
+      const level =
+        typeof node.attrs?.level === "number" ? node.attrs.level : 1;
+      const text = node.content
+        .filter((n): n is { type: "text"; text: string } => n.type === "text")
+        .map((n) => n.text)
+        .join("");
+      const blockId =
+        typeof node.attrs?.blockId === "string" ? node.attrs.blockId : null;
+      if (text.trim()) {
+        headings.push({ level, text, blockId });
+      }
+    }
+  }
+  return headings;
 }
