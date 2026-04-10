@@ -10,6 +10,7 @@ import {
 import { useRouter } from "next/navigation";
 import { applyTemplateAction } from "@/server/api/templates";
 import type { TemplateVariable } from "@/domain/template/template.types";
+import { renderStoredIcon } from "@/components/sidebar/sidebar-icon-utils";
 import { getTemplateCategoryLabel } from "@/lib/template-category";
 import { Button } from "@/components/ui/Button";
 
@@ -257,10 +258,13 @@ export function TemplatePicker({
                                 fontSize: "18px",
                               }}
                             >
-                              {template.icon ??
-                                getTemplateCategoryLabel(template.category)
+                              {renderStoredIcon(template.icon, {
+                                fallback: getTemplateCategoryLabel(template.category)
                                   .slice(0, 1)
-                                  .toUpperCase()}
+                                  .toUpperCase(),
+                                materialClassName: "material-symbols-outlined",
+                                emojiStyle: { fontSize: "18px", lineHeight: 1 },
+                              })}
                             </div>
                             <div className="md-list-item-content">
                               <h3 className="md-list-item-headline">{template.name}</h3>
@@ -320,12 +324,15 @@ export function TemplatePicker({
                         flexShrink: 0,
                       }}
                     >
-                      {selectedTemplate?.icon ??
-                        (selectedTemplate
+                      {renderStoredIcon(selectedTemplate?.icon, {
+                        fallback: selectedTemplate
                           ? getTemplateCategoryLabel(selectedTemplate.category)
                               .slice(0, 1)
                               .toUpperCase()
-                          : "T")}
+                          : "T",
+                        materialClassName: "material-symbols-outlined",
+                        emojiStyle: { fontSize: "24px", lineHeight: 1 },
+                      })}
                     </div>
 
                     <div>

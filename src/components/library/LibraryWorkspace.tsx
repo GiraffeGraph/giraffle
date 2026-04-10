@@ -22,6 +22,7 @@ import {
   relocateLibraryNoteAction,
   setLibraryNotesPublishedAction,
 } from "./library.actions";
+import { renderStoredIcon } from "@/components/sidebar/sidebar-icon-utils";
 import {
   LIBRARY_CONTENT_FILTERS,
   LIBRARY_FLAG_FILTERS,
@@ -323,7 +324,17 @@ export function LibraryWorkspace({
                           {row.entry.isDraggable ? <button ref={(element) => { dragHandleRefs.current[row.id] = element; }} type="button" className={styles.dragHandle} title="Drag note into another folder" onClick={(event) => event.stopPropagation()}><span className="material-symbols-outlined sm">drag_indicator</span></button> : <span className={styles.dragSpacer} />}
                           <div className={styles.pageIndent} style={{ width: `${row.depth * 18}px` }} />
                           {row.entry.children.length > 0 ? <button type="button" className={`${styles.expandButton} ${expandedIds.has(row.id) ? styles.expandButtonOpen : ""}`} onClick={(event) => { event.stopPropagation(); setExpandedIds((current) => { const next = new Set(current); if (next.has(row.id)) { next.delete(row.id); } else { next.add(row.id); } return next; }); }}><span className="material-symbols-outlined sm">chevron_right</span></button> : <div className={styles.pageIndent} />}
-                          <span className={styles.iconBadge}><span className="material-symbols-outlined sm">{row.entry.icon}</span></span>
+                          <span className={styles.iconBadge} aria-hidden="true">
+                            {renderStoredIcon(row.entry.icon, {
+                              fallback: (
+                                <span className="material-symbols-outlined sm" aria-hidden="true">
+                                  description
+                                </span>
+                              ),
+                              materialClassName: "material-symbols-outlined sm",
+                              emojiStyle: { fontSize: "16px", lineHeight: 1 },
+                            })}
+                          </span>
                           <div className={styles.pageCopy}>
                             <div className={styles.pageTitleRow}>
                               {row.entry.href ? <Link href={row.entry.href} className={styles.pageLink} onClick={(event) => event.stopPropagation()}>{row.entry.title}</Link> : <span className={styles.pageTitle}>{row.entry.title}</span>}
@@ -332,7 +343,10 @@ export function LibraryWorkspace({
                             <div className={styles.pageMeta}>
                               <span className={styles.typeChip}>{formatType(row.entry.type)}</span>
                               {row.entry.type === "note" ? <span className={`${styles.visibilityChip} ${row.entry.visibility === "private" ? styles.visibilityPrivate : styles.visibilityShared}`}>{formatVisibility(row.entry.visibility)}</span> : null}
-                              {row.entry.categoryName ? <span className={styles.categoryChip} style={categoryTokens ?? undefined}>{row.entry.categoryIcon ? <span className="material-symbols-outlined sm">{row.entry.categoryIcon}</span> : null}{row.entry.categoryName}</span> : null}
+                              {row.entry.categoryName ? <span className={styles.categoryChip} style={categoryTokens ?? undefined}>{row.entry.categoryIcon ? renderStoredIcon(row.entry.categoryIcon, {
+                                materialClassName: "material-symbols-outlined sm",
+                                emojiStyle: { fontSize: "14px", lineHeight: 1 },
+                              }) : null}{row.entry.categoryName}</span> : null}
                               {row.entry.tagNames.slice(0, 2).map((tag) => <span className={styles.tagChip} key={`${row.id}-${tag}`}>#{tag}</span>)}
                               {row.entry.tagNames.length > 2 ? <span className={styles.tagChip}>+{row.entry.tagNames.length - 2} tags</span> : null}
                             </div>

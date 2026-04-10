@@ -2,6 +2,14 @@ import type { CSSProperties, ReactNode } from "react";
 
 export const MATERIAL_SYMBOL_PREFIX = "ms:";
 
+const LEGACY_MATERIAL_ICON_ALIASES: Record<string, string> = {
+  calendar: "event",
+  daily: "event",
+  meeting: "groups",
+  project: "assignment",
+  template: "tooltip",
+};
+
 export const SIDEBAR_ICON_MATERIAL_SYMBOLS = [
   "description",
   "folder",
@@ -99,18 +107,38 @@ export function encodeMaterialSymbol(name: string) {
 }
 
 export function decodeStoredIcon(icon: string | null | undefined) {
-  if (!icon) {
+  const value = icon?.trim();
+
+  if (!value) {
     return { kind: null, value: null };
   }
 
-  if (icon.startsWith(MATERIAL_SYMBOL_PREFIX)) {
+  if (value.startsWith(MATERIAL_SYMBOL_PREFIX)) {
     return {
       kind: "material",
-      value: icon.slice(MATERIAL_SYMBOL_PREFIX.length),
+      value: value.slice(MATERIAL_SYMBOL_PREFIX.length),
     };
   }
 
-  return { kind: "emoji", value: icon };
+  const legacyAlias = LEGACY_MATERIAL_ICON_ALIASES[value.toLowerCase()];
+
+  if (legacyAlias) {
+    return {
+      kind: "material",
+      value: legacyAlias,
+    };
+  }
+
+  // Treat raw material symbol names such as "description" or "folder_off"
+  // as material icons so older data and text-field inputs still render properly.
+  if (/^[a-z0-9_]+$/.test(value)) {
+    return {
+      kind: "material",
+      value,
+    };
+  }
+
+  return { kind: "emoji", value };
 }
 
 export function renderStoredIcon(
