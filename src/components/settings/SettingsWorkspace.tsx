@@ -8,7 +8,7 @@ import {
 import { Button } from "@/components/ui/Button";
 import { Card, CardHeader, CardTitle, CardContent, CardActions } from "@/components/ui/Card";
 
-interface SettingsWorkspaceProps {
+export interface SettingsWorkspaceProps {
   operationLogs: Array<{
     id: string;
     entityType: string;
@@ -19,10 +19,14 @@ interface SettingsWorkspaceProps {
     createdAt: string;
     appliedAt: string | null;
   }>;
+  embedded?: boolean;
+  showHeading?: boolean;
 }
 
 export function SettingsWorkspace({
   operationLogs,
+  embedded = false,
+  showHeading = true,
 }: SettingsWorkspaceProps) {
   const [queuedItems, setQueuedItems] = useState<LocalSyncQueueItem[]>(() => {
     if (typeof window === "undefined") {
@@ -42,9 +46,37 @@ export function SettingsWorkspace({
     setQueuedItems([]);
   };
 
+  const containerStyle = embedded
+    ? {
+        padding: "20px",
+        maxWidth: "none",
+        margin: 0,
+        display: "flex",
+        flexDirection: "column" as const,
+        gap: "20px",
+      }
+    : {
+        padding: "32px",
+        maxWidth: "800px",
+        margin: "0 auto",
+        display: "flex",
+        flexDirection: "column" as const,
+        gap: "24px",
+      };
+
   return (
-    <div style={{ padding: "32px", maxWidth: "800px", margin: "0 auto", display: "flex", flexDirection: "column", gap: "24px" }}>
-      <h1 className="md-typescale-display-small" style={{ marginBottom: "16px", color: "var(--md-sys-color-on-background)" }}>Sistem Ayarları</h1>
+    <div style={containerStyle}>
+      {showHeading ? (
+        <h1
+          className="md-typescale-display-small"
+          style={{
+            marginBottom: "16px",
+            color: "var(--md-sys-color-on-background)",
+          }}
+        >
+          Sistem Ayarları
+        </h1>
+      ) : null}
 
       <Card variant="outlined">
         <CardHeader>

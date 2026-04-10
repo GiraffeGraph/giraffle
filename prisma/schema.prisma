@@ -27,6 +27,7 @@ model User {
   operationLogs OperationLog[]
   canvases Canvas[]
   noteCategories NoteCategory[]
+  universeState UniverseState?
 }
 
 model Account {
@@ -282,6 +283,18 @@ model Canvas {
   edges       CanvasEdge[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model UniverseState {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cameraX   Float    @default(0)
+  cameraY   Float    @default(0)
+  zoom      Float    @default(0.75)
+  updatedAt DateTime @updatedAt
 
   @@index([userId])
 }

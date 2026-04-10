@@ -16,6 +16,10 @@
   color: var(--ng-text);
 }
 
+.pageEmbedded {
+  min-height: 100%;
+}
+
 .pageInner {
   width: min(100%, 1120px);
   margin: 0 auto;
@@ -24,11 +28,23 @@
   gap: 26px;
 }
 
+.pageEmbedded .pageInner {
+  width: 100%;
+  margin: 0;
+  padding: 20px;
+  gap: 18px;
+}
+
 .hero {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(280px, 360px);
   gap: 28px;
   align-items: end;
+}
+
+.pageEmbedded .hero {
+  grid-template-columns: 1fr;
+  gap: 18px;
 }
 
 .heroCopy {
@@ -52,6 +68,10 @@
   line-height: 0.92;
   letter-spacing: -0.06em;
   margin: 0;
+}
+
+.pageEmbedded .title {
+  font-size: clamp(2.25rem, 4vw, 3rem);
 }
 
 .subtitle {
@@ -118,6 +138,11 @@
   background: var(--ng-surface);
   box-shadow: var(--shadow-panel);
   backdrop-filter: blur(22px);
+}
+
+.pageEmbedded .composerPanel {
+  width: 100%;
+  margin: 0;
 }
 
 .modeRow {
@@ -230,6 +255,10 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
+}
+
+.pageEmbedded .suggestionsGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .suggestionCard,

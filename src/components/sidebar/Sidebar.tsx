@@ -488,6 +488,7 @@ export function Sidebar({
       { id: "action-new-folder", group: "Hızlı işlemler", title: "Yeni klasör oluştur", description: "Çalışma alanına yeni klasör ekle", icon: encodeMaterialSymbol("create_new_folder"), onSelect: async () => { closePalette(); handleStartCreateFolder(); } },
       { id: "action-template-note", group: "Hızlı işlemler", title: "Şablondan not oluştur", description: "Şablon seçiciyi aç", icon: encodeMaterialSymbol("tooltip"), onSelect: async () => { setTemplatePickerOpenSignal((v) => v + 1); } },
       { id: "action-dashboard", group: "Geçişler", title: "Panoya git", description: "Ana çalışma alanı görünümü", icon: encodeMaterialSymbol("dashboard"), onSelect: async () => { router.push("/dashboard"); } },
+      { id: "action-universe", group: "Geçişler", title: "Universe modu", description: "Tam ekran uzamsal gezinim katmanını aç", icon: encodeMaterialSymbol("travel_explore"), onSelect: async () => { router.push("/universe"); } },
       { id: "action-library", group: "Geçişler", title: "Kütüphane", description: "Tüm notlar ve klasörleri tek sayfada aç", icon: encodeMaterialSymbol("library_books"), onSelect: async () => { router.push("/library"); } },
       { id: "action-notegpt", group: "Geçişler", title: "NoteGPT", description: "Çalışma alanı copilotunu aç", icon: encodeMaterialSymbol("smart_toy"), onSelect: async () => { router.push("/notegpt"); } },
       { id: "action-graph", group: "Geçişler", title: "Bağlantı ağına git", description: "Not grafiği görünümü", icon: "__graph__", onSelect: async () => { router.push("/graph"); } },
@@ -598,6 +599,7 @@ export function Sidebar({
             <div className="sidebar-primary-nav">
               {([
                 { path: "/dashboard", icon: "\uE88A", label: "Pano" },
+                { path: "/universe", icon: "travel_explore", label: "Universe" },
                 { path: "/inbox", icon: "\uE156", label: "Gelen kutusu", badge: inboxCount > 0 ? inboxCount : undefined },
                 { path: "/library", icon: "library_books", label: "Kütüphane" },
                 { path: "/notegpt", icon: "smart_toy", label: "NoteGPT" },

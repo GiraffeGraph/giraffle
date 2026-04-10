@@ -19,6 +19,7 @@ import {
 export function NoteGptWorkspace({
   notes,
   folders,
+  embedded = false,
 }: NoteGptWorkspaceProps) {
   const composerRef = useRef<HTMLTextAreaElement | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -195,7 +196,7 @@ export function NoteGptWorkspace({
   };
 
   return (
-    <div className={styles.page}>
+    <div className={`${styles.page} ${embedded ? styles.pageEmbedded : ""}`}>
       <div className={styles.pageInner}>
         <NoteGptHero
           notesCount={notes.length}
