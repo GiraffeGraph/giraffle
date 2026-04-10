@@ -272,6 +272,7 @@ function buildModuleNodes(
       style: {
         width: layout.size.width,
         height: layout.size.height,
+        pointerEvents: "all",
       },
     })
   );
