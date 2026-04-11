@@ -1,9 +1,6 @@
 "use client";
 
-import type {
-  CSSProperties,
-  MouseEvent as ReactMouseEvent,
-} from "react";
+import type { CSSProperties, MouseEvent as ReactMouseEvent } from "react";
 import {
   useCallback,
   useEffect,
@@ -18,6 +15,7 @@ import { SidebarIconPicker } from "@/components/sidebar/SidebarIconPicker";
 import { renderStoredIcon } from "@/components/sidebar/sidebar-icon-utils";
 import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 import { Button } from "@/components/ui/Button";
+import { useIsMobileViewport } from "@/components/ui/useIsMobileViewport";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import {
   NOTE_CATEGORY_COLOR_OPTIONS,
@@ -88,12 +86,12 @@ export function NoteEditorPage({
 }: NoteEditorPageProps) {
   const [title, setTitle] = useState(note.title);
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(
-    note.folderId
+    note.folderId,
   );
   const [availableCategories, setAvailableCategories] =
     useState<NoteCategorySummary[]>(categories);
   const [currentCategoryId, setCurrentCategoryId] = useState<string | null>(
-    note.category?.id ?? null
+    note.category?.id ?? null,
   );
   const [slug, setSlug] = useState(note.slug);
   const [isPinned, setIsPinned] = useState(note.isPinned);
@@ -109,9 +107,8 @@ export function NoteEditorPage({
   const [isMetaPanelOpen, setIsMetaPanelOpen] = useState(false);
   const [isCreateCategoryOpen, setIsCreateCategoryOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
-  const [newCategoryColor, setNewCategoryColor] = useState<
-    (typeof NOTE_CATEGORY_COLOR_OPTIONS)[number]
-  >("slate");
+  const [newCategoryColor, setNewCategoryColor] =
+    useState<(typeof NOTE_CATEGORY_COLOR_OPTIONS)[number]>("slate");
   const [newCategoryIcon, setNewCategoryIcon] = useState("");
   const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
   const [templateName, setTemplateName] = useState(note.title);
@@ -125,7 +122,7 @@ export function NoteEditorPage({
     y: number;
   } | null>(null);
   const [headings, setHeadings] = useState<TocHeading[]>(() =>
-    extractHeadings(note.document)
+    extractHeadings(note.document),
   );
   const [activeHeadingIndex, setActiveHeadingIndex] = useState<number>(-1);
   const [isTocVisible, setIsTocVisible] = useState(false);
@@ -139,6 +136,7 @@ export function NoteEditorPage({
   const documentSaveQueuedRef = useRef(false);
   const documentSaveInFlightRef = useRef(false);
   const router = useRouter();
+  const isMobileViewport = useIsMobileViewport(900);
 
   const folderOptions = useMemo(
     () =>
@@ -146,25 +144,26 @@ export function NoteEditorPage({
         id: folder.id,
         name: buildFolderLabel(folder, folders),
       })),
-    [folders]
+    [folders],
   );
 
   const currentFolderLabel = useMemo(
     () =>
       folderOptions.find((folder) => folder.id === currentFolderId)?.name ??
       "Çalışma alanı",
-    [currentFolderId, folderOptions]
+    [currentFolderId, folderOptions],
   );
 
   const currentCategory = useMemo(
     () =>
-      availableCategories.find((category) => category.id === currentCategoryId) ??
-      null,
-    [availableCategories, currentCategoryId]
+      availableCategories.find(
+        (category) => category.id === currentCategoryId,
+      ) ?? null,
+    [availableCategories, currentCategoryId],
   );
   const currentCategoryTokens = useMemo(
     () => getNoteCategoryColorTokens(currentCategory?.color),
-    [currentCategory?.color]
+    [currentCategory?.color],
   );
 
   const effectiveTitle = title.trim() || DEFAULT_NOTE_TITLE;
@@ -190,7 +189,7 @@ export function NoteEditorPage({
 
   const normalizeNoteTitle = useCallback(
     (value: string) => value.trim() || DEFAULT_NOTE_TITLE,
-    []
+    [],
   );
 
   const refreshSaveStatus = useCallback(() => {
@@ -252,11 +251,7 @@ export function NoteEditorPage({
     if (headings.length === 0) return;
 
     const selectors = headings
-      .map((h) =>
-        h.blockId
-          ? `[data-block-id="${h.blockId}"]`
-          : null
-      )
+      .map((h) => (h.blockId ? `[data-block-id="${h.blockId}"]` : null))
       .filter(Boolean)
       .join(", ");
 
@@ -275,7 +270,7 @@ export function NoteEditorPage({
           }
         }
       },
-      { rootMargin: "-10% 0px -80% 0px" }
+      { rootMargin: "-10% 0px -80% 0px" },
     );
 
     const elements = document.querySelectorAll(selectors);
@@ -319,7 +314,10 @@ export function NoteEditorPage({
           resolveLocalMutation(mutationId);
         }
 
-        if (normalizeNoteTitle(pendingTitleRef.current) === persistedTitleRef.current) {
+        if (
+          normalizeNoteTitle(pendingTitleRef.current) ===
+          persistedTitleRef.current
+        ) {
           break;
         }
 
@@ -347,7 +345,7 @@ export function NoteEditorPage({
         void flushTitleSave();
       }, 450);
     },
-    [flushTitleSave, refreshSaveStatus]
+    [flushTitleSave, refreshSaveStatus],
   );
 
   const handleTitleBlur = useCallback(() => {
@@ -372,7 +370,7 @@ export function NoteEditorPage({
       await updateNoteAction(note.id, { folderId: normalizedFolderId });
       resolveLocalMutation(mutationId);
     },
-    [note.id]
+    [note.id],
   );
 
   const handleCategoryChange = useCallback(
@@ -392,7 +390,7 @@ export function NoteEditorPage({
         resolveLocalMutation(mutationId);
       }
     },
-    [note.id]
+    [note.id],
   );
 
   const handleSelectFolder = useCallback(
@@ -400,7 +398,7 @@ export function NoteEditorPage({
       setIsFolderMenuOpen(false);
       await handleFolderChange(nextFolderId ?? "");
     },
-    [handleFolderChange]
+    [handleFolderChange],
   );
 
   const handlePublishToggle = useCallback(async () => {
@@ -440,7 +438,7 @@ export function NoteEditorPage({
       resolveLocalMutation(mutationId);
       router.refresh();
     },
-    [note.id, router]
+    [note.id, router],
   );
 
   const handleSlugChange = useCallback(
@@ -457,7 +455,7 @@ export function NoteEditorPage({
       resolveLocalMutation(mutationId);
       router.refresh();
     },
-    [note.id, router]
+    [note.id, router],
   );
 
   const handleApplyProposal = useCallback(
@@ -465,7 +463,7 @@ export function NoteEditorPage({
       await applyProposalAction(proposalId, note.id);
       router.refresh();
     },
-    [note.id, router]
+    [note.id, router],
   );
 
   const handleRejectProposal = useCallback(
@@ -473,7 +471,7 @@ export function NoteEditorPage({
       await rejectProposalAction(proposalId, note.id);
       router.refresh();
     },
-    [note.id, router]
+    [note.id, router],
   );
 
   const handleCopyExport = useCallback(
@@ -483,7 +481,7 @@ export function NoteEditorPage({
         await navigator.clipboard.writeText(content);
       });
     },
-    [note.id]
+    [note.id],
   );
 
   const handleOpenPublishedPage = useCallback(() => {
@@ -496,7 +494,7 @@ export function NoteEditorPage({
 
   const handleCopyNoteLink = useCallback(async () => {
     await navigator.clipboard.writeText(
-      `${window.location.origin}/notes/${note.id}`
+      `${window.location.origin}/notes/${note.id}`,
     );
   }, [note.id]);
 
@@ -540,7 +538,7 @@ export function NoteEditorPage({
         sortCategories([
           ...currentValue.filter((item) => item.id !== category.id),
           category,
-        ])
+        ]),
       );
       setCurrentCategoryId(category.id);
       setNewCategoryName("");
@@ -634,7 +632,7 @@ export function NoteEditorPage({
         void flushDocumentSave();
       }
     },
-    [flushDocumentSave, refreshSaveStatus]
+    [flushDocumentSave, refreshSaveStatus],
   );
 
   const handleSearchWikilinks = useCallback(async (query: string) => {
@@ -649,14 +647,14 @@ export function NoteEditorPage({
     async (target: string): Promise<NoteReference> => {
       return createNoteFromWikilinkAction(target, currentFolderId);
     },
-    [currentFolderId]
+    [currentFolderId],
   );
 
   const handleNavigateToNote = useCallback(
     (noteId: string) => {
       router.push(`/notes/${noteId}`);
     },
-    [router]
+    [router],
   );
 
   const scrollToHeading = useCallback(
@@ -667,7 +665,7 @@ export function NoteEditorPage({
       }
       if (!el) {
         const headingEls = document.querySelectorAll(
-          ".giraffle-editor-content h1, .giraffle-editor-content h2, .giraffle-editor-content h3, .giraffle-editor-content h4, .giraffle-editor-content h5, .giraffle-editor-content h6"
+          ".giraffle-editor-content h1, .giraffle-editor-content h2, .giraffle-editor-content h3, .giraffle-editor-content h4, .giraffle-editor-content h5, .giraffle-editor-content h6",
         );
         for (const heading of headingEls) {
           if (heading.textContent?.trim() === text) {
@@ -678,7 +676,7 @@ export function NoteEditorPage({
       }
       el?.scrollIntoView({ behavior: "smooth", block: "start" });
     },
-    []
+    [],
   );
 
   const closeContextMenu = useCallback(() => {
@@ -698,7 +696,7 @@ export function NoteEditorPage({
         y: rect.bottom + 8,
       });
     },
-    []
+    [],
   );
 
   const handleIconChange = useCallback(
@@ -714,7 +712,7 @@ export function NoteEditorPage({
       resolveLocalMutation(mutationId);
       router.refresh();
     },
-    [note.id, router]
+    [note.id, router],
   );
 
   const toggleMetaPanel = useCallback(() => {
@@ -729,9 +727,21 @@ export function NoteEditorPage({
         y: event.clientY,
       });
     },
-    []
+    [],
   );
 
+  const openContextMenuFromTrigger = useCallback(
+    (event: ReactMouseEvent<HTMLButtonElement>) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const rect = event.currentTarget.getBoundingClientRect();
+      setContextMenuPosition({
+        x: rect.right - 12,
+        y: rect.bottom + 8,
+      });
+    },
+    [],
+  );
 
   const noteContextItems = useMemo<ContextMenuItem[]>(
     () => [
@@ -809,8 +819,15 @@ export function NoteEditorPage({
       isPinned,
       isPublished,
       toggleMetaPanel,
-    ]
+    ],
   );
+
+  const topbarSidePadding = isMobileViewport ? "0 12px" : "0 16px";
+  const contentShellPadding = isMobileViewport ? "0" : "0 24px";
+  const contentSidePadding = isMobileViewport ? "0 16px" : "0 32px";
+  const titleSectionPadding = isMobileViewport ? "28px 0 12px" : "48px 0 16px";
+  const editorSectionPadding = isMobileViewport ? "0 16px 24px" : "0 32px 32px";
+  const footerSectionPadding = isMobileViewport ? "0 16px" : "0 32px";
 
   return (
     <>
@@ -819,9 +836,9 @@ export function NoteEditorPage({
         style={{
           display: "flex",
           alignItems: "center",
-          gap: "12px",
-          height: "36px",
-          padding: "0 16px",
+          gap: isMobileViewport ? "8px" : "12px",
+          minHeight: "36px",
+          padding: topbarSidePadding,
           borderBottom: "1px solid var(--md-sys-color-outline-variant)",
           fontSize: "12px",
           color: "var(--md-sys-color-on-surface-variant)",
@@ -833,27 +850,38 @@ export function NoteEditorPage({
         }}
         onContextMenu={openContextMenuAtPointer}
       >
-        {/* Breadcrumb */}
-        <div style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: 0, overflow: "hidden", flex: 1 }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            minWidth: 0,
+            overflow: "hidden",
+            flex: 1,
+          }}
+        >
           <button
             type="button"
             title="Not ikonunu değiştir"
             aria-label="Not ikonunu değiştir"
             onClick={handleOpenIconPicker}
             style={{
-              background: iconPickerPosition ? "var(--md-sys-color-secondary-container)" : "var(--md-sys-color-surface-container-highest)",
+              background: iconPickerPosition
+                ? "var(--md-sys-color-secondary-container)"
+                : "var(--md-sys-color-surface-container-highest)",
               border: "1px solid var(--md-sys-color-outline-variant)",
               color: iconPickerPosition
                 ? "var(--md-sys-color-on-secondary-container)"
                 : "var(--md-sys-color-on-surface-variant)",
               cursor: "pointer",
-              padding: "4px 8px",
+              padding: isMobileViewport ? "4px" : "4px 8px",
               borderRadius: "999px",
               display: "inline-flex",
               alignItems: "center",
               justifyContent: "center",
               gap: "6px",
               minHeight: "26px",
+              minWidth: "26px",
               lineHeight: 1,
               flexShrink: 0,
               whiteSpace: "nowrap",
@@ -861,63 +889,274 @@ export function NoteEditorPage({
           >
             {renderStoredIcon(noteIcon, {
               fallback: (
-                <span className="material-symbols-outlined" style={{ fontSize: "16px" }} aria-hidden="true">
+                <span
+                  className="material-symbols-outlined"
+                  style={{ fontSize: "16px" }}
+                  aria-hidden="true"
+                >
                   description
                 </span>
               ),
               materialClassName: "material-symbols-outlined",
               emojiStyle: { fontSize: "16px", lineHeight: 1 },
             })}
-            <span>İkon</span>
+            {isMobileViewport ? null : <span>İkon</span>}
           </button>
 
-          <button
-            type="button"
-            style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", padding: "2px 4px", borderRadius: "4px", fontSize: "12px", whiteSpace: "nowrap" }}
-            onClick={() => router.push("/dashboard")}
-          >
-            Çalışma alanı
-          </button>
-          <span style={{ opacity: 0.4 }}>/</span>
-          <div ref={folderMenuRef} style={{ position: "relative" }}>
-            <button
-              type="button"
-              style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", padding: "2px 4px", borderRadius: "4px", fontSize: "12px", display: "flex", alignItems: "center", gap: "2px", whiteSpace: "nowrap" }}
-              onClick={() => setIsFolderMenuOpen((v) => !v)}
-              aria-haspopup="menu"
-              aria-expanded={isFolderMenuOpen}
-            >
-              <span>{currentFolderId ? currentFolderLabel : "Kök klasör"}</span>
-              <ChevronDownIcon />
-            </button>
-            {isFolderMenuOpen ? (
-              <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, background: "var(--md-sys-color-surface-container-high)", borderRadius: "10px", padding: "6px", boxShadow: "var(--md-sys-elevation-3)", zIndex: 100, minWidth: "180px" }} role="menu">
+          {isMobileViewport ? (
+            <div style={{ display: "grid", gap: "2px", minWidth: 0, flex: 1 }}>
+              <div
+                ref={folderMenuRef}
+                style={{ position: "relative", minWidth: 0 }}
+              >
                 <button
                   type="button"
-                  style={{ width: "100%", textAlign: "left", padding: "6px 10px", background: currentFolderId === null ? "var(--md-sys-color-secondary-container)" : "transparent", color: currentFolderId === null ? "var(--md-sys-color-on-secondary-container)" : "var(--md-sys-color-on-surface)", border: "none", borderRadius: "6px", cursor: "pointer", fontSize: "12px" }}
-                  onClick={() => void handleSelectFolder(null)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "inherit",
+                    cursor: "pointer",
+                    padding: 0,
+                    borderRadius: "4px",
+                    fontSize: "11px",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "2px",
+                    maxWidth: "100%",
+                    minWidth: 0,
+                  }}
+                  onClick={() => setIsFolderMenuOpen((v) => !v)}
+                  aria-haspopup="menu"
+                  aria-expanded={isFolderMenuOpen}
                 >
-                  Kök klasör
-                </button>
-                {folderOptions.map((folder) => (
-                  <button
-                    key={folder.id}
-                    type="button"
-                    style={{ width: "100%", textAlign: "left", padding: "6px 10px", background: folder.id === currentFolderId ? "var(--md-sys-color-secondary-container)" : "transparent", color: folder.id === currentFolderId ? "var(--md-sys-color-on-secondary-container)" : "var(--md-sys-color-on-surface)", border: "none", borderRadius: "6px", cursor: "pointer", marginTop: "2px", fontSize: "12px" }}
-                    onClick={() => void handleSelectFolder(folder.id)}
+                  <span
+                    style={{
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
                   >
-                    {folder.name.split(" / ").at(-1) ?? folder.name}
-                  </button>
-                ))}
+                    {currentFolderId ? currentFolderLabel : "Kök klasör"}
+                  </span>
+                  <ChevronDownIcon />
+                </button>
+                {isFolderMenuOpen ? (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "calc(100% + 4px)",
+                      left: 0,
+                      background: "var(--md-sys-color-surface-container-high)",
+                      borderRadius: "10px",
+                      padding: "6px",
+                      boxShadow: "var(--md-sys-elevation-3)",
+                      zIndex: 100,
+                      minWidth: "180px",
+                      maxWidth: "min(280px, calc(100vw - 32px))",
+                    }}
+                    role="menu"
+                  >
+                    <button
+                      type="button"
+                      style={{
+                        width: "100%",
+                        textAlign: "left",
+                        padding: "6px 10px",
+                        background:
+                          currentFolderId === null
+                            ? "var(--md-sys-color-secondary-container)"
+                            : "transparent",
+                        color:
+                          currentFolderId === null
+                            ? "var(--md-sys-color-on-secondary-container)"
+                            : "var(--md-sys-color-on-surface)",
+                        border: "none",
+                        borderRadius: "6px",
+                        cursor: "pointer",
+                        fontSize: "12px",
+                      }}
+                      onClick={() => void handleSelectFolder(null)}
+                    >
+                      Kök klasör
+                    </button>
+                    {folderOptions.map((folder) => (
+                      <button
+                        key={folder.id}
+                        type="button"
+                        style={{
+                          width: "100%",
+                          textAlign: "left",
+                          padding: "6px 10px",
+                          background:
+                            folder.id === currentFolderId
+                              ? "var(--md-sys-color-secondary-container)"
+                              : "transparent",
+                          color:
+                            folder.id === currentFolderId
+                              ? "var(--md-sys-color-on-secondary-container)"
+                              : "var(--md-sys-color-on-surface)",
+                          border: "none",
+                          borderRadius: "6px",
+                          cursor: "pointer",
+                          marginTop: "2px",
+                          fontSize: "12px",
+                        }}
+                        onClick={() => void handleSelectFolder(folder.id)}
+                      >
+                        {folder.name.split(" / ").at(-1) ?? folder.name}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
               </div>
-            ) : null}
-          </div>
-          <span style={{ opacity: 0.4 }}>/</span>
-          <span style={{ color: "var(--md-sys-color-on-surface)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "240px" }}>{effectiveTitle}</span>
+              <span
+                style={{
+                  color: "var(--md-sys-color-on-surface)",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                  fontWeight: 600,
+                }}
+              >
+                {effectiveTitle}
+              </span>
+            </div>
+          ) : (
+            <>
+              <button
+                type="button"
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "inherit",
+                  cursor: "pointer",
+                  padding: "2px 4px",
+                  borderRadius: "4px",
+                  fontSize: "12px",
+                  whiteSpace: "nowrap",
+                }}
+                onClick={() => router.push("/dashboard")}
+              >
+                Çalışma alanı
+              </button>
+              <span style={{ opacity: 0.4 }}>/</span>
+              <div ref={folderMenuRef} style={{ position: "relative" }}>
+                <button
+                  type="button"
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "inherit",
+                    cursor: "pointer",
+                    padding: "2px 4px",
+                    borderRadius: "4px",
+                    fontSize: "12px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "2px",
+                    whiteSpace: "nowrap",
+                  }}
+                  onClick={() => setIsFolderMenuOpen((v) => !v)}
+                  aria-haspopup="menu"
+                  aria-expanded={isFolderMenuOpen}
+                >
+                  <span>
+                    {currentFolderId ? currentFolderLabel : "Kök klasör"}
+                  </span>
+                  <ChevronDownIcon />
+                </button>
+                {isFolderMenuOpen ? (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "calc(100% + 4px)",
+                      left: 0,
+                      background: "var(--md-sys-color-surface-container-high)",
+                      borderRadius: "10px",
+                      padding: "6px",
+                      boxShadow: "var(--md-sys-elevation-3)",
+                      zIndex: 100,
+                      minWidth: "180px",
+                    }}
+                    role="menu"
+                  >
+                    <button
+                      type="button"
+                      style={{
+                        width: "100%",
+                        textAlign: "left",
+                        padding: "6px 10px",
+                        background:
+                          currentFolderId === null
+                            ? "var(--md-sys-color-secondary-container)"
+                            : "transparent",
+                        color:
+                          currentFolderId === null
+                            ? "var(--md-sys-color-on-secondary-container)"
+                            : "var(--md-sys-color-on-surface)",
+                        border: "none",
+                        borderRadius: "6px",
+                        cursor: "pointer",
+                        fontSize: "12px",
+                      }}
+                      onClick={() => void handleSelectFolder(null)}
+                    >
+                      Kök klasör
+                    </button>
+                    {folderOptions.map((folder) => (
+                      <button
+                        key={folder.id}
+                        type="button"
+                        style={{
+                          width: "100%",
+                          textAlign: "left",
+                          padding: "6px 10px",
+                          background:
+                            folder.id === currentFolderId
+                              ? "var(--md-sys-color-secondary-container)"
+                              : "transparent",
+                          color:
+                            folder.id === currentFolderId
+                              ? "var(--md-sys-color-on-secondary-container)"
+                              : "var(--md-sys-color-on-surface)",
+                          border: "none",
+                          borderRadius: "6px",
+                          cursor: "pointer",
+                          marginTop: "2px",
+                          fontSize: "12px",
+                        }}
+                        onClick={() => void handleSelectFolder(folder.id)}
+                      >
+                        {folder.name.split(" / ").at(-1) ?? folder.name}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+              <span style={{ opacity: 0.4 }}>/</span>
+              <span
+                style={{
+                  color: "var(--md-sys-color-on-surface)",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                  maxWidth: "240px",
+                }}
+              >
+                {effectiveTitle}
+              </span>
+            </>
+          )}
         </div>
 
-        {/* Actions */}
-        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: isMobileViewport ? "4px" : "8px",
+            flexShrink: 0,
+          }}
+        >
           <span
             style={{
               fontSize: "11px",
@@ -927,38 +1166,17 @@ export function NoteEditorPage({
           >
             {saveStatusMeta.label}
           </span>
-          {(
-            [
-              { icon: "share", label: isPublished ? "Yayımdan kaldır" : "Yayımla", onClick: handlePublishToggle, active: isPublished, disabled: false, danger: false },
-              { icon: "push_pin", label: isPinned ? "Sabitlemeyi kaldır" : "Sabitle", onClick: handlePinToggle, active: isPinned, disabled: false, danger: false },
-              { icon: "tune", label: isMetaPanelOpen ? "Sayfa ayarlarını gizle" : "Sayfa ayarları", onClick: toggleMetaPanel, active: isMetaPanelOpen, disabled: false, danger: false },
-              { icon: "hub", label: "Kanvasta Aç", onClick: handleOpenInCanvas, active: false, disabled: false, danger: false },
-              { icon: "arrow_upward", label: "Yukarı taşı", onClick: () => handleMoveNote("up"), active: false, disabled: false, danger: false },
-              { icon: "arrow_downward", label: "Aşağı taşı", onClick: () => handleMoveNote("down"), active: false, disabled: false, danger: false },
-              { icon: "link", label: "Not bağlantısını kopyala", onClick: handleCopyNoteLink, active: false, disabled: false, danger: false },
-              { icon: "description", label: "Markdown kopyala", onClick: () => handleCopyExport("markdown"), active: false, disabled: isExportPending, danger: false },
-              { icon: "code", label: "MDX kopyala", onClick: () => handleCopyExport("mdx"), active: false, disabled: isExportPending, danger: false },
-              { icon: "open_in_new", label: "Yayımdaki sayfayı aç", onClick: handleOpenPublishedPage, active: false, disabled: !isPublished, danger: false },
-              { icon: "archive", label: "Arşive taşı", onClick: handleArchiveNote, active: false, disabled: false, danger: true },
-            ]
-          ).map(({ icon, label, onClick, active, disabled, danger }) => (
+          {isMobileViewport ? (
             <button
-              key={icon}
               type="button"
-              title={label}
-              aria-label={label}
-              disabled={disabled}
-              onClick={() => void onClick()}
+              title="Not işlemleri"
+              aria-label="Not işlemleri"
+              onClick={openContextMenuFromTrigger}
               style={{
-                background: active ? "var(--md-sys-color-secondary-container)" : "none",
+                background: "none",
                 border: "none",
-                color: danger
-                  ? "var(--md-sys-color-error)"
-                  : active
-                  ? "var(--md-sys-color-on-secondary-container)"
-                  : "var(--md-sys-color-on-surface-variant)",
-                cursor: disabled ? "default" : "pointer",
-                opacity: disabled ? 0.4 : 1,
+                color: "var(--md-sys-color-on-surface-variant)",
+                cursor: "pointer",
                 padding: "4px",
                 borderRadius: "6px",
                 display: "flex",
@@ -966,422 +1184,739 @@ export function NoteEditorPage({
                 lineHeight: 1,
               }}
             >
-              <span className="material-symbols-outlined" style={{ fontSize: "18px" }}>{icon}</span>
+              <span
+                className="material-symbols-outlined"
+                style={{ fontSize: "18px" }}
+              >
+                more_horiz
+              </span>
             </button>
-          ))}
+          ) : (
+            [
+              {
+                icon: "share",
+                label: isPublished ? "Yayımdan kaldır" : "Yayımla",
+                onClick: handlePublishToggle,
+                active: isPublished,
+                disabled: false,
+                danger: false,
+              },
+              {
+                icon: "push_pin",
+                label: isPinned ? "Sabitlemeyi kaldır" : "Sabitle",
+                onClick: handlePinToggle,
+                active: isPinned,
+                disabled: false,
+                danger: false,
+              },
+              {
+                icon: "tune",
+                label: isMetaPanelOpen
+                  ? "Sayfa ayarlarını gizle"
+                  : "Sayfa ayarları",
+                onClick: toggleMetaPanel,
+                active: isMetaPanelOpen,
+                disabled: false,
+                danger: false,
+              },
+              {
+                icon: "hub",
+                label: "Kanvasta Aç",
+                onClick: handleOpenInCanvas,
+                active: false,
+                disabled: false,
+                danger: false,
+              },
+              {
+                icon: "arrow_upward",
+                label: "Yukarı taşı",
+                onClick: () => handleMoveNote("up"),
+                active: false,
+                disabled: false,
+                danger: false,
+              },
+              {
+                icon: "arrow_downward",
+                label: "Aşağı taşı",
+                onClick: () => handleMoveNote("down"),
+                active: false,
+                disabled: false,
+                danger: false,
+              },
+              {
+                icon: "link",
+                label: "Not bağlantısını kopyala",
+                onClick: handleCopyNoteLink,
+                active: false,
+                disabled: false,
+                danger: false,
+              },
+              {
+                icon: "description",
+                label: "Markdown kopyala",
+                onClick: () => handleCopyExport("markdown"),
+                active: false,
+                disabled: isExportPending,
+                danger: false,
+              },
+              {
+                icon: "code",
+                label: "MDX kopyala",
+                onClick: () => handleCopyExport("mdx"),
+                active: false,
+                disabled: isExportPending,
+                danger: false,
+              },
+              {
+                icon: "open_in_new",
+                label: "Yayımdaki sayfayı aç",
+                onClick: handleOpenPublishedPage,
+                active: false,
+                disabled: !isPublished,
+                danger: false,
+              },
+              {
+                icon: "archive",
+                label: "Arşive taşı",
+                onClick: handleArchiveNote,
+                active: false,
+                disabled: false,
+                danger: true,
+              },
+            ].map(({ icon, label, onClick, active, disabled, danger }) => (
+              <button
+                key={icon}
+                type="button"
+                title={label}
+                aria-label={label}
+                disabled={disabled}
+                onClick={() => void onClick()}
+                style={{
+                  background: active
+                    ? "var(--md-sys-color-secondary-container)"
+                    : "none",
+                  border: "none",
+                  color: danger
+                    ? "var(--md-sys-color-error)"
+                    : active
+                      ? "var(--md-sys-color-on-secondary-container)"
+                      : "var(--md-sys-color-on-surface-variant)",
+                  cursor: disabled ? "default" : "pointer",
+                  opacity: disabled ? 0.4 : 1,
+                  padding: "4px",
+                  borderRadius: "6px",
+                  display: "flex",
+                  alignItems: "center",
+                  lineHeight: 1,
+                }}
+              >
+                <span
+                  className="material-symbols-outlined"
+                  style={{ fontSize: "18px" }}
+                >
+                  {icon}
+                </span>
+              </button>
+            ))
+          )}
         </div>
       </div>
 
-      <div style={{ display: "flex", justifyContent: "center", padding: "0 24px" }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          padding: contentShellPadding,
+        }}
+      >
         <div style={{ flex: "1 1 0", maxWidth: "800px", minWidth: 0 }}>
+          <div style={{ padding: contentSidePadding }}>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "8px",
+                padding: titleSectionPadding,
+              }}
+            >
+              <input
+                value={title}
+                onChange={(event) => handleTitleChange(event.target.value)}
+                onBlur={handleTitleBlur}
+                placeholder={DEFAULT_NOTE_TITLE}
+                spellCheck={false}
+                style={{
+                  fontSize: "var(--md-sys-typescale-display-small-size)",
+                  fontWeight: "var(--md-sys-typescale-display-small-weight)",
+                  color: "var(--md-sys-color-on-background)",
+                  border: "none",
+                  background: "transparent",
+                  outline: "none",
+                  width: "100%",
+                  padding: 0,
+                }}
+              />
 
-      <div style={{ padding: "0 32px" }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: "8px", paddingTop: "48px", paddingBottom: "16px" }}>
-          <input
-            value={title}
-            onChange={(event) => handleTitleChange(event.target.value)}
-            onBlur={handleTitleBlur}
-            placeholder={DEFAULT_NOTE_TITLE}
-            spellCheck={false}
-            style={{ fontSize: "var(--md-sys-typescale-display-small-size)", fontWeight: "var(--md-sys-typescale-display-small-weight)", color: "var(--md-sys-color-on-background)", border: "none", background: "transparent", outline: "none", width: "100%", padding: 0 }}
-          />
-
-          {currentCategory || note.tags.length > 0 ? (
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-              {currentCategory ? (
-                <button
-                  type="button"
-                  style={{
-                    background: currentCategoryTokens.background,
-                    color: currentCategoryTokens.foreground,
-                    border: "none",
-                    padding: "2px 10px",
-                    borderRadius: "999px",
-                    fontSize: "12px",
-                    cursor: "pointer",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "6px",
-                  }}
-                  onClick={() => setIsMetaPanelOpen(true)}
-                >
-                  <span aria-hidden="true">{currentCategory.icon ?? "•"}</span>
-                  <span>{currentCategory.name}</span>
-                </button>
-              ) : null}
-              {note.tags.map((tag) => (
-                <button
-                  key={tag}
-                  type="button"
-                  style={{ background: "var(--md-sys-color-secondary-container)", color: "var(--md-sys-color-on-secondary-container)", border: "none", padding: "2px 10px", borderRadius: "6px", fontSize: "12px", cursor: "pointer" }}
-                  onClick={() => router.push(`/tags/${tag}`)}
-                >
-                  #{tag}
-                </button>
-              ))}
-            </div>
-          ) : null}
-
-          {isMetaPanelOpen ? (
-            <Card variant="outlined" style={{ marginTop: "8px" }}>
-              <CardContent>
-                <div
-                  style={{
-                    display: "grid",
-                    gap: "12px",
-                    paddingBottom: "16px",
-                    marginBottom: "16px",
-                    borderBottom:
-                      "1px solid var(--md-sys-color-outline-variant)",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      gap: "12px",
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    <div>
-                      <div
-                        style={{
-                          fontSize:
-                            "var(--md-sys-typescale-title-small-size)",
-                          fontWeight: 600,
-                          color: "var(--md-sys-color-on-surface)",
-                        }}
-                      >
-                        Kategori
-                      </div>
-                      <div
-                        style={{
-                          fontSize:
-                            "var(--md-sys-typescale-body-small-size)",
-                          color: "var(--md-sys-color-on-surface-variant)",
-                        }}
-                      >
-                        Notu taglerden ayri bir ana gruba yerlestir.
-                      </div>
-                    </div>
-                    <Button
-                      variant="text"
-                      onClick={() =>
-                        setIsCreateCategoryOpen((currentValue) => !currentValue)
-                      }
-                    >
-                      {isCreateCategoryOpen ? "Kapat" : "Yeni kategori"}
-                    </Button>
-                  </div>
-
-                  <div
-                    style={{
-                      display: "flex",
-                      flexWrap: "wrap",
-                      gap: "8px",
-                    }}
-                  >
+              {currentCategory || note.tags.length > 0 ? (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                  {currentCategory ? (
                     <button
                       type="button"
-                      onClick={() => void handleCategoryChange(null)}
-                      disabled={isCategoryPending}
-                      style={buildCategoryChipStyle(
-                        currentCategoryId === null,
-                        {
-                          background:
-                            "var(--md-sys-color-surface-container-highest)",
-                          foreground: "var(--md-sys-color-on-surface)",
-                        }
-                      )}
+                      style={{
+                        background: currentCategoryTokens.background,
+                        color: currentCategoryTokens.foreground,
+                        border: "none",
+                        padding: "2px 10px",
+                        borderRadius: "999px",
+                        fontSize: "12px",
+                        cursor: "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "6px",
+                      }}
+                      onClick={() => setIsMetaPanelOpen(true)}
                     >
-                      Kategori yok
+                      <span aria-hidden="true">
+                        {currentCategory.icon ?? "•"}
+                      </span>
+                      <span>{currentCategory.name}</span>
                     </button>
-                    {availableCategories.map((category) => (
-                      <button
-                        key={category.id}
-                        type="button"
-                        onClick={() => void handleCategoryChange(category.id)}
-                        disabled={isCategoryPending}
-                        style={buildCategoryChipStyle(
-                          category.id === currentCategoryId,
-                          getNoteCategoryColorTokens(category.color)
-                        )}
-                      >
-                        <span aria-hidden="true">{category.icon ?? "•"}</span>
-                        <span>{category.name}</span>
-                      </button>
-                    ))}
-                  </div>
+                  ) : null}
+                  {note.tags.map((tag) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      style={{
+                        background: "var(--md-sys-color-secondary-container)",
+                        color: "var(--md-sys-color-on-secondary-container)",
+                        border: "none",
+                        padding: "2px 10px",
+                        borderRadius: "6px",
+                        fontSize: "12px",
+                        cursor: "pointer",
+                      }}
+                      onClick={() => router.push(`/tags/${tag}`)}
+                    >
+                      #{tag}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
 
-                  {isCreateCategoryOpen ? (
+              {isMetaPanelOpen ? (
+                <Card variant="outlined" style={{ marginTop: "8px" }}>
+                  <CardContent>
                     <div
                       style={{
                         display: "grid",
                         gap: "12px",
-                        padding: "12px",
-                        borderRadius: "12px",
-                        background:
-                          "var(--md-sys-color-surface-container-low)",
+                        paddingBottom: "16px",
+                        marginBottom: "16px",
+                        borderBottom:
+                          "1px solid var(--md-sys-color-outline-variant)",
                       }}
                     >
                       <div
-                        className="md-text-field md-text-field--outlined md-text-field--has-value"
-                        style={{ width: "100%" }}
-                      >
-                        <div className="md-text-field-container">
-                          <input
-                            className="md-text-field-input"
-                            value={newCategoryName}
-                            onChange={(event) =>
-                              setNewCategoryName(event.target.value)
-                            }
-                            placeholder=" "
-                          />
-                          <span className="md-text-field-label">
-                            Kategori adi
-                          </span>
-                        </div>
-                      </div>
-
-                      <div
                         style={{
-                          display: "grid",
-                          gridTemplateColumns: "minmax(0, 1fr) 160px",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
                           gap: "12px",
+                          flexWrap: "wrap",
                         }}
                       >
-                        <div
-                          className="md-text-field md-text-field--outlined md-text-field--has-value"
-                          style={{ width: "100%" }}
-                        >
-                          <div className="md-text-field-container">
-                            <input
-                              className="md-text-field-input"
-                              value={newCategoryIcon}
-                              onChange={(event) =>
-                                setNewCategoryIcon(event.target.value)
-                              }
-                              placeholder=" "
-                            />
-                            <span className="md-text-field-label">
-                              Ikon (opsiyonel)
-                            </span>
+                        <div>
+                          <div
+                            style={{
+                              fontSize:
+                                "var(--md-sys-typescale-title-small-size)",
+                              fontWeight: 600,
+                              color: "var(--md-sys-color-on-surface)",
+                            }}
+                          >
+                            Kategori
+                          </div>
+                          <div
+                            style={{
+                              fontSize:
+                                "var(--md-sys-typescale-body-small-size)",
+                              color: "var(--md-sys-color-on-surface-variant)",
+                            }}
+                          >
+                            Notu taglerden ayri bir ana gruba yerlestir.
                           </div>
                         </div>
-
-                        <label
-                          style={{
-                            display: "grid",
-                            gap: "4px",
-                            fontSize:
-                              "var(--md-sys-typescale-label-medium-size)",
-                            color: "var(--md-sys-color-on-surface-variant)",
-                          }}
+                        <Button
+                          variant="text"
+                          onClick={() =>
+                            setIsCreateCategoryOpen(
+                              (currentValue) => !currentValue,
+                            )
+                          }
                         >
-                          <span>Renk</span>
-                          <select
-                            value={newCategoryColor}
-                            onChange={(event) =>
-                              setNewCategoryColor(
-                                event.target.value as (typeof NOTE_CATEGORY_COLOR_OPTIONS)[number]
-                              )
-                            }
-                            style={buildSelectStyle()}
-                          >
-                            {NOTE_CATEGORY_COLOR_OPTIONS.map((colorOption) => (
-                              <option key={colorOption} value={colorOption}>
-                                {colorOption}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
+                          {isCreateCategoryOpen ? "Kapat" : "Yeni kategori"}
+                        </Button>
                       </div>
 
                       <div
                         style={{
                           display: "flex",
-                          justifyContent: "flex-end",
+                          flexWrap: "wrap",
                           gap: "8px",
                         }}
                       >
-                        <Button
-                          variant="filled"
-                          disabled={!newCategoryName.trim() || isCategoryPending}
-                          onClick={handleCreateCategory}
+                        <button
+                          type="button"
+                          onClick={() => void handleCategoryChange(null)}
+                          disabled={isCategoryPending}
+                          style={buildCategoryChipStyle(
+                            currentCategoryId === null,
+                            {
+                              background:
+                                "var(--md-sys-color-surface-container-highest)",
+                              foreground: "var(--md-sys-color-on-surface)",
+                            },
+                          )}
                         >
-                          {isCategoryPending ? "Olusturuluyor..." : "Kategori olustur"}
-                        </Button>
+                          Kategori yok
+                        </button>
+                        {availableCategories.map((category) => (
+                          <button
+                            key={category.id}
+                            type="button"
+                            onClick={() =>
+                              void handleCategoryChange(category.id)
+                            }
+                            disabled={isCategoryPending}
+                            style={buildCategoryChipStyle(
+                              category.id === currentCategoryId,
+                              getNoteCategoryColorTokens(category.color),
+                            )}
+                          >
+                            <span aria-hidden="true">
+                              {category.icon ?? "•"}
+                            </span>
+                            <span>{category.name}</span>
+                          </button>
+                        ))}
+                      </div>
+
+                      {isCreateCategoryOpen ? (
+                        <div
+                          style={{
+                            display: "grid",
+                            gap: "12px",
+                            padding: "12px",
+                            borderRadius: "12px",
+                            background:
+                              "var(--md-sys-color-surface-container-low)",
+                          }}
+                        >
+                          <div
+                            className="md-text-field md-text-field--outlined md-text-field--has-value"
+                            style={{ width: "100%" }}
+                          >
+                            <div className="md-text-field-container">
+                              <input
+                                className="md-text-field-input"
+                                value={newCategoryName}
+                                onChange={(event) =>
+                                  setNewCategoryName(event.target.value)
+                                }
+                                placeholder=" "
+                              />
+                              <span className="md-text-field-label">
+                                Kategori adi
+                              </span>
+                            </div>
+                          </div>
+
+                          <div
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns: isMobileViewport
+                                ? "1fr"
+                                : "minmax(0, 1fr) 160px",
+                              gap: "12px",
+                            }}
+                          >
+                            <div
+                              className="md-text-field md-text-field--outlined md-text-field--has-value"
+                              style={{ width: "100%" }}
+                            >
+                              <div className="md-text-field-container">
+                                <input
+                                  className="md-text-field-input"
+                                  value={newCategoryIcon}
+                                  onChange={(event) =>
+                                    setNewCategoryIcon(event.target.value)
+                                  }
+                                  placeholder=" "
+                                />
+                                <span className="md-text-field-label">
+                                  Ikon (opsiyonel)
+                                </span>
+                              </div>
+                            </div>
+
+                            <label
+                              style={{
+                                display: "grid",
+                                gap: "4px",
+                                fontSize:
+                                  "var(--md-sys-typescale-label-medium-size)",
+                                color: "var(--md-sys-color-on-surface-variant)",
+                              }}
+                            >
+                              <span>Renk</span>
+                              <select
+                                value={newCategoryColor}
+                                onChange={(event) =>
+                                  setNewCategoryColor(
+                                    event.target
+                                      .value as (typeof NOTE_CATEGORY_COLOR_OPTIONS)[number],
+                                  )
+                                }
+                                style={buildSelectStyle()}
+                              >
+                                {NOTE_CATEGORY_COLOR_OPTIONS.map(
+                                  (colorOption) => (
+                                    <option
+                                      key={colorOption}
+                                      value={colorOption}
+                                    >
+                                      {colorOption}
+                                    </option>
+                                  ),
+                                )}
+                              </select>
+                            </label>
+                          </div>
+
+                          <div
+                            style={{
+                              display: "flex",
+                              justifyContent: "flex-end",
+                              gap: "8px",
+                            }}
+                          >
+                            <Button
+                              variant="filled"
+                              disabled={
+                                !newCategoryName.trim() || isCategoryPending
+                              }
+                              onClick={handleCreateCategory}
+                            >
+                              {isCategoryPending
+                                ? "Olusturuluyor..."
+                                : "Kategori olustur"}
+                            </Button>
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+
+                    <div
+                      className="md-text-field md-text-field--outlined md-text-field--has-value"
+                      style={{ width: "100%" }}
+                    >
+                      <div className="md-text-field-container">
+                        <input
+                          className="md-text-field-input"
+                          value={slug ?? ""}
+                          onChange={(event) => setSlug(event.target.value)}
+                          onBlur={(event) =>
+                            void handleSlugChange(event.target.value)
+                          }
+                          placeholder="yayin-adresi"
+                          spellCheck={false}
+                        />
+                        <span className="md-text-field-label">
+                          Yayın Adresi
+                        </span>
                       </div>
                     </div>
-                  ) : null}
-                </div>
-
-                <div className="md-text-field md-text-field--outlined md-text-field--has-value" style={{ width: "100%" }}>
-                  <div className="md-text-field-container">
-                    <input
-                      className="md-text-field-input"
-                      value={slug ?? ""}
-                      onChange={(event) => setSlug(event.target.value)}
-                      onBlur={(event) => void handleSlugChange(event.target.value)}
-                      placeholder="yayin-adresi"
-                      spellCheck={false}
-                    />
-                    <span className="md-text-field-label">Yayın Adresi</span>
-                  </div>
-                </div>
-                <p style={{ marginTop: "8px", fontSize: "var(--md-sys-typescale-body-small-size)", color: "var(--md-sys-color-on-surface-variant)" }}>
-                  {slug?.trim()
-                    ? `Yayın yolu: /published/${slug}`
-                    : "Yayımlandığında otomatik bir adres oluşturulur."}
-                </p>
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    gap: "12px",
-                    marginTop: "16px",
-                    paddingTop: "16px",
-                    borderTop:
-                      "1px solid var(--md-sys-color-outline-variant)",
-                    flexWrap: "wrap",
-                  }}
-                >
-                  <div>
-                    <div
+                    <p
                       style={{
-                        fontSize: "var(--md-sys-typescale-title-small-size)",
-                        fontWeight: 600,
-                        color: "var(--md-sys-color-on-surface)",
-                      }}
-                    >
-                      Template akisi
-                    </div>
-                    <div
-                      style={{
-                        fontSize:
-                          "var(--md-sys-typescale-body-small-size)",
+                        marginTop: "8px",
+                        fontSize: "var(--md-sys-typescale-body-small-size)",
                         color: "var(--md-sys-color-on-surface-variant)",
                       }}
                     >
-                      Bu notu tekrar kullanilabilir bir baslangic olarak kaydet.
-                    </div>
-                  </div>
-                  <Button
-                    variant="tonal"
-                    onClick={handleOpenTemplateDialog}
-                    disabled={isTemplatePending}
-                  >
-                    Template olarak kaydet
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ) : null}
-        </div>
-      </div>
-
-      <div style={{ padding: "0 32px 32px", minHeight: "60vh" }}>
-        <Editor
-          noteId={note.id}
-          initialContent={note.document}
-          onSave={handleSave}
-          searchWikilinkNotes={handleSearchWikilinks}
-          resolveWikilinkNote={handleResolveWikilink}
-          createWikilinkNote={handleCreateWikilink}
-          onNavigateToNote={handleNavigateToNote}
-        />
-      </div>
-
-      {backlinks.length > 0 ? (
-        <div style={{ marginTop: "48px", padding: "0 32px" }}>
-          <Card variant="outlined">
-            <CardHeader>
-              <CardTitle style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <span className="material-symbols-outlined" aria-hidden="true">link</span>
-                Geri bağlantılar ({backlinks.length})
-              </CardTitle>
-            </CardHeader>
-            <CardContent style={{ padding: 0 }}>
-              <ul className="md-list">
-                {backlinks.map((backlink) => (
-                  <li key={`${backlink.sourceNoteId}-${backlink.targetRaw}`} style={{ display: "block" }}>
-                    <button
-                      type="button"
-                      className="md-list-item"
-                      style={{ width: "100%", textAlign: "left", background: "transparent", borderBottom: "1px solid var(--md-sys-color-outline-variant)" }}
-                      onClick={() => router.push(`/notes/${backlink.sourceNoteId}`)}
+                      {slug?.trim()
+                        ? `Yayın yolu: /published/${slug}`
+                        : "Yayımlandığında otomatik bir adres oluşturulur."}
+                    </p>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: "12px",
+                        marginTop: "16px",
+                        paddingTop: "16px",
+                        borderTop:
+                          "1px solid var(--md-sys-color-outline-variant)",
+                        flexWrap: "wrap",
+                      }}
                     >
-                      <div className="md-list-item-content">
-                        <span className="md-list-item-headline">{backlink.sourceNoteTitle}</span>
-                        <span className="md-list-item-supporting-text" style={{ color: "var(--md-sys-color-primary)" }}>-&gt; {backlink.targetRaw}</span>
-                      </div>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
-        </div>
-      ) : null}
-
-      {proposals.length > 0 ? (
-        <div style={{ margin: "32px 0 64px", padding: "0 32px" }}>
-          <Card variant="outlined" style={{ borderColor: "var(--md-sys-color-tertiary)" }}>
-            <CardHeader>
-              <CardTitle style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--md-sys-color-tertiary)" }}>
-                <span className="material-symbols-outlined" aria-hidden="true">auto_awesome</span>
-                Bekleyen öneriler ({proposals.length})
-              </CardTitle>
-            </CardHeader>
-            <CardContent style={{ padding: 0 }}>
-              <ul className="md-list">
-                {proposals.map((proposal) => (
-                  <li key={proposal.id} style={{ display: "block", borderBottom: "1px solid var(--md-sys-color-outline-variant)", padding: "16px" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: proposal.summary ? "12px" : "0" }}>
                       <div>
-                        <div style={{ fontWeight: "bold", fontSize: "var(--md-sys-typescale-title-medium-size)", color: "var(--md-sys-color-on-surface)" }}>{proposal.title}</div>
-                        <div style={{ fontSize: "var(--md-sys-typescale-body-small-size)", color: "var(--md-sys-color-on-surface-variant)" }}>
-                          <span style={{ textTransform: "uppercase", padding: "2px 6px", background: "var(--md-sys-color-surface-container-high)", borderRadius: "4px", fontSize: "10px", fontWeight: "bold", marginRight: "8px" }}>{proposal.status}</span>
-                          {new Date(proposal.createdAt).toLocaleString("tr-TR")}
+                        <div
+                          style={{
+                            fontSize:
+                              "var(--md-sys-typescale-title-small-size)",
+                            fontWeight: 600,
+                            color: "var(--md-sys-color-on-surface)",
+                          }}
+                        >
+                          Template akisi
+                        </div>
+                        <div
+                          style={{
+                            fontSize: "var(--md-sys-typescale-body-small-size)",
+                            color: "var(--md-sys-color-on-surface-variant)",
+                          }}
+                        >
+                          Bu notu tekrar kullanilabilir bir baslangic olarak
+                          kaydet.
                         </div>
                       </div>
-                      <div style={{ display: "flex", gap: "8px" }}>
-                        {proposal.status === "pending" ? (
-                          <>
-                            <Button
-                              variant="tonal"
-                              onClick={() => void handleApplyProposal(proposal.id)}
-                            >
-                              Uygula
-                            </Button>
-                            <Button
-                              variant="text"
-                              onClick={() => void handleRejectProposal(proposal.id)}
-                            >
-                              Reddet
-                            </Button>
-                          </>
-                        ) : null}
-                      </div>
+                      <Button
+                        variant="tonal"
+                        onClick={handleOpenTemplateDialog}
+                        disabled={isTemplatePending}
+                      >
+                        Template olarak kaydet
+                      </Button>
                     </div>
-                    {proposal.summary ? (
-                      <div style={{ fontSize: "var(--md-sys-typescale-body-medium-size)", color: "var(--md-sys-color-on-surface-variant)", background: "var(--md-sys-color-surface-container-lowest)", padding: "12px", borderRadius: "8px" }}>{proposal.summary}</div>
-                    ) : null}
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
-        </div>
-      ) : null}
+                  </CardContent>
+                </Card>
+              ) : null}
+            </div>
+          </div>
 
-        </div>{/* end main content column */}
+          <div
+            style={{
+              padding: editorSectionPadding,
+              minHeight: isMobileViewport ? "50vh" : "60vh",
+            }}
+          >
+            <Editor
+              noteId={note.id}
+              initialContent={note.document}
+              onSave={handleSave}
+              searchWikilinkNotes={handleSearchWikilinks}
+              resolveWikilinkNote={handleResolveWikilink}
+              createWikilinkNote={handleCreateWikilink}
+              onNavigateToNote={handleNavigateToNote}
+            />
+          </div>
+
+          {backlinks.length > 0 ? (
+            <div
+              style={{
+                marginTop: isMobileViewport ? "32px" : "48px",
+                padding: footerSectionPadding,
+              }}
+            >
+              <Card variant="outlined">
+                <CardHeader>
+                  <CardTitle
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                    }}
+                  >
+                    <span
+                      className="material-symbols-outlined"
+                      aria-hidden="true"
+                    >
+                      link
+                    </span>
+                    Geri bağlantılar ({backlinks.length})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent style={{ padding: 0 }}>
+                  <ul className="md-list">
+                    {backlinks.map((backlink) => (
+                      <li
+                        key={`${backlink.sourceNoteId}-${backlink.targetRaw}`}
+                        style={{ display: "block" }}
+                      >
+                        <button
+                          type="button"
+                          className="md-list-item"
+                          style={{
+                            width: "100%",
+                            textAlign: "left",
+                            background: "transparent",
+                            borderBottom:
+                              "1px solid var(--md-sys-color-outline-variant)",
+                          }}
+                          onClick={() =>
+                            router.push(`/notes/${backlink.sourceNoteId}`)
+                          }
+                        >
+                          <div className="md-list-item-content">
+                            <span className="md-list-item-headline">
+                              {backlink.sourceNoteTitle}
+                            </span>
+                            <span
+                              className="md-list-item-supporting-text"
+                              style={{ color: "var(--md-sys-color-primary)" }}
+                            >
+                              -&gt; {backlink.targetRaw}
+                            </span>
+                          </div>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            </div>
+          ) : null}
+
+          {proposals.length > 0 ? (
+            <div
+              style={{
+                margin: isMobileViewport ? "24px 0 48px" : "32px 0 64px",
+                padding: footerSectionPadding,
+              }}
+            >
+              <Card
+                variant="outlined"
+                style={{ borderColor: "var(--md-sys-color-tertiary)" }}
+              >
+                <CardHeader>
+                  <CardTitle
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      color: "var(--md-sys-color-tertiary)",
+                    }}
+                  >
+                    <span
+                      className="material-symbols-outlined"
+                      aria-hidden="true"
+                    >
+                      auto_awesome
+                    </span>
+                    Bekleyen öneriler ({proposals.length})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent style={{ padding: 0 }}>
+                  <ul className="md-list">
+                    {proposals.map((proposal) => (
+                      <li
+                        key={proposal.id}
+                        style={{
+                          display: "block",
+                          borderBottom:
+                            "1px solid var(--md-sys-color-outline-variant)",
+                          padding: "16px",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "flex-start",
+                            marginBottom: proposal.summary ? "12px" : "0",
+                          }}
+                        >
+                          <div>
+                            <div
+                              style={{
+                                fontWeight: "bold",
+                                fontSize:
+                                  "var(--md-sys-typescale-title-medium-size)",
+                                color: "var(--md-sys-color-on-surface)",
+                              }}
+                            >
+                              {proposal.title}
+                            </div>
+                            <div
+                              style={{
+                                fontSize:
+                                  "var(--md-sys-typescale-body-small-size)",
+                                color: "var(--md-sys-color-on-surface-variant)",
+                              }}
+                            >
+                              <span
+                                style={{
+                                  textTransform: "uppercase",
+                                  padding: "2px 6px",
+                                  background:
+                                    "var(--md-sys-color-surface-container-high)",
+                                  borderRadius: "4px",
+                                  fontSize: "10px",
+                                  fontWeight: "bold",
+                                  marginRight: "8px",
+                                }}
+                              >
+                                {proposal.status}
+                              </span>
+                              {new Date(proposal.createdAt).toLocaleString(
+                                "tr-TR",
+                              )}
+                            </div>
+                          </div>
+                          <div style={{ display: "flex", gap: "8px" }}>
+                            {proposal.status === "pending" ? (
+                              <>
+                                <Button
+                                  variant="tonal"
+                                  onClick={() =>
+                                    void handleApplyProposal(proposal.id)
+                                  }
+                                >
+                                  Uygula
+                                </Button>
+                                <Button
+                                  variant="text"
+                                  onClick={() =>
+                                    void handleRejectProposal(proposal.id)
+                                  }
+                                >
+                                  Reddet
+                                </Button>
+                              </>
+                            ) : null}
+                          </div>
+                        </div>
+                        {proposal.summary ? (
+                          <div
+                            style={{
+                              fontSize:
+                                "var(--md-sys-typescale-body-medium-size)",
+                              color: "var(--md-sys-color-on-surface-variant)",
+                              background:
+                                "var(--md-sys-color-surface-container-lowest)",
+                              padding: "12px",
+                              borderRadius: "8px",
+                            }}
+                          >
+                            {proposal.summary}
+                          </div>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            </div>
+          ) : null}
+        </div>
+        {/* end main content column */}
 
         {isTocVisible ? (
           <aside style={{ width: "180px", flexShrink: 0 }}>
-            <div style={{ position: "sticky", top: "56px", paddingTop: "64px" }}>
+            <div
+              style={{ position: "sticky", top: "56px", paddingTop: "64px" }}
+            >
               {headings.length > 0 ? (
                 <nav aria-label="İçindekiler">
                   <div
@@ -1396,21 +1931,33 @@ export function NoteEditorPage({
                   >
                     İçindekiler
                   </div>
-                  <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: "1px" }}>
+                  <ul
+                    style={{
+                      listStyle: "none",
+                      margin: 0,
+                      padding: 0,
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "1px",
+                    }}
+                  >
                     {headings.map((heading, idx) => (
                       <li key={`${heading.blockId ?? heading.text}-${idx}`}>
                         <button
                           type="button"
-                          onClick={() => scrollToHeading(heading.blockId, heading.text)}
+                          onClick={() =>
+                            scrollToHeading(heading.blockId, heading.text)
+                          }
                           title={heading.text}
                           style={{
                             display: "block",
                             width: "100%",
                             textAlign: "left",
                             background: "transparent",
-                            color: activeHeadingIndex === idx
-                              ? "var(--md-sys-color-on-surface)"
-                              : "var(--md-sys-color-on-surface-variant)",
+                            color:
+                              activeHeadingIndex === idx
+                                ? "var(--md-sys-color-on-surface)"
+                                : "var(--md-sys-color-on-surface-variant)",
                             border: "none",
                             padding: "3px 0",
                             paddingLeft: `${(heading.level - 1) * 10}px`,
@@ -1434,8 +1981,8 @@ export function NoteEditorPage({
             </div>
           </aside>
         ) : null}
-
-      </div>{/* end flex layout wrapper */}
+      </div>
+      {/* end flex layout wrapper */}
 
       {isTemplateDialogOpen ? (
         <div
@@ -1448,7 +1995,10 @@ export function NoteEditorPage({
             onClick={(event) => event.stopPropagation()}
           >
             <h2 className="md-dialog-headline">Template olarak kaydet</h2>
-            <div className="md-dialog-content" style={{ display: "grid", gap: "16px" }}>
+            <div
+              className="md-dialog-content"
+              style={{ display: "grid", gap: "16px" }}
+            >
               <div className="md-text-field md-text-field--outlined md-text-field--has-value">
                 <div className="md-text-field-container">
                   <input
@@ -1464,7 +2014,11 @@ export function NoteEditorPage({
               <div className="md-text-field md-text-field--outlined md-text-field--has-value">
                 <div
                   className="md-text-field-container"
-                  style={{ height: "auto", minHeight: "88px", padding: "12px 16px" }}
+                  style={{
+                    height: "auto",
+                    minHeight: "88px",
+                    padding: "12px 16px",
+                  }}
                 >
                   <textarea
                     className="md-text-field-input"
@@ -1483,7 +2037,9 @@ export function NoteEditorPage({
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "minmax(0, 1fr) 180px",
+                  gridTemplateColumns: isMobileViewport
+                    ? "1fr"
+                    : "minmax(0, 1fr) 180px",
                   gap: "12px",
                 }}
               >
@@ -1498,7 +2054,9 @@ export function NoteEditorPage({
                   <span>Template kategorisi</span>
                   <select
                     value={templateCategory}
-                    onChange={(event) => setTemplateCategory(event.target.value)}
+                    onChange={(event) =>
+                      setTemplateCategory(event.target.value)
+                    }
                     style={buildSelectStyle()}
                   >
                     {TEMPLATE_CATEGORIES.map((category) => (
@@ -1556,12 +2114,9 @@ export function NoteEditorPage({
         position={contextMenuPosition}
         onClose={closeContextMenu}
       />
-
     </>
   );
 }
-
-
 
 function ChevronDownIcon() {
   return (
@@ -1580,10 +2135,10 @@ function ChevronDownIcon() {
 
 function buildFolderLabel(
   folder: { id: string; name: string; parentId: string | null },
-  folders: Array<{ id: string; name: string; parentId: string | null }>
+  folders: Array<{ id: string; name: string; parentId: string | null }>,
 ) {
   const foldersById = new Map(
-    folders.map((candidate) => [candidate.id, candidate])
+    folders.map((candidate) => [candidate.id, candidate]),
   );
   const labels = [folder.name];
   let currentParentId = folder.parentId;
@@ -1604,7 +2159,7 @@ function buildFolderLabel(
 
 function buildCategoryChipStyle(
   isActive: boolean,
-  colors: { background: string; foreground: string }
+  colors: { background: string; foreground: string },
 ) {
   return {
     background: isActive
@@ -1639,7 +2194,7 @@ function buildSelectStyle(): CSSProperties {
 
 function sortCategories(categories: NoteCategorySummary[]) {
   return [...categories].sort((left, right) =>
-    left.name.localeCompare(right.name, "tr")
+    left.name.localeCompare(right.name, "tr"),
   );
 }
 

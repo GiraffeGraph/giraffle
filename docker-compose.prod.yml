@@ -37,14 +37,28 @@ services:
       - "${APP_PORT:-3000}:3000"
     environment:
       DATABASE_URL: ${DATABASE_URL}
-      AUTH_SECRET: ${AUTH_SECRET}
+      AUTH_SECRET: ${AUTH_SECRET:-}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-}
       NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+      AUTH_DISABLE_SECURE_COOKIES: ${AUTH_DISABLE_SECURE_COOKIES:-0}
       POSTGRES_USER: ${POSTGRES_USER:-giraffle}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB:-giraffle}
       HOSTNAME: "0.0.0.0"
       PORT: "3000"
       NODE_OPTIONS: "--max-old-space-size=512"
+    command: >-
+      sh -lc "for f in /app/node_modules/@auth/core/lib/utils/cookie.js /app/node_modules/next-auth/node_modules/@auth/core/lib/utils/cookie.js; do
+      [ -f \"$$f\" ] && sed -i 's/export function defaultCookies(useSecureCookies) {/export function defaultCookies(useSecureCookies) { useSecureCookies = process.env.AUTH_DISABLE_SECURE_COOKIES === \"1\" ? false : useSecureCookies;/' \"$$f\";
+      done;
+      grep -Rrl 'e.useSecureCookies??\"https:\"===n.protocol' /app/.next/server/chunks /app/.next/server/app 2>/dev/null | while read -r f; do
+      sed -i 's/e.useSecureCookies??\"https:\"===n.protocol/process.env.AUTH_DISABLE_SECURE_COOKIES===\"1\"?!1:e.useSecureCookies??\"https:\"===n.protocol/g' \"$$f\";
+      done;
+      grep -Rrl 'useSecureCookies:!0' /app/.next/server/chunks /app/.next/server/app 2>/dev/null | while read -r f; do
+      sed -i 's/useSecureCookies:!0/useSecureCookies:process.env.AUTH_DISABLE_SECURE_COOKIES===\"1\"?!1:!0/g' \"$$f\";
+      done &&
+      npx prisma migrate deploy &&
+      node server.js"
     volumes:
       - giraffle_uploads:/app/public/uploads
     healthcheck:

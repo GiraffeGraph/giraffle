@@ -49,11 +49,26 @@ NEXTAUTH_URL=http://YOUR_SERVER_IP_OR_DOMAIN
 NODE_ENV=production
 ```
 
+Or, recommended for production, use a Docker secret file instead of putting the auth secret directly in `.env.production`:
+
+```bash
+mkdir -p secrets
+openssl rand -base64 48 > secrets/auth_secret.txt
+chmod 600 secrets/auth_secret.txt
+```
+
+Then in `.env.production` use:
+
+```env
+AUTH_SECRET_FILE=./secrets/auth_secret.txt
+```
+
 Important:
 
 - `NEXTAUTH_URL` must match the real public URL.
 - `POSTGRES_PASSWORD` and the password inside `DATABASE_URL` must be the same.
-- `AUTH_SECRET` should be long and random.
+- Use either `AUTH_SECRET` or `AUTH_SECRET_FILE`.
+- If `AUTH_SECRET_FILE` is set, the prod scripts automatically include `docker-compose.prod.secrets.yml`.
 
 ## 3. Start the app
 
@@ -62,6 +77,8 @@ Pull the image and start everything:
 ```bash
 ./scripts/prod-up.sh
 ```
+
+If `AUTH_SECRET_FILE` is set, the same command automatically mounts it as a Docker secret.
 
 This starts:
 

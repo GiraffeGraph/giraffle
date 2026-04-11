@@ -6,5 +6,7 @@ Dockerfile
 docker-compose*.yml
 .env
 .env.local
+secrets
+*.secret
 docs
 skills

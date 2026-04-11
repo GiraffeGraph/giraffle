@@ -10,4 +10,126 @@
 
 /* graphite-night teması için min-height override (içerik sayfaları) */
 
+@media (max-width: 900px) {
+  html,
+  body {
+    overflow-x: hidden;
+  }
 
+  .app-layout {
+    display: block;
+    padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .main-content {
+    overflow: visible;
+    padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .main-content-inner {
+    min-height: 0;
+  }
+
+  .sidebar.sidebar-mobile {
+    position: sticky;
+    top: 0;
+    z-index: 45;
+    width: 100% !important;
+    height: auto !important;
+    border-right: none;
+    border-bottom: 1px solid var(--border-soft);
+    background: color-mix(in srgb, var(--shell-sidebar-bg) 96%, transparent);
+    backdrop-filter: blur(18px);
+  }
+
+  .sidebar-mobile .sidebar-topbar {
+    padding-top: max(10px, env(safe-area-inset-top, 0px));
+  }
+
+  .sidebar-mobile .sidebar-mobile-panel {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    gap: 0;
+    border-top: 1px solid var(--border-soft);
+    background: var(--shell-sidebar-bg);
+    box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
+  }
+
+  .sidebar-mobile .md-nav-drawer-content {
+    max-height: min(68vh, calc(100vh - 144px));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-bottom: 16px !important;
+  }
+
+  .sidebar-mobile .sidebar-search-kbd {
+    display: none;
+  }
+
+  .sidebar-mobile .sidebar-primary-nav {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .sidebar-mobile .sidebar-item,
+  .sidebar-mobile .sidebar-tag-item {
+    min-height: 34px;
+  }
+
+  .sidebar-mobile-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    border: 0;
+    background: rgb(15 23 42 / 0.28);
+    cursor: default;
+  }
+
+  .right-rail {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    top: auto;
+    z-index: 40;
+    height: auto !important;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 6px;
+    padding: 8px;
+    border: 1px solid var(--border-soft);
+    border-radius: 20px;
+    background: color-mix(in srgb, var(--shell-sidebar-bg) 92%, transparent);
+    box-shadow: 0 16px 40px rgba(15, 23, 42, 0.12);
+    backdrop-filter: blur(18px);
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+  }
+
+  .right-rail > * {
+    flex-shrink: 0;
+  }
+
+  .right-rail-divider {
+    display: none;
+  }
+
+  .right-rail-bottom {
+    margin-top: 0;
+    margin-left: auto;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .right-rail .md-icon-button,
+  .right-rail-btn,
+  .right-rail-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+  }
+}

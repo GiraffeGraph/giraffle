@@ -6,6 +6,7 @@ import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { SidebarIconPicker } from "@/components/sidebar/SidebarIconPicker";
 import { renderStoredIcon } from "@/components/sidebar/sidebar-icon-utils";
+import { useIsMobileViewport } from "@/components/ui/useIsMobileViewport";
 import { formatDate } from "@/lib/utils";
 import { updateFolderAction } from "@/server/api/folders";
 
@@ -34,8 +35,12 @@ interface FolderDetailPageProps {
   }>;
 }
 
-export function FolderDetailPage({ folder, allFolders }: FolderDetailPageProps) {
+export function FolderDetailPage({
+  folder,
+  allFolders,
+}: FolderDetailPageProps) {
   const router = useRouter();
+  const isMobileViewport = useIsMobileViewport(900);
   const [folderIcon, setFolderIcon] = useState<string | null>(folder.icon);
   const [isCopyingLink, setIsCopyingLink] = useState(false);
   const [iconPickerPosition, setIconPickerPosition] = useState<{
@@ -45,7 +50,7 @@ export function FolderDetailPage({ folder, allFolders }: FolderDetailPageProps) 
 
   const breadcrumbs = useMemo(
     () => buildFolderBreadcrumbs(folder.id, allFolders),
-    [allFolders, folder.id]
+    [allFolders, folder.id],
   );
 
   const handleOpenIconPicker = useCallback(
@@ -56,7 +61,7 @@ export function FolderDetailPage({ folder, allFolders }: FolderDetailPageProps) 
         y: rect.bottom + 8,
       });
     },
-    []
+    [],
   );
 
   const closeIconPicker = useCallback(() => {
@@ -69,14 +74,18 @@ export function FolderDetailPage({ folder, allFolders }: FolderDetailPageProps) 
       await updateFolderAction(folder.id, { icon: nextIcon });
       router.refresh();
     },
-    [folder.id, router]
+    [folder.id, router],
   );
 
   const handleCopyFolderLink = useCallback(async () => {
     setIsCopyingLink(true);
-    await navigator.clipboard.writeText(`${window.location.origin}/folders/${folder.id}`);
+    await navigator.clipboard.writeText(
+      `${window.location.origin}/folders/${folder.id}`,
+    );
     window.setTimeout(() => setIsCopyingLink(false), 1200);
   }, [folder.id]);
+
+  const topbarSidePadding = isMobileViewport ? "0 12px" : "0 16px";
 
   return (
     <>
@@ -84,9 +93,9 @@ export function FolderDetailPage({ folder, allFolders }: FolderDetailPageProps) 
         style={{
           display: "flex",
           alignItems: "center",
-          gap: "12px",
-          height: "36px",
-          padding: "0 16px",
+          gap: isMobileViewport ? "8px" : "12px",
+          minHeight: "36px",
+          padding: topbarSidePadding,
           borderBottom: "1px solid var(--md-sys-color-outline-variant)",
           fontSize: "12px",
           color: "var(--md-sys-color-on-surface-variant)",
@@ -121,13 +130,14 @@ export function FolderDetailPage({ folder, allFolders }: FolderDetailPageProps) 
                 ? "var(--md-sys-color-on-secondary-container)"
                 : "var(--md-sys-color-on-surface-variant)",
               cursor: "pointer",
-              padding: "4px 8px",
+              padding: isMobileViewport ? "4px" : "4px 8px",
               borderRadius: "999px",
               display: "inline-flex",
               alignItems: "center",
               justifyContent: "center",
               gap: "6px",
               minHeight: "26px",
+              minWidth: "26px",
               lineHeight: 1,
               flexShrink: 0,
               whiteSpace: "nowrap",
@@ -135,77 +145,121 @@ export function FolderDetailPage({ folder, allFolders }: FolderDetailPageProps) 
           >
             {renderStoredIcon(folderIcon, {
               fallback: (
-                <span className="material-symbols-outlined" style={{ fontSize: "16px" }} aria-hidden="true">
+                <span
+                  className="material-symbols-outlined"
+                  style={{ fontSize: "16px" }}
+                  aria-hidden="true"
+                >
                   folder
                 </span>
               ),
               materialClassName: "material-symbols-outlined",
               emojiStyle: { fontSize: "16px", lineHeight: 1 },
             })}
-            <span>İkon</span>
+            {isMobileViewport ? null : <span>İkon</span>}
           </button>
 
-          <button
-            type="button"
-            style={{
-              background: "none",
-              border: "none",
-              color: "inherit",
-              cursor: "pointer",
-              padding: "2px 4px",
-              borderRadius: "4px",
-              fontSize: "12px",
-              whiteSpace: "nowrap",
-            }}
-            onClick={() => router.push("/dashboard")}
-          >
-            Çalışma alanı
-          </button>
-          {breadcrumbs.map((crumb, index) => {
-            const isLast = index === breadcrumbs.length - 1;
-
-            return (
-              <div
-                key={crumb.id}
-                style={{ display: "flex", alignItems: "center", gap: "4px", minWidth: 0 }}
+          {isMobileViewport ? (
+            <div style={{ display: "grid", gap: "2px", minWidth: 0, flex: 1 }}>
+              <span
+                style={{
+                  fontSize: "11px",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
               >
-                <span style={{ opacity: 0.4 }}>/</span>
-                {isLast ? (
-                  <span
+                Çalışma alanı / Klasör
+              </span>
+              <span
+                style={{
+                  color: "var(--md-sys-color-on-surface)",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                  fontWeight: 600,
+                }}
+              >
+                {folder.name}
+              </span>
+            </div>
+          ) : (
+            <>
+              <button
+                type="button"
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "inherit",
+                  cursor: "pointer",
+                  padding: "2px 4px",
+                  borderRadius: "4px",
+                  fontSize: "12px",
+                  whiteSpace: "nowrap",
+                }}
+                onClick={() => router.push("/dashboard")}
+              >
+                Çalışma alanı
+              </button>
+              {breadcrumbs.map((crumb, index) => {
+                const isLast = index === breadcrumbs.length - 1;
+
+                return (
+                  <div
+                    key={crumb.id}
                     style={{
-                      color: "var(--md-sys-color-on-surface)",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                      maxWidth: "260px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "4px",
+                      minWidth: 0,
                     }}
                   >
-                    {crumb.name}
-                  </span>
-                ) : (
-                  <button
-                    type="button"
-                    style={{
-                      background: "none",
-                      border: "none",
-                      color: "inherit",
-                      cursor: "pointer",
-                      padding: "2px 4px",
-                      borderRadius: "4px",
-                      fontSize: "12px",
-                      whiteSpace: "nowrap",
-                    }}
-                    onClick={() => router.push(`/folders/${crumb.id}`)}
-                  >
-                    {crumb.name}
-                  </button>
-                )}
-              </div>
-            );
-          })}
+                    <span style={{ opacity: 0.4 }}>/</span>
+                    {isLast ? (
+                      <span
+                        style={{
+                          color: "var(--md-sys-color-on-surface)",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                          maxWidth: "260px",
+                        }}
+                      >
+                        {crumb.name}
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        style={{
+                          background: "none",
+                          border: "none",
+                          color: "inherit",
+                          cursor: "pointer",
+                          padding: "2px 4px",
+                          borderRadius: "4px",
+                          fontSize: "12px",
+                          whiteSpace: "nowrap",
+                        }}
+                        onClick={() => router.push(`/folders/${crumb.id}`)}
+                      >
+                        {crumb.name}
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </>
+          )}
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "4px", flexShrink: 0 }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "4px",
+            flexShrink: 0,
+          }}
+        >
           <button
             type="button"
             title="Klasör bağlantısını kopyala"
@@ -229,18 +283,26 @@ export function FolderDetailPage({ folder, allFolders }: FolderDetailPageProps) 
               flexShrink: 0,
             }}
           >
-            <span className="material-symbols-outlined" style={{ fontSize: "16px" }} aria-hidden="true">
+            <span
+              className="material-symbols-outlined"
+              style={{ fontSize: "16px" }}
+              aria-hidden="true"
+            >
               {isCopyingLink ? "check" : "link"}
             </span>
           </button>
         </div>
       </div>
 
-      <div className="dashboard" style={{ paddingTop: "24px" }}>
+      <div
+        className="dashboard"
+        style={{ paddingTop: isMobileViewport ? "20px" : "24px" }}
+      >
         <div
           style={{
             display: "flex",
-            alignItems: "center",
+            flexDirection: isMobileViewport ? "column" : "row",
+            alignItems: isMobileViewport ? "flex-start" : "center",
             gap: "14px",
             marginBottom: "24px",
           }}
@@ -294,7 +356,10 @@ export function FolderDetailPage({ folder, allFolders }: FolderDetailPageProps) 
                 <div className="dashboard-note-card-icon">
                   {renderStoredIcon(childFolder.icon, {
                     fallback: (
-                      <span className="material-symbols-outlined" aria-hidden="true">
+                      <span
+                        className="material-symbols-outlined"
+                        aria-hidden="true"
+                      >
                         folder
                       </span>
                     ),
@@ -302,7 +367,9 @@ export function FolderDetailPage({ folder, allFolders }: FolderDetailPageProps) 
                     emojiStyle: { fontSize: "22px", lineHeight: 1 },
                   })}
                 </div>
-                <div className="dashboard-note-card-title">{childFolder.name}</div>
+                <div className="dashboard-note-card-title">
+                  {childFolder.name}
+                </div>
               </Link>
             ))}
           </div>
@@ -323,7 +390,10 @@ export function FolderDetailPage({ folder, allFolders }: FolderDetailPageProps) 
                 <div className="dashboard-note-card-icon">
                   {renderStoredIcon(note.icon, {
                     fallback: (
-                      <span className="material-symbols-outlined" aria-hidden="true">
+                      <span
+                        className="material-symbols-outlined"
+                        aria-hidden="true"
+                      >
                         description
                       </span>
                     ),
@@ -355,11 +425,9 @@ export function FolderDetailPage({ folder, allFolders }: FolderDetailPageProps) 
 
 function buildFolderBreadcrumbs(
   folderId: string,
-  folders: Array<{ id: string; name: string; parentId: string | null }>
+  folders: Array<{ id: string; name: string; parentId: string | null }>,
 ) {
-  const foldersById = new Map(
-    folders.map((folder) => [folder.id, folder])
-  );
+  const foldersById = new Map(folders.map((folder) => [folder.id, folder]));
   const breadcrumbs: Array<{ id: string; name: string }> = [];
 
   let currentId: string | null = folderId;

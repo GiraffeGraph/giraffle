@@ -3,6 +3,7 @@ set -eu
 
 ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 ENV_FILE=${ENV_FILE:-"$ROOT_DIR/.env.production"}
+SECRETS_COMPOSE_FILE=${SECRETS_COMPOSE_FILE:-"$ROOT_DIR/docker-compose.prod.secrets.yml"}
 
 if [ ! -f "$ENV_FILE" ]; then
   echo "Missing env file: $ENV_FILE"
@@ -10,14 +11,12 @@ if [ ! -f "$ENV_FILE" ]; then
   exit 1
 fi
 
-docker compose \
-  --env-file "$ENV_FILE" \
-  -f "$ROOT_DIR/docker-compose.prod.yml" \
-  -f "$ROOT_DIR/docker-compose.proxy.yml" \
-  pull
+set -- --env-file "$ENV_FILE" -f "$ROOT_DIR/docker-compose.prod.yml" -f "$ROOT_DIR/docker-compose.proxy.yml"
 
-docker compose \
-  --env-file "$ENV_FILE" \
-  -f "$ROOT_DIR/docker-compose.prod.yml" \
-  -f "$ROOT_DIR/docker-compose.proxy.yml" \
-  up -d --remove-orphans
+if [ -f "$SECRETS_COMPOSE_FILE" ] && grep -Eq '^[[:space:]]*AUTH_SECRET_FILE=.+' "$ENV_FILE"; then
+  set -- "$@" -f "$SECRETS_COMPOSE_FILE"
+fi
+
+docker compose "$@" pull
+
+docker compose "$@" up -d --remove-orphans

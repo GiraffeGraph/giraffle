@@ -10,13 +10,10 @@ RUN npx prisma generate
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-ENV AUTH_SECRET=build-time-placeholder-secret
-ENV NEXTAUTH_SECRET=build-time-placeholder-secret
-
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-RUN npm run build
+RUN AUTH_SECRET=build-time-placeholder-secret NEXTAUTH_SECRET=build-time-placeholder-secret npm run build
 
 FROM node:20-alpine AS runner
 WORKDIR /app

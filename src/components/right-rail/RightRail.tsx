@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { GraphIcon } from "@/components/sidebar/GraphIcon";
 import { ThemeSelector } from "@/components/theme/ThemeSelector";
 import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
+import { useIsMobileViewport } from "@/components/ui/useIsMobileViewport";
 import { signOutAction } from "@/server/api/auth";
 import {
   APP_THEME_STORAGE_KEY,
@@ -34,7 +35,11 @@ const NAV_ITEMS = [
 export function RightRail({ user }: RightRailProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const [contextMenuPos, setContextMenuPos] = useState<{ x: number; y: number } | null>(null);
+  const isMobileViewport = useIsMobileViewport(900);
+  const [contextMenuPos, setContextMenuPos] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
 
   const handleResetPreferences = useCallback(() => {
     window.localStorage.removeItem(APP_THEME_STORAGE_KEY);
@@ -59,7 +64,7 @@ export function RightRail({ user }: RightRailProps) {
         onSelect: () => void signOutAction(),
       },
     ],
-    [handleResetPreferences]
+    [handleResetPreferences],
   );
 
   const openMenu = useCallback((e: ReactMouseEvent<HTMLButtonElement>) => {
@@ -68,7 +73,9 @@ export function RightRail({ user }: RightRailProps) {
     setContextMenuPos({ x: rect.left - 8, y: rect.top });
   }, []);
 
-  const userInitial = (user.name ?? user.email ?? "G").slice(0, 1).toUpperCase();
+  const userInitial = (user.name ?? user.email ?? "G")
+    .slice(0, 1)
+    .toUpperCase();
 
   return (
     <div className="right-rail">
@@ -95,13 +102,18 @@ export function RightRail({ user }: RightRailProps) {
           aria-label={label}
           title={label}
         >
-          <span className="material-symbols-outlined" style={{ fontSize: "18px", lineHeight: 1 }}>{icon}</span>
+          <span
+            className="material-symbols-outlined"
+            style={{ fontSize: "18px", lineHeight: 1 }}
+          >
+            {icon}
+          </span>
         </button>
       ))}
 
       {/* Alt: tema seçici + kullanıcı */}
       <div className="right-rail-bottom">
-        <ThemeSelector vertical />
+        <ThemeSelector vertical={!isMobileViewport} />
         <button
           type="button"
           className="right-rail-avatar"
