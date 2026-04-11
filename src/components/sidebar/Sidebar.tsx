@@ -21,6 +21,7 @@ import {
   type CommandPaletteItem,
 } from "@/components/sidebar/CommandPalette";
 import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
+import { ThemeSelector } from "@/components/theme/ThemeSelector";
 import { Button } from "@/components/ui/Button";
 import { TemplatePicker } from "@/components/templates/TemplatePicker";
 import { useIsMobileViewport } from "@/components/ui/useIsMobileViewport";
@@ -1029,6 +1030,7 @@ export function Sidebar({
               </div>
             </div>
             <div style={{ display: "flex", gap: "2px", flexShrink: 0 }}>
+              {isMobileViewport ? <ThemeSelector mobileInline /> : null}
               <Button
                 variant="text"
                 icon

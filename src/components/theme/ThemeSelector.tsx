@@ -13,7 +13,13 @@ import {
 import { Button } from "@/components/ui/Button";
 import { useIsMobileViewport } from "@/components/ui/useIsMobileViewport";
 
-export function ThemeSelector({ vertical = false }: { vertical?: boolean }) {
+export function ThemeSelector({
+  vertical = false,
+  mobileInline = false,
+}: {
+  vertical?: boolean;
+  mobileInline?: boolean;
+}) {
   const [mounted, setMounted] = useState(false);
   const [activeThemeId, setActiveThemeId] =
     useState<AppThemeId>(DEFAULT_APP_THEME);
@@ -129,19 +135,27 @@ export function ThemeSelector({ vertical = false }: { vertical?: boolean }) {
     return (
       <div
         style={{
-          position: "fixed",
-          top: "max(12px, env(safe-area-inset-top, 0px))",
-          right: "12px",
-          zIndex: 55,
+          ...(mobileInline
+            ? {}
+            : {
+                position: "fixed",
+                top: "max(12px, env(safe-area-inset-top, 0px))",
+                right: "12px",
+                zIndex: 55,
+              }),
           display: "flex",
           alignItems: "center",
           gap: "4px",
-          padding: "6px",
-          border: "1px solid var(--md-sys-color-outline-variant)",
-          borderRadius: "999px",
-          background: "var(--md-sys-color-surface-container-high)",
-          boxShadow: "var(--md-sys-elevation-level2)",
-          backdropFilter: "blur(12px)",
+          padding: mobileInline ? "0" : "6px",
+          border: mobileInline
+            ? "none"
+            : "1px solid var(--md-sys-color-outline-variant)",
+          borderRadius: mobileInline ? "0" : "999px",
+          background: mobileInline
+            ? "transparent"
+            : "var(--md-sys-color-surface-container-high)",
+          boxShadow: mobileInline ? "none" : "var(--md-sys-elevation-level2)",
+          backdropFilter: mobileInline ? "none" : "blur(12px)",
         }}
       >
         <Button
@@ -150,8 +164,27 @@ export function ThemeSelector({ vertical = false }: { vertical?: boolean }) {
           onClick={() => applyTheme(nextTheme.id)}
           title={`Temayı değiştir · Sonraki: ${nextTheme.label}`}
           aria-label={`Temayı değiştir. Sonraki tema: ${nextTheme.label}`}
+          style={
+            mobileInline
+              ? {
+                  width: "32px",
+                  height: "32px",
+                  minWidth: "32px",
+                  borderRadius: "10px",
+                }
+              : undefined
+          }
         >
-          {renderThemeIcon(activeThemeId)}
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              transform: mobileInline ? "scale(0.85)" : "none",
+            }}
+          >
+            {renderThemeIcon(activeThemeId)}
+          </span>
         </Button>
       </div>
     );

@@ -113,7 +113,7 @@ export function RightRail({ user }: RightRailProps) {
 
       {/* Alt: tema seçici + kullanıcı */}
       <div className="right-rail-bottom">
-        <ThemeSelector vertical={!isMobileViewport} />
+        {!isMobileViewport ? <ThemeSelector vertical /> : null}
         <button
           type="button"
           className="right-rail-avatar"
