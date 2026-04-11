@@ -141,17 +141,20 @@ export default async function HomePage() {
 
                   <div className="landing-preview-navlist">
                     {[
-                      "Dashboard",
-                      "Inbox",
-                      "Templates",
-                      "Graph",
-                      "Published",
-                    ].map((item) => (
-                      <div key={item} className="landing-preview-navitem">
+                      { label: "Dashboard", icon: "space_dashboard" },
+                      { label: "Inbox",     icon: "inbox" },
+                      { label: "Templates", icon: "layers" },
+                      { label: "Graph",     icon: "hub" },
+                      { label: "Published", icon: "public" },
+                    ].map(({ label, icon }, i) => (
+                      <div
+                        key={label}
+                        className={`landing-preview-navitem${i === 0 ? " landing-preview-navitem--active" : ""}`}
+                      >
                         <span className="material-symbols-outlined" aria-hidden="true">
-                          subdirectory_arrow_right
+                          {icon}
                         </span>
-                        <span>{item}</span>
+                        <span>{label}</span>
                       </div>
                     ))}
                   </div>
@@ -278,6 +281,14 @@ export default async function HomePage() {
             </div>
           </section>
         </main>
+
+        <footer className="landing-footer">
+          <span>© {new Date().getFullYear()} Giraffle — Connected knowledge workspace</span>
+          <nav className="landing-footer-links" aria-label="Footer">
+            <Link href="/register">Get started</Link>
+            <Link href="/login">Sign in</Link>
+          </nav>
+        </footer>
       </div>
     </div>
   );
