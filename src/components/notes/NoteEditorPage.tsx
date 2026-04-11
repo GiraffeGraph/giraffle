@@ -249,6 +249,7 @@ export function NoteEditorPage({
 
   useEffect(() => {
     if (headings.length === 0) return;
+    if (typeof IntersectionObserver === "undefined") return;
 
     const selectors = headings
       .map((h) => (h.blockId ? `[data-block-id="${h.blockId}"]` : null))
@@ -650,11 +651,23 @@ export function NoteEditorPage({
     [currentFolderId],
   );
 
-  const handleNavigateToNote = useCallback(
+  const navigateToNote = useCallback(
     (noteId: string) => {
-      router.push(`/notes/${noteId}`);
+      const href = `/notes/${noteId}`;
+      if (typeof window !== "undefined") {
+        window.location.assign(href);
+        return;
+      }
+      router.push(href);
     },
     [router],
+  );
+
+  const handleNavigateToNote = useCallback(
+    (noteId: string) => {
+      navigateToNote(noteId);
+    },
+    [navigateToNote],
   );
 
   const scrollToHeading = useCallback(
@@ -1756,9 +1769,7 @@ export function NoteEditorPage({
                             borderBottom:
                               "1px solid var(--md-sys-color-outline-variant)",
                           }}
-                          onClick={() =>
-                            router.push(`/notes/${backlink.sourceNoteId}`)
-                          }
+                          onClick={() => navigateToNote(backlink.sourceNoteId)}
                         >
                           <div className="md-list-item-content">
                             <span className="md-list-item-headline">

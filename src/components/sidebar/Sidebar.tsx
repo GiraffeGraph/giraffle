@@ -188,6 +188,17 @@ export function Sidebar({
   const shouldShowSidebarPanel = !isMobileViewport || isMobileSidebarOpen;
 
   const closeContextMenu = useCallback(() => setContextMenu(null), []);
+  const navigateToNote = useCallback(
+    (noteId: string) => {
+      const href = `/notes/${noteId}`;
+      if (typeof window !== "undefined") {
+        window.location.assign(href);
+        return;
+      }
+      router.push(href);
+    },
+    [router],
+  );
   const openPalette = useCallback((initialQuery = "") => {
     setPaletteQuery(initialQuery);
     setIsPaletteOpen(true);
@@ -344,8 +355,8 @@ export function Sidebar({
   // Note actions
   const handleCreateNote = useCallback(async () => {
     const noteId = await createNoteAction();
-    router.push(`/notes/${noteId}`);
-  }, [router]);
+    navigateToNote(noteId);
+  }, [navigateToNote]);
 
   const doCreateFolder = useCallback(
     async (name: string) => {
@@ -366,9 +377,9 @@ export function Sidebar({
   const handleCreateNoteInFolder = useCallback(
     async (folderId: string) => {
       const noteId = await createNoteAction({ folderId });
-      router.push(`/notes/${noteId}`);
+      navigateToNote(noteId);
     },
-    [router],
+    [navigateToNote],
   );
 
   const handleCreateSubFolder = useCallback(
@@ -405,7 +416,7 @@ export function Sidebar({
       {
         label: "Notu aç",
         hint: "Seçili notu düzenleyicide aç",
-        onSelect: () => router.push(`/notes/${note.id}`),
+        onSelect: () => navigateToNote(note.id),
       },
       {
         label: note.isPinned ? "Sabitlemeyi kaldır" : "Sabitle",
@@ -447,7 +458,7 @@ export function Sidebar({
         },
       },
     ],
-    [copyInternalLink, currentNoteId, router],
+    [copyInternalLink, currentNoteId, navigateToNote, router],
   );
 
   useEffect(() => {
@@ -622,7 +633,7 @@ export function Sidebar({
         hint: "Enter",
         onSelect: async () => {
           const id = await createNoteAction();
-          router.push(`/notes/${id}`);
+          navigateToNote(id);
         },
       },
       {
@@ -782,7 +793,7 @@ export function Sidebar({
         description: "Notu düzenleyicide aç",
         icon: n.icon ?? encodeMaterialSymbol("description"),
         onSelect: async () => {
-          router.push(`/notes/${n.id}`);
+          navigateToNote(n.id);
         },
       }));
 
@@ -1210,7 +1221,7 @@ export function Sidebar({
                           noteDropTarget={noteDropTarget}
                           allNotes={notes}
                           currentNoteId={currentNoteId}
-                          onNoteOpen={(id) => router.push(`/notes/${id}`)}
+                          onNoteOpen={navigateToNote}
                           onNoteContextMenu={(e, n) =>
                             openContextMenuAtPointer(e, buildNoteMenu(n))
                           }
@@ -1295,7 +1306,7 @@ export function Sidebar({
                           key={note.id}
                           note={note}
                           active={note.id === currentNoteId}
-                          onOpen={(id) => router.push(`/notes/${id}`)}
+                          onOpen={navigateToNote}
                           onContextMenuOpen={(e, n) =>
                             openContextMenuAtPointer(e, buildNoteMenu(n))
                           }
