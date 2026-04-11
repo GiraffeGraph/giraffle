@@ -10,7 +10,7 @@ import {
   useTransition,
 } from "react";
 import { useRouter } from "next/navigation";
-import { Editor } from "@/components/editor/Editor";
+import { SafeEditor } from "@/components/editor/SafeEditor";
 import { SidebarIconPicker } from "@/components/sidebar/SidebarIconPicker";
 import { renderStoredIcon } from "@/components/sidebar/sidebar-icon-utils";
 import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
@@ -1716,7 +1716,7 @@ export function NoteEditorPage({
               minHeight: isMobileViewport ? "50vh" : "60vh",
             }}
           >
-            <Editor
+            <SafeEditor
               noteId={note.id}
               initialContent={note.document}
               onSave={handleSave}
