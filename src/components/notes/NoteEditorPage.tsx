@@ -1157,15 +1157,17 @@ export function NoteEditorPage({
             flexShrink: 0,
           }}
         >
-          <span
-            style={{
-              fontSize: "11px",
-              color: saveStatusMeta.color,
-              whiteSpace: "nowrap",
-            }}
-          >
-            {saveStatusMeta.label}
-          </span>
+          {isMobileViewport ? null : (
+            <span
+              style={{
+                fontSize: "11px",
+                color: saveStatusMeta.color,
+                whiteSpace: "nowrap",
+              }}
+            >
+              {saveStatusMeta.label}
+            </span>
+          )}
           {isMobileViewport ? (
             <button
               type="button"
