@@ -2,294 +2,321 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { auth } from "@/lib/auth";
 
-const productPillars = [
-  {
-    title: "Canonical knowledge storage",
-    description:
-      "Keep every note in PostgreSQL with a structured block model instead of fragile loose files.",
-    icon: "database",
-  },
-  {
-    title: "Wikilinks and backlinks",
-    description:
-      "Connect ideas naturally, surface related context instantly, and navigate the graph without friction.",
-    icon: "device_hub",
-  },
-  {
-    title: "Editing that stays fluid",
-    description:
-      "Write in a clean block editor, organize with folders and tags, then publish when a note is ready.",
-    icon: "edit_square",
-  },
-];
-
-const workflowBlocks = [
-  {
-    title: "Capture",
-    description:
-      "Draft notes, meeting logs, and research fragments in a workspace designed for fast thinking.",
-  },
-  {
-    title: "Connect",
-    description:
-      "Turn isolated notes into living context with wikilinks, backlinks, and graph navigation.",
-  },
-  {
-    title: "Ship",
-    description:
-      "Publish selected notes, export clean formats, and keep the source of truth inside your own stack.",
-  },
-];
-
-const proofPoints = [
-  "Self-hosted and private by default",
-  "Next.js 16 + React 19 foundation",
-  "Credential auth and production deployment ready",
-  "Folders, templates, tags, graph, publishing, and proposals",
-];
-
 export const metadata: Metadata = {
   title: "Giraffle — Connected knowledge, owned by you",
   description:
     "A self-hosted knowledge workspace for writing, linking, organizing, and publishing connected notes.",
 };
 
+const features = [
+  {
+    side: "right" as const,
+    kicker: "Block editing",
+    heading: ["Write the way", "you think."],
+    body: "A clean block editor with slash commands, tables, callouts, and kanban boards. Your notes stay structured from the first keystroke — no markdown soup.",
+    visual: "editor",
+  },
+  {
+    side: "left" as const,
+    kicker: "Graph navigation",
+    heading: ["Connect ideas,", "not just files."],
+    body: "Wikilinks and backlinks turn isolated notes into a living knowledge graph. Navigate visually, follow any thread without losing context.",
+    visual: "graph",
+  },
+  {
+    side: "right" as const,
+    kicker: "Publishing",
+    heading: ["Ship when", "you're ready."],
+    body: "Publish selected notes publicly, export clean formats, and keep the source of truth inside your own PostgreSQL stack. Self-hosted from day one.",
+    visual: "publish",
+  },
+];
+
+const NAV_ITEMS = [
+  { icon: "space_dashboard", label: "Dashboard", active: true },
+  { icon: "inbox",           label: "Inbox" },
+  { icon: "layers",          label: "Templates" },
+  { icon: "hub",             label: "Graph" },
+  { icon: "public",          label: "Published" },
+];
+
 export default async function HomePage() {
   const session = await auth();
   const isAuthenticated = Boolean(session?.user?.id);
-  const secondaryHref = isAuthenticated ? "/account" : "/login";
-  const secondaryLabel = isAuthenticated ? "Account" : "Log in";
+  const primaryHref  = isAuthenticated ? "/dashboard" : "/register";
+  const primaryLabel = isAuthenticated ? "Open workspace"    : "Get started — free";
+  const secondaryHref  = isAuthenticated ? "/account" : "/login";
+  const secondaryLabel = isAuthenticated ? "Account"  : "Sign in";
 
   return (
-    <div className="landing-page">
-      <div className="landing-shell">
-        <header className="landing-nav">
-          <Link href="/" className="landing-brand" aria-label="Giraffle home">
-            <span className="landing-brand-mark">G</span>
-            <span className="landing-brand-copy">
-              <strong>Giraffle</strong>
-              <span>Connected knowledge workspace</span>
-            </span>
-          </Link>
+    <div className="lp">
+      {/* ── Navbar ─────────────────────────────────────────────────────── */}
+      <header className="lp-nav">
+        <Link href="/" className="lp-logo" aria-label="Giraffle home">
+          <span className="lp-logo-mark">G</span>
+          <strong>Giraffle</strong>
+        </Link>
 
-          <nav className="landing-nav-actions" aria-label="Primary">
-            <Link href={secondaryHref} className="dashboard-secondary-btn">
-              {secondaryLabel}
-            </Link>
-            <Link
-              href={isAuthenticated ? "/dashboard" : "/register"}
-              className="dashboard-empty-btn"
-            >
-              {isAuthenticated ? "Open workspace" : "Create account"}
-            </Link>
-          </nav>
-        </header>
+        <nav className="lp-nav-center" aria-label="Primary">
+          <a href="#features">Features</a>
+          <a href="#workflow">Workflow</a>
+          <Link href={secondaryHref}>{secondaryLabel}</Link>
+        </nav>
 
-        <main className="landing-main">
-          <section className="landing-hero">
-            <div className="landing-hero-copy">
-              <span className="landing-kicker">Self-hosted knowledge editor</span>
-              <h1 className="landing-title">
-                Build a knowledge graph that stays elegant, structured, and fully yours.
-              </h1>
-              <p className="landing-subtitle">
-                Giraffle brings together block editing, wikilinks, backlinks, graph exploration,
-                and canonical PostgreSQL storage in one calm workspace for connected thinking.
-              </p>
+        <Link href={primaryHref} className="lp-nav-cta">
+          {isAuthenticated ? "Open workspace" : "Get started"}
+        </Link>
+      </header>
 
-              <div className="landing-cta-row">
-                <Link
-                  href={isAuthenticated ? "/dashboard" : "/register"}
-                  className="dashboard-empty-btn"
-                >
-                  {isAuthenticated ? "Go to dashboard" : "Start your workspace"}
-                </Link>
-                <Link href={secondaryHref} className="dashboard-secondary-btn">
-                  {secondaryLabel}
-                </Link>
-              </div>
+      <main>
+        {/* ── Hero ───────────────────────────────────────────────────────── */}
+        <section className="lp-hero">
+          <div className="lp-hero-text">
+            <span className="lp-badge">Self-hosted · Open workspace · PostgreSQL-backed</span>
 
-              <ul className="landing-proof-list" aria-label="Highlights">
-                {proofPoints.map((point) => (
-                  <li key={point} className="landing-proof-item">
-                    <span className="material-symbols-outlined filled" aria-hidden="true">
-                      check_circle
-                    </span>
-                    <span>{point}</span>
-                  </li>
-                ))}
-              </ul>
+            <h1 className="lp-hero-heading">
+              Write. Connect.<br />
+              <em>Think clearly.</em>
+            </h1>
+
+            <p className="lp-hero-body">
+              Giraffle brings block editing, wikilinks, graph navigation, and canonical
+              database storage into one calm workspace for connected thinking.
+            </p>
+
+            <div className="lp-hero-actions">
+              <Link href={primaryHref} className="lp-btn-primary">
+                {primaryLabel}
+              </Link>
+              <Link href={secondaryHref} className="lp-btn-ghost">
+                {secondaryLabel}
+              </Link>
             </div>
+          </div>
 
-            <div className="landing-preview" aria-label="Workspace preview">
-              <div className="landing-preview-topbar">
-                <span className="landing-preview-pill">Private workspace</span>
-                <span className="landing-preview-pill landing-preview-pill--accent">
-                  Graph linked
-                </span>
+          {/* App screenshot mockup */}
+          <div className="lp-hero-screenshot" aria-hidden="true">
+            <div className="lp-screenshot-frame">
+              <div className="lp-screenshot-bar">
+                <span /><span /><span />
+                <div className="lp-screenshot-address">
+                  <span className="material-symbols-outlined">lock</span>
+                  giraffle.app / workspace
+                </div>
               </div>
 
-              <div className="landing-preview-shell">
-                <aside className="landing-preview-sidebar">
-                  <div className="landing-preview-sidebar-head">
-                    <span className="landing-preview-sidebar-logo">G</span>
-                    <div>
-                      <strong>Workspace</strong>
-                      <span>Research · Product · Writing</span>
-                    </div>
-                  </div>
-
-                  <div className="landing-preview-navlist">
-                    {[
-                      { label: "Dashboard", icon: "space_dashboard" },
-                      { label: "Inbox",     icon: "inbox" },
-                      { label: "Templates", icon: "layers" },
-                      { label: "Graph",     icon: "hub" },
-                      { label: "Published", icon: "public" },
-                    ].map(({ label, icon }, i) => (
-                      <div
-                        key={label}
-                        className={`landing-preview-navitem${i === 0 ? " landing-preview-navitem--active" : ""}`}
-                      >
-                        <span className="material-symbols-outlined" aria-hidden="true">
-                          {icon}
-                        </span>
+              <div className="lp-screenshot-body">
+                <aside className="lp-ss-sidebar">
+                  <div className="lp-ss-logo">G</div>
+                  <nav className="lp-ss-nav">
+                    {NAV_ITEMS.map(({ icon, label, active }) => (
+                      <div key={label} className={`lp-ss-item${active ? " lp-ss-item--active" : ""}`}>
+                        <span className="material-symbols-outlined">{icon}</span>
                         <span>{label}</span>
                       </div>
                     ))}
+                  </nav>
+
+                  <div className="lp-ss-tags">
+                    <div className="lp-ss-tag" />
+                    <div className="lp-ss-tag lp-ss-tag--wide" />
+                    <div className="lp-ss-tag" />
                   </div>
                 </aside>
 
-                <div className="landing-preview-canvas">
-                  <div className="landing-preview-panel landing-preview-panel--hero">
-                    <div>
-                      <span className="landing-preview-label">Today</span>
-                      <h2>Knowledge graph overview</h2>
-                    </div>
-                    <div className="landing-preview-stats">
-                      <div>
-                        <strong>128</strong>
-                        <span>linked notes</span>
-                      </div>
-                      <div>
-                        <strong>24</strong>
-                        <span>open threads</span>
-                      </div>
-                      <div>
-                        <strong>9</strong>
-                        <span>publish-ready docs</span>
-                      </div>
-                    </div>
+                <div className="lp-ss-editor">
+                  <div className="lp-ss-editor-top">
+                    <span className="lp-ss-crumb">My workspace</span>
+                    <span className="lp-ss-crumb-sep">/</span>
+                    <span className="lp-ss-crumb">Research</span>
                   </div>
 
-                  <div className="landing-preview-grid">
-                    <article className="landing-preview-panel">
-                      <span className="landing-preview-label">Recent notes</span>
-                      <ul className="landing-preview-notes">
-                        {[
-                          "Why canonical blocks matter",
-                          "Customer research synthesis",
-                          "Launch checklist",
-                        ].map((note) => (
-                          <li key={note}>{note}</li>
-                        ))}
-                      </ul>
-                    </article>
+                  <div className="lp-ss-editor-body">
+                    <div className="lp-ss-h1" />
+                    <div className="lp-ss-line" style={{ width: "88%" }} />
+                    <div className="lp-ss-line" style={{ width: "73%" }} />
+                    <div className="lp-ss-line lp-ss-line--accent" style={{ width: "58%" }} />
+                    <div className="lp-ss-line" style={{ width: "82%" }} />
 
-                    <article className="landing-preview-panel">
-                      <span className="landing-preview-label">Graph pulse</span>
-                      <div className="landing-preview-graph" aria-hidden="true">
-                        <span className="landing-node landing-node--1" />
-                        <span className="landing-node landing-node--2" />
-                        <span className="landing-node landing-node--3" />
-                        <span className="landing-node landing-node--4" />
-                        <span className="landing-node landing-node--5" />
-                        <span className="landing-edge landing-edge--1" />
-                        <span className="landing-edge landing-edge--2" />
-                        <span className="landing-edge landing-edge--3" />
-                        <span className="landing-edge landing-edge--4" />
-                      </div>
-                    </article>
+                    <div className="lp-ss-callout">
+                      <span className="material-symbols-outlined">link</span>
+                      <span>See also: [[Customer research synthesis]]</span>
+                    </div>
+
+                    <div className="lp-ss-line" style={{ width: "67%" }} />
+                    <div className="lp-ss-line" style={{ width: "91%" }} />
+
+                    <div className="lp-ss-chips">
+                      <span className="lp-ss-chip">Wikilink</span>
+                      <span className="lp-ss-chip lp-ss-chip--accent">Graph</span>
+                      <span className="lp-ss-chip">PostgreSQL</span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </section>
+          </div>
+        </section>
 
-          <section className="landing-section">
-            <div className="landing-section-head">
-              <span className="dashboard-section-kicker">Why teams choose Giraffle</span>
-              <h2 className="landing-section-title">
-                The design stays calm while the underlying model stays powerful.
-              </h2>
+        {/* ── Features ───────────────────────────────────────────────────── */}
+        <section id="features" className="lp-features">
+          {features.map((f) => (
+            <div key={f.kicker} className={`lp-feature lp-feature--${f.side}`}>
+              <div className="lp-feature-copy">
+                <span className="lp-feature-kicker">{f.kicker}</span>
+                <h2 className="lp-feature-heading">
+                  {f.heading[0]}<br />{f.heading[1]}
+                </h2>
+                <p className="lp-feature-body">{f.body}</p>
+              </div>
+
+              <div className="lp-feature-visual" aria-hidden="true">
+                {f.visual === "editor" && (
+                  <div className="lp-visual-card">
+                    <div className="lp-vc-topbar">
+                      <span className="lp-vc-dot" />
+                      <span className="lp-vc-filename">Knowledge graph overview</span>
+                    </div>
+                    <div className="lp-vc-content">
+                      <div className="lp-vc-h1" />
+                      <div className="lp-vc-line" style={{ width: "85%" }} />
+                      <div className="lp-vc-line" style={{ width: "70%" }} />
+                      <div className="lp-vc-chip-row">
+                        <span className="lp-vc-chip">Block</span>
+                        <span className="lp-vc-chip lp-vc-chip--accent">Wikilink</span>
+                        <span className="lp-vc-chip">Tag</span>
+                      </div>
+                      <div className="lp-vc-callout">
+                        <span className="material-symbols-outlined">bookmark</span>
+                        A note you might want to link here
+                      </div>
+                      <div className="lp-vc-line" style={{ width: "78%" }} />
+                      <div className="lp-vc-line" style={{ width: "62%" }} />
+                    </div>
+                  </div>
+                )}
+
+                {f.visual === "graph" && (
+                  <div className="lp-visual-card lp-visual-card--graph">
+                    <div className="lp-graph-viz" aria-hidden="true">
+                      <span className="lp-gn lp-gn--1" />
+                      <span className="lp-gn lp-gn--2" />
+                      <span className="lp-gn lp-gn--3" />
+                      <span className="lp-gn lp-gn--4" />
+                      <span className="lp-gn lp-gn--5" />
+                      <span className="lp-ge lp-ge--1" />
+                      <span className="lp-ge lp-ge--2" />
+                      <span className="lp-ge lp-ge--3" />
+                      <span className="lp-ge lp-ge--4" />
+                    </div>
+                    <div className="lp-graph-stat-row">
+                      <div className="lp-graph-stat">
+                        <strong>128</strong><span>notes</span>
+                      </div>
+                      <div className="lp-graph-stat">
+                        <strong>342</strong><span>links</span>
+                      </div>
+                      <div className="lp-graph-stat">
+                        <strong>9</strong><span>published</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {f.visual === "publish" && (
+                  <div className="lp-visual-card">
+                    <div className="lp-vc-topbar">
+                      <span className="lp-vc-dot lp-vc-dot--green" />
+                      <span className="lp-vc-filename">Published · public</span>
+                      <span className="lp-vc-share">Share</span>
+                    </div>
+                    <div className="lp-vc-content">
+                      <div className="lp-vc-h1" style={{ width: "52%" }} />
+                      <div className="lp-vc-tag-row">
+                        <span className="lp-vc-tag">knowledge</span>
+                        <span className="lp-vc-tag">research</span>
+                      </div>
+                      <div className="lp-vc-line" style={{ width: "92%" }} />
+                      <div className="lp-vc-line" style={{ width: "78%" }} />
+                      <div className="lp-vc-line" style={{ width: "66%" }} />
+                      <div className="lp-vc-divider" />
+                      <div className="lp-vc-backlinks">
+                        <span className="material-symbols-outlined">link</span>
+                        <span>3 backlinks</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
+          ))}
+        </section>
 
-            <div className="landing-feature-grid">
-              {productPillars.map((pillar) => (
-                <article key={pillar.title} className="landing-feature-card">
-                  <span className="landing-feature-icon material-symbols-outlined" aria-hidden="true">
-                    {pillar.icon}
-                  </span>
-                  <h3>{pillar.title}</h3>
-                  <p>{pillar.description}</p>
-                </article>
-              ))}
-            </div>
-          </section>
+        {/* ── Workflow ────────────────────────────────────────────────────── */}
+        <section id="workflow" className="lp-workflow">
+          <div className="lp-workflow-head">
+            <span className="lp-feature-kicker">Workflow</span>
+            <h2 className="lp-workflow-title">
+              From messy first thought<br />
+              to publishable knowledge.
+            </h2>
+          </div>
 
-          <section className="landing-section landing-section--workflow">
-            <div className="landing-section-head">
-              <span className="dashboard-section-kicker">Workflow</span>
-              <h2 className="landing-section-title">
-                From messy first thought to publishable knowledge.
-              </h2>
-            </div>
+          <div className="lp-workflow-grid">
+            {[
+              {
+                step: "01",
+                title: "Capture",
+                desc: "Draft notes, meeting logs, and research fragments in a workspace designed for fast thinking.",
+              },
+              {
+                step: "02",
+                title: "Connect",
+                desc: "Turn isolated notes into living context with wikilinks, backlinks, and graph navigation.",
+              },
+              {
+                step: "03",
+                title: "Ship",
+                desc: "Publish selected notes, export clean formats, and keep the source of truth inside your own stack.",
+              },
+            ].map(({ step, title, desc }) => (
+              <article key={step} className="lp-workflow-card">
+                <span className="lp-workflow-step">{step}</span>
+                <h3>{title}</h3>
+                <p>{desc}</p>
+              </article>
+            ))}
+          </div>
+        </section>
 
-            <div className="landing-workflow-grid">
-              {workflowBlocks.map((block, index) => (
-                <article key={block.title} className="landing-workflow-card">
-                  <span className="landing-workflow-step">0{index + 1}</span>
-                  <h3>{block.title}</h3>
-                  <p>{block.description}</p>
-                </article>
-              ))}
-            </div>
-          </section>
+        {/* ── Final CTA ──────────────────────────────────────────────────── */}
+        <section className="lp-final-cta">
+          <h2 className="lp-final-heading">
+            Your knowledge graph,<br />
+            <em>starting today.</em>
+          </h2>
+          <p className="lp-final-body">
+            Self-hosted, private by default, production-ready from day one.
+          </p>
+          <div className="lp-hero-actions">
+            <Link href={primaryHref} className="lp-btn-primary lp-btn-primary--large">
+              {isAuthenticated ? "Go to workspace" : "Create your account"}
+            </Link>
+            <Link href={secondaryHref} className="lp-btn-ghost">
+              {secondaryLabel}
+            </Link>
+          </div>
+        </section>
+      </main>
 
-          <section className="landing-cta-panel">
-            <div>
-              <span className="dashboard-section-kicker">Ready to start</span>
-              <h2 className="landing-section-title">
-                Open the workspace, sign in, and start connecting your notes.
-              </h2>
-              <p className="landing-cta-copy">
-                Whether you are building a private second brain, a research repository, or a team
-                knowledge base, Giraffle is ready for production use from day one.
-              </p>
-            </div>
-
-            <div className="landing-cta-actions">
-              <Link
-                href={isAuthenticated ? "/dashboard" : "/register"}
-                className="dashboard-empty-btn"
-              >
-                {isAuthenticated ? "Enter workspace" : "Create your account"}
-              </Link>
-              <Link href={secondaryHref} className="dashboard-secondary-btn">
-                {isAuthenticated ? "Manage account" : "Log in instead"}
-              </Link>
-            </div>
-          </section>
-        </main>
-
-        <footer className="landing-footer">
-          <span>© {new Date().getFullYear()} Giraffle — Connected knowledge workspace</span>
-          <nav className="landing-footer-links" aria-label="Footer">
-            <Link href="/register">Get started</Link>
-            <Link href="/login">Sign in</Link>
-          </nav>
-        </footer>
-      </div>
+      {/* ── Footer ─────────────────────────────────────────────────────── */}
+      <footer className="lp-footer">
+        <span>© {new Date().getFullYear()} Giraffle — Connected knowledge workspace</span>
+        <nav className="lp-footer-links" aria-label="Footer">
+          <Link href="/register">Get started</Link>
+          <Link href="/login">Sign in</Link>
+        </nav>
+      </footer>
     </div>
   );
 }

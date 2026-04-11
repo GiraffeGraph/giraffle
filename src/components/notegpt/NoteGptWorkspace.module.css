@@ -23,7 +23,7 @@
 .pageInner {
   width: min(100%, 1120px);
   margin: 0 auto;
-  padding: 52px 28px 72px;
+  padding: 32px 28px 72px;
   display: grid;
   gap: 26px;
 }
@@ -35,88 +35,13 @@
   gap: 18px;
 }
 
-.hero {
-  display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(280px, 360px);
-  gap: 28px;
-  align-items: end;
-}
 
-.pageEmbedded .hero {
-  grid-template-columns: 1fr;
-  gap: 18px;
-}
-
-.heroCopy {
-  display: grid;
-  gap: 14px;
-  max-width: 680px;
-}
-
-.eyebrow,
 .sectionLabel {
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--ng-text-soft);
-}
-
-.title {
-  font-family: var(--font-display);
-  font-size: clamp(3rem, 6vw, 5rem);
-  line-height: 0.92;
-  letter-spacing: -0.06em;
-  margin: 0;
-}
-
-.pageEmbedded .title {
-  font-size: clamp(2.25rem, 4vw, 3rem);
-}
-
-.subtitle {
-  margin: 0;
-  max-width: 620px;
-  color: var(--ng-text-secondary);
-  font-size: 16px;
-  line-height: 1.7;
-}
-
-.statsGrid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.statCard {
-  display: grid;
-  gap: 6px;
-  padding: 16px 16px 15px;
-  border: 1px solid var(--ng-border);
-  border-radius: 18px;
-  background: var(--ng-surface-soft);
-  backdrop-filter: blur(18px);
-}
-
-.statLabel {
-  color: var(--ng-text-soft);
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.statValue {
-  color: var(--ng-text);
-  font-size: clamp(1.15rem, 2vw, 1.55rem);
-  font-weight: 800;
-  letter-spacing: -0.03em;
-}
-
-.statHint {
-  color: var(--ng-text-secondary);
-  font-size: 12px;
-  line-height: 1.55;
 }
 
 .composerSection,
@@ -134,7 +59,7 @@
   margin: 0 auto;
   padding: 20px;
   border: 1px solid var(--ng-border);
-  border-radius: 28px;
+  border-radius: var(--radius-md);
   background: var(--ng-surface);
   box-shadow: var(--shadow-panel);
   backdrop-filter: blur(22px);
@@ -186,7 +111,7 @@
   width: 100%;
   min-height: 170px;
   border: 1px solid var(--ng-border);
-  border-radius: 22px;
+  border-radius: var(--radius-panel);
   background: var(--ng-surface-strong);
   color: var(--ng-text);
   resize: vertical;
@@ -357,15 +282,7 @@
 
 @media (max-width: 980px) {
   .pageInner {
-    padding: 42px 22px 60px;
-  }
-
-  .hero {
-    grid-template-columns: 1fr;
-  }
-
-  .statsGrid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    padding: 24px 22px 60px;
   }
 
   .suggestionsGrid,
@@ -376,16 +293,8 @@
 
 @media (max-width: 720px) {
   .pageInner {
-    padding: 28px 16px 44px;
+    padding: 20px 16px 44px;
     gap: 22px;
-  }
-
-  .title {
-    font-size: clamp(2.35rem, 14vw, 3.25rem);
-  }
-
-  .statsGrid {
-    grid-template-columns: 1fr;
   }
 
   .composerPanel {

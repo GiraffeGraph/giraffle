@@ -2,7 +2,6 @@
 
 import { useMemo, useRef, useState } from "react";
 import { ConversationThread } from "./ConversationThread";
-import { NoteGptHero } from "./NoteGptHero";
 import { PromptComposer } from "./PromptComposer";
 import { PromptSuggestions } from "./PromptSuggestions";
 import { StarterCards } from "./StarterCards";
@@ -85,18 +84,6 @@ export function NoteGptWorkspace({
       ...(noteLines.length > 0 ? noteLines : ["- Not yok"]),
     ].join("\n");
   }, [folderMeta, folders, notes]);
-
-  const latestActivityLabel = useMemo(() => {
-    if (notes.length === 0) {
-      return "Boş";
-    }
-
-    const latest = [...notes].sort((left, right) =>
-      right.updatedAtLabel.localeCompare(left.updatedAtLabel)
-    )[0];
-
-    return latest ? formatRelativeTime(latest.updatedAtLabel) : "Boş";
-  }, [notes]);
 
   const handlePromptSelect = (prompt: string, mode: PromptModeId) => {
     setActiveMode(mode);
@@ -198,12 +185,6 @@ export function NoteGptWorkspace({
   return (
     <div className={`${styles.page} ${embedded ? styles.pageEmbedded : ""}`}>
       <div className={styles.pageInner}>
-        <NoteGptHero
-          notesCount={notes.length}
-          foldersCount={folders.length}
-          latestActivityLabel={latestActivityLabel}
-        />
-
         <PromptComposer
           composerRef={composerRef}
           draft={draft}
@@ -231,27 +212,3 @@ export function NoteGptWorkspace({
   );
 }
 
-function formatRelativeTime(input: string) {
-  const now = Date.now();
-  const target = new Date(input).getTime();
-  const diff = target - now;
-  const absSeconds = Math.round(Math.abs(diff) / 1000);
-  const rtf = new Intl.RelativeTimeFormat("tr", { numeric: "auto" });
-
-  if (absSeconds < 3600) {
-    return rtf.format(Math.round(diff / (1000 * 60)), "minute");
-  }
-
-  if (absSeconds < 86400) {
-    return rtf.format(Math.round(diff / (1000 * 60 * 60)), "hour");
-  }
-
-  if (absSeconds < 86400 * 7) {
-    return rtf.format(Math.round(diff / (1000 * 60 * 60 * 24)), "day");
-  }
-
-  return new Intl.DateTimeFormat("tr", {
-    month: "short",
-    day: "numeric",
-  }).format(new Date(input));
-}
