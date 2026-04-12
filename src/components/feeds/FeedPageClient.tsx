@@ -3,8 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { FeedCard, FeedEmptyState, getFeedKindIcon, getFeedKindLabel } from "@/components/feeds/FeedCards";
-import { Button } from "@/components/ui/Button";
+import { FeedCard, FeedEmptyState, getFeedKindIcon } from "@/components/feeds/FeedCards";
 import type { WorkspaceFeedKind, WorkspaceFeedSummary } from "@/domain/feed/feed.types";
 import { refreshWorkspaceFeedAction } from "@/server/api/feeds";
 
@@ -19,12 +18,6 @@ export function FeedPageClient({
   const [pendingFeedId, setPendingFeedId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const pageTitle = kind === "news" ? "Keşfet" : "Öneriler";
-  const pageBody =
-    kind === "news"
-      ? "Notların ve klasörlerin etrafındaki güncel içerikler burada toplanır. Ayarlardan veya not sayfalarından hangi kaynaklarla besleneceğini seçebilirsin."
-      : "İçerik düzeni, bağlantı ve klasör önerileri burada toplanır. Hangi not ve klasörlerden besleneceğini ayarlardan veya doğrudan sayfalardan yönetebilirsin.";
-
   const handleRefresh = (feedId: string) => {
     startTransition(async () => {
       setPendingFeedId(feedId);
@@ -35,51 +28,29 @@ export function FeedPageClient({
   };
 
   return (
-    <div className="dashboard app-page" style={{ paddingTop: "24px", paddingBottom: "40px" }}>
-      <section
-        className="dashboard-hero"
-        style={{ display: "grid", gap: "16px", marginBottom: "24px" }}
-      >
-        <div>
-          <div className="dashboard-kicker">{getFeedKindLabel(kind)}</div>
-          <h1 className="dashboard-title" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <span className="material-symbols-outlined" aria-hidden="true">
-              {getFeedKindIcon(kind)}
-            </span>
-            {pageTitle}
-          </h1>
-          <p className="dashboard-subtitle">{pageBody}</p>
-        </div>
-        <div className="dashboard-quick-actions" style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-          <Link href="/settings" className="dashboard-empty-btn">
-            Akış ayarlarını aç
-          </Link>
-          <Link href="/dashboard" className="dashboard-secondary-btn">
-            Panoya dön
-          </Link>
-        </div>
-      </section>
+    <div className="dashboard app-page" style={{ paddingTop: "20px", paddingBottom: "40px" }}>
+      <div className="feed-page-toolbar">
+        <span className="material-symbols-outlined feed-page-icon" aria-hidden="true">
+          {getFeedKindIcon(kind)}
+        </span>
+        <Link href="/settings" className="feed-settings-link">
+          <span className="material-symbols-outlined" style={{ fontSize: "15px" }} aria-hidden="true">
+            settings
+          </span>
+          Akış ayarları
+        </Link>
+      </div>
 
       {feeds.length === 0 ? (
-        <FeedEmptyState
-          title={`${pageTitle} için akış oluşturulmadı`}
-          body="Ayarlar sayfasından yeni bir akış açabilir ya da not ve klasör sayfalarından mevcut akışlara kaynak ekleyebilirsin."
-        />
+        <FeedEmptyState />
       ) : (
-        <div style={{ display: "grid", gap: "16px" }}>
+        <div className="feed-list">
           {feeds.map((feed) => (
             <FeedCard
               key={feed.id}
               feed={feed}
-              actions={
-                <Button
-                  variant="outlined"
-                  onClick={() => handleRefresh(feed.id)}
-                  disabled={isPending && pendingFeedId === feed.id}
-                >
-                  {isPending && pendingFeedId === feed.id ? "Yenileniyor..." : "Yenile"}
-                </Button>
-              }
+              isRefreshing={isPending && pendingFeedId === feed.id}
+              onRefresh={() => handleRefresh(feed.id)}
             />
           ))}
         </div>

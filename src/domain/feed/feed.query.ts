@@ -129,7 +129,45 @@ export function scoreFeedTextMatch(
 ) {
   const normalizedText = normalizeFeedText(text);
   const textTokens = new Set(tokenizeFeedText(text));
-  const matchedKeywords = profile.keywords.filter((keyword) => textTokens.has(keyword));
+
+  const exactKeywordMatches = profile.keywords.filter((keyword) =>
+    textTokens.has(keyword),
+  );
+
+  const regexKeywordMatches = profile.keywords.filter((keyword) => {
+    if (textTokens.has(keyword) || keyword.length < 4) {
+      return false;
+    }
+
+    return buildKeywordRegex(keyword).test(normalizedText);
+  });
+
+  const fuzzyKeywordMatches = profile.keywords.filter((keyword) => {
+    if (
+      keyword.length < 4 ||
+      exactKeywordMatches.includes(keyword) ||
+      regexKeywordMatches.includes(keyword)
+    ) {
+      return false;
+    }
+
+    return Array.from(textTokens).some((token) => {
+      if (token.length < 4) {
+        return false;
+      }
+
+      return token.includes(keyword) || keyword.includes(token);
+    });
+  });
+
+  const matchedKeywordSet = new Set<string>([
+    ...exactKeywordMatches,
+    ...regexKeywordMatches,
+    ...fuzzyKeywordMatches,
+  ]);
+
+  const matchedKeywords = Array.from(matchedKeywordSet);
+
   const matchedPhrases = profile.phrases.filter((phrase) => {
     const normalizedPhrase = normalizeFeedText(phrase);
     return normalizedPhrase.length >= 4 && normalizedText.includes(normalizedPhrase);
@@ -147,6 +185,14 @@ export function scoreFeedTextMatch(
     matchedKeywords,
     matchedPhrases,
   };
+}
+
+function buildKeywordRegex(keyword: string) {
+  return new RegExp(`\\b${escapeRegex(keyword)}[\\p{L}\\p{N}-]*\\b`, "u");
+}
+
+function escapeRegex(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 export function limitText(value: string | null | undefined, maxLength = 220) {

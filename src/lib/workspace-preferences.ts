@@ -22,7 +22,7 @@ export const DEFAULT_COLLAPSED_SECTIONS: SidebarCollapseState = {
 
 export interface LocalSyncQueueItem {
   id: string;
-  entityType: "note" | "folder" | "template" | "proposal";
+  entityType: "note" | "folder" | "template";
   entityId: string;
   actionType: string;
   queuedAt: string;

@@ -38,10 +38,6 @@ import {
   searchNotesByTitleAction,
 } from "@/server/api/notes";
 import { createNoteCategoryAction } from "@/server/api/categories";
-import {
-  applyProposalAction,
-  rejectProposalAction,
-} from "@/server/api/proposals";
 import { createMapFromNoteAction } from "@/server/api/canvas";
 import { createTemplateFromNoteAction } from "@/server/api/templates";
 import { getTemplateCategoryLabel } from "@/lib/template-category";
@@ -67,13 +63,6 @@ interface NoteEditorPageProps {
   }>;
   categories: NoteCategorySummary[];
   backlinks: BacklinkResult[];
-  proposals: Array<{
-    id: string;
-    title: string;
-    summary: string | null;
-    status: string;
-    createdAt: string;
-  }>;
   feedAssignments: Array<{
     id: string;
     title: string;
@@ -91,7 +80,6 @@ export function NoteEditorPage({
   folders,
   categories,
   backlinks,
-  proposals,
   feedAssignments,
 }: NoteEditorPageProps) {
   const [title, setTitle] = useState(note.title);
@@ -464,22 +452,6 @@ export function NoteEditorPage({
       });
       await updateNoteAction(note.id, { slug: normalizedSlug });
       resolveLocalMutation(mutationId);
-      router.refresh();
-    },
-    [note.id, router],
-  );
-
-  const handleApplyProposal = useCallback(
-    async (proposalId: string) => {
-      await applyProposalAction(proposalId, note.id);
-      router.refresh();
-    },
-    [note.id, router],
-  );
-
-  const handleRejectProposal = useCallback(
-    async (proposalId: string) => {
-      await rejectProposalAction(proposalId, note.id);
       router.refresh();
     },
     [note.id, router],
@@ -1816,137 +1788,6 @@ export function NoteEditorPage({
             />
           </div>
 
-          {proposals.length > 0 ? (
-            <div
-              style={{
-                margin: isMobileViewport ? "24px 0 48px" : "32px 0 64px",
-                padding: footerSectionPadding,
-              }}
-            >
-              <Card
-                variant="outlined"
-                style={{ borderColor: "var(--md-sys-color-tertiary)" }}
-              >
-                <CardHeader>
-                  <CardTitle
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "8px",
-                      color: "var(--md-sys-color-tertiary)",
-                    }}
-                  >
-                    <span
-                      className="material-symbols-outlined"
-                      aria-hidden="true"
-                    >
-                      auto_awesome
-                    </span>
-                    Düzenleme önerileri ({proposals.length})
-                  </CardTitle>
-                </CardHeader>
-                <CardContent style={{ padding: 0 }}>
-                  <ul className="md-list">
-                    {proposals.map((proposal) => (
-                      <li
-                        key={proposal.id}
-                        style={{
-                          display: "block",
-                          borderBottom:
-                            "1px solid var(--md-sys-color-outline-variant)",
-                          padding: "16px",
-                        }}
-                      >
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "flex-start",
-                            marginBottom: proposal.summary ? "12px" : "0",
-                          }}
-                        >
-                          <div>
-                            <div
-                              style={{
-                                fontWeight: "bold",
-                                fontSize:
-                                  "var(--md-sys-typescale-title-medium-size)",
-                                color: "var(--md-sys-color-on-surface)",
-                              }}
-                            >
-                              {proposal.title}
-                            </div>
-                            <div
-                              style={{
-                                fontSize:
-                                  "var(--md-sys-typescale-body-small-size)",
-                                color: "var(--md-sys-color-on-surface-variant)",
-                              }}
-                            >
-                              <span
-                                style={{
-                                  textTransform: "uppercase",
-                                  padding: "2px 6px",
-                                  background:
-                                    "var(--md-sys-color-surface-container-high)",
-                                  borderRadius: "4px",
-                                  fontSize: "10px",
-                                  fontWeight: "bold",
-                                  marginRight: "8px",
-                                }}
-                              >
-                                {proposal.status}
-                              </span>
-                              {new Date(proposal.createdAt).toLocaleString(
-                                "tr-TR",
-                              )}
-                            </div>
-                          </div>
-                          <div style={{ display: "flex", gap: "8px" }}>
-                            {proposal.status === "pending" ? (
-                              <>
-                                <Button
-                                  variant="tonal"
-                                  onClick={() =>
-                                    void handleApplyProposal(proposal.id)
-                                  }
-                                >
-                                  Uygula
-                                </Button>
-                                <Button
-                                  variant="text"
-                                  onClick={() =>
-                                    void handleRejectProposal(proposal.id)
-                                  }
-                                >
-                                  Reddet
-                                </Button>
-                              </>
-                            ) : null}
-                          </div>
-                        </div>
-                        {proposal.summary ? (
-                          <div
-                            style={{
-                              fontSize:
-                                "var(--md-sys-typescale-body-medium-size)",
-                              color: "var(--md-sys-color-on-surface-variant)",
-                              background:
-                                "var(--md-sys-color-surface-container-lowest)",
-                              padding: "12px",
-                              borderRadius: "8px",
-                            }}
-                          >
-                            {proposal.summary}
-                          </div>
-                        ) : null}
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
-            </div>
-          ) : null}
         </div>
         {/* end main content column */}
 

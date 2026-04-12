@@ -2,7 +2,6 @@ import { notFound } from "next/navigation";
 import { getAllFoldersAction } from "@/server/api/folders";
 import { getNoteCategoriesAction } from "@/server/api/categories";
 import { getNoteAction, getBacklinksAction } from "@/server/api/notes";
-import { getNoteProposalsAction } from "@/server/api/proposals";
 import { NoteEditorPage } from "@/components/notes/NoteEditorPage";
 import { getNoteFeedAssignmentsAction } from "@/server/api/feeds";
 
@@ -12,11 +11,10 @@ interface NotePageProps {
 
 export default async function NotePage({ params }: NotePageProps) {
   const { noteId } = await params;
-  const [note, backlinks, folders, proposals, categories, feedAssignments] = await Promise.all([
+  const [note, backlinks, folders, categories, feedAssignments] = await Promise.all([
     getNoteAction(noteId),
     getBacklinksAction(noteId),
     getAllFoldersAction(),
-    getNoteProposalsAction(noteId),
     getNoteCategoriesAction(),
     getNoteFeedAssignmentsAction(noteId),
   ]);
@@ -44,13 +42,6 @@ export default async function NotePage({ params }: NotePageProps) {
       folders={folders}
       categories={categories}
       backlinks={backlinks}
-      proposals={proposals.map((proposal) => ({
-        id: proposal.id,
-        title: proposal.title,
-        summary: proposal.summary,
-        status: proposal.status,
-        createdAt: proposal.createdAt.toISOString(),
-      }))}
       feedAssignments={feedAssignments}
     />
   );

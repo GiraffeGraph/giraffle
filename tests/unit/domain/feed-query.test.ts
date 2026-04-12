@@ -51,4 +51,19 @@ describe("feed query helpers", () => {
     expect(strongMatch.matchedKeywords.length).toBeGreaterThan(0);
     expect(strongMatch.matchedPhrases).toContain("Yapay zeka ajanları");
   });
+
+  it("supports regex-like and fuzzy keyword matching", () => {
+    const profile = buildFeedQueryProfile({
+      tags: ["observability", "analiz"],
+    });
+
+    const match = scoreFeedTextMatch(
+      profile,
+      "Sistemde observabilitynin etkisini analizleriyle inceledik",
+    );
+
+    expect(match.matchedKeywords).toContain("observability");
+    expect(match.matchedKeywords).toContain("analiz");
+    expect(match.score).toBeGreaterThan(0);
+  });
 });
