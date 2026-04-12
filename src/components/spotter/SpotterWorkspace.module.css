@@ -304,7 +304,7 @@
   height: 6px;
   border-radius: 999px;
   background: var(--ng-text-soft);
-  animation: notegptTyping 1s infinite ease-in-out;
+  animation: spotterTyping 1s infinite ease-in-out;
 }
 
 .typingIndicator span:nth-child(2) {
@@ -315,7 +315,7 @@
   animation-delay: 260ms;
 }
 
-@keyframes notegptTyping {
+@keyframes spotterTyping {
   0%,
   80%,
   100% {

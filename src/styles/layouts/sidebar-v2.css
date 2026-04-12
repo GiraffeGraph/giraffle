@@ -412,13 +412,13 @@
   opacity: 0.6;
 }
 
-.sidebar-notegpt-block {
+.sidebar-spotter-block {
   display: flex;
   flex-direction: column;
   gap: 1px;
 }
 
-.sidebar-notegpt-row .sidebar-nav-menu {
+.sidebar-spotter-row .sidebar-nav-menu {
   display: inline-flex;
   opacity: 0;
   transition:
@@ -427,17 +427,17 @@
     opacity var(--transition-fast);
 }
 
-.sidebar-notegpt-row:hover .sidebar-nav-menu,
-.sidebar-notegpt-row:focus-within .sidebar-nav-menu {
+.sidebar-spotter-row:hover .sidebar-nav-menu,
+.sidebar-spotter-row:focus-within .sidebar-nav-menu {
   opacity: 1;
 }
 
-.sidebar-notegpt-new-chat svg {
+.sidebar-spotter-new-chat svg {
   width: 12px;
   height: 12px;
 }
 
-.sidebar-notegpt-sessions {
+.sidebar-spotter-sessions {
   max-height: 190px;
   overflow-y: auto;
   padding-bottom: 2px;

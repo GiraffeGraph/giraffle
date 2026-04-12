@@ -1,12 +1,12 @@
 "use client";
 
 import type { NodeProps } from "@xyflow/react";
-import { NoteGptWorkspace } from "@/components/notegpt/NoteGptWorkspace";
-import type { UniverseNoteGptNode } from "./universe.types";
+import { SpotterWorkspace } from "@/components/spotter/SpotterWorkspace";
+import type { UniverseSpotterNode } from "./universe.types";
 
-export function NoteGptNode({ data }: NodeProps<UniverseNoteGptNode>) {
+export function SpotterNode({ data }: NodeProps<UniverseSpotterNode>) {
   return (
-    <div className="universe-panel-node universe-panel-node--notegpt nowheel nodrag">
+    <div className="universe-panel-node universe-panel-node--spotter nowheel nodrag">
       <div className="universe-panel-header">
         <span className="material-symbols-outlined" aria-hidden="true">
           smart_toy
@@ -14,7 +14,7 @@ export function NoteGptNode({ data }: NodeProps<UniverseNoteGptNode>) {
         Spotter
       </div>
       <div className="universe-panel-body">
-        <NoteGptWorkspace
+        <SpotterWorkspace
           notes={data.notes}
           folders={data.folders}
           embedded

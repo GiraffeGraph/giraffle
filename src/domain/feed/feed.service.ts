@@ -39,7 +39,11 @@ export async function getWorkspaceFeeds(
   } = {},
 ): Promise<WorkspaceFeedSummary[]> {
   if (options.autoRefresh !== false) {
-    await refreshDueFeedsForUser(userId, options.kind);
+    try {
+      await refreshDueFeedsForUser(userId, options.kind);
+    } catch (error) {
+      console.error("Failed to auto-refresh feeds", error);
+    }
   }
 
   const feeds = await db.workspaceFeed.findMany({
@@ -160,7 +164,7 @@ export async function createWorkspaceFeed(
     },
   });
 
-  await refreshWorkspaceFeed(userId, feed.id);
+  await safeRefreshWorkspaceFeed(userId, feed.id);
   return feed;
 }
 
@@ -214,7 +218,7 @@ export async function updateWorkspaceFeed(
     payload: input,
   });
 
-  await refreshWorkspaceFeed(userId, feedId);
+  await safeRefreshWorkspaceFeed(userId, feedId);
 }
 
 export async function deleteWorkspaceFeed(userId: string, feedId: string) {
@@ -344,7 +348,7 @@ export async function setFeedSourceMembership(
     payload: input,
   });
 
-  await refreshWorkspaceFeed(userId, input.feedId);
+  await safeRefreshWorkspaceFeed(userId, input.feedId);
 }
 
 export async function refreshWorkspaceFeed(
@@ -530,7 +534,7 @@ export async function refreshDueFeedsForUser(
   });
 
   for (const feed of feeds) {
-    await refreshWorkspaceFeed(userId, feed.id);
+    await safeRefreshWorkspaceFeed(userId, feed.id);
   }
 }
 
@@ -552,7 +556,10 @@ export async function refreshDueFeedsGlobally(limit = 12) {
   const results: RefreshWorkspaceFeedResult[] = [];
 
   for (const feed of feeds) {
-    results.push(await refreshWorkspaceFeed(feed.userId, feed.id));
+    const result = await safeRefreshWorkspaceFeed(feed.userId, feed.id);
+    if (result) {
+      results.push(result);
+    }
   }
 
   return results;
@@ -940,6 +947,15 @@ function mapFeedSourceBadge(source: {
   }
 
   return null;
+}
+
+async function safeRefreshWorkspaceFeed(userId: string, feedId: string) {
+  try {
+    return await refreshWorkspaceFeed(userId, feedId);
+  } catch (error) {
+    console.error("Failed to refresh workspace feed", { userId, feedId, error });
+    return null;
+  }
 }
 
 function normalizeFeedKind(kind: string): WorkspaceFeedKind {

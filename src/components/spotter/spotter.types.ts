@@ -1,4 +1,4 @@
-export interface NoteGptWorkspaceProps {
+export interface SpotterWorkspaceProps {
   notes: Array<{
     id: string;
     title: string;

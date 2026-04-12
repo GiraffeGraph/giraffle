@@ -1,13 +1,13 @@
 import { db } from "@/lib/db";
 import type {
-  NoteGptSessionSummary,
-  NoteGptSessionWithMessages,
-  NoteGptStoredMessage,
-} from "./notegpt.types";
+  SpotterSessionSummary,
+  SpotterSessionWithMessages,
+  SpotterStoredMessage,
+} from "./spotter.types";
 
 const SESSION_TITLE_MAX_LENGTH = 56;
 
-export function buildNoteGptSessionTitle(prompt: string) {
+export function buildSpotterSessionTitle(prompt: string) {
   const normalized = prompt.replace(/\s+/g, " ").trim();
 
   if (!normalized) {
@@ -21,14 +21,14 @@ export function buildNoteGptSessionTitle(prompt: string) {
   return `${normalized.slice(0, SESSION_TITLE_MAX_LENGTH - 1).trim()}…`;
 }
 
-function normalizeRole(role: string): NoteGptStoredMessage["role"] {
+function normalizeRole(role: string): SpotterStoredMessage["role"] {
   return role === "assistant" ? "assistant" : "user";
 }
 
-export async function getNoteGptSessions(
+export async function getSpotterSessions(
   userId: string,
-): Promise<NoteGptSessionSummary[]> {
-  return db.noteGptSession.findMany({
+): Promise<SpotterSessionSummary[]> {
+  return db.spotterSession.findMany({
     where: { userId },
     orderBy: { lastMessageAt: "desc" },
     take: 20,
@@ -41,11 +41,11 @@ export async function getNoteGptSessions(
   });
 }
 
-export async function getNoteGptSession(
+export async function getSpotterSession(
   userId: string,
   sessionId: string,
-): Promise<NoteGptSessionWithMessages | null> {
-  const session = await db.noteGptSession.findFirst({
+): Promise<SpotterSessionWithMessages | null> {
+  const session = await db.spotterSession.findFirst({
     where: {
       id: sessionId,
       userId,
@@ -80,11 +80,11 @@ export async function getNoteGptSession(
   };
 }
 
-export async function createNoteGptSession(userId: string, prompt: string) {
-  return db.noteGptSession.create({
+export async function createSpotterSession(userId: string, prompt: string) {
+  return db.spotterSession.create({
     data: {
       userId,
-      title: buildNoteGptSessionTitle(prompt),
+      title: buildSpotterSessionTitle(prompt),
       lastMessageAt: new Date(),
     },
     select: {
@@ -94,11 +94,11 @@ export async function createNoteGptSession(userId: string, prompt: string) {
   });
 }
 
-export async function assertNoteGptSessionOwner(
+export async function assertSpotterSessionOwner(
   userId: string,
   sessionId: string,
 ) {
-  return db.noteGptSession.findFirst({
+  return db.spotterSession.findFirst({
     where: {
       id: sessionId,
       userId,
@@ -110,16 +110,16 @@ export async function assertNoteGptSessionOwner(
   });
 }
 
-export async function appendNoteGptMessage({
+export async function appendSpotterMessage({
   sessionId,
   role,
   content,
 }: {
   sessionId: string;
-  role: NoteGptStoredMessage["role"];
+  role: SpotterStoredMessage["role"];
   content: string;
 }) {
-  await db.noteGptMessage.create({
+  await db.spotterMessage.create({
     data: {
       sessionId,
       role,
@@ -128,8 +128,8 @@ export async function appendNoteGptMessage({
   });
 }
 
-export async function touchNoteGptSession(sessionId: string) {
-  await db.noteGptSession.update({
+export async function touchSpotterSession(sessionId: string) {
+  await db.spotterSession.update({
     where: { id: sessionId },
     data: {
       lastMessageAt: new Date(),
@@ -137,11 +137,11 @@ export async function touchNoteGptSession(sessionId: string) {
   });
 }
 
-export async function getRecentNoteGptMessages(
+export async function getRecentSpotterMessages(
   sessionId: string,
   take = 8,
-): Promise<Array<{ role: NoteGptStoredMessage["role"]; content: string }>> {
-  const messages = await db.noteGptMessage.findMany({
+): Promise<Array<{ role: SpotterStoredMessage["role"]; content: string }>> {
+  const messages = await db.spotterMessage.findMany({
     where: { sessionId },
     orderBy: { createdAt: "desc" },
     take,

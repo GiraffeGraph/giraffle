@@ -40,7 +40,7 @@ export interface SidebarTemplate {
   variables: TemplateVariable[];
 }
 
-export interface SidebarNoteGptSession {
+export interface SidebarSpotterSession {
   id: string;
   title: string;
   lastMessageAt: Date;
@@ -52,7 +52,7 @@ export interface SidebarProps {
   folders: SidebarFolder[];
   templates: SidebarTemplate[];
   tags: SidebarTag[];
-  noteGptSessions: SidebarNoteGptSession[];
+  spotterSessions: SidebarSpotterSession[];
   activeNoteId?: string;
 }
 

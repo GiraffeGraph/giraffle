@@ -756,18 +756,18 @@
   margin-bottom: 14px;
 }
 
-.notegpt-page {
+.spotter-page {
   width: min(100%, 1280px);
   margin: 0 auto;
   padding: 34px 34px 54px;
 }
 
-.notegpt-shell {
+.spotter-shell {
   display: block;
 }
 
-.notegpt-chat-panel,
-.notegpt-library-panel {
+.spotter-chat-panel,
+.spotter-library-panel {
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-lg);
   background: var(--surface-overlay);
@@ -775,14 +775,14 @@
   backdrop-filter: blur(16px);
 }
 
-.notegpt-chat-panel {
+.spotter-chat-panel {
   display: grid;
   gap: 16px;
   padding: 24px;
   min-height: 78vh;
 }
 
-.notegpt-library-panel {
+.spotter-library-panel {
   position: sticky;
   top: 24px;
   display: grid;
@@ -792,16 +792,16 @@
   overflow: hidden;
 }
 
-.notegpt-chat-header,
-.notegpt-library-header {
+.spotter-chat-header,
+.spotter-library-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
 }
 
-.notegpt-kicker,
-.notegpt-library-section-title {
+.spotter-kicker,
+.spotter-library-section-title {
   font-size: 12px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -809,37 +809,37 @@
   font-weight: 800;
 }
 
-.notegpt-title,
-.notegpt-library-title {
+.spotter-title,
+.spotter-library-title {
   font-family: var(--font-display);
   color: var(--text-primary);
 }
 
-.notegpt-title {
+.spotter-title {
   font-size: clamp(2.1rem, 4vw, 3rem);
   line-height: 0.96;
   letter-spacing: -0.05em;
   margin-top: 6px;
 }
 
-.notegpt-library-title {
+.spotter-library-title {
   font-size: 1.1rem;
   margin-top: 6px;
 }
 
-.notegpt-subtitle {
+.spotter-subtitle {
   margin-top: 10px;
   max-width: 620px;
   color: var(--text-secondary);
 }
 
-.notegpt-stat-row {
+.spotter-stat-row {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
 }
 
-.notegpt-stat-card {
+.spotter-stat-card {
   display: inline-flex;
   flex-direction: column;
   gap: 2px;
@@ -850,32 +850,32 @@
   background: var(--surface-glass-muted);
 }
 
-.notegpt-stat-number {
+.spotter-stat-number {
   font-family: var(--font-display);
   font-size: 1.4rem;
   font-weight: 800;
   line-height: 1;
 }
 
-.notegpt-stat-label,
-.notegpt-composer-hint,
-.notegpt-library-item-meta,
-.notegpt-message-role {
+.spotter-stat-label,
+.spotter-composer-hint,
+.spotter-library-item-meta,
+.spotter-message-role {
   color: var(--text-tertiary);
 }
 
-.notegpt-stat-label,
-.notegpt-composer-hint {
+.spotter-stat-label,
+.spotter-composer-hint {
   font-size: 12px;
 }
 
-.notegpt-prompt-row {
+.spotter-prompt-row {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
 }
 
-.notegpt-prompt-chip {
+.spotter-prompt-chip {
   border: 1px solid var(--border-soft);
   border-radius: 999px;
   background: var(--surface-glass);
@@ -885,13 +885,13 @@
   cursor: pointer;
 }
 
-.notegpt-prompt-chip:hover,
-.notegpt-library-item:hover {
+.spotter-prompt-chip:hover,
+.spotter-library-item:hover {
   background: var(--surface-glass-hover);
   color: var(--text-primary);
 }
 
-.notegpt-message-stream {
+.spotter-message-stream {
   display: grid;
   gap: 12px;
   align-content: start;
@@ -900,21 +900,21 @@
   overflow: auto;
 }
 
-.notegpt-message {
+.spotter-message {
   display: grid;
   gap: 6px;
   max-width: 88%;
 }
 
-.notegpt-message.assistant {
+.spotter-message.assistant {
   justify-self: start;
 }
 
-.notegpt-message.user {
+.spotter-message.user {
   justify-self: end;
 }
 
-.notegpt-message-body {
+.spotter-message-body {
   white-space: pre-wrap;
   padding: 14px 16px;
   border-radius: var(--radius-card);
@@ -924,12 +924,12 @@
   color: var(--text-primary);
 }
 
-.notegpt-message.user .notegpt-message-body {
+.spotter-message.user .spotter-message-body {
   background: color-mix(in srgb, var(--accent) 20%, var(--surface-glass));
   border-color: color-mix(in srgb, var(--accent) 30%, var(--border-soft));
 }
 
-.notegpt-composer {
+.spotter-composer {
   display: grid;
   gap: 12px;
   padding: 16px;
@@ -938,8 +938,8 @@
   background: var(--surface-glass-muted);
 }
 
-.notegpt-composer-input,
-.notegpt-library-search {
+.spotter-composer-input,
+.spotter-library-search {
   width: 100%;
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-md);
@@ -948,39 +948,39 @@
   outline: none;
 }
 
-.notegpt-composer-input {
+.spotter-composer-input {
   min-height: 104px;
   resize: vertical;
   padding: 14px 16px;
   line-height: 1.6;
 }
 
-.notegpt-library-search {
+.spotter-library-search {
   min-height: 44px;
   max-width: 220px;
   padding: 0 14px;
 }
 
-.notegpt-composer-actions {
+.spotter-composer-actions {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
 }
 
-.notegpt-library-section {
+.spotter-library-section {
   display: grid;
   gap: 10px;
   min-height: 0;
 }
 
-.notegpt-library-list {
+.spotter-library-list {
   display: grid;
   gap: 8px;
   overflow: auto;
 }
 
-.notegpt-library-item {
+.spotter-library-item {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -994,7 +994,7 @@
   text-align: left;
 }
 
-.notegpt-library-item-icon {
+.spotter-library-item-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1008,40 +1008,40 @@
   flex-shrink: 0;
 }
 
-.notegpt-library-item-copy {
+.spotter-library-item-copy {
   display: grid;
   gap: 2px;
   min-width: 0;
 }
 
-.notegpt-library-item-title {
+.spotter-library-item-title {
   color: var(--text-primary);
   font-size: 14px;
   font-weight: 600;
 }
 
-.notegpt-library-item-meta {
+.spotter-library-item-meta {
   font-size: 12px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.notegpt-library-empty {
+.spotter-library-empty {
   padding: 12px 4px;
   color: var(--text-tertiary);
   font-size: 13px;
 }
 
 @media (max-width: 1080px) {
-  .notegpt-library-panel {
+  .spotter-library-panel {
     position: static;
     max-height: none;
   }
 }
 
 @media (max-width: 720px) {
-  .notegpt-page {
+  .spotter-page {
     padding: 20px 16px 40px;
   }
 
@@ -1049,28 +1049,28 @@
     padding: 20px 16px 40px;
   }
 
-  .notegpt-chat-panel,
-  .notegpt-library-panel {
+  .spotter-chat-panel,
+  .spotter-library-panel {
     border-radius: var(--radius-panel);
   }
 
-  .notegpt-chat-panel {
+  .spotter-chat-panel {
     padding: 18px;
     min-height: auto;
   }
 
-  .notegpt-chat-header,
-  .notegpt-library-header,
-  .notegpt-composer-actions {
+  .spotter-chat-header,
+  .spotter-library-header,
+  .spotter-composer-actions {
     grid-template-columns: 1fr;
     display: grid;
   }
 
-  .notegpt-library-search {
+  .spotter-library-search {
     max-width: none;
   }
 
-  .notegpt-message {
+  .spotter-message {
     max-width: 100%;
   }
 

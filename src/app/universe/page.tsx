@@ -98,7 +98,7 @@ export default async function UniversePage() {
         summary: feed.items[0]?.whyRelevant ?? feed.items[0]?.summary ?? null,
         noteTitle: feed.sources.map((source) => source.label).slice(0, 2).join(" · ") || "Kaynak seçilmedi",
       }))}
-      noteGptSeed={{
+      spotterSeed={{
         notes: notes.map((note) => ({
           id: note.id,
           title: note.title,

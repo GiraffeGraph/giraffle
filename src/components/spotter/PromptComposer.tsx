@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/Button";
-import styles from "./NoteGptWorkspace.module.css";
+import styles from "./SpotterWorkspace.module.css";
 
 interface PromptComposerProps {
   draft: string;

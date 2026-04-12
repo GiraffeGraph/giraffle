@@ -1,6 +1,6 @@
 import type { Node } from "@xyflow/react";
 import type { LibraryWorkspaceSeed } from "@/components/library/library.data";
-import type { NoteGptWorkspaceProps } from "@/components/notegpt/notegpt.types";
+import type { SpotterWorkspaceProps } from "@/components/spotter/spotter.types";
 import type {
   SidebarFolder,
   SidebarNote,
@@ -57,7 +57,7 @@ export interface UniverseShellProps {
   graphSeed: UniverseGraphSeed;
   publishSeed: UniversePublishSeed;
   proposals: UniverseProposalSummary[];
-  noteGptSeed: Pick<NoteGptWorkspaceProps, "notes" | "folders">;
+  spotterSeed: Pick<SpotterWorkspaceProps, "notes" | "folders">;
   settingsLogs: SettingsWorkspaceProps["operationLogs"];
 }
 
@@ -79,9 +79,9 @@ export interface UniverseSettingsNodeData extends Record<string, unknown> {
   operationLogs: SettingsWorkspaceProps["operationLogs"];
 }
 
-export interface UniverseNoteGptNodeData extends Record<string, unknown> {
-  notes: NoteGptWorkspaceProps["notes"];
-  folders: NoteGptWorkspaceProps["folders"];
+export interface UniverseSpotterNodeData extends Record<string, unknown> {
+  notes: SpotterWorkspaceProps["notes"];
+  folders: SpotterWorkspaceProps["folders"];
 }
 
 export interface UniverseNoteNodeData extends Record<string, unknown> {
@@ -98,7 +98,7 @@ export type UniverseModuleId =
   | "graph"
   | "publish"
   | "proposals"
-  | "notegpt"
+  | "spotter"
   | "settings";
 
 interface UniverseModuleBaseData extends Record<string, unknown> {
@@ -137,9 +137,9 @@ export interface UniverseProposalsModuleData extends UniverseModuleBaseData {
   seed: UniverseProposalSummary[];
 }
 
-export interface UniverseNoteGptModuleData extends UniverseModuleBaseData {
-  moduleId: "notegpt";
-  seed: Pick<NoteGptWorkspaceProps, "notes" | "folders">;
+export interface UniverseSpotterModuleData extends UniverseModuleBaseData {
+  moduleId: "spotter";
+  seed: Pick<SpotterWorkspaceProps, "notes" | "folders">;
 }
 
 export interface UniverseSettingsModuleData extends UniverseModuleBaseData {
@@ -154,7 +154,7 @@ export type UniverseModuleNodeData =
   | UniverseGraphModuleData
   | UniversePublishModuleData
   | UniverseProposalsModuleData
-  | UniverseNoteGptModuleData
+  | UniverseSpotterModuleData
   | UniverseSettingsModuleData;
 
 export type UniverseRegionFrameNode = Node<
@@ -163,6 +163,6 @@ export type UniverseRegionFrameNode = Node<
 >;
 export type UniversePortalNode = Node<UniversePortalNodeData, "portal">;
 export type UniverseSettingsNode = Node<UniverseSettingsNodeData, "settings">;
-export type UniverseNoteGptNode = Node<UniverseNoteGptNodeData, "notegpt">;
+export type UniverseSpotterNode = Node<UniverseSpotterNodeData, "spotter">;
 export type UniverseNoteNode = Node<UniverseNoteNodeData, "universeNote">;
 export type UniverseModuleNode = Node<UniverseModuleNodeData, "module">;

@@ -28,7 +28,7 @@ model User {
   operationLogs       OperationLog[]
   canvases            Canvas[]
   noteCategories      NoteCategory[]
-  noteGptSessions     NoteGptSession[]
+  spotterSessions     SpotterSession[]
   universeState       UniverseState?
 }
 
@@ -349,12 +349,12 @@ model WorkspaceFeedItem {
   @@index([feedId, publishedAt])
 }
 
-model NoteGptSession {
+model SpotterSession {
   id            String           @id @default(uuid())
   title         String           @default("Yeni sohbet")
   userId        String
   user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  messages      NoteGptMessage[]
+  messages      SpotterMessage[]
   lastMessageAt DateTime         @default(now())
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
@@ -362,10 +362,10 @@ model NoteGptSession {
   @@index([userId, lastMessageAt])
 }
 
-model NoteGptMessage {
+model SpotterMessage {
   id        String         @id @default(uuid())
   sessionId String
-  session   NoteGptSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  session   SpotterSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   role      String
   content   String
   createdAt DateTime       @default(now())

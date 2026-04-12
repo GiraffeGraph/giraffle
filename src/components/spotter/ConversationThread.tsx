@@ -1,5 +1,5 @@
-import styles from "./NoteGptWorkspace.module.css";
-import type { ChatMessage } from "./notegpt.types";
+import styles from "./SpotterWorkspace.module.css";
+import type { ChatMessage } from "./spotter.types";
 
 interface ConversationThreadProps {
   messages: ChatMessage[];

@@ -4,19 +4,19 @@ import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ConversationThread } from "./ConversationThread";
 import { PromptComposer } from "./PromptComposer";
-import styles from "./NoteGptWorkspace.module.css";
+import styles from "./SpotterWorkspace.module.css";
 import {
   type ChatMessage,
-  type NoteGptWorkspaceProps,
-} from "./notegpt.types";
+  type SpotterWorkspaceProps,
+} from "./spotter.types";
 
-export function NoteGptWorkspace({
+export function SpotterWorkspace({
   notes,
   folders,
   embedded = false,
   initialSessionId = null,
   initialMessages = [],
-}: NoteGptWorkspaceProps) {
+}: SpotterWorkspaceProps) {
   const router = useRouter();
   const composerRef = useRef<HTMLTextAreaElement | null>(null);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(

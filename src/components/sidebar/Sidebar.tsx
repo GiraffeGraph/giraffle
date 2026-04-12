@@ -157,7 +157,7 @@ export function Sidebar({
   folders,
   templates,
   tags,
-  noteGptSessions,
+  spotterSessions,
   activeNoteId,
 }: SidebarProps) {
   const pathname = usePathname();
@@ -195,10 +195,8 @@ export function Sidebar({
   const normalizedPaletteQuery = paletteQuery.trim().toLowerCase();
   const currentNoteId =
     activeNoteId ?? extractActiveNoteId(pathname) ?? undefined;
-  const activeNoteGptSessionId =
-    pathname === "/spotter" || pathname === "/notegpt"
-      ? searchParams.get("session")
-      : null;
+  const activeSpotterSessionId =
+    pathname === "/spotter" ? searchParams.get("session") : null;
   const effectiveIsSidebarCompact = !isMobileViewport && isSidebarCompact;
   const shouldShowSidebarPanel = !isMobileViewport || isMobileSidebarOpen;
 
@@ -214,7 +212,7 @@ export function Sidebar({
     },
     [router],
   );
-  const navigateToNoteGptSession = useCallback(
+  const navigateToSpotterSession = useCallback(
     (sessionId: string) => {
       router.push(`/spotter?session=${sessionId}`);
     },
@@ -717,7 +715,7 @@ export function Sidebar({
         },
       },
       {
-        id: "action-notegpt",
+        id: "action-spotter",
         group: "Geçişler",
         title: "Ask Spotter",
         description: "Insight spotter çalışma alanını aç",
@@ -893,7 +891,7 @@ export function Sidebar({
         },
       }));
 
-    const noteGptSessionItems = noteGptSessions
+    const spotterSessionItems = spotterSessions
       .filter(
         (session) =>
           !normalizedPaletteQuery ||
@@ -901,20 +899,20 @@ export function Sidebar({
       )
       .slice(0, normalizedPaletteQuery ? 8 : 5)
       .map<CommandPaletteItem>((session) => ({
-        id: `notegpt-session-${session.id}`,
+        id: `spotter-session-${session.id}`,
         group: "Spotter",
         title: session.title,
         description: "Sohbet oturumunu aç",
         icon: encodeMaterialSymbol("forum"),
         onSelect: async () => {
-          navigateToNoteGptSession(session.id);
+          navigateToSpotterSession(session.id);
         },
       }));
 
     if (!normalizedPaletteQuery)
       return [
         ...actionItems,
-        ...noteGptSessionItems,
+        ...spotterSessionItems,
         ...noteItems,
         ...folderItems,
         ...tagItems,
@@ -928,7 +926,7 @@ export function Sidebar({
     );
     return [
       ...filteredActions,
-      ...noteGptSessionItems,
+      ...spotterSessionItems,
       ...noteItems,
       ...folderItems,
       ...tagItems,
@@ -939,9 +937,9 @@ export function Sidebar({
     flattenedFolders,
     handleStartCreateFolder,
     navigateToNote,
-    navigateToNoteGptSession,
+    navigateToSpotterSession,
     normalizedPaletteQuery,
-    noteGptSessions,
+    spotterSessions,
     notes,
     router,
     tags,
@@ -1202,12 +1200,12 @@ export function Sidebar({
                       )}
                     </button>
                   ))}
-                  <div className="sidebar-notegpt-block">
-                    <div className="sidebar-nav-item-row sidebar-notegpt-row">
+                  <div className="sidebar-spotter-block">
+                    <div className="sidebar-nav-item-row sidebar-spotter-row">
                       <button
                         type="button"
                         className={`sidebar-item${
-                          pathname === "/spotter" && !activeNoteGptSessionId
+                          pathname === "/spotter" && !activeSpotterSessionId
                             ? " active"
                             : ""
                         }`}
@@ -1225,7 +1223,7 @@ export function Sidebar({
                       </button>
                       <button
                         type="button"
-                        className="sidebar-nav-menu sidebar-notegpt-new-chat"
+                        className="sidebar-nav-menu sidebar-spotter-new-chat"
                         onClick={() => router.push("/spotter")}
                         aria-label="Yeni Spotter sohbeti"
                         title="Yeni sohbet"
@@ -1234,22 +1232,22 @@ export function Sidebar({
                       </button>
                     </div>
 
-                    <div className="sidebar-nested-items sidebar-notegpt-sessions">
-                      {noteGptSessions.length === 0 ? (
+                    <div className="sidebar-nested-items sidebar-spotter-sessions">
+                      {spotterSessions.length === 0 ? (
                         <div className="sidebar-session-empty">
                           Henüz sohbet yok.
                         </div>
                       ) : (
-                        noteGptSessions.map((session) => (
+                        spotterSessions.map((session) => (
                           <button
                             key={session.id}
                             type="button"
                             className={`sidebar-item sidebar-nested-item${
-                              activeNoteGptSessionId === session.id
+                              activeSpotterSessionId === session.id
                                 ? " active"
                                 : ""
                             }`}
-                            onClick={() => navigateToNoteGptSession(session.id)}
+                            onClick={() => navigateToSpotterSession(session.id)}
                             title={session.title}
                           >
                             <span className="sidebar-item-label">

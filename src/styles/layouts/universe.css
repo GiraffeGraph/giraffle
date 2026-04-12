@@ -499,7 +499,7 @@
   }
 }
 
-.universe-panel-node--notegpt {
+.universe-panel-node--spotter {
   background:
     linear-gradient(180deg, var(--surface-accent-blend), transparent 100%),
     var(--universe-panel-bg);

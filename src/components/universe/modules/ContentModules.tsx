@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { NoteGptWorkspace } from "@/components/notegpt/NoteGptWorkspace";
-import type { NoteGptWorkspaceProps } from "@/components/notegpt/notegpt.types";
+import { SpotterWorkspace } from "@/components/spotter/SpotterWorkspace";
+import type { SpotterWorkspaceProps } from "@/components/spotter/spotter.types";
 import { SettingsWorkspace } from "@/components/settings/SettingsWorkspace";
 import { getTemplateCategoryLabel } from "@/lib/template-category";
 import { formatDate } from "@/lib/utils";
@@ -272,11 +272,11 @@ export function ProposalsUniverseModule({
   );
 }
 
-export function NoteGptUniverseModule({
+export function SpotterUniverseModule({
   notes,
   folders,
-}: Pick<NoteGptWorkspaceProps, "notes" | "folders">) {
-  return <NoteGptWorkspace notes={notes} folders={folders} embedded />;
+}: Pick<SpotterWorkspaceProps, "notes" | "folders">) {
+  return <SpotterWorkspace notes={notes} folders={folders} embedded />;
 }
 
 export function SettingsUniverseModule({

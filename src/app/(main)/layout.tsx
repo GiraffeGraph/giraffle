@@ -4,7 +4,7 @@ import { buildTemplatePreviewFromBlocks } from "@/domain/template/template.previ
 import { auth } from "@/lib/auth";
 import { getFoldersAction } from "@/server/api/folders";
 import { getNotesAction } from "@/server/api/notes";
-import { getNoteGptSessionsAction } from "@/server/api/notegpt";
+import { getSpotterSessionsAction } from "@/server/api/spotter";
 import { getWorkspaceTagsAction } from "@/server/api/tags";
 import { getTemplatesAction } from "@/server/api/templates";
 
@@ -13,14 +13,14 @@ export default async function MainLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [session, notes, folders, templates, tags, noteGptSessions] =
+  const [session, notes, folders, templates, tags, spotterSessions] =
     await Promise.all([
       auth(),
       getNotesAction(),
       getFoldersAction(),
       getTemplatesAction(),
       getWorkspaceTagsAction(),
-      getNoteGptSessionsAction(),
+      getSpotterSessionsAction(),
     ]);
 
   const user = {
@@ -49,7 +49,7 @@ export default async function MainLayout({
           }>,
         }))}
         tags={tags}
-        noteGptSessions={noteGptSessions}
+        spotterSessions={spotterSessions}
       />
       <main className="main-content">
         <div className="main-content-inner">{children}</div>

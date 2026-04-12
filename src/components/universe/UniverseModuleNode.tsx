@@ -58,9 +58,9 @@ const ProposalsUniverseModule = dynamic(
     loading: () => <ModuleLoading />,
   }
 );
-const NoteGptUniverseModule = dynamic(
+const SpotterUniverseModule = dynamic(
   () =>
-    import("./modules/ContentModules").then((mod) => mod.NoteGptUniverseModule),
+    import("./modules/ContentModules").then((mod) => mod.SpotterUniverseModule),
   {
     loading: () => <ModuleLoading />,
   }
@@ -79,7 +79,7 @@ export function UniverseModuleNode({
   return (
     <div
       className={`universe-panel-node nowheel nodrag nopan ${
-        data.moduleId === "notegpt" ? "universe-panel-node--notegpt" : ""
+        data.moduleId === "spotter" ? "universe-panel-node--spotter" : ""
       }`}
       onPointerDownCapture={stopCanvasPointerPropagation}
       onMouseDownCapture={stopCanvasPointerPropagation}
@@ -111,8 +111,8 @@ export function UniverseModuleNode({
         {data.moduleId === "proposals" ? (
           <ProposalsUniverseModule proposals={data.seed} />
         ) : null}
-        {data.moduleId === "notegpt" ? (
-          <NoteGptUniverseModule
+        {data.moduleId === "spotter" ? (
+          <SpotterUniverseModule
             notes={data.seed.notes}
             folders={data.seed.folders}
           />

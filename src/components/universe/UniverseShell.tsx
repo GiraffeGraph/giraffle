@@ -139,7 +139,7 @@ const UNIVERSE_MODULE_LAYOUTS: UniverseModuleLayout[] = [
     zoom: 0.98,
   },
   {
-    moduleId: "notegpt",
+    moduleId: "spotter",
     regionId: "ai",
     title: "Spotter",
     description: "Insight spotter çalışma alanı.",
@@ -240,12 +240,12 @@ function buildModuleNodeData(
         icon: layout.icon,
         seed: props.proposals,
       };
-    case "notegpt":
+    case "spotter":
       return {
         moduleId,
         title: layout.title,
         icon: layout.icon,
-        seed: props.noteGptSeed,
+        seed: props.spotterSeed,
       };
     case "settings":
       return {
@@ -447,7 +447,7 @@ function UniverseCanvas({
   graphSeed,
   publishSeed,
   proposals,
-  noteGptSeed,
+  spotterSeed,
   settingsLogs,
 }: UniverseShellProps) {
   const router = useRouter();
@@ -470,14 +470,14 @@ function UniverseCanvas({
         graphSeed,
         publishSeed,
         proposals,
-        noteGptSeed,
+        spotterSeed,
         settingsLogs,
       }),
     [
       graphSeed,
       inboxSeed,
       librarySeed,
-      noteGptSeed,
+      spotterSeed,
       palette,
       proposals,
       publishSeed,

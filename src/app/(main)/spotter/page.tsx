@@ -1,8 +1,8 @@
 import { PageTopbar } from "@/components/ui/PageTopbar";
-import { NoteGptWorkspace } from "@/components/notegpt/NoteGptWorkspace";
+import { SpotterWorkspace } from "@/components/spotter/SpotterWorkspace";
 import { getAllFoldersAction } from "@/server/api/folders";
 import { getNotesAction } from "@/server/api/notes";
-import { getNoteGptSessionAction } from "@/server/api/notegpt";
+import { getSpotterSessionAction } from "@/server/api/spotter";
 
 export default async function SpotterPage({
   searchParams,
@@ -12,7 +12,7 @@ export default async function SpotterPage({
   const [notes, folders, activeSession] = await Promise.all([
     getNotesAction(),
     getAllFoldersAction(),
-    activeSessionId ? getNoteGptSessionAction(activeSessionId) : null,
+    activeSessionId ? getSpotterSessionAction(activeSessionId) : null,
   ]);
 
   const topbarActions = (
@@ -45,7 +45,7 @@ export default async function SpotterPage({
   return (
     <>
       <PageTopbar icon="smart_toy" label="Spotter" actions={topbarActions} />
-      <NoteGptWorkspace
+      <SpotterWorkspace
         key={activeSession?.id ?? "new"}
         initialSessionId={activeSession?.id ?? null}
         initialMessages={
