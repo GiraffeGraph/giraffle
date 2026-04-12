@@ -11,7 +11,6 @@ export type NoteCardNodeData = {
   preview?: string | null;
   onOpenPreview?: (noteId: string) => void;
   previewEnabled?: boolean;
-  linkSelected?: boolean;
 };
 
 export function NoteCardNode({
@@ -22,16 +21,22 @@ export function NoteCardNode({
   const router = useRouter();
 
   return (
-    <div
-      className={`svn-node-note${selected ? " svn-node-note--selected" : ""}${
-        data.linkSelected ? " svn-node-note--link-source" : ""
-      }`}
-    >
+    <div className={`svn-node-note${selected ? " svn-node-note--selected" : ""}`}>
       <Handle
+        id="target-top"
         type="target"
         position={Position.Top}
         isConnectable={isConnectable}
         className="svn-handle"
+        style={{ left: "34%" }}
+      />
+      <Handle
+        id="source-top"
+        type="source"
+        position={Position.Top}
+        isConnectable={isConnectable}
+        className="svn-handle"
+        style={{ left: "66%" }}
       />
 
       <div
@@ -48,17 +53,24 @@ export function NoteCardNode({
         <span className="svn-node-note__content">
           <span className="svn-node-note__title">{data.title || "Untitled"}</span>
           {data.preview ? <span className="svn-node-note__preview">{data.preview}</span> : null}
-          {data.linkSelected ? (
-            <span className="svn-node-note__link-badge">Line source selected</span>
-          ) : null}
         </span>
       </div>
 
       <Handle
+        id="target-bottom"
+        type="target"
+        position={Position.Bottom}
+        isConnectable={isConnectable}
+        className="svn-handle"
+        style={{ left: "34%" }}
+      />
+      <Handle
+        id="source-bottom"
         type="source"
         position={Position.Bottom}
         isConnectable={isConnectable}
         className="svn-handle"
+        style={{ left: "66%" }}
       />
     </div>
   );

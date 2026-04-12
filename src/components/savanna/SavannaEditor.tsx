@@ -328,6 +328,7 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
   const latestEdgesRef = useRef(edges);
   const inspectorRequestRef = useRef(0);
   const drawingPointerIdRef = useRef<number | null>(null);
+  const connectSourceNodeIdRef = useRef<string | null>(null);
   const drawScreenPointsRef = useRef<ScreenPoint[]>([]);
   const drawFlowPointsRef = useRef<InkPoint[]>([]);
   const drawPreviewPathRef = useRef<SVGPathElement | null>(null);
@@ -451,9 +452,57 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
     }, 1200);
   }, [canvas.id]);
 
+  const appendWikilinkForConnection = useCallback(async (sourceNodeId: string, targetNodeId: string) => {
+    const sourceNode = latestNodesRef.current.find(
+      (node) => node.id === sourceNodeId && node.type === "noteCard",
+    );
+    const targetNode = latestNodesRef.current.find(
+      (node) => node.id === targetNodeId && node.type === "noteCard",
+    );
+
+    if (!sourceNode || !targetNode) return;
+
+    const sourceData = sourceNode.data as NoteCardNodeData;
+    const targetData = targetNode.data as NoteCardNodeData;
+    const sourceNoteId = sourceData.noteId;
+    const targetNoteId = targetData.noteId;
+    const targetTitle = targetData.title?.trim();
+
+    if (!sourceNoteId || !targetNoteId || sourceNoteId === targetNoteId || !targetTitle) {
+      return;
+    }
+
+    try {
+      const editor = await getSavannaNoteEditorAction(sourceNoteId);
+      if (!editor) return;
+
+      const wikilink = `[[${targetTitle}]]`;
+      if (JSON.stringify(editor.document).includes(wikilink)) {
+        return;
+      }
+
+      const nextDocument: TiptapDocument = {
+        type: "doc",
+        content: [
+          ...(Array.isArray(editor.document.content) ? editor.document.content : []),
+          {
+            type: "paragraph",
+            content: [{ type: "text", text: wikilink }],
+          },
+        ],
+      };
+
+      await saveNoteContentAction(sourceNoteId, nextDocument);
+    } catch (error) {
+      console.error("Failed to append wikilink after Savanna connect:", error);
+    }
+  }, []);
+
   const addConnectionByNodeIds = useCallback(
     (sourceNodeId: string, targetNodeId: string) => {
       if (sourceNodeId === targetNodeId) return;
+
+      void appendWikilinkForConnection(sourceNodeId, targetNodeId);
 
       const exists = latestEdgesRef.current.some(
         (edge) => edge.source === sourceNodeId && edge.target === targetNodeId,
@@ -476,13 +525,36 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
 
       triggerSave();
     },
-    [setEdges, triggerSave],
+    [appendWikilinkForConnection, setEdges, triggerSave],
   );
 
   const onConnect = useCallback(
     (connection: Connection) => {
       if (!connection.source || !connection.target) return;
       addConnectionByNodeIds(connection.source, connection.target);
+    },
+    [addConnectionByNodeIds],
+  );
+
+  const onConnectStart = useCallback((_: unknown, params: unknown) => {
+    const payload = params as { nodeId?: string | null };
+    connectSourceNodeIdRef.current = payload.nodeId ?? null;
+  }, []);
+
+  const onConnectEnd = useCallback(
+    (event: unknown) => {
+      const sourceNodeId = connectSourceNodeIdRef.current;
+      connectSourceNodeIdRef.current = null;
+      if (!sourceNodeId) return;
+
+      const target = (event as { target?: EventTarget }).target;
+      if (!(target instanceof HTMLElement)) return;
+
+      const targetNode = target.closest(".react-flow__node");
+      const targetNodeId = targetNode?.getAttribute("data-id");
+      if (!targetNodeId || targetNodeId === sourceNodeId) return;
+
+      addConnectionByNodeIds(sourceNodeId, targetNodeId);
     },
     [addConnectionByNodeIds],
   );
@@ -994,7 +1066,6 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
               icon: sourceNote?.icon ?? data.icon,
               onOpenPreview: openNotePreview,
               previewEnabled: tool === "select",
-              linkSelected: false,
             } as NoteCardNodeData,
           };
         }
@@ -1331,6 +1402,8 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
         onNodesChange={handleNodesChange}
         onEdgesChange={handleEdgesChange}
         onConnect={onConnect}
+        onConnectStart={onConnectStart}
+        onConnectEnd={onConnectEnd}
         onPaneClick={onPaneClick}
         onMouseDown={handlePaneMouseDown}
         onMouseMove={handlePaneMouseMove}
@@ -1346,7 +1419,7 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
         zoomOnPinch
         panOnDrag={isSpacePressed ? [0, 1] : [1]}
         nodesDraggable={tool === "select" && !isSpacePressed}
-        nodesConnectable={tool === "select" && !isSpacePressed}
+        nodesConnectable={tool !== "draw" && tool !== "line" && !isSpacePressed}
         elementsSelectable={tool === "select"}
         deleteKeyCode={["Backspace", "Delete"]}
         selectionOnDrag={tool === "select" && !isSpacePressed}
