@@ -16,10 +16,6 @@ export function ConversationThread({
 
   return (
     <section className={styles.threadSection}>
-      <div className={styles.sectionHeader}>
-        <span className={styles.sectionLabel}>Konuşma</span>
-      </div>
-
       <div className={styles.threadList}>
         {messages.map((message) => (
           <article
@@ -30,14 +26,23 @@ export function ConversationThread({
                 : styles.messageUser
             }`}
           >
-            <div className={styles.messageRole}>
-              {message.role === "assistant" ? "NoteGPT" : "Sen"}
+            <div className={styles.messageAvatar} aria-hidden="true">
+              {message.role === "assistant" ? (
+                <span className="material-symbols-outlined">auto_awesome</span>
+              ) : (
+                "S"
+              )}
             </div>
-            <div className={styles.messageBody}>
-              {message.content ||
-                (isStreaming && message.role === "assistant"
-                  ? "Düşünüyor..."
-                  : "")}
+            <div className={styles.messageContent}>
+              <div className={styles.messageRole}>
+                {message.role === "assistant" ? "NoteGPT" : "Sen"}
+              </div>
+              <div className={styles.messageBody}>
+                {message.content ||
+                  (isStreaming && message.role === "assistant"
+                    ? "Düşünüyor..."
+                    : "")}
+              </div>
             </div>
           </article>
         ))}

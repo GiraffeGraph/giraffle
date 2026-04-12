@@ -1,8 +1,8 @@
 .page {
   --ng-bg: var(--bg-page);
-  --ng-surface: var(--surface-overlay);
-  --ng-surface-strong: var(--surface-glass);
-  --ng-surface-soft: var(--surface-glass-muted);
+  --ng-surface: color-mix(in srgb, var(--surface-overlay) 88%, transparent);
+  --ng-surface-solid: var(--surface-overlay);
+  --ng-surface-soft: color-mix(in srgb, var(--surface-glass-soft) 82%, transparent);
   --ng-border: var(--border-soft);
   --ng-border-strong: var(--border-color);
   --ng-text: var(--text-primary);
@@ -12,8 +12,10 @@
   --ng-accent-strong: var(--accent-strong);
   --ng-accent-soft: var(--surface-accent-blend);
   min-height: calc(100vh - 80px);
-  background: transparent;
   color: var(--ng-text);
+  background:
+    radial-gradient(circle at 18% 0%, color-mix(in srgb, var(--ng-accent) 12%, transparent) 0 220px, transparent 360px),
+    linear-gradient(180deg, color-mix(in srgb, var(--ng-bg) 76%, transparent), transparent 34%);
 }
 
 .pageEmbedded {
@@ -21,86 +23,104 @@
 }
 
 .pageInner {
-  width: min(100%, 1120px);
+  width: min(100%, 1040px);
+  min-height: calc(100vh - 80px);
   margin: 0 auto;
-  padding: 32px 28px 72px;
-  display: grid;
-  gap: 26px;
+  padding: 28px 24px 36px;
 }
 
 .pageEmbedded .pageInner {
   width: 100%;
-  margin: 0;
-  padding: 20px;
-  gap: 18px;
+  min-height: 100%;
+  padding: 18px;
 }
 
-
-.sectionLabel {
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--ng-text-soft);
-}
-
-.composerSection,
-.suggestionsSection,
-.starterSection,
-.threadSection {
+.chatShell {
   display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  min-height: calc(100vh - 144px);
+}
+
+.threadViewport {
+  display: grid;
+  align-content: center;
+  min-height: 0;
+  padding: 12px 0 28px;
+}
+
+.emptyState {
+  display: grid;
+  justify-items: center;
   gap: 14px;
+  width: min(100%, 780px);
+  margin: 0 auto;
+  text-align: center;
+}
+
+.emptyMark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--ng-border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ng-surface-solid) 88%, transparent);
+  color: var(--ng-accent-strong);
+  box-shadow: 0 12px 30px rgb(0 0 0 / 0.08);
+}
+
+.emptyEyebrow {
+  margin: 0;
+  color: var(--ng-text-soft);
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.emptyTitle {
+  max-width: 720px;
+  margin: 0;
+  color: var(--ng-text);
+  font-size: clamp(30px, 5vw, 54px);
+  font-weight: 780;
+  letter-spacing: 0;
+  line-height: 1.04;
+}
+
+.emptyBody {
+  max-width: 610px;
+  margin: 0;
+  color: var(--ng-text-secondary);
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.composerDock {
+  position: sticky;
+  bottom: 18px;
+  z-index: 5;
+  display: grid;
+  gap: 10px;
+  width: min(100%, 840px);
+  margin: 0 auto;
+}
+
+.composerSection {
+  display: grid;
+  gap: 8px;
 }
 
 .composerPanel {
   display: grid;
-  gap: 18px;
-  width: min(100%, 860px);
-  margin: 0 auto;
-  padding: 20px;
-  border: 1px solid var(--ng-border);
-  border-radius: var(--radius-md);
-  background: var(--ng-surface);
-  box-shadow: var(--shadow-panel);
-  backdrop-filter: blur(22px);
-}
-
-.pageEmbedded .composerPanel {
-  width: 100%;
-  margin: 0;
-}
-
-.modeRow {
-  display: flex;
-  flex-wrap: wrap;
   gap: 10px;
-}
-
-.modeChip {
-  border: 1px solid var(--ng-border);
-  border-radius: var(--radius-card);
-  background: transparent;
-  color: var(--ng-text-secondary);
-  padding: 10px 14px;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  transition:
-    border-color 160ms ease,
-    background 160ms ease,
-    color 160ms ease;
-}
-
-.modeChip:hover {
-  border-color: var(--ng-border-strong);
-  background: var(--surface-glass-hover);
-  color: var(--ng-text);
-}
-
-.modeChipActive {
-  border-color: var(--accent-line);
-  background: var(--ng-accent-soft);
-  color: var(--ng-text);
+  padding: 12px;
+  border: 1px solid var(--ng-border-strong);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ng-surface-solid) 94%, transparent);
+  box-shadow: 0 18px 52px rgb(0 0 0 / 0.14);
+  backdrop-filter: blur(22px);
 }
 
 .composerBody {
@@ -109,209 +129,415 @@
 
 .composerInput {
   width: 100%;
-  min-height: 170px;
-  border: 1px solid var(--ng-border);
-  border-radius: var(--radius-panel);
-  background: var(--ng-surface-strong);
+  min-height: 78px;
+  max-height: 220px;
+  padding: 8px 8px 4px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
   color: var(--ng-text);
   resize: vertical;
-  padding: 18px 18px 20px;
   font: inherit;
-  line-height: 1.7;
+  font-size: 15px;
+  line-height: 1.6;
   outline: none;
-  transition:
-    border-color 160ms ease,
-    box-shadow 160ms ease,
-    background 160ms ease;
 }
 
 .composerInput::placeholder {
   color: var(--ng-text-soft);
 }
 
-.composerInput:focus {
-  border-color: var(--accent-line);
-  box-shadow: 0 0 0 3px var(--accent-subtle);
-  background: var(--surface-glass-hover);
-}
-
 .composerFooter {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 12px;
 }
 
 .composerMeta {
   display: flex;
   align-items: center;
-  gap: 12px;
+  min-width: 0;
+  gap: 8px;
   flex-wrap: wrap;
+}
+
+.modeRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.modeChip {
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ng-text-secondary);
+  font-size: 12px;
+  font-weight: 720;
+  cursor: pointer;
+  transition:
+    border-color 150ms ease,
+    background 150ms ease,
+    color 150ms ease;
+}
+
+.modeChip:hover {
+  border-color: var(--ng-border);
+  background: var(--ng-surface-soft);
+  color: var(--ng-text);
+}
+
+.modeChipActive {
+  border-color: color-mix(in srgb, var(--ng-accent-strong) 34%, var(--ng-border));
+  background: var(--ng-accent-soft);
+  color: var(--ng-text);
 }
 
 .metaBadge {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  min-height: 36px;
-  padding: 0 12px;
+  gap: 7px;
+  min-height: 30px;
+  padding: 0 10px;
   border: 1px solid var(--ng-border);
-  border-radius: 999px;
-  background: var(--surface-glass-soft);
+  border-radius: 8px;
+  background: var(--ng-surface-soft);
   color: var(--ng-text-secondary);
   font-size: 12px;
   font-weight: 700;
 }
 
 .composerHint {
+  margin: 0;
   color: var(--ng-text-soft);
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 650;
+  text-align: center;
 }
 
-.sectionHeader {
+.sendButton {
+  flex: 0 0 auto;
+  min-width: 96px;
+  border-radius: 8px !important;
+}
+
+.sendText {
+  display: inline;
+}
+
+.suggestionsSection {
+  min-width: 0;
+}
+
+.suggestionsList {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px 2px 4px;
+  scrollbar-width: none;
 }
 
-.suggestionsGrid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
+.suggestionsList::-webkit-scrollbar {
+  display: none;
 }
 
-.pageEmbedded .suggestionsGrid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.suggestionCard,
-.starterCard {
-  display: grid;
-  gap: 12px;
-  padding: 16px 16px 18px;
-  border: 1px solid var(--ng-border);
-  border-radius: var(--radius-card);
-  background: var(--ng-surface-soft);
-  text-align: left;
-  cursor: pointer;
-  transition:
-    transform 160ms ease,
-    border-color 160ms ease,
-    background 160ms ease;
-}
-
-.suggestionCard:hover,
-.starterCard:hover {
-  transform: translateY(-1px);
-  border-color: var(--ng-border-strong);
-  background: var(--surface-glass-hover);
-}
-
-.suggestionIcon,
-.starterIcon {
+.suggestionCard {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 38px;
-  height: 38px;
-  border-radius: var(--radius-sm);
-  background: var(--surface-glass-soft);
+  flex: 0 0 auto;
+  gap: 8px;
+  min-height: 34px;
+  max-width: 240px;
+  padding: 0 12px;
+  border: 1px solid var(--ng-border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ng-surface-solid) 80%, transparent);
+  color: var(--ng-text-secondary);
+  text-align: left;
+  cursor: pointer;
+  backdrop-filter: blur(14px);
+  transition:
+    border-color 150ms ease,
+    background 150ms ease,
+    color 150ms ease;
+}
+
+.suggestionCard:hover {
+  border-color: var(--ng-border-strong);
+  background: var(--ng-surface-solid);
+  color: var(--ng-text);
+}
+
+.suggestionIcon {
+  display: inline-flex;
   color: var(--ng-accent-strong);
 }
 
-.suggestionTitle,
-.starterTitle {
-  color: var(--ng-text);
-  font-size: 14px;
-  font-weight: 700;
+.suggestionIcon :global(.material-symbols-outlined) {
+  font-size: 17px;
 }
 
-.suggestionBody,
-.starterBody {
-  color: var(--ng-text-secondary);
-  font-size: 13px;
-  line-height: 1.65;
+.suggestionTitle {
+  overflow: hidden;
+  color: inherit;
+  font-size: 12px;
+  font-weight: 730;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.starterSection {
+  width: 100%;
+  margin-top: 12px;
 }
 
 .starterGrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
+  gap: 10px;
+}
+
+.starterCard {
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  gap: 10px;
+  min-height: 154px;
+  padding: 15px;
+  border: 1px solid var(--ng-border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ng-surface-solid) 72%, transparent);
+  color: var(--ng-text);
+  text-align: left;
+  cursor: pointer;
+  backdrop-filter: blur(16px);
+  transition:
+    transform 150ms ease,
+    border-color 150ms ease,
+    background 150ms ease;
+}
+
+.starterCard:hover {
+  transform: translateY(-2px);
+  border-color: var(--ng-border-strong);
+  background: color-mix(in srgb, var(--ng-surface-solid) 92%, transparent);
+}
+
+.starterIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--ng-surface-soft);
+  color: var(--ng-accent-strong);
+}
+
+.starterIcon :global(.material-symbols-outlined) {
+  font-size: 19px;
+}
+
+.starterTitle {
+  color: var(--ng-text);
+  font-size: 14px;
+  font-weight: 760;
+}
+
+.starterBody {
+  color: var(--ng-text-secondary);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.threadSection {
+  width: min(100%, 840px);
+  margin: 0 auto;
 }
 
 .threadList {
   display: grid;
-  gap: 14px;
+  gap: 20px;
 }
 
 .messageCard {
   display: grid;
-  gap: 8px;
-  max-width: min(100%, 820px);
-  padding: 16px 18px;
-  border: 1px solid var(--ng-border);
-  border-radius: var(--radius-card);
-  background: var(--ng-surface-soft);
-}
-
-.messageAssistant {
-  justify-self: start;
+  grid-template-columns: 32px minmax(0, 1fr);
+  gap: 12px;
+  width: 100%;
 }
 
 .messageUser {
+  grid-template-columns: minmax(0, 1fr) 32px;
+}
+
+.messageUser .messageAvatar {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.messageUser .messageContent {
+  grid-column: 1;
+  grid-row: 1;
   justify-self: end;
-  background: color-mix(in srgb, var(--ng-accent) 10%, var(--ng-surface-strong));
-  border-color: var(--accent-line);
+  max-width: min(680px, 100%);
+  padding: 12px 14px;
+  border: 1px solid var(--ng-border);
+  border-radius: 8px;
+  background: var(--ng-surface-solid);
+}
+
+.messageAssistant .messageContent {
+  padding: 3px 0 0;
+}
+
+.messageAvatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--ng-border);
+  border-radius: 8px;
+  background: var(--ng-surface-solid);
+  color: var(--ng-accent-strong);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.messageAvatar :global(.material-symbols-outlined) {
+  font-size: 18px;
 }
 
 .messageRole {
+  margin-bottom: 5px;
   color: var(--ng-text-soft);
   font-size: 11px;
   font-weight: 800;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
 .messageBody {
   color: var(--ng-text);
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
   line-height: 1.75;
 }
 
 @media (max-width: 980px) {
   .pageInner {
-    padding: 24px 22px 60px;
+    padding: 22px 18px 28px;
   }
 
-  .suggestionsGrid,
+  .chatShell {
+    min-height: calc(100vh - 132px);
+  }
+
   .starterGrid {
     grid-template-columns: 1fr;
+  }
+
+  .starterCard {
+    min-height: 126px;
   }
 }
 
 @media (max-width: 720px) {
+  .page {
+    min-height: calc(100vh - 64px);
+  }
+
   .pageInner {
-    padding: 20px 16px 44px;
-    gap: 22px;
+    min-height: calc(100vh - 64px);
+    padding: 16px 12px 24px;
+  }
+
+  .chatShell {
+    min-height: calc(100vh - 118px);
+  }
+
+  .threadViewport {
+    align-content: start;
+    padding-top: 20px;
+  }
+
+  .emptyState {
+    gap: 12px;
+  }
+
+  .emptyTitle {
+    font-size: 32px;
+  }
+
+  .emptyBody {
+    font-size: 14px;
+  }
+
+  .composerDock {
+    bottom: 12px;
   }
 
   .composerPanel {
-    padding: 16px;
-    border-radius: var(--radius-card);
+    padding: 10px;
   }
 
   .composerFooter {
-    display: grid;
-    justify-content: stretch;
+    align-items: flex-end;
   }
 
-  .composerMeta {
-    justify-content: space-between;
+  .metaBadge {
+    display: none;
   }
 
-  .messageCard {
-    max-width: 100%;
+  .modeRow {
+    max-width: calc(100vw - 96px);
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+  }
+
+  .modeRow::-webkit-scrollbar {
+    display: none;
+  }
+
+  .modeChip {
+    flex: 0 0 auto;
+  }
+
+  .sendButton {
+    min-width: 44px;
+    width: 44px;
+    padding-inline: 0 !important;
+  }
+
+  .sendText {
+    display: none;
+  }
+
+  .suggestionCard {
+    max-width: 210px;
+  }
+
+  .messageCard,
+  .messageUser {
+    grid-template-columns: 28px minmax(0, 1fr);
+  }
+
+  .messageUser .messageAvatar {
+    grid-column: 1;
+  }
+
+  .messageUser .messageContent {
+    grid-column: 2;
+    justify-self: stretch;
+  }
+
+  .messageAvatar {
+    width: 28px;
+    height: 28px;
   }
 }

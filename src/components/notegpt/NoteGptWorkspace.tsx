@@ -185,30 +185,46 @@ export function NoteGptWorkspace({
   return (
     <div className={`${styles.page} ${embedded ? styles.pageEmbedded : ""}`}>
       <div className={styles.pageInner}>
-        <PromptComposer
-          composerRef={composerRef}
-          draft={draft}
-          isStreaming={isStreaming}
-          notesCount={notes.length}
-          foldersCount={folders.length}
-          activeMode={activeMode}
-          onDraftChange={setDraft}
-          onModeChange={setActiveMode}
-          onSend={() => void handleSend()}
-        />
+        <main className={styles.chatShell} aria-label="NoteGPT sohbet">
+          <div className={styles.threadViewport}>
+            {messages.length > 0 || isStreaming ? (
+              <ConversationThread messages={messages} isStreaming={isStreaming} />
+            ) : (
+              <section className={styles.emptyState}>
+                <div className={styles.emptyMark} aria-hidden="true">
+                  <span className="material-symbols-outlined">auto_awesome</span>
+                </div>
+                <p className={styles.emptyEyebrow}>
+                  {notes.length} not ve {folders.length} klasör hazır
+                </p>
+                <h1 className={styles.emptyTitle}>Bugün notlarınla ne yapalım?</h1>
+                <p className={styles.emptyBody}>
+                  Kütüphaneni özetle, dağınık fikirleri plana çevir veya klasör yapısını birlikte toparlayalım.
+                </p>
+                <StarterCards items={STARTER_CARDS} onSelect={handlePromptSelect} />
+              </section>
+            )}
+          </div>
 
-        <PromptSuggestions
-          items={PROMPT_SUGGESTIONS}
-          onSelect={handlePromptSelect}
-        />
-
-        {messages.length > 0 || isStreaming ? (
-          <ConversationThread messages={messages} isStreaming={isStreaming} />
-        ) : (
-          <StarterCards items={STARTER_CARDS} onSelect={handlePromptSelect} />
-        )}
+          <div className={styles.composerDock}>
+            <PromptSuggestions
+              items={PROMPT_SUGGESTIONS}
+              onSelect={handlePromptSelect}
+            />
+            <PromptComposer
+              composerRef={composerRef}
+              draft={draft}
+              isStreaming={isStreaming}
+              notesCount={notes.length}
+              foldersCount={folders.length}
+              activeMode={activeMode}
+              onDraftChange={setDraft}
+              onModeChange={setActiveMode}
+              onSend={() => void handleSend()}
+            />
+          </div>
+        </main>
       </div>
     </div>
   );
 }
-

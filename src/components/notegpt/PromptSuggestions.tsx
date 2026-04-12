@@ -12,11 +12,7 @@ export function PromptSuggestions({
 }: PromptSuggestionsProps) {
   return (
     <section className={styles.suggestionsSection}>
-      <div className={styles.sectionHeader}>
-        <span className={styles.sectionLabel}>Hızlı başlangıç</span>
-      </div>
-
-      <div className={styles.suggestionsGrid}>
+      <div className={styles.suggestionsList} aria-label="Hızlı komutlar">
         {items.map((item) => (
           <button
             key={item.id}
@@ -28,7 +24,6 @@ export function PromptSuggestions({
               <span className="material-symbols-outlined">{item.icon}</span>
             </span>
             <span className={styles.suggestionTitle}>{item.title}</span>
-            <span className={styles.suggestionBody}>{item.body}</span>
           </button>
         ))}
       </div>

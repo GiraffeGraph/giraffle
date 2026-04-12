@@ -26,24 +26,8 @@ export function PromptComposer({
   onSend,
 }: PromptComposerProps) {
   return (
-    <section className={styles.composerSection}>
+    <section className={styles.composerSection} aria-label="Mesaj yaz">
       <div className={styles.composerPanel}>
-        <div className={styles.modeRow}>
-          {PROMPT_MODES.map((mode) => (
-            <button
-              key={mode.id}
-              type="button"
-              className={`${styles.modeChip} ${
-                activeMode === mode.id ? styles.modeChipActive : ""
-              }`}
-              onClick={() => onModeChange(mode.id)}
-              title={mode.description}
-            >
-              {mode.label}
-            </button>
-          ))}
-        </div>
-
         <div className={styles.composerBody}>
           <textarea
             ref={composerRef}
@@ -56,30 +40,47 @@ export function PromptComposer({
                 onSend();
               }
             }}
-            placeholder="NoteGPT'ye bir soru sor ya da bir görev ver..."
-            rows={5}
+            placeholder="NoteGPT'ye mesaj gönder..."
+            rows={3}
           />
         </div>
 
         <div className={styles.composerFooter}>
           <div className={styles.composerMeta}>
+            <div className={styles.modeRow} role="list" aria-label="Yanıt modu">
+              {PROMPT_MODES.map((mode) => (
+                <button
+                  key={mode.id}
+                  type="button"
+                  className={`${styles.modeChip} ${
+                    activeMode === mode.id ? styles.modeChipActive : ""
+                  }`}
+                  onClick={() => onModeChange(mode.id)}
+                  title={mode.description}
+                >
+                  {mode.label}
+                </button>
+              ))}
+            </div>
             <span className={styles.metaBadge}>
               <span className="material-symbols-outlined sm">account_tree</span>
               {notesCount} not · {foldersCount} klasör bağlı
             </span>
-            <span className={styles.composerHint}>Ctrl/Cmd + Enter</span>
           </div>
 
           <Button
             variant="filled"
             leadingIcon="arrow_upward"
+            className={styles.sendButton}
             onClick={onSend}
             disabled={!draft.trim() || isStreaming}
+            aria-label={isStreaming ? "Yanıtlanıyor" : "Mesaj gönder"}
           >
-            {isStreaming ? "Yanıtlanıyor..." : "Gönder"}
+            <span className={styles.sendText}>{isStreaming ? "Yazıyor" : "Gönder"}</span>
           </Button>
         </div>
       </div>
+      <p className={styles.composerHint}>Ctrl/Cmd + Enter ile gönder</p>
     </section>
   );
 }

@@ -9,10 +9,6 @@ interface StarterCardsProps {
 export function StarterCards({ items, onSelect }: StarterCardsProps) {
   return (
     <section className={styles.starterSection}>
-      <div className={styles.sectionHeader}>
-        <span className={styles.sectionLabel}>Get started</span>
-      </div>
-
       <div className={styles.starterGrid}>
         {items.map((item) => (
           <button
