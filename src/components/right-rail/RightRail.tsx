@@ -6,10 +6,6 @@ import { ThemeSelector } from "@/components/theme/ThemeSelector";
 import { useIsMobileViewport } from "@/components/ui/useIsMobileViewport";
 import { signOutAction } from "@/server/api/auth";
 
-type RightRailProps = {
-  user: { name: string | null; email: string | null };
-};
-
 const NAV_ITEMS = [
   { path: "/search", icon: "\uE8B6", label: "Arama" },
   { path: "/discover", icon: "newspaper", label: "Keşfet" },
@@ -20,14 +16,13 @@ const NAV_ITEMS = [
   { path: "/account", icon: "\uF20B", label: "Hesap" },
 ] as const;
 
-export function RightRail({ user }: RightRailProps) {
+export function RightRail() {
   const pathname = usePathname();
   const router = useRouter();
   const isMobileViewport = useIsMobileViewport(900);
 
   return (
     <div className="right-rail">
-      {/* Graf */}
       <button
         type="button"
         className={`right-rail-btn${pathname === "/graph" ? " active" : ""}`}
@@ -40,7 +35,6 @@ export function RightRail({ user }: RightRailProps) {
 
       <div className="right-rail-divider" />
 
-      {/* İkincil navigasyon ikonları */}
       {NAV_ITEMS.map(({ path, icon, label }) => (
         <button
           key={path}
@@ -59,7 +53,6 @@ export function RightRail({ user }: RightRailProps) {
         </button>
       ))}
 
-      {/* Alt: tema seçici + çıkış */}
       <div className="right-rail-bottom">
         {!isMobileViewport ? <ThemeSelector vertical /> : null}
         <button
@@ -69,7 +62,10 @@ export function RightRail({ user }: RightRailProps) {
           aria-label="Çıkış yap"
           title="Çıkış yap"
         >
-          <span className="material-symbols-outlined" style={{ fontSize: "18px", lineHeight: 1 }}>
+          <span
+            className="material-symbols-outlined"
+            style={{ fontSize: "18px", lineHeight: 1 }}
+          >
             logout
           </span>
         </button>

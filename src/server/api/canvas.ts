@@ -1,8 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { db } from "@/lib/db";
 import { requireAuthenticatedUser } from "@/lib/auth-session";
+import { db } from "@/lib/db";
 
 export async function getCanvasAction(id: string) {
   const { userId } = await requireAuthenticatedUser();
@@ -14,69 +14,75 @@ export async function getCanvasAction(id: string) {
     },
   });
 
-  if (!canvas || canvas.userId !== userId) return null;
+  if (!canvas || canvas.userId !== userId) {
+    return null;
+  }
+
   return canvas;
 }
 
 export async function createMapFromNoteAction(noteId: string) {
   const { userId } = await requireAuthenticatedUser();
-  
-  const targetNote = await db.note.findUnique({ 
+
+  const targetNote = await db.note.findUnique({
     where: { id: noteId },
     include: {
       incomingLinks: { include: { sourceNote: true } },
-      outgoingLinks: { include: { targetNote: true } }
-    }
+      outgoingLinks: { include: { targetNote: true } },
+    },
   });
 
-  if (!targetNote || targetNote.userId !== userId) throw new Error("Not bulunamadı");
+  if (!targetNote || targetNote.userId !== userId) {
+    throw new Error("Not bulunamadı");
+  }
 
-  // A simple auto-layout for start
-  const nodesCreateData = [{
-    noteId: targetNote.id,
-    x: 0,
-    y: 0,
-  }];
+  const nodesCreateData = [
+    {
+      noteId: targetNote.id,
+      x: 0,
+      y: 0,
+    },
+  ];
 
   let yOffset = -250;
-  let edgesCreateData: any[] = [];
 
-  // Outgoing links
-  targetNote.outgoingLinks.forEach(link => {
-    if(!link.targetNoteId) return;
+  for (const link of targetNote.outgoingLinks) {
+    if (!link.targetNoteId) {
+      continue;
+    }
+
     nodesCreateData.push({
       noteId: link.targetNoteId,
       x: 350,
-      y: yOffset
+      y: yOffset,
     });
-    // Edge will be handled below implicitly or manually after creation
     yOffset += 150;
-  });
+  }
 
   const canvas = await db.canvas.create({
     data: {
       userId,
       title: `${targetNote.title} Haritası`,
       nodes: {
-        create: nodesCreateData
-      }
+        create: nodesCreateData,
+      },
     },
-    include: { nodes: true }
+    include: { nodes: true },
   });
 
-  // Calculate edges
-  if (targetNote.outgoingLinks.length > 0) {
-    const centerNode = canvas.nodes.find((n: any) => n.noteId === targetNote.id);
-    const edgesEdges = canvas.nodes
-      .filter((n: any) => n.id !== centerNode?.id)
-      .map((n: any) => ({
+  const centerNode = canvas.nodes.find((node) => node.noteId === targetNote.id);
+
+  if (centerNode) {
+    const edges = canvas.nodes
+      .filter((node) => node.id !== centerNode.id)
+      .map((node) => ({
         canvasId: canvas.id,
-        sourceNodeId: centerNode!.id,
-        targetNodeId: n.id,
+        sourceNodeId: centerNode.id,
+        targetNodeId: node.id,
       }));
-      
-    if (edgesEdges.length > 0) {
-      await db.canvasEdge.createMany({ data: edgesEdges });
+
+    if (edges.length > 0) {
+      await db.canvasEdge.createMany({ data: edges });
     }
   }
 

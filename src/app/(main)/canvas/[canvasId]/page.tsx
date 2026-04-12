@@ -1,11 +1,11 @@
-import { Metadata } from 'next';
-import { notFound } from 'next/navigation';
-import { getCanvasAction } from '@/server/api/canvas';
-import { requireAuthenticatedUser } from '@/lib/auth-session';
-import { CanvasEditor } from '@/components/canvas/CanvasEditor';
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { CanvasEditor } from "@/components/canvas/CanvasEditor";
+import { requireAuthenticatedUser } from "@/lib/auth-session";
+import { getCanvasAction } from "@/server/api/canvas";
 
 export const metadata: Metadata = {
-  title: 'Kanvas | GiraffeGraph',
+  title: "Kanvas | GiraffeGraph",
 };
 
 export default async function CanvasPage({
@@ -21,31 +21,30 @@ export default async function CanvasPage({
     notFound();
   }
 
-  // Convert Prisma models to React Flow properties
-  const initialNodes = canvas.nodes.map((n) => ({
-    id: n.id,
-    type: n.type,
-    position: { x: n.x, y: n.y },
-    data: { 
-      note: n.note, 
-      snippet: n.note?.title ? "Açmak için tıklayın" : "Boş düğüm"
-    }
+  const initialNodes = canvas.nodes.map((node) => ({
+    id: node.id,
+    type: node.type,
+    position: { x: node.x, y: node.y },
+    data: {
+      note: node.note,
+      snippet: node.note?.title ? "Açmak için tıklayın" : "Boş düğüm",
+    },
   }));
 
-  const initialEdges = canvas.edges.map((e) => ({
-    id: e.id,
-    source: e.sourceNodeId,
-    target: e.targetNodeId,
-    type: e.type,
+  const initialEdges = canvas.edges.map((edge) => ({
+    id: edge.id,
+    source: edge.sourceNodeId,
+    target: edge.targetNodeId,
+    type: edge.type,
     animated: true,
   }));
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-page-deep">
-      <div className="flex-1 relative">
-        <CanvasEditor 
-          initialNodes={initialNodes} 
-          initialEdges={initialEdges} 
+      <div className="relative flex-1">
+        <CanvasEditor
+          initialNodes={initialNodes}
+          initialEdges={initialEdges}
           title={canvas.title}
         />
       </div>

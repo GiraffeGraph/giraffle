@@ -1,32 +1,26 @@
-import { Sidebar } from "@/components/sidebar/Sidebar";
 import { RightRail } from "@/components/right-rail/RightRail";
+import { Sidebar } from "@/components/sidebar/Sidebar";
 import { buildTemplatePreviewFromBlocks } from "@/domain/template/template.preview";
-import { auth } from "@/lib/auth";
 import { getFoldersAction } from "@/server/api/folders";
 import { getNotesAction } from "@/server/api/notes";
 import { getSpotterSessionsAction } from "@/server/api/spotter";
 import { getWorkspaceTagsAction } from "@/server/api/tags";
 import { getTemplatesAction } from "@/server/api/templates";
 
+export const dynamic = "force-dynamic";
+
 export default async function MainLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [session, notes, folders, templates, tags, spotterSessions] =
-    await Promise.all([
-      auth(),
-      getNotesAction(),
-      getFoldersAction(),
-      getTemplatesAction(),
-      getWorkspaceTagsAction(),
-      getSpotterSessionsAction(),
-    ]);
-
-  const user = {
-    name: session?.user?.name ?? null,
-    email: session?.user?.email ?? null,
-  };
+  const [notes, folders, templates, tags, spotterSessions] = await Promise.all([
+    getNotesAction(),
+    getFoldersAction(),
+    getTemplatesAction(),
+    getWorkspaceTagsAction(),
+    getSpotterSessionsAction(),
+  ]);
 
   return (
     <div className="app-layout">
@@ -54,7 +48,7 @@ export default async function MainLayout({
       <main className="main-content">
         <div className="main-content-inner">{children}</div>
       </main>
-      <RightRail user={user} />
+      <RightRail />
     </div>
   );
 }

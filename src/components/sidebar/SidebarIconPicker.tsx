@@ -203,7 +203,6 @@ export function SidebarIconPicker({
               <label className="icon-picker-search">
                 <SearchIcon />
                 <input
-                  // eslint-disable-next-line jsx-a11y/no-autofocus
                   autoFocus
                   type="text"
                   value={query}

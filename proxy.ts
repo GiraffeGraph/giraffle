@@ -1,14 +1,17 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 
-// Routes accessible without authentication
 const PUBLIC_PATHS = new Set(["/login", "/register", "/forgot-password"]);
-const PUBLIC_PREFIXES = ["/published/", "/p/", "/reset-password/", "/api/auth/", "/api/health"];
-
-// Auth pages that redirect authenticated users away
+const PUBLIC_PREFIXES = [
+  "/published/",
+  "/p/",
+  "/reset-password/",
+  "/api/auth/",
+  "/api/health",
+];
 const AUTH_REDIRECT_PATHS = new Set(["/login", "/register"]);
 
-export default auth((request) => {
+export const proxy = auth((request) => {
   const { pathname } = request.nextUrl;
   const isAuthenticated = Boolean(request.auth);
 

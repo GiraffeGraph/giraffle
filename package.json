@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
+    "lint": "eslint .",
+    "prisma:validate": "prisma validate",
+    "typecheck": "tsc --noEmit",
+    "verify": "npm run prisma:validate && npm run lint && npm run typecheck && npm run build",
+    "smoke:prod": "sh ./scripts/smoke-prod-stack.sh",
     "postinstall": "prisma generate"
   },
   "dependencies": {
@@ -46,7 +50,7 @@
     "clsx": "^2.1.1",
     "dotenv": "^17.4.0",
     "emoji-picker-react": "^4.18.0",
-    "next": "16.2.2",
+    "next": "^16.2.3",
     "next-auth": "^5.0.0-beta.30",
     "pg": "^8.20.0",
     "prisma": "^7.6.0",
@@ -61,7 +65,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.2.2",
+    "eslint-config-next": "^16.2.3",
     "typescript": "^5"
   }
 }

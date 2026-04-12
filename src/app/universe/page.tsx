@@ -19,6 +19,8 @@ export const metadata: Metadata = {
   title: "Universe | Giraffle",
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function UniversePage() {
   const { userId } = await requireAuthenticatedUser();
 

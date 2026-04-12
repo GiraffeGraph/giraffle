@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, type CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 
 interface MainErrorProps {
@@ -26,32 +26,37 @@ function isRecoverableClientLoadError(error: Error | null): boolean {
 
 export default function MainError({ error, reset }: MainErrorProps) {
   const router = useRouter();
-  const [isReloading, setIsReloading] = useState(false);
-  const recoverable = useMemo(
-    () => isRecoverableClientLoadError(error),
-    [error],
-  );
-
-  useEffect(() => {
-    if (!recoverable || typeof window === "undefined") return;
+  const recoverable = useMemo(() => isRecoverableClientLoadError(error), [error]);
+  const reloadMarker = useMemo(() => {
+    if (!recoverable || typeof window === "undefined") {
+      return null;
+    }
 
     const path = window.location.pathname;
-    const markerKey = "giraffle:last-recoverable-load-error";
-    const markerValue = `${path}::${(error.message ?? "").slice(0, 160)}`;
+    const key = "giraffle:last-recoverable-load-error";
+    const value = `${path}::${(error.message ?? "").slice(0, 160)}`;
 
-    if (window.sessionStorage.getItem(markerKey) === markerValue) {
+    return {
+      key,
+      value,
+      alreadyRetried: window.sessionStorage.getItem(key) === value,
+    };
+  }, [error.message, recoverable]);
+  const shouldReload = Boolean(reloadMarker && !reloadMarker.alreadyRetried);
+
+  useEffect(() => {
+    if (!shouldReload || !reloadMarker || typeof window === "undefined") {
       return;
     }
 
-    window.sessionStorage.setItem(markerKey, markerValue);
-    setIsReloading(true);
+    window.sessionStorage.setItem(reloadMarker.key, reloadMarker.value);
 
     const timer = window.setTimeout(() => {
       window.location.reload();
     }, 120);
 
     return () => window.clearTimeout(timer);
-  }, [error.message, recoverable]);
+  }, [reloadMarker, shouldReload]);
 
   return (
     <div
@@ -87,7 +92,7 @@ export default function MainError({ error, reset }: MainErrorProps) {
             fontSize: 14,
           }}
         >
-          {isReloading
+          {shouldReload
             ? "Refreshing with the latest app bundle..."
             : "Reload to try again, or go back."}
         </p>

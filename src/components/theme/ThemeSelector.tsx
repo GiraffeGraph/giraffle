@@ -1,6 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
+import { useMemo, useSyncExternalStore } from "react";
+import { Button } from "@/components/ui/Button";
+import { useIsMobileViewport } from "@/components/ui/useIsMobileViewport";
 import {
   APP_THEMES,
   APP_THEME_STORAGE_KEY,
@@ -10,9 +13,40 @@ import {
   persistAppTheme,
 } from "./theme-config";
 
-import Image from "next/image";
-import { Button } from "@/components/ui/Button";
-import { useIsMobileViewport } from "@/components/ui/useIsMobileViewport";
+function getThemeSnapshot(): AppThemeId {
+  if (typeof window === "undefined") {
+    return DEFAULT_APP_THEME;
+  }
+
+  const stored = window.localStorage.getItem(APP_THEME_STORAGE_KEY);
+
+  if (stored && isAppThemeId(stored)) {
+    return stored;
+  }
+
+  const current = document.documentElement.dataset.theme;
+  return current && isAppThemeId(current) ? current : DEFAULT_APP_THEME;
+}
+
+function subscribeToThemeChanges(onStoreChange: () => void) {
+  if (typeof window === "undefined") {
+    return () => undefined;
+  }
+
+  const handleStorage = () => onStoreChange();
+  const observer = new MutationObserver(() => onStoreChange());
+
+  window.addEventListener("storage", handleStorage);
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["data-theme"],
+  });
+
+  return () => {
+    window.removeEventListener("storage", handleStorage);
+    observer.disconnect();
+  };
+}
 
 export function ThemeSelector({
   vertical = false,
@@ -21,53 +55,24 @@ export function ThemeSelector({
   vertical?: boolean;
   mobileInline?: boolean;
 }) {
-  const [mounted, setMounted] = useState(false);
-  const [activeThemeId, setActiveThemeId] =
-    useState<AppThemeId>(DEFAULT_APP_THEME);
+  const activeThemeId = useSyncExternalStore(
+    subscribeToThemeChanges,
+    getThemeSnapshot,
+    () => DEFAULT_APP_THEME
+  );
   const isMobileViewport = useIsMobileViewport(900);
-
-  useEffect(() => {
-    setMounted(true);
-    const stored = window.localStorage.getItem(APP_THEME_STORAGE_KEY);
-    if (stored && isAppThemeId(stored)) {
-      setActiveThemeId(stored);
-    } else {
-      const current = document.documentElement.dataset.theme;
-      if (current && isAppThemeId(current)) {
-        setActiveThemeId(current);
-      }
-    }
-
-    // Listen for theme changes from other components (like Sidebar reset)
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.attributeName === "data-theme") {
-          const newTheme = document.documentElement.dataset.theme;
-          if (newTheme && isAppThemeId(newTheme)) {
-            setActiveThemeId(newTheme);
-          }
-        }
-      });
-    });
-
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["data-theme"],
-    });
-    return () => observer.disconnect();
-  }, []);
 
   const applyTheme = (id: AppThemeId) => {
     persistAppTheme(id);
-    setActiveThemeId(id);
   };
 
   const nextTheme = useMemo(() => {
     const currentIndex = APP_THEMES.findIndex(
-      (theme) => theme.id === activeThemeId,
+      (theme) => theme.id === activeThemeId
     );
     const nextIndex =
       currentIndex === -1 ? 0 : (currentIndex + 1) % APP_THEMES.length;
+
     return APP_THEMES[nextIndex] ?? APP_THEMES[0];
   }, [activeThemeId]);
 
@@ -99,7 +104,13 @@ export function ThemeSelector({
 
     if (themeId === "midnight-gold") {
       return (
-        <Image src="/apple-icon.png" alt="Gece Altını" width={20} height={20} style={{ borderRadius: "4px" }} />
+        <Image
+          src="/apple-icon.png"
+          alt="Gece Altını"
+          width={20}
+          height={20}
+          style={{ borderRadius: "4px" }}
+        />
       );
     }
 
@@ -118,8 +129,6 @@ export function ThemeSelector({
       </svg>
     );
   };
-
-  if (!mounted) return null;
 
   if (isMobileViewport && !vertical) {
     return (
@@ -239,7 +248,13 @@ export function ThemeSelector({
         onClick={() => applyTheme("midnight-gold")}
         title="Gece Altını (Giraffe)"
       >
-        <Image src="/apple-icon.png" alt="Gece Altını" width={20} height={20} style={{ borderRadius: "4px" }} />
+        <Image
+          src="/apple-icon.png"
+          alt="Gece Altını"
+          width={20}
+          height={20}
+          style={{ borderRadius: "4px" }}
+        />
       </Button>
 
       <Button

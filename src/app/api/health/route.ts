@@ -10,13 +10,12 @@ export async function GET() {
       service: "giraffle",
       timestamp: new Date().toISOString(),
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       {
         ok: false,
         service: "giraffle",
         timestamp: new Date().toISOString(),
-        error: error instanceof Error ? error.message : "unknown",
       },
       { status: 503 }
     );

@@ -29,9 +29,9 @@
 ## UI Screenshots
 
 <p align="center">
-  <img src="./docs/screenshots/ui-dark-1.png" alt="Giraffle dark theme screenshot 1" width="31%" />
-  <img src="./docs/screenshots/ui-light.png" alt="Giraffle light theme screenshot" width="31%" />
-  <img src="./docs/screenshots/ui-dark-2.png" alt="Giraffle dark theme screenshot 2" width="31%" />
+  <img src="./docs/screenshots/ui-dark-1.png.png" alt="Giraffle dark theme screenshot 1" width="31%" />
+  <img src="./docs/screenshots/ui-light.png.png" alt="Giraffle light theme screenshot" width="31%" />
+  <img src="./docs/screenshots/ui-dark-2.png.png" alt="Giraffle dark theme screenshot 2" width="31%" />
 </p>
 
 ## Why Giraffle
@@ -101,6 +101,18 @@ npm run dev
 
 Set `AUTH_SECRET` in `.env` to a long random value before logging in.
 
+### Verification
+
+```bash
+npm run verify
+```
+
+For a production-like smoke test that builds the Docker image, starts PostgreSQL, applies migrations, and checks `/api/health`:
+
+```bash
+ENV_FILE=.env.production npm run smoke:prod
+```
+
 ### Local Services
 
 - App: `http://localhost:3000`
@@ -128,6 +140,14 @@ Set `AUTH_SECRET` in `.env` to a long random value before logging in.
 - Notes stay canonical in block AST form.
 - Markdown and MDX are derived through `src/domain/note/note.serializer.ts` and `src/domain/note/note.export.ts`.
 - Publish file paths are derived from folder lineage plus slugified note titles.
+
+## CI/CD
+
+GitHub Actions now runs a clean release pipeline:
+
+- `quality`: install, Prisma validation, lint, typecheck, production build, security audit
+- `smoke`: build the production image and boot the real Docker Compose stack until `/api/health` responds
+- `publish`: push multi-arch Docker images to Docker Hub only after the quality and smoke gates pass
 
 ## Production Deployment
 

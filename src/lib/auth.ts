@@ -2,8 +2,12 @@ import { existsSync, readFileSync } from "node:fs";
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
-import { db } from "@/lib/db";
 import bcrypt from "bcryptjs";
+import { db } from "@/lib/db";
+
+function getRuntimeEnv(name: string) {
+  return process.env[name];
+}
 
 function readSecretFromFile(filePath?: string) {
   if (!filePath?.trim()) {
@@ -18,13 +22,14 @@ function readSecretFromFile(filePath?: string) {
   return value.length > 0 ? value : null;
 }
 
+const isProduction = getRuntimeEnv("NODE_ENV") === "production";
 const authSecret =
-  readSecretFromFile(process.env.AUTH_SECRET_FILE) ??
-  readSecretFromFile(process.env.NEXTAUTH_SECRET_FILE) ??
-  process.env.AUTH_SECRET ??
-  process.env.NEXTAUTH_SECRET;
+  readSecretFromFile(getRuntimeEnv("AUTH_SECRET_FILE")) ??
+  readSecretFromFile(getRuntimeEnv("NEXTAUTH_SECRET_FILE")) ??
+  getRuntimeEnv("AUTH_SECRET") ??
+  getRuntimeEnv("NEXTAUTH_SECRET");
 
-if (process.env.NODE_ENV === "production" && !authSecret) {
+if (isProduction && !authSecret) {
   throw new Error("AUTH_SECRET is required in production");
 }
 
@@ -33,8 +38,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   secret: authSecret,
   trustHost: true,
   useSecureCookies:
-    process.env.NODE_ENV === "production" &&
-    process.env.AUTH_DISABLE_SECURE_COOKIES !== "1",
+    isProduction && getRuntimeEnv("AUTH_DISABLE_SECURE_COOKIES") !== "1",
   session: {
     strategy: "jwt",
     maxAge: 60 * 60 * 24 * 30,

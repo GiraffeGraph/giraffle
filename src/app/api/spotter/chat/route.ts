@@ -2,6 +2,7 @@ import { openai } from "@ai-sdk/openai";
 import { streamText } from "ai";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
+import { consumeRateLimit } from "@/lib/rate-limit";
 import {
   appendSpotterMessage,
   assertSpotterSessionOwner,
@@ -12,6 +13,14 @@ import {
 
 export const maxDuration = 30;
 
+const MAX_PROMPT_LENGTH = 4_000;
+const MAX_CONTEXT_LENGTH = 20_000;
+const SPOTTER_RATE_LIMIT = {
+  limit: 12,
+  windowMs: 60_000,
+  blockMs: 5 * 60_000,
+} as const;
+
 export async function POST(req: Request) {
   try {
     const session = await auth();
@@ -19,6 +28,17 @@ export async function POST(req: Request) {
 
     if (!userId) {
       return new Response("Unauthorized", { status: 401 });
+    }
+
+    const rateLimit = consumeRateLimit(`spotter:${userId}`, SPOTTER_RATE_LIMIT);
+
+    if (!rateLimit.allowed) {
+      return new Response("Too many requests", {
+        status: 429,
+        headers: {
+          "Retry-After": String(Math.ceil(rateLimit.retryAfterMs / 1000)),
+        },
+      });
     }
 
     const body = await req.json();
@@ -31,6 +51,14 @@ export async function POST(req: Request) {
 
     if (!prompt) {
       return new Response("Prompt is required", { status: 400 });
+    }
+
+    if (prompt.length > MAX_PROMPT_LENGTH) {
+      return new Response("Prompt is too long", { status: 400 });
+    }
+
+    if (context.length > MAX_CONTEXT_LENGTH) {
+      return new Response("Context is too long", { status: 400 });
     }
 
     const spotterSession = requestedSessionId
