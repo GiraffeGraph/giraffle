@@ -28,7 +28,6 @@ model User {
   canvases            Canvas[]
   noteCategories      NoteCategory[]
   spotterSessions     SpotterSession[]
-  universeState       UniverseState?
   coatCanvases        CoatCanvas[]
 }
 
@@ -359,25 +358,16 @@ model SpotterMessage {
 
 model Canvas {
   id        String       @id @default(uuid())
-  title     String       @default("Untitled Canvas")
+  title     String       @default("Yeni Harita")
   userId    String
   user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   nodes     CanvasNode[]
   edges     CanvasEdge[]
+  cameraX   Float        @default(0)
+  cameraY   Float        @default(0)
+  zoom      Float        @default(0.75)
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
-
-  @@index([userId])
-}
-
-model UniverseState {
-  id        String   @id @default(uuid())
-  userId    String   @unique
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  cameraX   Float    @default(0)
-  cameraY   Float    @default(0)
-  zoom      Float    @default(0.75)
-  updatedAt DateTime @updatedAt
 
   @@index([userId])
 }

@@ -38,7 +38,7 @@ import {
   searchNotesByTitleAction,
 } from "@/server/api/notes";
 import { createNoteCategoryAction } from "@/server/api/categories";
-import { createMapFromNoteAction } from "@/server/api/canvas";
+import { createSavannaFromNoteAction } from "@/server/api/savanna";
 import { createTemplateFromNoteAction } from "@/server/api/templates";
 import { getTemplateCategoryLabel } from "@/lib/template-category";
 import { queueLocalMutation, resolveLocalMutation } from "@/lib/local-sync";
@@ -488,10 +488,10 @@ export function NoteEditorPage({
 
   const handleOpenInCanvas = useCallback(async () => {
     try {
-      const canvasId = await createMapFromNoteAction(note.id);
-      router.push(`/canvas/${canvasId}`);
+      const canvasId = await createSavannaFromNoteAction(note.id);
+      router.push(`/savanna/${canvasId}`);
     } catch (err) {
-      console.error("Failed to open canvas:", err);
+      console.error("Failed to open in Savanna:", err);
     }
   }, [note.id, router]);
 

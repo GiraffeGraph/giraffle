@@ -1,0 +1,651 @@
+/* ─── Savanna List Page ────────────────────────────────────────── */
+
+.savanna-list-page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 32px 24px 64px;
+}
+
+.savanna-list-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.savanna-list-description {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.6;
+  max-width: 480px;
+}
+
+.savanna-create-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 0 16px;
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  background: var(--surface-highlight);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.savanna-create-btn:hover {
+  background: var(--surface-glass-hover);
+  border-color: var(--border-strong);
+}
+
+.savanna-create-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.savanna-create-btn .material-symbols-outlined {
+  font-size: 18px;
+}
+
+.savanna-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 80px 32px;
+  border: 1px dashed var(--border-soft);
+  border-radius: 24px;
+  text-align: center;
+}
+
+.savanna-empty-icon {
+  font-size: 40px;
+  color: var(--text-tertiary);
+}
+
+.savanna-empty-title {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.savanna-empty-body {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.6;
+  max-width: 320px;
+}
+
+.savanna-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.savanna-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-soft);
+  border-radius: 18px;
+  background: var(--surface-glass);
+  overflow: hidden;
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.savanna-card:hover {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-lift);
+}
+
+.savanna-card-body {
+  display: grid;
+  gap: 6px;
+  padding: 18px 18px 14px;
+  text-align: left;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: inherit;
+}
+
+.savanna-card-icon {
+  font-size: 22px;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+
+.savanna-card-title {
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.savanna-card-rename-input {
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  background: var(--surface-highlight);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  padding: 2px 8px;
+  outline: none;
+  width: 100%;
+}
+
+.savanna-card-meta {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.savanna-card-actions {
+  display: flex;
+  gap: 4px;
+  padding: 8px 12px;
+  border-top: 1px solid var(--border-soft);
+  background: var(--surface-overlay-soft);
+}
+
+.savanna-card-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.savanna-card-action-btn:hover {
+  background: var(--surface-highlight);
+  color: var(--text-primary);
+}
+
+.savanna-card-action-btn--danger:hover {
+  background: rgb(var(--error-rgb, 239 68 68) / 0.1);
+  color: var(--error, #ef4444);
+}
+
+.savanna-card-action-btn .material-symbols-outlined {
+  font-size: 16px;
+}
+
+/* ─── Savanna Editor Shell ─────────────────────────────────────── */
+
+.svn-shell {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--shell-main-bg);
+  color: var(--text-primary);
+}
+
+.svn-shell .react-flow__renderer,
+.svn-shell .react-flow__pane,
+.svn-shell .react-flow__viewport {
+  background: transparent;
+}
+
+.svn-shell[data-cursor-mode="move"] .react-flow__pane {
+  cursor: grab;
+}
+
+.svn-shell[data-cursor-mode="move"] .react-flow__pane:active {
+  cursor: grabbing;
+}
+
+.svn-shell[data-cursor-mode="interact"] .react-flow__pane {
+  cursor: default;
+}
+
+/* ─── Note Picker Panel ────────────────────────────────────────── */
+
+.svn-note-panel {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 280px;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border-soft);
+  background: var(--surface-glass-strong);
+  backdrop-filter: blur(20px);
+  z-index: 10;
+  transform: translateX(-100%);
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.svn-note-panel--open {
+  transform: translateX(0);
+}
+
+.svn-note-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 54px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.svn-note-panel__title {
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.svn-note-panel__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.svn-note-panel__close:hover {
+  background: var(--surface-highlight);
+  color: var(--text-primary);
+}
+
+.svn-note-panel__search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-soft);
+  color: var(--text-secondary);
+}
+
+.svn-note-panel__search .material-symbols-outlined {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.svn-note-panel__search input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 13px;
+  outline: none;
+}
+
+.svn-note-panel__search input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.svn-note-panel__list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.svn-note-panel__empty {
+  padding: 32px 16px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  text-align: center;
+}
+
+.svn-note-panel__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.svn-note-panel__item:hover {
+  background: var(--surface-highlight);
+}
+
+.svn-note-panel__item--placed {
+  opacity: 0.5;
+}
+
+.svn-note-panel__item-title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.svn-note-panel__item-check {
+  font-size: 16px;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+/* ─── Top-left Panel ───────────────────────────────────────────── */
+
+.svn-top-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 16px;
+  padding: 8px 14px 8px 10px;
+  border: 1px solid var(--border-soft);
+  border-radius: 16px;
+  background: var(--surface-glass-strong);
+  backdrop-filter: blur(16px);
+  box-shadow: var(--shadow-panel);
+}
+
+.svn-back-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.svn-back-btn:hover {
+  background: var(--surface-highlight);
+  color: var(--text-primary);
+}
+
+.svn-back-btn .material-symbols-outlined {
+  font-size: 18px;
+}
+
+.svn-canvas-title {
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 700;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.svn-save-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.svn-save-status--saved {
+  color: var(--text-tertiary);
+}
+
+.svn-save-status--saving {
+  color: var(--accent);
+}
+
+.svn-save-status--unsaved {
+  color: var(--text-secondary);
+}
+
+.svn-save-status .material-symbols-outlined {
+  font-size: 14px;
+}
+
+.svn-save-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--accent);
+  animation: svnPulse 0.8s ease-in-out infinite alternate;
+}
+
+.svn-save-dot--unsaved {
+  background: var(--text-tertiary);
+  animation: none;
+}
+
+@keyframes svnPulse {
+  from { opacity: 0.5; transform: scale(0.85); }
+  to   { opacity: 1;   transform: scale(1); }
+}
+
+/* ─── Right Toolbar ────────────────────────────────────────────── */
+
+.svn-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 16px;
+  padding: 10px 8px;
+  border: 1px solid var(--border-soft);
+  border-radius: 20px;
+  background: var(--surface-glass-strong);
+  backdrop-filter: blur(16px);
+  box-shadow: var(--shadow-panel);
+}
+
+.svn-toolbar__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.svn-toolbar__btn:hover {
+  background: var(--surface-highlight);
+  color: var(--text-primary);
+}
+
+.svn-toolbar__btn--active {
+  border-color: var(--border-strong);
+  background: var(--surface-glass-hover);
+  color: var(--text-primary);
+}
+
+.svn-toolbar__btn .material-symbols-outlined {
+  font-size: 18px;
+}
+
+.svn-toolbar__divider {
+  height: 1px;
+  background: var(--border-soft);
+  margin: 2px 4px;
+}
+
+/* ─── Minimap ──────────────────────────────────────────────────── */
+
+.svn-minimap {
+  bottom: 24px !important;
+  right: 16px !important;
+}
+
+/* ─── Node: NoteCard ───────────────────────────────────────────── */
+
+.svn-node-note {
+  min-width: 160px;
+  max-width: 280px;
+  padding: 12px 14px;
+  border: 1px solid var(--border-soft);
+  border-radius: 16px;
+  background: var(--surface-glass-strong);
+  backdrop-filter: blur(12px);
+  box-shadow: var(--shadow-panel);
+  cursor: default;
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.svn-node-note--selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgb(var(--accent-rgb) / 0.18), var(--shadow-lift);
+}
+
+.svn-node-note__inner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.svn-node-note__icon {
+  font-size: 18px;
+  flex-shrink: 0;
+  line-height: 1.4;
+}
+
+.svn-node-note__title {
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.svn-handle {
+  width: 10px !important;
+  height: 10px !important;
+  border: 2px solid var(--border-strong) !important;
+  background: var(--surface-glass-strong) !important;
+  transition: border-color var(--transition-fast) !important;
+}
+
+.svn-handle:hover {
+  border-color: var(--accent) !important;
+  background: rgb(var(--accent-rgb) / 0.15) !important;
+}
+
+/* ─── Node: Label ──────────────────────────────────────────────── */
+
+.svn-node-label {
+  min-width: 80px;
+  padding: 6px 12px;
+  border: 1px dashed transparent;
+  border-radius: 10px;
+  background: transparent;
+  cursor: default;
+  transition: border-color var(--transition-fast);
+}
+
+.svn-node-label--selected {
+  border-color: var(--accent);
+}
+
+.svn-node-label:hover {
+  border-color: var(--border-soft);
+}
+
+.svn-node-label__text {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: pre-wrap;
+}
+
+.svn-node-label__input {
+  display: block;
+  width: 100%;
+  min-width: 120px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  outline: none;
+  resize: none;
+}
+
+/* ─── Node: Zone ───────────────────────────────────────────────── */
+
+.svn-node-zone {
+  width: 100%;
+  height: 100%;
+  border: 1px dashed var(--border-strong);
+  border-radius: 20px;
+  background: rgb(var(--accent-rgb) / 0.04);
+  overflow: hidden;
+}
+
+.svn-node-zone--selected {
+  border-color: var(--accent);
+  background: rgb(var(--accent-rgb) / 0.07);
+}
+
+.svn-node-zone__header {
+  padding: 10px 16px;
+  cursor: default;
+}
+
+.svn-node-zone__label {
+  color: rgb(var(--accent-rgb) / 0.7);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.svn-node-zone__input {
+  border: none;
+  background: transparent;
+  color: rgb(var(--accent-rgb) / 0.7);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  outline: none;
+  width: 160px;
+}

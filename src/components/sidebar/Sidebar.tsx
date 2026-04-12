@@ -695,13 +695,13 @@ export function Sidebar({
         },
       },
       {
-        id: "action-universe",
+        id: "action-savanna",
         group: "Geçişler",
-        title: "Universe modu",
-        description: "Tam ekran uzamsal gezinim katmanını aç",
-        icon: encodeMaterialSymbol("travel_explore"),
+        title: "Savanna",
+        description: "Open free-form infinite canvas",
+        icon: encodeMaterialSymbol("landscape"),
         onSelect: async () => {
-          router.push("/universe");
+          router.push("/savanna");
         },
       },
       {
@@ -1154,9 +1154,9 @@ export function Sidebar({
                     [
                       { path: "/dashboard", icon: "\uE88A", label: "Pano" },
                       {
-                        path: "/universe",
-                        icon: "travel_explore",
-                        label: "Universe",
+                        path: "/savanna",
+                        icon: "landscape",
+                        label: "Savanna",
                       },
                       {
                         path: "/inbox",
