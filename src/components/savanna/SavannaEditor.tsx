@@ -255,6 +255,18 @@ function summarizeDocument(document: TiptapDocument | null | undefined, maxLengt
   return `${text.slice(0, maxLength).trimEnd()}…`;
 }
 
+function pointsToPath(points: Array<{ x: number; y: number }>): string {
+  if (points.length === 0) return "";
+  if (points.length === 1) {
+    const point = points[0];
+    return `M ${point?.x ?? 0} ${point?.y ?? 0}`;
+  }
+
+  return points
+    .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`)
+    .join(" ");
+}
+
 type SaveStatus = "saved" | "saving" | "unsaved";
 
 type InspectorStatus = "closed" | "loading" | "ready" | "error";
@@ -263,8 +275,34 @@ type CanvasTool = "select" | "line" | "text" | "draw";
 
 type ScreenPoint = { x: number; y: number };
 
+function getClientPoint(event: unknown): ScreenPoint | null {
+  const candidate = event as {
+    clientX?: unknown;
+    clientY?: unknown;
+    nativeEvent?: { clientX?: unknown; clientY?: unknown };
+  };
+
+  const clientX =
+    typeof candidate.clientX === "number"
+      ? candidate.clientX
+      : typeof candidate.nativeEvent?.clientX === "number"
+        ? candidate.nativeEvent.clientX
+        : null;
+
+  const clientY =
+    typeof candidate.clientY === "number"
+      ? candidate.clientY
+      : typeof candidate.nativeEvent?.clientY === "number"
+        ? candidate.nativeEvent.clientY
+        : null;
+
+  if (clientX === null || clientY === null) return null;
+  return { x: clientX, y: clientY };
+}
+
 function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
   const router = useRouter();
+  const shellRef = useRef<HTMLDivElement | null>(null);
   const { setViewport, screenToFlowPosition, fitView } = useReactFlow();
   const [nodes, setNodes, onNodesChange] = useNodesState(dbNodesToFlow(canvas.nodes));
   const [edges, setEdges, onEdgesChange] = useEdgesState(dbEdgesToFlow(canvas.edges));
@@ -274,7 +312,8 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
   const [tool, setTool] = useState<CanvasTool>("select");
   const [lineSourceNodeId, setLineSourceNodeId] = useState<string | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
-  const [draftStroke, setDraftStroke] = useState<InkPoint[]>([]);
+  const [isSpacePressed, setIsSpacePressed] = useState(false);
+  const [isMiddleMousePressed, setIsMiddleMousePressed] = useState(false);
   const [inspectorStatus, setInspectorStatus] = useState<InspectorStatus>("closed");
   const [inspectorNoteId, setInspectorNoteId] = useState<string | null>(null);
   const [inspectorNote, setInspectorNote] = useState<SavannaEditableNote | null>(null);
@@ -287,6 +326,10 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
   const latestEdgesRef = useRef(edges);
   const inspectorRequestRef = useRef(0);
   const drawingPointerIdRef = useRef<number | null>(null);
+  const drawScreenPointsRef = useRef<ScreenPoint[]>([]);
+  const drawFlowPointsRef = useRef<InkPoint[]>([]);
+  const drawPreviewPathRef = useRef<SVGPathElement | null>(null);
+  const drawFrameRef = useRef<number | null>(null);
   const lastCameraRef = useRef<Viewport>({
     x: canvas.cameraX,
     y: canvas.cameraY,
@@ -310,7 +353,68 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
     return () => {
       if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
       if (cameraTimerRef.current) window.clearTimeout(cameraTimerRef.current);
+      if (drawFrameRef.current !== null) window.cancelAnimationFrame(drawFrameRef.current);
     };
+  }, []);
+
+  useEffect(() => {
+    const isTypingTarget = (target: EventTarget | null) => {
+      if (!(target instanceof HTMLElement)) return false;
+      const tag = target.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true;
+      return target.isContentEditable;
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.code !== "Space") return;
+      if (isTypingTarget(event.target)) return;
+      event.preventDefault();
+      setIsSpacePressed(true);
+    };
+
+    const handleKeyUp = (event: KeyboardEvent) => {
+      if (event.code !== "Space") return;
+      setIsSpacePressed(false);
+    };
+
+    const handleBlur = () => {
+      setIsSpacePressed(false);
+      setIsMiddleMousePressed(false);
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+    window.addEventListener("blur", handleBlur);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+      window.removeEventListener("blur", handleBlur);
+    };
+  }, []);
+
+  const scheduleDrawPreviewRender = useCallback(() => {
+    if (drawFrameRef.current !== null) return;
+
+    drawFrameRef.current = window.requestAnimationFrame(() => {
+      drawFrameRef.current = null;
+      const path = pointsToPath(drawScreenPointsRef.current);
+      if (drawPreviewPathRef.current) {
+        drawPreviewPathRef.current.setAttribute("d", path);
+      }
+    });
+  }, []);
+
+  const clearDrawPreview = useCallback(() => {
+    drawScreenPointsRef.current = [];
+    drawFlowPointsRef.current = [];
+    if (drawPreviewPathRef.current) {
+      drawPreviewPathRef.current.setAttribute("d", "");
+    }
+    if (drawFrameRef.current !== null) {
+      window.cancelAnimationFrame(drawFrameRef.current);
+      drawFrameRef.current = null;
+    }
   }, []);
 
   useEffect(() => {
@@ -321,10 +425,10 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
     if (tool !== "line") setLineSourceNodeId(null);
     if (tool !== "draw") {
       setIsDrawing(false);
-      setDraftStroke([]);
       drawingPointerIdRef.current = null;
+      clearDrawPreview();
     }
-  }, [tool]);
+  }, [clearDrawPreview, tool]);
 
   useEffect(() => {
     if (!lineSourceNodeId) return;
@@ -437,19 +541,15 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
 
   const onPaneClick = useCallback(
     (event: unknown) => {
-      const pointerEvent = event as { clientX?: number; clientY?: number };
-
       if (tool === "line") {
         setLineSourceNodeId(null);
         return;
       }
 
       if (tool === "text") {
-        if (typeof pointerEvent.clientX !== "number" || typeof pointerEvent.clientY !== "number") {
-          return;
-        }
-
-        createCanvasTextAt({ x: pointerEvent.clientX, y: pointerEvent.clientY });
+        const clientPoint = getClientPoint(event);
+        if (!clientPoint) return;
+        createCanvasTextAt(clientPoint);
       }
     },
     [createCanvasTextAt, tool],
@@ -457,20 +557,35 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
 
   const handlePaneMouseDown = useCallback(
     (event: unknown) => {
-      if (tool !== "draw") return;
       if (!isPaneEventTarget(event)) return;
 
-      const pointerEvent = event as { clientX?: number; clientY?: number; button?: number; pointerId?: number };
+      const pointerEvent = event as { button?: number; pointerId?: number };
+      if (pointerEvent.button === 1) {
+        setIsMiddleMousePressed(true);
+        return;
+      }
+
+      if (tool !== "draw") return;
       if (pointerEvent.button !== 0) return;
-      if (typeof pointerEvent.clientX !== "number" || typeof pointerEvent.clientY !== "number") return;
+
+      const clientPoint = getClientPoint(event);
+      if (!clientPoint) return;
 
       drawingPointerIdRef.current = pointerEvent.pointerId ?? null;
       setIsDrawing(true);
 
-      const flowPoint = screenToFlowPosition({ x: pointerEvent.clientX, y: pointerEvent.clientY });
-      setDraftStroke([{ x: flowPoint.x, y: flowPoint.y }]);
+      const shellRect = shellRef.current?.getBoundingClientRect();
+      const localPoint = {
+        x: clientPoint.x - (shellRect?.left ?? 0),
+        y: clientPoint.y - (shellRect?.top ?? 0),
+      };
+
+      drawScreenPointsRef.current = [localPoint];
+      const flowPoint = screenToFlowPosition(clientPoint);
+      drawFlowPointsRef.current = [{ x: flowPoint.x, y: flowPoint.y }];
+      scheduleDrawPreviewRender();
     },
-    [isPaneEventTarget, screenToFlowPosition, tool],
+    [isPaneEventTarget, scheduleDrawPreviewRender, screenToFlowPosition, tool],
   );
 
   const handlePaneMouseMove = useCallback(
@@ -478,7 +593,7 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
       if (tool !== "draw" || !isDrawing) return;
       if (!isPaneEventTarget(event)) return;
 
-      const pointerEvent = event as { clientX?: number; clientY?: number; pointerId?: number };
+      const pointerEvent = event as { pointerId?: number };
       if (
         drawingPointerIdRef.current !== null &&
         typeof pointerEvent.pointerId === "number" &&
@@ -487,35 +602,42 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
         return;
       }
 
-      if (typeof pointerEvent.clientX !== "number" || typeof pointerEvent.clientY !== "number") return;
+      const clientPoint = getClientPoint(event);
+      if (!clientPoint) return;
 
-      const flowPoint = screenToFlowPosition({ x: pointerEvent.clientX, y: pointerEvent.clientY });
+      const shellRect = shellRef.current?.getBoundingClientRect();
+      const localPoint = {
+        x: clientPoint.x - (shellRect?.left ?? 0),
+        y: clientPoint.y - (shellRect?.top ?? 0),
+      };
 
-      setDraftStroke((current) => {
-        const last = current.at(-1);
-        if (last) {
-          const dx = flowPoint.x - last.x;
-          const dy = flowPoint.y - last.y;
-          if (dx * dx + dy * dy < 9) {
-            return current;
-          }
+      const lastScreen = drawScreenPointsRef.current.at(-1);
+      if (lastScreen) {
+        const dxScreen = localPoint.x - lastScreen.x;
+        const dyScreen = localPoint.y - lastScreen.y;
+        if (dxScreen * dxScreen + dyScreen * dyScreen < 9) {
+          return;
         }
+      }
 
-        return [...current, { x: flowPoint.x, y: flowPoint.y }];
-      });
+      const flowPoint = screenToFlowPosition(clientPoint);
+
+      drawScreenPointsRef.current = [...drawScreenPointsRef.current, localPoint];
+      drawFlowPointsRef.current = [...drawFlowPointsRef.current, { x: flowPoint.x, y: flowPoint.y }];
+
+      scheduleDrawPreviewRender();
     },
-    [isDrawing, isPaneEventTarget, screenToFlowPosition, tool],
+    [isDrawing, isPaneEventTarget, scheduleDrawPreviewRender, screenToFlowPosition, tool],
   );
 
   const finalizeDrawStroke = useCallback(() => {
-    if (!isDrawing || draftStroke.length === 0) return;
-
-    const flowPoints = draftStroke;
+    const flowPoints = drawFlowPointsRef.current;
+    if (!isDrawing || flowPoints.length === 0) return;
 
     if (flowPoints.length < 2) {
       setIsDrawing(false);
-      setDraftStroke([]);
       drawingPointerIdRef.current = null;
+      clearDrawPreview();
       return;
     }
 
@@ -543,13 +665,18 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
 
     setNodes((current) => [...current, newNode]);
     setIsDrawing(false);
-    setDraftStroke([]);
     drawingPointerIdRef.current = null;
+    clearDrawPreview();
     triggerSave();
-  }, [draftStroke, isDrawing, setNodes, triggerSave]);
+  }, [clearDrawPreview, isDrawing, setNodes, triggerSave]);
 
   const handlePaneMouseUp = useCallback(
     (event: unknown) => {
+      const pointerEvent = event as { button?: number };
+      if (pointerEvent.button === 1) {
+        setIsMiddleMousePressed(false);
+      }
+
       if (tool !== "draw") return;
       if (!isPaneEventTarget(event) && !isDrawing) return;
       finalizeDrawStroke();
@@ -558,10 +685,11 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
   );
 
   useEffect(() => {
-    if (!isDrawing) return;
-
     const handleWindowPointerUp = () => {
-      finalizeDrawStroke();
+      setIsMiddleMousePressed(false);
+      if (isDrawing) {
+        finalizeDrawStroke();
+      }
     };
 
     window.addEventListener("pointerup", handleWindowPointerUp);
@@ -938,40 +1066,6 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
     ],
   );
 
-  const draftStrokeNode = useMemo<Node | null>(() => {
-    if (!isDrawing || draftStroke.length < 2) return null;
-
-    const minX = Math.min(...draftStroke.map((point) => point.x));
-    const minY = Math.min(...draftStroke.map((point) => point.y));
-    const maxX = Math.max(...draftStroke.map((point) => point.x));
-    const maxY = Math.max(...draftStroke.map((point) => point.y));
-
-    const padding = 6;
-    const width = Math.max(maxX - minX + padding * 2, 12);
-    const height = Math.max(maxY - minY + padding * 2, 12);
-
-    const points = draftStroke.map((point) => ({
-      x: point.x - minX + padding,
-      y: point.y - minY + padding,
-    }));
-
-    return {
-      id: "__draft-ink__",
-      type: "inkStroke",
-      position: { x: minX - padding, y: minY - padding },
-      data: { points } satisfies InkStrokeNodeData,
-      style: { width, height },
-      selectable: false,
-      draggable: false,
-      zIndex: 100,
-    };
-  }, [draftStroke, isDrawing]);
-
-  const nodesForRender = useMemo(
-    () => (draftStrokeNode ? [...nodesWithHandlers, draftStrokeNode] : nodesWithHandlers),
-    [draftStrokeNode, nodesWithHandlers],
-  );
-
   const focusContent = useCallback(() => {
     if (latestNodesRef.current.length === 0) {
       void setViewport({ x: 0, y: 0, zoom: canvas.zoom }, { duration: 280 });
@@ -1024,10 +1118,10 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
           ? isDrawing
             ? "Release mouse to finish stroke"
             : "Press and drag on canvas to draw"
-          : "";
+          : "Drag to select. Hold Space to pan with left drag, or use middle mouse drag.";
 
   return (
-    <div className="svn-shell" data-tool={tool}>
+    <div ref={shellRef} className="svn-shell" data-tool={tool}>
       <div className={`svn-note-panel${notePanelOpen ? " svn-note-panel--open" : ""}`}>
         <div className="svn-note-panel__header">
           <span className="svn-note-panel__title">Notes</span>
@@ -1249,8 +1343,14 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
         </div>
       </header>
 
+      {tool === "draw" ? (
+        <svg className="svn-draw-overlay" aria-hidden="true">
+          <path ref={drawPreviewPathRef} className="svn-draw-overlay__path" d="" />
+        </svg>
+      ) : null}
+
       <ReactFlow
-        nodes={nodesForRender}
+        nodes={nodesWithHandlers}
         edges={edges}
         nodeTypes={NODE_TYPES}
         onNodesChange={handleNodesChange}
@@ -1270,12 +1370,12 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
         panOnScroll
         zoomOnScroll
         zoomOnPinch
-        panOnDrag={tool === "select"}
-        nodesDraggable={tool === "select"}
-        nodesConnectable={tool === "select"}
+        panOnDrag={isSpacePressed ? [0, 1] : [1]}
+        nodesDraggable={tool === "select" && !isSpacePressed && !isMiddleMousePressed}
+        nodesConnectable={tool === "select" && !isSpacePressed && !isMiddleMousePressed}
         elementsSelectable={tool === "select" || tool === "line"}
         deleteKeyCode={["Backspace", "Delete"]}
-        selectionOnDrag={tool === "select"}
+        selectionOnDrag={tool === "select" && !isSpacePressed && !isMiddleMousePressed}
         proOptions={{ hideAttribution: true }}
       >
         <Background variant={BackgroundVariant.Dots} gap={28} size={1} color="var(--border-strong)" />
