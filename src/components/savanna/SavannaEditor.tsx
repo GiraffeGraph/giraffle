@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  addEdge,
   Background,
   BackgroundVariant,
   ConnectionMode,
@@ -162,7 +161,7 @@ function dbEdgesToFlow(dbEdges: DbCanvasEdge[]): Edge[] {
     targetHandle: e.targetHandle ?? undefined,
     type: "default",
     animated: false,
-    style: { stroke: "var(--border-strong)", strokeWidth: 1.5 },
+    style: { stroke: "var(--accent)", strokeWidth: 2 },
   }));
 }
 
@@ -476,8 +475,11 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
       const editor = await getSavannaNoteEditorAction(sourceNoteId);
       if (!editor) return;
 
-      const wikilink = `[[${targetTitle}]]`;
-      if (JSON.stringify(editor.document).includes(wikilink)) {
+      const documentJson = JSON.stringify(editor.document);
+      if (
+        documentJson.includes(`\"noteId\":\"${targetNoteId}\"`) ||
+        documentJson.includes(`\"target\":\"${targetTitle.replaceAll('"', '\\\"')}\"`)
+      ) {
         return;
       }
 
@@ -487,7 +489,26 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
           ...(Array.isArray(editor.document.content) ? editor.document.content : []),
           {
             type: "paragraph",
-            content: [{ type: "text", text: wikilink }],
+            content: [
+              {
+                type: "text",
+                text: targetTitle,
+                marks: [
+                  {
+                    type: "wikilink",
+                    attrs: {
+                      target: targetTitle,
+                      displayText: targetTitle,
+                      noteId: targetNoteId,
+                    },
+                  },
+                ],
+              },
+              {
+                type: "text",
+                text: " ",
+              },
+            ],
           },
         ],
       };
@@ -499,29 +520,40 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
   }, []);
 
   const addConnectionByNodeIds = useCallback(
-    (sourceNodeId: string, targetNodeId: string) => {
+    (
+      sourceNodeId: string,
+      targetNodeId: string,
+      handles?: { sourceHandle?: string | null; targetHandle?: string | null },
+    ) => {
       if (sourceNodeId === targetNodeId) return;
 
       void appendWikilinkForConnection(sourceNodeId, targetNodeId);
 
+      const sourceHandle = handles?.sourceHandle ?? "note-source";
+      const targetHandle = handles?.targetHandle ?? "note-target";
+
       const exists = latestEdgesRef.current.some(
-        (edge) => edge.source === sourceNodeId && edge.target === targetNodeId,
+        (edge) =>
+          edge.source === sourceNodeId &&
+          edge.target === targetNodeId &&
+          (edge.sourceHandle ?? "note-source") === sourceHandle &&
+          (edge.targetHandle ?? "note-target") === targetHandle,
       );
       if (exists) return;
 
-      setEdges((current) =>
-        addEdge(
-          {
-            id: generateId(),
-            source: sourceNodeId,
-            target: targetNodeId,
-            type: "default",
-            animated: false,
-            style: { stroke: "var(--border-strong)", strokeWidth: 1.5 },
-          },
-          current,
-        ),
-      );
+      setEdges((current) => [
+        ...current,
+        {
+          id: generateId(),
+          source: sourceNodeId,
+          target: targetNodeId,
+          sourceHandle,
+          targetHandle,
+          type: "default",
+          animated: false,
+          style: { stroke: "#8b5cf6", strokeWidth: 2 },
+        },
+      ]);
 
       triggerSave();
     },
@@ -531,7 +563,10 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
   const onConnect = useCallback(
     (connection: Connection) => {
       if (!connection.source || !connection.target) return;
-      addConnectionByNodeIds(connection.source, connection.target);
+      addConnectionByNodeIds(connection.source, connection.target, {
+        sourceHandle: connection.sourceHandle,
+        targetHandle: connection.targetHandle,
+      });
     },
     [addConnectionByNodeIds],
   );
@@ -554,7 +589,10 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
       const targetNodeId = targetNode?.getAttribute("data-id");
       if (!targetNodeId || targetNodeId === sourceNodeId) return;
 
-      addConnectionByNodeIds(sourceNodeId, targetNodeId);
+      addConnectionByNodeIds(sourceNodeId, targetNodeId, {
+        sourceHandle: "note-source",
+        targetHandle: "note-target",
+      });
     },
     [addConnectionByNodeIds],
   );

@@ -23,20 +23,11 @@ export function NoteCardNode({
   return (
     <div className={`svn-node-note${selected ? " svn-node-note--selected" : ""}`}>
       <Handle
-        id="target-top"
+        id="note-target"
         type="target"
         position={Position.Top}
         isConnectable={isConnectable}
         className="svn-handle"
-        style={{ left: "34%" }}
-      />
-      <Handle
-        id="source-top"
-        type="source"
-        position={Position.Top}
-        isConnectable={isConnectable}
-        className="svn-handle"
-        style={{ left: "66%" }}
       />
 
       <div
@@ -57,20 +48,11 @@ export function NoteCardNode({
       </div>
 
       <Handle
-        id="target-bottom"
-        type="target"
-        position={Position.Bottom}
-        isConnectable={isConnectable}
-        className="svn-handle"
-        style={{ left: "34%" }}
-      />
-      <Handle
-        id="source-bottom"
+        id="note-source"
         type="source"
         position={Position.Bottom}
         isConnectable={isConnectable}
         className="svn-handle"
-        style={{ left: "66%" }}
       />
     </div>
   );
