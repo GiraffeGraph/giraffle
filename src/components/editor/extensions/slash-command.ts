@@ -13,12 +13,12 @@ export interface SlashCommandItem {
 
 export const defaultSlashCommands: SlashCommandItem[] = [
   {
-    title: "AI Asistan",
-    description: "Inline bağlantı ve bağlam ajanı",
+    title: "Spotter",
+    description: "Not içinde Spotter yardımı al",
     icon: "✨",
-    shortcut: "/agent",
+    shortcut: "/spotter",
     command: (editor) => {
-      editor.chain().focus().insertContent({ type: "agentBlock" }).run();
+      editor.chain().focus().insertSpotterBlock().run();
     },
   },
   {

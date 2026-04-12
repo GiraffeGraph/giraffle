@@ -34,7 +34,7 @@ import type {
 import { generateId } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import {
-  AgentBlockNode,
+  SpotterBlockNode,
   BlockIdExtension,
   CalloutNode,
   GhostHighlightPlugin,
@@ -419,13 +419,12 @@ export function Editor({
           class: "giraffle-task-item",
         },
       }),
-      // ─── Custom extensions ──────────────────
       BlockIdExtension,
       CalloutNode,
       KanbanNode,
       ToggleNode,
       WikilinkMark,
-      AgentBlockNode,
+      SpotterBlockNode,
       GhostHighlightPlugin,
     ],
     content: initialContent ?? {

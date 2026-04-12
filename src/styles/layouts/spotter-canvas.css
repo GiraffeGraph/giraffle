@@ -1,5 +1,5 @@
-/* --- Agent Inline UI --- */
-.giraffle-agent-block {
+/* --- Spotter Inline UI --- */
+.giraffle-spotter-block {
   margin: 1.5rem 0;
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-card);
@@ -9,12 +9,12 @@
   font-family: inherit;
 }
 
-.GiraffleAgentBlock_Inner {
+.GiraffleSpotterBlock_Inner {
   display: flex;
   flex-direction: column;
 }
 
-.GiraffleAgentBlock_Header {
+.GiraffleSpotterBlock_Header {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -26,23 +26,23 @@
   color: var(--text-secondary);
 }
 
-.GiraffleAgent_Icon {
+.GiraffleSpotter_Icon {
   font-size: 14px;
 }
 
-.GiraffleAgentBlock_Body {
+.GiraffleSpotterBlock_Body {
   padding: 14px;
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.GiraffleAgent_InputRow {
+.GiraffleSpotter_InputRow {
   display: flex;
   gap: 8px;
 }
 
-.GiraffleAgent_Input {
+.GiraffleSpotter_Input {
   flex: 1;
   background: var(--bg-page-deep);
   border: 1px solid var(--border-soft);
@@ -54,11 +54,11 @@
   transition: border-color var(--transition-fast);
 }
 
-.GiraffleAgent_Input:focus {
+.GiraffleSpotter_Input:focus {
   border-color: var(--accent);
 }
 
-.GiraffleAgent_BtnRun {
+.GiraffleSpotter_BtnRun {
   background: var(--accent);
   color: var(--text-on-accent);
   border: none;
@@ -69,12 +69,12 @@
   cursor: pointer;
   transition: opacity var(--transition-fast);
 }
-.GiraffleAgent_BtnRun:disabled {
+.GiraffleSpotter_BtnRun:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.GiraffleAgent_StatusRow {
+.GiraffleSpotter_StatusRow {
   font-size: 13px;
   color: var(--text-muted);
   display: flex;
@@ -82,7 +82,7 @@
   gap: 8px;
 }
 
-.GiraffleAgent_OutputRow {
+.GiraffleSpotter_OutputRow {
   background: var(--bg-page-deep);
   padding: 12px;
   border-radius: var(--radius-control);
@@ -93,7 +93,7 @@
   position: relative;
 }
 
-.GiraffleAgent_Cursor {
+.GiraffleSpotter_Cursor {
   display: inline-block;
   width: 2px;
   height: 14px;
@@ -107,13 +107,13 @@
   50% { opacity: 0; }
 }
 
-.GiraffleAgent_ActionsRow {
+.GiraffleSpotter_ActionsRow {
   display: flex;
   gap: 8px;
   justify-content: flex-end;
 }
 
-.GiraffleAgent_BtnAction {
+.GiraffleSpotter_BtnAction {
   background: var(--surface-highlight);
   color: var(--text-primary);
   border: 1px solid var(--border-soft);
@@ -125,16 +125,16 @@
   transition: background var(--transition-fast);
 }
 
-.GiraffleAgent_BtnAction:hover {
+.GiraffleSpotter_BtnAction:hover {
   background: var(--surface-glass-hover);
 }
 
-.GiraffleAgent_BtnAction.ghost {
+.GiraffleSpotter_BtnAction.ghost {
   background: transparent;
   border-color: transparent;
   color: var(--text-muted);
 }
-.GiraffleAgent_BtnAction.ghost:hover {
+.GiraffleSpotter_BtnAction.ghost:hover {
   background: var(--surface-glass-soft);
   color: var(--text-secondary);
 }

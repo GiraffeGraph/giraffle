@@ -8,6 +8,7 @@ import {
   deleteBlock,
   deleteNote,
   findNoteByTitle,
+  getArchivedNotes,
   getNote,
   getNoteForExport,
   getNotes,
@@ -17,6 +18,7 @@ import {
   moveBlock,
   moveNote,
   relocateNote,
+  restoreNote,
   saveNoteContent,
   searchNotesByTitle,
   updateBlock,
@@ -83,6 +85,21 @@ export async function archiveNoteAction(noteId: string) {
   revalidatePath("/dashboard");
   revalidatePath("/graph");
   revalidatePath("/inbox");
+  revalidatePath("/archive");
+}
+
+export async function getArchivedNotesAction() {
+  const { userId } = await requireAuthenticatedUser();
+  return getArchivedNotes(userId);
+}
+
+export async function restoreNoteAction(noteId: string) {
+  const { userId } = await requireAuthenticatedUser();
+  await restoreNote(userId, noteId);
+  revalidatePath("/dashboard");
+  revalidatePath("/graph");
+  revalidatePath("/inbox");
+  revalidatePath("/archive");
 }
 
 export async function moveNoteAction(

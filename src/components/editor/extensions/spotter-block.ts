@@ -1,20 +1,20 @@
 import { mergeAttributes, Node } from "@tiptap/core";
 import { ReactNodeViewRenderer } from "@tiptap/react";
-import { AgentBlockComponent } from "../components/AgentBlockComponent";
+import { SpotterBlockComponent } from "../components/SpotterBlockComponent";
 
-export interface AgentBlockOptions {
+export interface SpotterBlockOptions {
   HTMLAttributes: Record<string, unknown>;
 }
 
 declare module "@tiptap/core" {
   interface Commands<ReturnType> {
-    agentBlock: {
-      insertAgentBlock: () => ReturnType;
+    spotterBlock: {
+      insertSpotterBlock: () => ReturnType;
     };
   }
 }
 
-export const AgentBlockNode = Node.create<AgentBlockOptions>({
+export const SpotterBlockNode = Node.create<SpotterBlockOptions>({
   name: "agentBlock",
   group: "block",
   atom: true,
@@ -43,6 +43,9 @@ export const AgentBlockNode = Node.create<AgentBlockOptions>({
   parseHTML() {
     return [
       {
+        tag: 'div[data-type="spotter-block"]',
+      },
+      {
         tag: 'div[data-type="agent-block"]',
       },
     ];
@@ -52,18 +55,18 @@ export const AgentBlockNode = Node.create<AgentBlockOptions>({
     return [
       "div",
       mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
-        "data-type": "agent-block",
+        "data-type": "spotter-block",
       }),
     ];
   },
 
   addNodeView() {
-    return ReactNodeViewRenderer(AgentBlockComponent);
+    return ReactNodeViewRenderer(SpotterBlockComponent);
   },
 
   addCommands() {
     return {
-      insertAgentBlock:
+      insertSpotterBlock:
         () =>
         ({ commands }) =>
           commands.insertContent({

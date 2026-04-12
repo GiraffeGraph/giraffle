@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { path: "/templates", icon: "\uE02F", label: "Şablonlar" },
   { path: "/publish", icon: "\uE255", label: "Yayın" },
   { path: "/proposals", icon: "\uE65F", label: "Öneriler" },
+  { path: "/archive", icon: "inventory_2", label: "Arşiv" },
   { path: "/settings", icon: "\uE8B8", label: "Ayarlar" },
   { path: "/account", icon: "\uF20B", label: "Hesap" },
 ] as const;

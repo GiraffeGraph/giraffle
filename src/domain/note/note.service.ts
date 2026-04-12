@@ -446,6 +446,23 @@ export async function saveNoteContent(
 }
 
 /**
+ * Get all archived notes for a user.
+ */
+export async function getArchivedNotes(userId: string) {
+  return db.note.findMany({
+    where: { userId, isArchived: true },
+    orderBy: { updatedAt: "desc" },
+    select: {
+      id: true,
+      title: true,
+      icon: true,
+      folderId: true,
+      updatedAt: true,
+    },
+  });
+}
+
+/**
  * Archive a note (soft delete).
  */
 export async function archiveNote(

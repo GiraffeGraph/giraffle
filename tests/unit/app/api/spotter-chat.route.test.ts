@@ -21,9 +21,9 @@ vi.mock("ai", () => ({
 const { auth } = await import("@/lib/auth");
 const { consumeRateLimit } = await import("@/lib/rate-limit");
 const { streamText } = await import("ai");
-const { POST } = await import("@/app/api/agent/route");
+const { POST } = await import("@/app/api/spotter/chat/route");
 
-describe("POST /api/agent", () => {
+describe("POST /api/spotter/chat", () => {
   const originalOpenAiApiKey = process.env.OPENAI_API_KEY;
 
   beforeEach(() => {
@@ -40,11 +40,11 @@ describe("POST /api/agent", () => {
     vi.mocked(auth).mockResolvedValue(null as never);
 
     const response = await POST(
-      new Request("http://localhost/api/agent", {
+      new Request("http://localhost/api/spotter/chat", {
         method: "POST",
-        body: JSON.stringify({ prompt: "hello" }),
+        body: JSON.stringify({ mode: "inline", prompt: "hello" }),
         headers: { "content-type": "application/json" },
-      })
+      }),
     );
 
     expect(response.status).toBe(401);
@@ -59,11 +59,11 @@ describe("POST /api/agent", () => {
     });
 
     const response = await POST(
-      new Request("http://localhost/api/agent", {
+      new Request("http://localhost/api/spotter/chat", {
         method: "POST",
-        body: JSON.stringify({ prompt: "hello" }),
+        body: JSON.stringify({ mode: "inline", prompt: "hello" }),
         headers: { "content-type": "application/json" },
-      })
+      }),
     );
 
     expect(response.status).toBe(429);
@@ -75,11 +75,11 @@ describe("POST /api/agent", () => {
     delete process.env.OPENAI_API_KEY;
 
     const response = await POST(
-      new Request("http://localhost/api/agent", {
+      new Request("http://localhost/api/spotter/chat", {
         method: "POST",
-        body: JSON.stringify({ prompt: "hello" }),
+        body: JSON.stringify({ mode: "inline", prompt: "hello" }),
         headers: { "content-type": "application/json" },
-      })
+      }),
     );
 
     expect(response.status).toBe(503);
@@ -89,11 +89,11 @@ describe("POST /api/agent", () => {
 
   it("rejects prompts that exceed the length limit", async () => {
     const response = await POST(
-      new Request("http://localhost/api/agent", {
+      new Request("http://localhost/api/spotter/chat", {
         method: "POST",
-        body: JSON.stringify({ prompt: "x".repeat(4_001) }),
+        body: JSON.stringify({ mode: "inline", prompt: "x".repeat(4_001) }),
         headers: { "content-type": "application/json" },
-      })
+      }),
     );
 
     expect(response.status).toBe(400);
