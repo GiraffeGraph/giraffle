@@ -14,7 +14,7 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
-    "@ai-sdk/openai": "^3.0.51",
+    "@ai-sdk/openai": "^3.0.52",
     "@atlaskit/pragmatic-drag-and-drop": "^1.7.10",
     "@auth/prisma-adapter": "^2.11.1",
     "@prisma/adapter-pg": "^7.6.0",
