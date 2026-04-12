@@ -111,6 +111,7 @@
 }
 
 .main-content-inner {
+  position: relative;
   min-height: calc(100vh - 36px);
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-xl);
@@ -118,4 +119,22 @@
   box-shadow: var(--shadow-panel);
   backdrop-filter: blur(18px);
   animation: rise-in 320ms ease both;
+  overflow: hidden;
+}
+
+.main-content-inner::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: var(--giraffe-spots);
+  background-size: 220px 220px;
+  pointer-events: none;
+  opacity: 0.22;
+  border-radius: inherit;
+  z-index: 0;
+}
+
+.main-content-inner > * {
+  position: relative;
+  z-index: 1;
 }
