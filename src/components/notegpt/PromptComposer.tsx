@@ -35,7 +35,7 @@ export function PromptComposer({
                 onSend();
               }
             }}
-            placeholder="Notların hakkında sor..."
+            placeholder="Spotter'a sor..."
             rows={3}
           />
         </div>

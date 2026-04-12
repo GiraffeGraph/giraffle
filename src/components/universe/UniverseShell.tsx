@@ -141,8 +141,8 @@ const UNIVERSE_MODULE_LAYOUTS: UniverseModuleLayout[] = [
   {
     moduleId: "notegpt",
     regionId: "ai",
-    title: "NoteGPT",
-    description: "AI çalışma alanı.",
+    title: "Spotter",
+    description: "Insight spotter çalışma alanı.",
     icon: "smart_toy",
     position: { x: 2640, y: 2260 },
     size: { width: 1140, height: 1000 },

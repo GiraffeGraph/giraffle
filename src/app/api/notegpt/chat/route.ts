@@ -51,7 +51,7 @@ export async function POST(req: Request) {
     const recentMessages = await getRecentNoteGptMessages(noteGptSession.id);
     const transcript = recentMessages
       .map((message) =>
-        `${message.role === "user" ? "Kullanıcı" : "NoteGPT"}: ${message.content}`
+        `${message.role === "user" ? "Kullanıcı" : "Spotter"}: ${message.content}`
       )
       .join("\n\n");
 
@@ -72,30 +72,30 @@ export async function POST(req: Request) {
           content: answer,
         });
         await touchNoteGptSession(noteGptSession.id);
-        revalidatePath("/notegpt");
+        revalidatePath("/spotter");
       },
     });
 
     return result.toTextStreamResponse({
       headers: {
-        "X-NoteGPT-Session-Id": noteGptSession.id,
+        "X-Spotter-Session-Id": noteGptSession.id,
       },
     });
   } catch (error) {
-    console.error("NoteGPT chat error", error);
+    console.error("Spotter chat error", error);
 
     if (error instanceof Error) {
       return new Response(error.message, { status: 500 });
     }
 
-    return new Response("Unknown NoteGPT error.", { status: 500 });
+    return new Response("Unknown Spotter error.", { status: 500 });
   }
 }
 
 function buildWorkspaceSystemPrompt(context: string) {
-  return `You are NoteGPT inside GiraffeGraph.
+  return `You are Spotter inside GiraffeGraph.
 
-Your job is to help the user reason across their workspace library, including notes and folders.
+Your job is to spot useful insights across the user's workspace library, including notes and folders.
 
 Rules:
 1. Be direct, useful, and concrete.

@@ -35,7 +35,7 @@ export function ConversationThread({
             </div>
             <div className={styles.messageContent}>
               <div className={styles.messageRole}>
-                {message.role === "assistant" ? "NoteGPT" : "Sen"}
+                {message.role === "assistant" ? "Spotter" : "Sen"}
               </div>
               <div className={styles.messageBody}>
                 {message.content ? (

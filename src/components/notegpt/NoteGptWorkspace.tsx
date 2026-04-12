@@ -114,7 +114,7 @@ export function NoteGptWorkspace({
     ]);
 
     try {
-      const response = await fetch("/api/notegpt/chat", {
+      const response = await fetch("/api/spotter/chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -127,13 +127,13 @@ export function NoteGptWorkspace({
       });
 
       if (!response.ok) {
-        throw new Error("NoteGPT request failed");
+        throw new Error("Spotter request failed");
       }
 
       const reader = response.body?.getReader();
       const decoder = new TextDecoder("utf-8");
       let streamed = "";
-      const responseSessionId = response.headers.get("X-NoteGPT-Session-Id");
+      const responseSessionId = response.headers.get("X-Spotter-Session-Id");
 
       if (responseSessionId) {
         nextSessionId = responseSessionId;
@@ -163,11 +163,11 @@ export function NoteGptWorkspace({
       }
 
       if (nextSessionId && !embedded) {
-        router.replace(`/notegpt?session=${nextSessionId}`, { scroll: false });
+        router.replace(`/spotter?session=${nextSessionId}`, { scroll: false });
         router.refresh();
       }
     } catch (error) {
-      console.error("NoteGPT error", error);
+      console.error("Spotter error", error);
       setMessages((current) =>
         current.map((message) =>
           message.id === assistantMessageId
@@ -189,7 +189,7 @@ export function NoteGptWorkspace({
       <div className={styles.pageInner}>
         <main
           className={`${styles.chatShell} ${isEmpty ? styles.chatShellEmpty : ""}`}
-          aria-label="NoteGPT sohbet"
+          aria-label="Spotter sohbet"
         >
           <div className={styles.threadViewport}>
             {isEmpty ? (
@@ -198,10 +198,10 @@ export function NoteGptWorkspace({
                   {notes.length} not ve {folders.length} klasör hazır
                 </p>
                 <h1 className={styles.emptyTitle}>
-                  Bugün notlarınla neyi netleştirelim?
+                  Spotter bugün hangi insight&apos;ı yakalasın?
                 </h1>
                 <p className={styles.emptyBody}>
-                  Sorunu yaz; kütüphanendeki başlıkları ve klasörleri bağlam olarak kullanayım.
+                  Sorunu yaz; kütüphanendeki başlıklar ve klasörler içinden bağlantıları spot edeyim.
                 </p>
               </section>
             ) : (

@@ -196,7 +196,9 @@ export function Sidebar({
   const currentNoteId =
     activeNoteId ?? extractActiveNoteId(pathname) ?? undefined;
   const activeNoteGptSessionId =
-    pathname === "/notegpt" ? searchParams.get("session") : null;
+    pathname === "/spotter" || pathname === "/notegpt"
+      ? searchParams.get("session")
+      : null;
   const effectiveIsSidebarCompact = !isMobileViewport && isSidebarCompact;
   const shouldShowSidebarPanel = !isMobileViewport || isMobileSidebarOpen;
 
@@ -214,7 +216,7 @@ export function Sidebar({
   );
   const navigateToNoteGptSession = useCallback(
     (sessionId: string) => {
-      router.push(`/notegpt?session=${sessionId}`);
+      router.push(`/spotter?session=${sessionId}`);
     },
     [router],
   );
@@ -284,13 +286,21 @@ export function Sidebar({
   }, []);
 
   useEffect(() => {
-    if (!isMobileViewport) {
-      setIsMobileSidebarOpen(false);
-    }
+    const frameId = window.requestAnimationFrame(() => {
+      if (!isMobileViewport) {
+        setIsMobileSidebarOpen(false);
+      }
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
   }, [isMobileViewport]);
 
   useEffect(() => {
-    setIsMobileSidebarOpen(false);
+    const frameId = window.requestAnimationFrame(() => {
+      setIsMobileSidebarOpen(false);
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
   }, [pathname]);
 
   // Persist collapsed sections
@@ -709,11 +719,11 @@ export function Sidebar({
       {
         id: "action-notegpt",
         group: "Geçişler",
-        title: "NoteGPT",
-        description: "Çalışma alanı copilotunu aç",
+        title: "Ask Spotter",
+        description: "Insight spotter çalışma alanını aç",
         icon: encodeMaterialSymbol("smart_toy"),
         onSelect: async () => {
-          router.push("/notegpt");
+          router.push("/spotter");
         },
       },
       {
@@ -892,7 +902,7 @@ export function Sidebar({
       .slice(0, normalizedPaletteQuery ? 8 : 5)
       .map<CommandPaletteItem>((session) => ({
         id: `notegpt-session-${session.id}`,
-        group: "NoteGPT",
+        group: "Spotter",
         title: session.title,
         description: "Sohbet oturumunu aç",
         icon: encodeMaterialSymbol("forum"),
@@ -1197,11 +1207,11 @@ export function Sidebar({
                       <button
                         type="button"
                         className={`sidebar-item${
-                          pathname === "/notegpt" && !activeNoteGptSessionId
+                          pathname === "/spotter" && !activeNoteGptSessionId
                             ? " active"
                             : ""
                         }`}
-                        onClick={() => router.push("/notegpt")}
+                        onClick={() => router.push("/spotter")}
                       >
                         <span className="sidebar-item-icon" aria-hidden="true">
                           <span
@@ -1211,13 +1221,13 @@ export function Sidebar({
                             smart_toy
                           </span>
                         </span>
-                        <span className="sidebar-item-label">NoteGPT</span>
+                        <span className="sidebar-item-label">Spotter</span>
                       </button>
                       <button
                         type="button"
                         className="sidebar-nav-menu sidebar-notegpt-new-chat"
-                        onClick={() => router.push("/notegpt")}
-                        aria-label="Yeni NoteGPT sohbeti"
+                        onClick={() => router.push("/spotter")}
+                        aria-label="Yeni Spotter sohbeti"
                         title="Yeni sohbet"
                       >
                         <PlusIcon />

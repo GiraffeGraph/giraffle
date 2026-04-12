@@ -11,7 +11,7 @@ export function NoteGptNode({ data }: NodeProps<UniverseNoteGptNode>) {
         <span className="material-symbols-outlined" aria-hidden="true">
           smart_toy
         </span>
-        NoteGPT
+        Spotter
       </div>
       <div className="universe-panel-body">
         <NoteGptWorkspace
