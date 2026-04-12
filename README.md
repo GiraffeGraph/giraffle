@@ -172,6 +172,22 @@ Example:
 
 For the maintainer release flow, see [`docs/releasing.md`](./docs/releasing.md).
 
+### Maintainer release quickstart
+
+```bash
+# 1) ensure everything is green
+npm run verify
+
+# 2) push main
+git push origin main
+
+# 3) cut the release tag (must match package.json version)
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+> Tag format is always `vMAJOR.MINOR.PATCH` and must match `package.json`.
+
 ## Production Deployment
 
 For a simpler step-by-step server guide, see [`docs/deploy.md`](./docs/deploy.md).
