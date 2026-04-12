@@ -159,8 +159,8 @@ function dbEdgesToFlow(dbEdges: DbCanvasEdge[]): Edge[] {
     id: e.id,
     source: e.sourceNodeId,
     target: e.targetNodeId,
-    sourceHandle: e.sourceHandle ?? undefined,
-    targetHandle: e.targetHandle ?? undefined,
+    sourceHandle: e.sourceHandle ?? "note-source",
+    targetHandle: e.targetHandle ?? "note-target",
     type: "default",
     animated: false,
     style: { stroke: "var(--accent)", strokeWidth: 2 },
@@ -538,8 +538,8 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
         (edge) =>
           edge.source === sourceNodeId &&
           edge.target === targetNodeId &&
-          (edge.sourceHandle ?? "note-source") === sourceHandle &&
-          (edge.targetHandle ?? "note-target") === targetHandle,
+          (edge.sourceHandle ?? null) === (sourceHandle ?? null) &&
+          (edge.targetHandle ?? null) === (targetHandle ?? null),
       );
       if (exists) return;
 
