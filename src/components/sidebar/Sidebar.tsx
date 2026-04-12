@@ -747,6 +747,16 @@ export function Sidebar({
         },
       },
       {
+        id: "action-discover",
+        group: "Geçişler",
+        title: "Keşfet akışını aç",
+        description: "Haber ve dış dünya akışını gör",
+        icon: encodeMaterialSymbol("newspaper"),
+        onSelect: async () => {
+          router.push("/discover");
+        },
+      },
+      {
         id: "action-templates",
         group: "Geçişler",
         title: "Şablon kütüphanesi",
@@ -769,8 +779,8 @@ export function Sidebar({
       {
         id: "action-proposals",
         group: "Geçişler",
-        title: "Öneri kuyruğu",
-        description: "YZ öneri inceleme alanını aç",
+        title: "Öneri akışını aç",
+        description: "Not ve klasör önerilerini gör",
         icon: encodeMaterialSymbol("auto_awesome"),
         onSelect: async () => {
           router.push("/proposals");
@@ -1151,6 +1161,11 @@ export function Sidebar({
                         icon: "library_books",
                         label: "Kütüphane",
                       },
+                      {
+                        path: "/discover",
+                        icon: "newspaper",
+                        label: "Keşfet",
+                      },
                     ] as Array<{
                       path: string;
                       icon: string;
@@ -1178,34 +1193,38 @@ export function Sidebar({
                     </button>
                   ))}
                   <div className="sidebar-notegpt-block">
-                    <button
-                      type="button"
-                      className={`sidebar-item${
-                        pathname === "/notegpt" && !activeNoteGptSessionId
-                          ? " active"
-                          : ""
-                      }`}
-                      onClick={() => router.push("/notegpt")}
-                    >
-                      <span className="sidebar-item-icon" aria-hidden="true">
-                        <span
-                          className="material-symbols-outlined"
-                          style={{ fontSize: "16px", lineHeight: 1 }}
-                        >
-                          smart_toy
-                        </span>
-                      </span>
-                      <span className="sidebar-item-label">NoteGPT</span>
-                    </button>
-
-                    <div className="sidebar-nested-items sidebar-notegpt-sessions">
+                    <div className="sidebar-nav-item-row sidebar-notegpt-row">
                       <button
                         type="button"
-                        className="sidebar-item sidebar-nested-item"
+                        className={`sidebar-item${
+                          pathname === "/notegpt" && !activeNoteGptSessionId
+                            ? " active"
+                            : ""
+                        }`}
                         onClick={() => router.push("/notegpt")}
                       >
-                        <span className="sidebar-item-label">Yeni sohbet</span>
+                        <span className="sidebar-item-icon" aria-hidden="true">
+                          <span
+                            className="material-symbols-outlined"
+                            style={{ fontSize: "16px", lineHeight: 1 }}
+                          >
+                            smart_toy
+                          </span>
+                        </span>
+                        <span className="sidebar-item-label">NoteGPT</span>
                       </button>
+                      <button
+                        type="button"
+                        className="sidebar-nav-menu sidebar-notegpt-new-chat"
+                        onClick={() => router.push("/notegpt")}
+                        aria-label="Yeni NoteGPT sohbeti"
+                        title="Yeni sohbet"
+                      >
+                        <PlusIcon />
+                      </button>
+                    </div>
+
+                    <div className="sidebar-nested-items sidebar-notegpt-sessions">
                       {noteGptSessions.length === 0 ? (
                         <div className="sidebar-session-empty">
                           Henüz sohbet yok.

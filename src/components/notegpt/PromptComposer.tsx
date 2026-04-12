@@ -4,6 +4,8 @@ import styles from "./NoteGptWorkspace.module.css";
 interface PromptComposerProps {
   draft: string;
   isStreaming: boolean;
+  notesCount: number;
+  foldersCount: number;
   composerRef: React.RefObject<HTMLTextAreaElement | null>;
   onDraftChange: (value: string) => void;
   onSend: () => void;
@@ -12,6 +14,8 @@ interface PromptComposerProps {
 export function PromptComposer({
   draft,
   isStreaming,
+  notesCount,
+  foldersCount,
   composerRef,
   onDraftChange,
   onSend,
@@ -37,7 +41,21 @@ export function PromptComposer({
         </div>
 
         <div className={styles.composerFooter}>
-          <span className={styles.composerHintInline}>Ctrl/Cmd + Enter</span>
+          <div className={styles.composerContext}>
+            <span className={styles.contextPill}>
+              <span className="material-symbols-outlined sm" aria-hidden="true">
+                account_tree
+              </span>
+              {notesCount} not
+            </span>
+            <span className={styles.contextPill}>
+              <span className="material-symbols-outlined sm" aria-hidden="true">
+                folder
+              </span>
+              {foldersCount} klasör
+            </span>
+            <span className={styles.composerHintInline}>Ctrl/Cmd + Enter</span>
+          </div>
 
           <Button
             variant="filled"

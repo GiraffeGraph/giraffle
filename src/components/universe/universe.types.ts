@@ -41,7 +41,7 @@ export interface UniversePublishSeed {
 
 export interface UniverseProposalSummary {
   id: string;
-  noteId: string;
+  href: string;
   title: string;
   status: string;
   summary: string | null;

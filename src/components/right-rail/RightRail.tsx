@@ -12,6 +12,7 @@ type RightRailProps = {
 
 const NAV_ITEMS = [
   { path: "/search", icon: "\uE8B6", label: "Arama" },
+  { path: "/discover", icon: "newspaper", label: "Keşfet" },
   { path: "/templates", icon: "\uE02F", label: "Şablonlar" },
   { path: "/publish", icon: "\uE255", label: "Yayın" },
   { path: "/proposals", icon: "\uE65F", label: "Öneriler" },

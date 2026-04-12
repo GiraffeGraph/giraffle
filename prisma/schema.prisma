@@ -17,19 +17,19 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  accounts Account[]
-  sessions Session[]
-  notes    Note[]
-  folders  Folder[]
-  assets   MediaAsset[]
+  accounts            Account[]
+  sessions            Session[]
+  notes               Note[]
+  folders             Folder[]
+  assets              MediaAsset[]
   passwordResetTokens PasswordResetToken[]
-  proposals NoteProposal[]
-  feeds WorkspaceFeed[]
-  operationLogs OperationLog[]
-  canvases Canvas[]
-  noteCategories NoteCategory[]
-  noteGptSessions NoteGptSession[]
-  universeState UniverseState?
+  proposals           NoteProposal[]
+  feeds               WorkspaceFeed[]
+  operationLogs       OperationLog[]
+  canvases            Canvas[]
+  noteCategories      NoteCategory[]
+  noteGptSessions     NoteGptSession[]
+  universeState       UniverseState?
 }
 
 model Account {
@@ -70,52 +70,52 @@ model VerificationToken {
 
 // ─── Domain Models ────────────────────────────────────────────
 model Folder {
-  id        String   @id @default(uuid())
-  name      String
-  icon      String?
-  parentId  String?
-  parent    Folder?  @relation("FolderTree", fields: [parentId], references: [id], onDelete: Cascade)
-  children  Folder[] @relation("FolderTree")
-  position  Int      @default(0)
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  notes     Note[]
+  id          String                @id @default(uuid())
+  name        String
+  icon        String?
+  parentId    String?
+  parent      Folder?               @relation("FolderTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children    Folder[]              @relation("FolderTree")
+  position    Int                   @default(0)
+  userId      String
+  user        User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notes       Note[]
   feedSources WorkspaceFeedSource[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
 
   @@index([parentId])
   @@index([userId])
 }
 
 model Note {
-  id          String   @id @default(uuid())
-  title       String   @default("Untitled")
-  slug        String?  @unique
+  id          String        @id @default(uuid())
+  title       String        @default("Untitled")
+  slug        String?       @unique
   icon        String?
   coverImage  String?
   folderId    String?
-  folder      Folder?  @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  folder      Folder?       @relation(fields: [folderId], references: [id], onDelete: SetNull)
   categoryId  String?
   category    NoteCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   templateId  String?
   userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  position    Int      @default(0)
-  isPinned    Boolean  @default(false)
-  isArchived  Boolean  @default(false)
-  isPublished Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  position    Int           @default(0)
+  isPinned    Boolean       @default(false)
+  isArchived  Boolean       @default(false)
+  isPublished Boolean       @default(false)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 
-  blocks       Block[]
-  tags         NoteTag[]
-  outgoingLinks Link[]   @relation("OutgoingLinks")
-  incomingLinks Link[]   @relation("IncomingLinks")
-  assets       MediaAsset[]
-  proposals    NoteProposal[]
-  feedSources  WorkspaceFeedSource[]
-  canvasNodes  CanvasNode[]
+  blocks        Block[]
+  tags          NoteTag[]
+  outgoingLinks Link[]                @relation("OutgoingLinks")
+  incomingLinks Link[]                @relation("IncomingLinks")
+  assets        MediaAsset[]
+  proposals     NoteProposal[]
+  feedSources   WorkspaceFeedSource[]
+  canvasNodes   CanvasNode[]
 
   @@index([folderId])
   @@index([categoryId])
@@ -127,32 +127,32 @@ model Note {
 }
 
 model NoteCategory {
-  id        String   @id @default(uuid())
-  name      String
-  color     String   @default("slate")
-  icon      String?
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  notes     Note[]
+  id          String                @id @default(uuid())
+  name        String
+  color       String                @default("slate")
+  icon        String?
+  userId      String
+  user        User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notes       Note[]
   feedSources WorkspaceFeedSource[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
 
   @@unique([userId, name])
   @@index([userId, createdAt])
 }
 
 model Block {
-  id         String  @id @default(uuid())
+  id         String   @id @default(uuid())
   noteId     String
-  note       Note    @relation(fields: [noteId], references: [id], onDelete: Cascade)
-  type       String  @default("paragraph")
-  content    Json    @default("{}")
-  attributes Json    @default("{}")
+  note       Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  type       String   @default("paragraph")
+  content    Json     @default("{}")
+  attributes Json     @default("{}")
   parentId   String?
-  parent     Block?  @relation("BlockTree", fields: [parentId], references: [id], onDelete: Cascade)
-  children   Block[] @relation("BlockTree")
-  position   Int     @default(0)
+  parent     Block?   @relation("BlockTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children   Block[]  @relation("BlockTree")
+  position   Int      @default(0)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
@@ -164,21 +164,21 @@ model Block {
 }
 
 model Link {
-  id           String  @id @default(uuid())
-  sourceNoteId String
-  sourceNote   Note    @relation("OutgoingLinks", fields: [sourceNoteId], references: [id], onDelete: Cascade)
+  id            String   @id @default(uuid())
+  sourceNoteId  String
+  sourceNote    Note     @relation("OutgoingLinks", fields: [sourceNoteId], references: [id], onDelete: Cascade)
   sourceBlockId String?
-  sourceBlock   Block?  @relation("BlockLinks", fields: [sourceBlockId], references: [id], onDelete: SetNull)
-  targetRaw    String
-  targetNoteId String?
-  targetNote   Note?   @relation("IncomingLinks", fields: [targetNoteId], references: [id], onDelete: SetNull)
-  linkType     String  @default("wikilink")
-  createdAt    DateTime @default(now())
+  sourceBlock   Block?   @relation("BlockLinks", fields: [sourceBlockId], references: [id], onDelete: SetNull)
+  targetRaw     String
+  targetNoteId  String?
+  targetNote    Note?    @relation("IncomingLinks", fields: [targetNoteId], references: [id], onDelete: SetNull)
+  linkType      String   @default("wikilink")
+  createdAt     DateTime @default(now())
 
+  @@unique([sourceNoteId, sourceBlockId, targetRaw])
   @@index([sourceNoteId])
   @@index([targetNoteId])
   @@index([targetRaw])
-  @@unique([sourceNoteId, sourceBlockId, targetRaw])
 }
 
 model Tag {
@@ -231,29 +231,29 @@ model MediaAsset {
 }
 
 model PasswordResetToken {
-  id         String   @id @default(uuid())
+  id         String    @id @default(uuid())
   userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  token      String   @unique
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token      String    @unique
   expires    DateTime
   consumedAt DateTime?
-  createdAt  DateTime @default(now())
+  createdAt  DateTime  @default(now())
 
   @@index([userId])
 }
 
 model NoteProposal {
-  id         String   @id @default(uuid())
+  id         String    @id @default(uuid())
   noteId     String
-  note       Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  note       Note      @relation(fields: [noteId], references: [id], onDelete: Cascade)
   userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   title      String
   summary    String?
-  status     String   @default("pending")
-  patch      Json     @default("{}")
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  status     String    @default("pending")
+  patch      Json      @default("{}")
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
   reviewedAt DateTime?
 
   @@index([noteId])
@@ -262,15 +262,15 @@ model NoteProposal {
 }
 
 model OperationLog {
-  id         String   @id @default(uuid())
+  id         String    @id @default(uuid())
   userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   entityType String
   entityId   String
   actionType String
-  payload    Json     @default("{}")
-  source     String   @default("server")
-  createdAt  DateTime @default(now())
+  payload    Json      @default("{}")
+  source     String    @default("server")
+  createdAt  DateTime  @default(now())
   appliedAt  DateTime?
 
   @@index([userId, createdAt])
@@ -278,74 +278,97 @@ model OperationLog {
 }
 
 model WorkspaceFeed {
-  id          String   @id @default(uuid())
-  title       String
-  description String?
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  sources     WorkspaceFeedSource[]
-  items       WorkspaceFeedItem[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                   String                @id @default(uuid())
+  title                String
+  description          String?
+  kind                 String                @default("news")
+  refreshIntervalHours Int                   @default(24)
+  language             String                @default("mixed")
+  queryMode            String                @default("auto")
+  queryOverride        String?
+  isEnabled            Boolean               @default(true)
+  showOnDashboard      Boolean               @default(true)
+  lastRefreshedAt      DateTime?
+  nextRefreshAt        DateTime?
+  userId               String
+  user                 User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sources              WorkspaceFeedSource[]
+  items                WorkspaceFeedItem[]
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
 
   @@index([userId])
+  @@index([userId, kind])
+  @@index([userId, isEnabled, nextRefreshAt])
 }
 
 model WorkspaceFeedSource {
-  id         String   @id @default(uuid())
-  feedId     String
-  feed       WorkspaceFeed @relation(fields: [feedId], references: [id], onDelete: Cascade)
-  sourceType String   @default("manual")
-  folderId   String?
-  folder     Folder?  @relation(fields: [folderId], references: [id], onDelete: SetNull)
-  noteId     String?
-  note       Note?    @relation(fields: [noteId], references: [id], onDelete: SetNull)
-  categoryId String?
-  category   NoteCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  createdAt  DateTime @default(now())
+  id              String        @id @default(uuid())
+  feedId          String
+  feed            WorkspaceFeed @relation(fields: [feedId], references: [id], onDelete: Cascade)
+  sourceType      String        @default("manual")
+  folderId        String?
+  folder          Folder?       @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  noteId          String?
+  note            Note?         @relation(fields: [noteId], references: [id], onDelete: SetNull)
+  categoryId      String?
+  category        NoteCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  includeChildren Boolean       @default(true)
+  createdAt       DateTime      @default(now())
 
+  @@unique([feedId, folderId])
+  @@unique([feedId, noteId])
+  @@unique([feedId, categoryId])
   @@index([feedId])
+  @@index([feedId, sourceType])
   @@index([folderId])
   @@index([noteId])
   @@index([categoryId])
 }
 
 model WorkspaceFeedItem {
-  id        String   @id @default(uuid())
-  feedId    String
-  feed      WorkspaceFeed @relation(fields: [feedId], references: [id], onDelete: Cascade)
-  title     String
-  summary   String?
-  sourceUrl String?
-  payload   Json     @default("{}")
-  position  Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String        @id @default(uuid())
+  feedId      String
+  feed        WorkspaceFeed @relation(fields: [feedId], references: [id], onDelete: Cascade)
+  itemType    String        @default("entry")
+  title       String
+  summary     String?
+  whyRelevant String?
+  sourceName  String?
+  sourceUrl   String?
+  sourceKey   String?
+  publishedAt DateTime?
+  payload     Json          @default("{}")
+  position    Int           @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 
+  @@unique([feedId, sourceKey])
   @@index([feedId, createdAt])
   @@index([feedId, position])
+  @@index([feedId, publishedAt])
 }
 
 model NoteGptSession {
-  id            String   @id @default(uuid())
-  title         String   @default("Yeni sohbet")
+  id            String           @id @default(uuid())
+  title         String           @default("Yeni sohbet")
   userId        String
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   messages      NoteGptMessage[]
-  lastMessageAt DateTime @default(now())
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  lastMessageAt DateTime         @default(now())
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
 
   @@index([userId, lastMessageAt])
 }
 
 model NoteGptMessage {
-  id        String   @id @default(uuid())
+  id        String         @id @default(uuid())
   sessionId String
   session   NoteGptSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   role      String
   content   String
-  createdAt DateTime @default(now())
+  createdAt DateTime       @default(now())
 
   @@index([sessionId, createdAt])
 }
@@ -353,14 +376,14 @@ model NoteGptMessage {
 // ─── Spatial Canvas Models ────────────────────────────────────
 
 model Canvas {
-  id          String   @id @default(uuid())
-  title       String   @default("Untitled Canvas")
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  nodes       CanvasNode[]
-  edges       CanvasEdge[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String       @id @default(uuid())
+  title     String       @default("Untitled Canvas")
+  userId    String
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nodes     CanvasNode[]
+  edges     CanvasEdge[]
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
 
   @@index([userId])
 }
@@ -378,33 +401,33 @@ model UniverseState {
 }
 
 model CanvasNode {
-  id          String   @id @default(uuid())
-  canvasId    String
-  canvas      Canvas   @relation(fields: [canvasId], references: [id], onDelete: Cascade)
-  noteId      String?
-  note        Note?    @relation(fields: [noteId], references: [id], onDelete: SetNull)
-  type        String   @default("note")
-  data        Json     @default("{}")
-  x           Float    @default(0)
-  y           Float    @default(0)
-  width       Float    @default(300)
-  height      Float    @default(200)
-  color       String?
+  id       String  @id @default(uuid())
+  canvasId String
+  canvas   Canvas  @relation(fields: [canvasId], references: [id], onDelete: Cascade)
+  noteId   String?
+  note     Note?   @relation(fields: [noteId], references: [id], onDelete: SetNull)
+  type     String  @default("note")
+  data     Json    @default("{}")
+  x        Float   @default(0)
+  y        Float   @default(0)
+  width    Float   @default(300)
+  height   Float   @default(200)
+  color    String?
 
   @@index([canvasId])
   @@index([noteId])
 }
 
 model CanvasEdge {
-  id           String   @id @default(uuid())
+  id           String  @id @default(uuid())
   canvasId     String
-  canvas       Canvas   @relation(fields: [canvasId], references: [id], onDelete: Cascade)
+  canvas       Canvas  @relation(fields: [canvasId], references: [id], onDelete: Cascade)
   sourceNodeId String
   targetNodeId String
   sourceHandle String?
   targetHandle String?
-  data         Json     @default("{}")
-  type         String   @default("default")
+  data         Json    @default("{}")
+  type         String  @default("default")
 
   @@index([canvasId])
   @@index([sourceNodeId])

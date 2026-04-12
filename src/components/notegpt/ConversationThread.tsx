@@ -38,10 +38,17 @@ export function ConversationThread({
                 {message.role === "assistant" ? "NoteGPT" : "Sen"}
               </div>
               <div className={styles.messageBody}>
-                {message.content ||
-                  (isStreaming && message.role === "assistant"
-                    ? "Düşünüyor..."
-                    : "")}
+                {message.content ? (
+                  message.content
+                ) : isStreaming && message.role === "assistant" ? (
+                  <span className={styles.typingIndicator} aria-label="Düşünüyor">
+                    <span />
+                    <span />
+                    <span />
+                  </span>
+                ) : (
+                  ""
+                )}
               </div>
             </div>
           </article>

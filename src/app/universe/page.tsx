@@ -10,7 +10,7 @@ import {
   getUnresolvedLinksAction,
 } from "@/server/api/graph";
 import { getPublishedExportsAction, getNotesAction } from "@/server/api/notes";
-import { getWorkspaceProposalsAction } from "@/server/api/proposals";
+import { getWorkspaceFeedsAction } from "@/server/api/feeds";
 import { getWorkspaceTagsAction } from "@/server/api/tags";
 import { getTemplatesAction } from "@/server/api/templates";
 import { getUniverseStateAction } from "@/server/api/universe";
@@ -45,7 +45,7 @@ export default async function UniversePage() {
     getLibraryWorkspaceSeed(),
     getGraphProjectionAction(),
     getUnresolvedLinksAction(),
-    getWorkspaceProposalsAction(),
+    getWorkspaceFeedsAction("suggestion", { itemLimit: 1 }),
   ]);
 
   const sidebarTemplates = templates.map((template) => ({
@@ -90,13 +90,13 @@ export default async function UniversePage() {
       publishSeed={{
         artifacts: publishedExports,
       }}
-      proposals={proposals.map((proposal) => ({
-        id: proposal.id,
-        noteId: proposal.noteId,
-        title: proposal.title,
-        status: proposal.status,
-        summary: proposal.summary ?? null,
-        noteTitle: proposal.note.title,
+      proposals={proposals.map((feed) => ({
+        id: feed.id,
+        href: "/proposals",
+        title: feed.title,
+        status: `${feed.itemCount} öğe`,
+        summary: feed.items[0]?.whyRelevant ?? feed.items[0]?.summary ?? null,
+        noteTitle: feed.sources.map((source) => source.label).slice(0, 2).join(" · ") || "Kaynak seçilmedi",
       }))}
       noteGptSeed={{
         notes: notes.map((note) => ({

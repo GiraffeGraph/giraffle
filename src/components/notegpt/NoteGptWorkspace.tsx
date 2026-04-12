@@ -214,6 +214,8 @@ export function NoteGptWorkspace({
               composerRef={composerRef}
               draft={draft}
               isStreaming={isStreaming}
+              notesCount={notes.length}
+              foldersCount={folders.length}
               onDraftChange={setDraft}
               onSend={() => void handleSend()}
             />

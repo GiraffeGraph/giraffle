@@ -4,6 +4,7 @@ import { getNoteCategoriesAction } from "@/server/api/categories";
 import { getNoteAction, getBacklinksAction } from "@/server/api/notes";
 import { getNoteProposalsAction } from "@/server/api/proposals";
 import { NoteEditorPage } from "@/components/notes/NoteEditorPage";
+import { getNoteFeedAssignmentsAction } from "@/server/api/feeds";
 
 interface NotePageProps {
   params: Promise<{ noteId: string }>;
@@ -11,12 +12,13 @@ interface NotePageProps {
 
 export default async function NotePage({ params }: NotePageProps) {
   const { noteId } = await params;
-  const [note, backlinks, folders, proposals, categories] = await Promise.all([
+  const [note, backlinks, folders, proposals, categories, feedAssignments] = await Promise.all([
     getNoteAction(noteId),
     getBacklinksAction(noteId),
     getAllFoldersAction(),
     getNoteProposalsAction(noteId),
     getNoteCategoriesAction(),
+    getNoteFeedAssignmentsAction(noteId),
   ]);
 
   if (!note) {
@@ -49,6 +51,7 @@ export default async function NotePage({ params }: NotePageProps) {
         status: proposal.status,
         createdAt: proposal.createdAt.toISOString(),
       }))}
+      feedAssignments={feedAssignments}
     />
   );
 }

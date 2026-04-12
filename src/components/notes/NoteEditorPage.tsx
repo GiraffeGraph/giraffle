@@ -16,6 +16,7 @@ import { renderStoredIcon } from "@/components/sidebar/sidebar-icon-utils";
 import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 import { Button } from "@/components/ui/Button";
 import { useIsMobileViewport } from "@/components/ui/useIsMobileViewport";
+import { FeedAssignmentsCard } from "@/components/feeds/FeedAssignmentsCard";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import {
   NOTE_CATEGORY_COLOR_OPTIONS,
@@ -73,6 +74,14 @@ interface NoteEditorPageProps {
     status: string;
     createdAt: string;
   }>;
+  feedAssignments: Array<{
+    id: string;
+    title: string;
+    kind: "suggestion" | "news";
+    isSelected: boolean;
+    refreshIntervalHours: number;
+    itemCount: number;
+  }>;
 }
 
 type SaveStatus = "saved" | "saving" | "pending";
@@ -83,6 +92,7 @@ export function NoteEditorPage({
   categories,
   backlinks,
   proposals,
+  feedAssignments,
 }: NoteEditorPageProps) {
   const [title, setTitle] = useState(note.title);
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(
@@ -1791,6 +1801,21 @@ export function NoteEditorPage({
             </div>
           ) : null}
 
+          <div
+            style={{
+              margin: isMobileViewport ? "24px 0 32px" : "32px 0 40px",
+              padding: footerSectionPadding,
+            }}
+          >
+            <FeedAssignmentsCard
+              title="Akış bağlantıları"
+              description="Bu notu hangi öneri ve haber akışlarının besleyeceğini buradan seçebilir, istersen doğrudan yeni akış başlatabilirsin."
+              assignments={feedAssignments}
+              sourceType="note"
+              sourceId={note.id}
+            />
+          </div>
+
           {proposals.length > 0 ? (
             <div
               style={{
@@ -1817,7 +1842,7 @@ export function NoteEditorPage({
                     >
                       auto_awesome
                     </span>
-                    Bekleyen öneriler ({proposals.length})
+                    Düzenleme önerileri ({proposals.length})
                   </CardTitle>
                 </CardHeader>
                 <CardContent style={{ padding: 0 }}>

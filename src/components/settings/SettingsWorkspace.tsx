@@ -5,10 +5,15 @@ import {
   LOCAL_SYNC_QUEUE_STORAGE_KEY,
   type LocalSyncQueueItem,
 } from "@/lib/workspace-preferences";
+import { FeedSettingsPanel } from "@/components/feeds/FeedSettingsPanel";
 import { Button } from "@/components/ui/Button";
 import { Card, CardHeader, CardTitle, CardContent, CardActions } from "@/components/ui/Card";
+import type { WorkspaceFeedSummary } from "@/domain/feed/feed.types";
 
 export interface SettingsWorkspaceProps {
+  feeds?: WorkspaceFeedSummary[];
+  notes?: Array<{ id: string; title: string }>;
+  folders?: Array<{ id: string; name: string }>;
   operationLogs: Array<{
     id: string;
     entityType: string;
@@ -24,6 +29,9 @@ export interface SettingsWorkspaceProps {
 }
 
 export function SettingsWorkspace({
+  feeds = [],
+  notes = [],
+  folders = [],
   operationLogs,
   embedded = false,
   showHeading = true,
@@ -57,7 +65,7 @@ export function SettingsWorkspace({
       }
     : {
         padding: "32px",
-        maxWidth: "800px",
+        maxWidth: "1040px",
         margin: "0 auto",
         display: "flex",
         flexDirection: "column" as const,
@@ -76,6 +84,17 @@ export function SettingsWorkspace({
         >
           Sistem Ayarları
         </h1>
+      ) : null}
+
+      {feeds.length > 0 || notes.length > 0 || folders.length > 0 ? (
+        <Card variant="outlined">
+          <CardHeader>
+            <CardTitle>Akış Yönetimi</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <FeedSettingsPanel feeds={feeds} notes={notes} folders={folders} />
+          </CardContent>
+        </Card>
       ) : null}
 
       <Card variant="outlined">

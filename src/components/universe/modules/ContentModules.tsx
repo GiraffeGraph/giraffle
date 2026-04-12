@@ -253,7 +253,7 @@ export function ProposalsUniverseModule({
         {proposals.map((proposal) => (
           <Link
             key={proposal.id}
-            href={`/notes/${proposal.noteId}`}
+            href={proposal.href}
             className="universe-module-card"
           >
             <span className="universe-module-card__title">{proposal.title}</span>

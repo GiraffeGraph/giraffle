@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { MouseEvent as ReactMouseEvent } from "react";
 import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { FeedAssignmentsCard } from "@/components/feeds/FeedAssignmentsCard";
 import { SidebarIconPicker } from "@/components/sidebar/SidebarIconPicker";
 import { renderStoredIcon } from "@/components/sidebar/sidebar-icon-utils";
 import { useIsMobileViewport } from "@/components/ui/useIsMobileViewport";
@@ -33,11 +34,20 @@ interface FolderDetailPageProps {
     name: string;
     parentId: string | null;
   }>;
+  feedAssignments: Array<{
+    id: string;
+    title: string;
+    kind: "suggestion" | "news";
+    isSelected: boolean;
+    refreshIntervalHours: number;
+    itemCount: number;
+  }>;
 }
 
 export function FolderDetailPage({
   folder,
   allFolders,
+  feedAssignments,
 }: FolderDetailPageProps) {
   const router = useRouter();
   const isMobileViewport = useIsMobileViewport(900);
@@ -374,6 +384,16 @@ export function FolderDetailPage({
             ))}
           </div>
         ) : null}
+
+        <div style={{ marginBottom: "24px" }}>
+          <FeedAssignmentsCard
+            title="Akış bağlantıları"
+            description="Bu klasörü hangi öneri ve haber akışlarının besleyeceğini buradan seçebilirsin."
+            assignments={feedAssignments}
+            sourceType="folder"
+            sourceId={folder.id}
+          />
+        </div>
 
         {folder.notes.length === 0 ? (
           <div className="dashboard-empty">
