@@ -421,23 +421,13 @@ export function KanbanBoardComponent({ node, updateAttributes }: NodeViewProps) 
     <NodeViewWrapper className="giraffle-kanban-board" contentEditable={false}>
       <div className="giraffle-kanban-shell">
         <div className="giraffle-kanban-header">
-          <div className="giraffle-kanban-title-stack">
-            <span className="giraffle-kanban-eyebrow">Kanban</span>
-            <input
-              className="giraffle-kanban-title-input"
-              value={boardTitle}
-              onChange={(event) => handleBoardTitleChange(event.target.value)}
-              placeholder="Sprint Board"
-              draggable={false}
-            />
-          </div>
-          <button
-            type="button"
-            className="giraffle-kanban-add-column"
-            onClick={handleAddColumn}
-          >
-            + Kolon
-          </button>
+          <input
+            className="giraffle-kanban-title-input"
+            value={boardTitle}
+            onChange={(event) => handleBoardTitleChange(event.target.value)}
+            placeholder="Sprint Board"
+            draggable={false}
+          />
         </div>
 
         <div className="giraffle-kanban-columns">
@@ -484,19 +474,20 @@ export function KanbanBoardComponent({ node, updateAttributes }: NodeViewProps) 
                       draggable={false}
                     />
                   </div>
-                  <button
-                    type="button"
-                    className="giraffle-kanban-column-remove"
-                    onClick={() => handleRemoveColumn(column.id)}
-                    disabled={columns.length <= 1}
-                    title="Kolonu sil"
-                  >
-                    x
-                  </button>
-                </div>
-
-                <div className="giraffle-kanban-card-count">
-                  {column.cards.length} gorev
+                  <div className="giraffle-kanban-column-header-end">
+                    <span className="giraffle-kanban-card-count">
+                      {column.cards.length}
+                    </span>
+                    <button
+                      type="button"
+                      className="giraffle-kanban-column-remove"
+                      onClick={() => handleRemoveColumn(column.id)}
+                      disabled={columns.length <= 1}
+                      title="Kolonu sil"
+                    >
+                      x
+                    </button>
+                  </div>
                 </div>
 
                 <div className="giraffle-kanban-card-list">
@@ -522,20 +513,6 @@ export function KanbanBoardComponent({ node, updateAttributes }: NodeViewProps) 
                           cardDragState?.cardId === card.id ? " is-dragging" : ""
                         }`}
                       >
-                        <div className="giraffle-kanban-card-header">
-                          <button
-                            ref={(element) => {
-                              cardHandleRefs.current[card.id] = element;
-                            }}
-                            type="button"
-                            className="giraffle-kanban-card-grip"
-                            title="Karti surukle"
-                            aria-label="Karti surukle"
-                          >
-                            ::
-                          </button>
-                        </div>
-
                         <textarea
                           className="giraffle-kanban-card-input"
                           value={card.title}
@@ -556,19 +533,32 @@ export function KanbanBoardComponent({ node, updateAttributes }: NodeViewProps) 
 
                         <div className="giraffle-kanban-card-actions">
                           <button
+                            ref={(element) => {
+                              cardHandleRefs.current[card.id] = element;
+                            }}
                             type="button"
-                            className="giraffle-kanban-card-action"
-                            onClick={() => handleDuplicateCard(column.id, card)}
+                            className="giraffle-kanban-card-grip"
+                            title="Karti surukle"
+                            aria-label="Karti surukle"
                           >
-                            Kopyala
+                            ::
                           </button>
-                          <button
-                            type="button"
-                            className="giraffle-kanban-card-action danger"
-                            onClick={() => handleRemoveCard(column.id, card.id)}
-                          >
-                            Sil
-                          </button>
+                          <div className="giraffle-kanban-card-action-group">
+                            <button
+                              type="button"
+                              className="giraffle-kanban-card-action"
+                              onClick={() => handleDuplicateCard(column.id, card)}
+                            >
+                              Kopyala
+                            </button>
+                            <button
+                              type="button"
+                              className="giraffle-kanban-card-action danger"
+                              onClick={() => handleRemoveCard(column.id, card.id)}
+                            >
+                              Sil
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -608,6 +598,14 @@ export function KanbanBoardComponent({ node, updateAttributes }: NodeViewProps) 
               />
             </div>
           ))}
+
+          <button
+            type="button"
+            className="giraffle-kanban-add-column"
+            onClick={handleAddColumn}
+          >
+            + Kolon
+          </button>
         </div>
       </div>
     </NodeViewWrapper>

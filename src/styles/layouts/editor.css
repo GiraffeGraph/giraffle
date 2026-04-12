@@ -679,10 +679,10 @@
 
 .giraffle-kanban-shell {
   display: grid;
-  gap: 16px;
-  padding: 18px;
+  gap: 12px;
+  padding: 14px 16px;
   border: 1px solid var(--border-soft);
-  border-radius: 22px;
+  border-radius: 24px;
   background: var(--surface-glass-strong);
   box-shadow: var(--shadow-panel);
 }
@@ -690,22 +690,7 @@
 .giraffle-kanban-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.giraffle-kanban-title-stack {
-  display: grid;
-  gap: 6px;
   min-width: 0;
-}
-
-.giraffle-kanban-eyebrow {
-  color: var(--text-tertiary);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
 }
 
 .giraffle-kanban-title-input,
@@ -720,7 +705,7 @@
 }
 
 .giraffle-kanban-title-input {
-  font-size: 1.15rem;
+  font-size: 1rem;
   font-weight: 700;
 }
 
@@ -731,7 +716,7 @@
 .giraffle-kanban-column-grip,
 .giraffle-kanban-card-grip {
   border: 1px solid var(--border-soft);
-  border-radius: 12px;
+  border-radius: 8px;
   background: var(--surface-glass);
   color: var(--text-secondary);
   cursor: pointer;
@@ -741,9 +726,18 @@
     border-color var(--transition-fast);
 }
 
-.giraffle-kanban-add-column,
+.giraffle-kanban-add-column {
+  align-self: flex-start;
+  min-height: 34px;
+  padding: 0 12px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 .giraffle-kanban-add-card {
-  min-height: 36px;
+  min-height: 34px;
   padding: 0 12px;
   font-size: 12px;
   font-weight: 600;
@@ -798,11 +792,10 @@
   --kanban-tone: rgb(var(--accent-rgb) / 0.12);
   --kanban-line: rgb(var(--accent-rgb) / 0.22);
   display: grid;
-  grid-template-rows: auto auto minmax(180px, 1fr) auto;
-  gap: 12px;
-  flex: 0 0 clamp(240px, 32vw, 280px);
-  min-height: 320px;
-  padding: 14px;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 8px;
+  flex: 0 0 clamp(220px, 28vw, 268px);
+  padding: 10px 12px;
   border: 1px solid color-mix(in srgb, var(--kanban-line) 70%, var(--border-soft));
   border-radius: 18px;
   background: color-mix(in srgb, var(--surface-glass) 90%, var(--kanban-tone));
@@ -837,7 +830,14 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 6px;
+}
+
+.giraffle-kanban-column-header-end {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
 .giraffle-kanban-column-heading {
@@ -873,20 +873,29 @@
 }
 
 .giraffle-kanban-card-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--kanban-line) 40%, transparent);
   color: var(--text-tertiary);
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 700;
 }
 
 .giraffle-kanban-card-list {
   display: flex;
   flex-direction: column;
   gap: 0;
+  align-content: start;
 }
 
 .giraffle-kanban-card-slot {
   display: grid;
-  gap: 10px;
+  gap: 6px;
 }
 
 .giraffle-kanban-dropzone {
@@ -912,7 +921,7 @@
 }
 
 .giraffle-kanban-dropzone.empty {
-  min-height: 56px;
+  min-height: 36px;
   border: 1px dashed color-mix(in srgb, var(--accent) 28%, transparent);
 }
 
@@ -926,10 +935,10 @@
 
 .giraffle-kanban-card {
   display: grid;
-  gap: 10px;
-  padding: 12px;
+  gap: 6px;
+  padding: 10px 12px;
   border: 1px solid var(--border-soft);
-  border-radius: 16px;
+  border-radius: 12px;
   background: color-mix(in srgb, var(--surface-glass-strong) 94%, transparent);
   box-shadow: var(--shadow-soft);
 }
@@ -938,15 +947,9 @@
   opacity: 0.62;
 }
 
-.giraffle-kanban-card-header {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-}
-
 .giraffle-kanban-card-input {
-  min-height: 48px;
-  font-size: 14px;
+  min-height: 40px;
+  font-size: 13.5px;
   line-height: 1.55;
 }
 
@@ -960,7 +963,13 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 6px;
+}
+
+.giraffle-kanban-card-action-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .slash-menu {
