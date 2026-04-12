@@ -104,7 +104,14 @@ Set `AUTH_SECRET` in `.env` to a long random value before logging in.
 ### Verification
 
 ```bash
+npm run test:run
 npm run verify
+```
+
+For coverage reports:
+
+```bash
+npm run test:coverage
 ```
 
 For a production-like smoke test that builds the Docker image, starts PostgreSQL, applies migrations, and checks `/api/health`:
@@ -145,7 +152,7 @@ ENV_FILE=.env.production npm run smoke:prod
 
 GitHub Actions now runs a clean release pipeline:
 
-- `quality`: install, Prisma validation, lint, typecheck, production build, security audit
+- `quality`: install, Prisma validation, lint, typecheck, unit/integration tests, production build, security audit
 - `smoke`: build the production image and boot the real Docker Compose stack until `/api/health` responds
 - `publish`: push multi-arch Docker images to Docker Hub only after the quality and smoke gates pass
 

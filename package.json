@@ -9,7 +9,10 @@
     "lint": "eslint .",
     "prisma:validate": "prisma validate",
     "typecheck": "tsc --noEmit",
-    "verify": "npm run prisma:validate && npm run lint && npm run typecheck && npm run build",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "verify": "npm run prisma:validate && npm run lint && npm run typecheck && npm run test:run && npm run build",
     "smoke:prod": "sh ./scripts/smoke-prod-stack.sh",
     "postinstall": "prisma generate"
   },
@@ -59,13 +62,20 @@
     "uuid": "^13.0.0"
   },
   "devDependencies": {
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20",
     "@types/pg": "^8.20.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^6.0.1",
+    "@vitest/coverage-v8": "^4.1.4",
     "eslint": "^9",
     "eslint-config-next": "^16.2.3",
-    "typescript": "^5"
+    "jsdom": "^29.0.2",
+    "typescript": "^5",
+    "vitest": "^4.1.4"
   }
 }

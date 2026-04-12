@@ -1,4 +1,4 @@
-const STOP_WORDS = new Set([
+const RAW_STOP_WORDS = [
   "ve",
   "veya",
   "ile",
@@ -32,7 +32,7 @@ const STOP_WORDS = new Set([
   "about",
   "news",
   "latest",
-]);
+] as const;
 
 export interface FeedQueryProfile {
   query: string;
@@ -43,12 +43,15 @@ export interface FeedQueryProfile {
 export function normalizeFeedText(value: string | null | undefined) {
   return (value ?? "")
     .toLocaleLowerCase("tr-TR")
+    .replace(/ı/g, "i")
     .normalize("NFKD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^\p{L}\p{N}\s-]/gu, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
+
+const STOP_WORDS = new Set(RAW_STOP_WORDS.map((word) => normalizeFeedText(word)));
 
 export function tokenizeFeedText(value: string | null | undefined) {
   return normalizeFeedText(value)
