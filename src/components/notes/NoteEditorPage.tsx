@@ -1712,64 +1712,60 @@ export function NoteEditorPage({
           {backlinks.length > 0 ? (
             <div
               style={{
-                marginTop: isMobileViewport ? "32px" : "48px",
+                marginTop: isMobileViewport ? "24px" : "32px",
                 padding: footerSectionPadding,
               }}
             >
-              <Card variant="outlined">
-                <CardHeader>
-                  <CardTitle
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "8px",
-                    }}
-                  >
-                    <span
-                      className="material-symbols-outlined"
-                      aria-hidden="true"
-                    >
-                      link
-                    </span>
-                    Geri bağlantılar ({backlinks.length})
-                  </CardTitle>
-                </CardHeader>
-                <CardContent style={{ padding: 0 }}>
-                  <ul className="md-list">
-                    {backlinks.map((backlink) => (
-                      <li
-                        key={`${backlink.sourceNoteId}-${backlink.targetRaw}`}
-                        style={{ display: "block" }}
+              <details style={{ fontSize: "13px", color: "var(--md-sys-color-on-surface-variant)" }}>
+                <summary
+                  style={{
+                    cursor: "pointer",
+                    userSelect: "none",
+                    listStyle: "none",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    padding: "4px 0",
+                  }}
+                >
+                  <span className="material-symbols-outlined" aria-hidden="true" style={{ fontSize: "16px" }}>
+                    link
+                  </span>
+                  {backlinks.length} geri bağlantı
+                </summary>
+                <ul
+                  style={{
+                    listStyle: "none",
+                    margin: "8px 0 0",
+                    padding: 0,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "2px",
+                  }}
+                >
+                  {backlinks.map((backlink) => (
+                    <li key={`${backlink.sourceNoteId}-${backlink.sourceBlockId ?? ""}-${backlink.targetRaw}`}>
+                      <button
+                        type="button"
+                        onClick={() => navigateToNote(backlink.sourceNoteId)}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          padding: "4px 6px",
+                          borderRadius: "6px",
+                          cursor: "pointer",
+                          fontSize: "13px",
+                          color: "var(--md-sys-color-primary)",
+                          textAlign: "left",
+                          width: "100%",
+                        }}
                       >
-                        <button
-                          type="button"
-                          className="md-list-item"
-                          style={{
-                            width: "100%",
-                            textAlign: "left",
-                            background: "transparent",
-                            borderBottom:
-                              "1px solid var(--md-sys-color-outline-variant)",
-                          }}
-                          onClick={() => navigateToNote(backlink.sourceNoteId)}
-                        >
-                          <div className="md-list-item-content">
-                            <span className="md-list-item-headline">
-                              {backlink.sourceNoteTitle}
-                            </span>
-                            <span
-                              className="md-list-item-supporting-text"
-                              style={{ color: "var(--md-sys-color-primary)" }}
-                            >
-                              -&gt; {backlink.targetRaw}
-                            </span>
-                          </div>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
+                        {backlink.sourceNoteTitle}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </details>
             </div>
           ) : null}
 
