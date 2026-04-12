@@ -23,7 +23,6 @@ model User {
   folders             Folder[]
   assets              MediaAsset[]
   passwordResetTokens PasswordResetToken[]
-  proposals           NoteProposal[]
   feeds               WorkspaceFeed[]
   operationLogs       OperationLog[]
   canvases            Canvas[]
@@ -113,7 +112,6 @@ model Note {
   outgoingLinks Link[]                @relation("OutgoingLinks")
   incomingLinks Link[]                @relation("IncomingLinks")
   assets        MediaAsset[]
-  proposals     NoteProposal[]
   feedSources   WorkspaceFeedSource[]
   canvasNodes   CanvasNode[]
 
@@ -240,25 +238,6 @@ model PasswordResetToken {
   createdAt  DateTime  @default(now())
 
   @@index([userId])
-}
-
-model NoteProposal {
-  id         String    @id @default(uuid())
-  noteId     String
-  note       Note      @relation(fields: [noteId], references: [id], onDelete: Cascade)
-  userId     String
-  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title      String
-  summary    String?
-  status     String    @default("pending")
-  patch      Json      @default("{}")
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  reviewedAt DateTime?
-
-  @@index([noteId])
-  @@index([userId])
-  @@index([status])
 }
 
 model OperationLog {

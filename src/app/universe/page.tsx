@@ -35,7 +35,7 @@ export default async function UniversePage() {
     librarySeed,
     graph,
     unresolvedLinks,
-    proposals,
+    suggestionFeeds,
   ] = await Promise.all([
     getUniverseStateAction(),
     getNotesAction(),
@@ -92,9 +92,9 @@ export default async function UniversePage() {
       publishSeed={{
         artifacts: publishedExports,
       }}
-      proposals={proposals.map((feed) => ({
+      suggestions={suggestionFeeds.map((feed) => ({
         id: feed.id,
-        href: "/proposals",
+        href: "/suggestions",
         title: feed.title,
         status: `${feed.itemCount} öğe`,
         summary: feed.items[0]?.whyRelevant ?? feed.items[0]?.summary ?? null,

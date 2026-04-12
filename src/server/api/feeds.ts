@@ -105,7 +105,7 @@ export async function refreshDueFeedsCronAction(limit?: number) {
 function revalidateFeedSurfaces() {
   revalidatePath("/dashboard");
   revalidatePath("/discover");
-  revalidatePath("/proposals");
+  revalidatePath("/suggestions");
   revalidatePath("/settings");
   revalidatePath("/universe");
 }

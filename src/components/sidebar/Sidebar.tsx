@@ -785,13 +785,13 @@ export function Sidebar({
         },
       },
       {
-        id: "action-proposals",
+        id: "action-suggestions",
         group: "Geçişler",
         title: "Öneri akışını aç",
         description: "Not ve klasör önerilerini gör",
         icon: encodeMaterialSymbol("auto_awesome"),
         onSelect: async () => {
-          router.push("/proposals");
+          router.push("/suggestions");
         },
       },
       {

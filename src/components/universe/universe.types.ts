@@ -39,7 +39,7 @@ export interface UniversePublishSeed {
   artifacts: NoteExportArtifact[];
 }
 
-export interface UniverseProposalSummary {
+export interface UniverseSuggestionSummary {
   id: string;
   href: string;
   title: string;
@@ -56,7 +56,7 @@ export interface UniverseShellProps {
   librarySeed: LibraryWorkspaceSeed;
   graphSeed: UniverseGraphSeed;
   publishSeed: UniversePublishSeed;
-  proposals: UniverseProposalSummary[];
+  suggestions: UniverseSuggestionSummary[];
   spotterSeed: Pick<SpotterWorkspaceProps, "notes" | "folders">;
   settingsLogs: SettingsWorkspaceProps["operationLogs"];
 }
@@ -97,7 +97,7 @@ export type UniverseModuleId =
   | "library"
   | "graph"
   | "publish"
-  | "proposals"
+  | "suggestions"
   | "spotter"
   | "settings";
 
@@ -132,9 +132,9 @@ export interface UniversePublishModuleData extends UniverseModuleBaseData {
   seed: UniversePublishSeed;
 }
 
-export interface UniverseProposalsModuleData extends UniverseModuleBaseData {
-  moduleId: "proposals";
-  seed: UniverseProposalSummary[];
+export interface UniverseSuggestionsModuleData extends UniverseModuleBaseData {
+  moduleId: "suggestions";
+  seed: UniverseSuggestionSummary[];
 }
 
 export interface UniverseSpotterModuleData extends UniverseModuleBaseData {
@@ -153,7 +153,7 @@ export type UniverseModuleNodeData =
   | UniverseLibraryModuleData
   | UniverseGraphModuleData
   | UniversePublishModuleData
-  | UniverseProposalsModuleData
+  | UniverseSuggestionsModuleData
   | UniverseSpotterModuleData
   | UniverseSettingsModuleData;
 

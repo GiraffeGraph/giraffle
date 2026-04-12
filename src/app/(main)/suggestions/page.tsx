@@ -2,7 +2,7 @@ import { FeedPageClient } from "@/components/feeds/FeedPageClient";
 import { PageTopbar } from "@/components/ui/PageTopbar";
 import { getWorkspaceFeedsAction } from "@/server/api/feeds";
 
-export default async function ProposalsPage() {
+export default async function SuggestionsPage() {
   const feeds = await getWorkspaceFeedsAction("suggestion");
 
   return (

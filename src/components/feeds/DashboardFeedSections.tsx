@@ -25,7 +25,7 @@ export function DashboardFeedSections({
           Seçtiğin not ve klasörler için öneri ve haber akışları burada görünür. Her akışın detayını kendi ekranından açabilir, kaynaklarını ayarlardan yönetebilirsin.
         </p>
         <div className="dashboard-quick-actions">
-          <Link href="/proposals" className="dashboard-empty-btn">
+          <Link href="/suggestions" className="dashboard-empty-btn">
             Önerileri aç
           </Link>
           <Link href="/discover" className="dashboard-secondary-btn">
@@ -43,7 +43,7 @@ export function DashboardFeedSections({
         <div className="dashboard-section-head" style={{ marginBottom: "14px" }}>
           <span className="dashboard-section-kicker">Öneriler</span>
           <Link
-            href="/proposals"
+            href="/suggestions"
             style={{ color: "var(--md-sys-color-primary)", textDecoration: "none", fontSize: "13px" }}
           >
             Tümünü gör

@@ -129,7 +129,7 @@ const UNIVERSE_MODULE_LAYOUTS: UniverseModuleLayout[] = [
     zoom: 0.72,
   },
   {
-    moduleId: "proposals",
+    moduleId: "suggestions",
     regionId: "graph",
     title: "Öneriler",
     description: "AI öneri kuyruğu.",
@@ -233,12 +233,12 @@ function buildModuleNodeData(
         icon: layout.icon,
         seed: props.publishSeed,
       };
-    case "proposals":
+    case "suggestions":
       return {
         moduleId,
         title: layout.title,
         icon: layout.icon,
-        seed: props.proposals,
+        seed: props.suggestions,
       };
     case "spotter":
       return {
@@ -446,7 +446,7 @@ function UniverseCanvas({
   librarySeed,
   graphSeed,
   publishSeed,
-  proposals,
+  suggestions,
   spotterSeed,
   settingsLogs,
 }: UniverseShellProps) {
@@ -469,7 +469,7 @@ function UniverseCanvas({
         librarySeed,
         graphSeed,
         publishSeed,
-        proposals,
+        suggestions,
         spotterSeed,
         settingsLogs,
       }),
@@ -479,7 +479,7 @@ function UniverseCanvas({
       librarySeed,
       spotterSeed,
       palette,
-      proposals,
+      suggestions,
       publishSeed,
       searchSeed,
       settingsLogs,

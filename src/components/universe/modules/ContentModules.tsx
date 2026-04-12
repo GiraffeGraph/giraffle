@@ -9,7 +9,7 @@ import { getTemplateCategoryLabel } from "@/lib/template-category";
 import { formatDate } from "@/lib/utils";
 import type {
   UniverseInboxSeed,
-  UniverseProposalSummary,
+  UniverseSuggestionSummary,
   UniversePublishSeed,
   UniverseSearchSeed,
 } from "../universe.types";
@@ -238,31 +238,31 @@ export function PublishUniverseModule({ seed }: { seed: UniversePublishSeed }) {
   );
 }
 
-export function ProposalsUniverseModule({
-  proposals,
+export function SuggestionsUniverseModule({
+  suggestions,
 }: {
-  proposals: UniverseProposalSummary[];
+  suggestions: UniverseSuggestionSummary[];
 }) {
   return (
     <div className="universe-module">
       <ModuleSection
         title="Öneriler"
-        count={proposals.length}
+        count={suggestions.length}
         emptyMessage="Henüz öneri yok."
       >
-        {proposals.map((proposal) => (
+        {suggestions.map((suggestion) => (
           <Link
-            key={proposal.id}
-            href={proposal.href}
+            key={suggestion.id}
+            href={suggestion.href}
             className="universe-module-card"
           >
-            <span className="universe-module-card__title">{proposal.title}</span>
+            <span className="universe-module-card__title">{suggestion.title}</span>
             <span className="universe-module-card__meta">
-              {proposal.noteTitle} · {proposal.status}
+              {suggestion.noteTitle} · {suggestion.status}
             </span>
-            {proposal.summary ? (
+            {suggestion.summary ? (
               <span className="universe-module-card__description">
-                {proposal.summary}
+                {suggestion.summary}
               </span>
             ) : null}
           </Link>

@@ -51,9 +51,9 @@ const PublishUniverseModule = dynamic(
     loading: () => <ModuleLoading />,
   }
 );
-const ProposalsUniverseModule = dynamic(
+const SuggestionsUniverseModule = dynamic(
   () =>
-    import("./modules/ContentModules").then((mod) => mod.ProposalsUniverseModule),
+    import("./modules/ContentModules").then((mod) => mod.SuggestionsUniverseModule),
   {
     loading: () => <ModuleLoading />,
   }
@@ -108,8 +108,8 @@ export function UniverseModuleNode({
         {data.moduleId === "publish" ? (
           <PublishUniverseModule seed={data.seed} />
         ) : null}
-        {data.moduleId === "proposals" ? (
-          <ProposalsUniverseModule proposals={data.seed} />
+        {data.moduleId === "suggestions" ? (
+          <SuggestionsUniverseModule suggestions={data.seed} />
         ) : null}
         {data.moduleId === "spotter" ? (
           <SpotterUniverseModule
