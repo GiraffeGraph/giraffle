@@ -1062,16 +1062,6 @@
   overflow: visible;
 }
 
-/* ─── Draft Draw Overlay ──────────────────────────────────────── */
-
-.svn-draw-overlay {
-  position: fixed;
-  inset: 0;
-  display: block;
-  pointer-events: none;
-  z-index: 11;
-}
-
 /* ─── Node: Zone ───────────────────────────────────────────────── */
 
 .svn-node-zone {

@@ -255,18 +255,6 @@ function summarizeDocument(document: TiptapDocument | null | undefined, maxLengt
   return `${text.slice(0, maxLength).trimEnd()}…`;
 }
 
-function screenPointsToPath(points: ScreenPoint[]): string {
-  if (points.length === 0) return "";
-  if (points.length === 1) {
-    const point = points[0];
-    return `M ${point?.x ?? 0} ${point?.y ?? 0}`;
-  }
-
-  return points
-    .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`)
-    .join(" ");
-}
-
 type SaveStatus = "saved" | "saving" | "unsaved";
 
 type InspectorStatus = "closed" | "loading" | "ready" | "error";
@@ -286,13 +274,12 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
   const [tool, setTool] = useState<CanvasTool>("select");
   const [lineSourceNodeId, setLineSourceNodeId] = useState<string | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
-  const [draftStroke, setDraftStroke] = useState<ScreenPoint[]>([]);
+  const [draftStroke, setDraftStroke] = useState<InkPoint[]>([]);
   const [inspectorStatus, setInspectorStatus] = useState<InspectorStatus>("closed");
   const [inspectorNoteId, setInspectorNoteId] = useState<string | null>(null);
   const [inspectorNote, setInspectorNote] = useState<SavannaEditableNote | null>(null);
   const [inspectorTitleDraft, setInspectorTitleDraft] = useState("");
   const [inspectorSaveState, setInspectorSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
-  const [viewportSize, setViewportSize] = useState({ width: 1, height: 1 });
 
   const saveTimerRef = useRef<number | null>(null);
   const cameraTimerRef = useRef<number | null>(null);
@@ -317,19 +304,6 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
   useEffect(() => {
     setViewport({ x: canvas.cameraX, y: canvas.cameraY, zoom: canvas.zoom }, { duration: 0 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    const syncViewportSize = () => {
-      setViewportSize({
-        width: Math.max(window.innerWidth, 1),
-        height: Math.max(window.innerHeight, 1),
-      });
-    };
-
-    syncViewportSize();
-    window.addEventListener("resize", syncViewportSize);
-    return () => window.removeEventListener("resize", syncViewportSize);
   }, []);
 
   useEffect(() => {
@@ -492,9 +466,11 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
 
       drawingPointerIdRef.current = pointerEvent.pointerId ?? null;
       setIsDrawing(true);
-      setDraftStroke([{ x: pointerEvent.clientX, y: pointerEvent.clientY }]);
+
+      const flowPoint = screenToFlowPosition({ x: pointerEvent.clientX, y: pointerEvent.clientY });
+      setDraftStroke([{ x: flowPoint.x, y: flowPoint.y }]);
     },
-    [isPaneEventTarget, tool],
+    [isPaneEventTarget, screenToFlowPosition, tool],
   );
 
   const handlePaneMouseMove = useCallback(
@@ -513,29 +489,28 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
 
       if (typeof pointerEvent.clientX !== "number" || typeof pointerEvent.clientY !== "number") return;
 
+      const flowPoint = screenToFlowPosition({ x: pointerEvent.clientX, y: pointerEvent.clientY });
+
       setDraftStroke((current) => {
         const last = current.at(-1);
         if (last) {
-          const dx = pointerEvent.clientX! - last.x;
-          const dy = pointerEvent.clientY! - last.y;
+          const dx = flowPoint.x - last.x;
+          const dy = flowPoint.y - last.y;
           if (dx * dx + dy * dy < 9) {
             return current;
           }
         }
 
-        return [...current, { x: pointerEvent.clientX!, y: pointerEvent.clientY! }];
+        return [...current, { x: flowPoint.x, y: flowPoint.y }];
       });
     },
-    [isDrawing, isPaneEventTarget, tool],
+    [isDrawing, isPaneEventTarget, screenToFlowPosition, tool],
   );
 
   const finalizeDrawStroke = useCallback(() => {
     if (!isDrawing || draftStroke.length === 0) return;
 
-    const flowPoints: InkPoint[] = draftStroke.map((point) => {
-      const flowPoint = screenToFlowPosition(point);
-      return { x: flowPoint.x, y: flowPoint.y };
-    });
+    const flowPoints = draftStroke;
 
     if (flowPoints.length < 2) {
       setIsDrawing(false);
@@ -571,7 +546,7 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
     setDraftStroke([]);
     drawingPointerIdRef.current = null;
     triggerSave();
-  }, [draftStroke, isDrawing, screenToFlowPosition, setNodes, triggerSave]);
+  }, [draftStroke, isDrawing, setNodes, triggerSave]);
 
   const handlePaneMouseUp = useCallback(
     (event: unknown) => {
@@ -963,6 +938,40 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
     ],
   );
 
+  const draftStrokeNode = useMemo<Node | null>(() => {
+    if (!isDrawing || draftStroke.length < 2) return null;
+
+    const minX = Math.min(...draftStroke.map((point) => point.x));
+    const minY = Math.min(...draftStroke.map((point) => point.y));
+    const maxX = Math.max(...draftStroke.map((point) => point.x));
+    const maxY = Math.max(...draftStroke.map((point) => point.y));
+
+    const padding = 6;
+    const width = Math.max(maxX - minX + padding * 2, 12);
+    const height = Math.max(maxY - minY + padding * 2, 12);
+
+    const points = draftStroke.map((point) => ({
+      x: point.x - minX + padding,
+      y: point.y - minY + padding,
+    }));
+
+    return {
+      id: "__draft-ink__",
+      type: "inkStroke",
+      position: { x: minX - padding, y: minY - padding },
+      data: { points } satisfies InkStrokeNodeData,
+      style: { width, height },
+      selectable: false,
+      draggable: false,
+      zIndex: 100,
+    };
+  }, [draftStroke, isDrawing]);
+
+  const nodesForRender = useMemo(
+    () => (draftStrokeNode ? [...nodesWithHandlers, draftStrokeNode] : nodesWithHandlers),
+    [draftStrokeNode, nodesWithHandlers],
+  );
+
   const focusContent = useCallback(() => {
     if (latestNodesRef.current.length === 0) {
       void setViewport({ x: 0, y: 0, zoom: canvas.zoom }, { duration: 280 });
@@ -1240,26 +1249,8 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
         </div>
       </header>
 
-      {draftStroke.length > 0 && tool === "draw" ? (
-        <svg
-          className="svn-draw-overlay"
-          aria-hidden="true"
-          width={viewportSize.width}
-          height={viewportSize.height}
-        >
-          <path
-            d={screenPointsToPath(draftStroke)}
-            stroke="var(--accent)"
-            strokeWidth={3}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            fill="none"
-          />
-        </svg>
-      ) : null}
-
       <ReactFlow
-        nodes={nodesWithHandlers}
+        nodes={nodesForRender}
         edges={edges}
         nodeTypes={NODE_TYPES}
         onNodesChange={handleNodesChange}
