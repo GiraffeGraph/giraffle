@@ -2,11 +2,17 @@ import { PageTopbar } from "@/components/ui/PageTopbar";
 import { NoteGptWorkspace } from "@/components/notegpt/NoteGptWorkspace";
 import { getAllFoldersAction } from "@/server/api/folders";
 import { getNotesAction } from "@/server/api/notes";
+import { getNoteGptSessionAction } from "@/server/api/notegpt";
 
-export default async function NoteGptPage() {
-  const [notes, folders] = await Promise.all([
+export default async function NoteGptPage({
+  searchParams,
+}: PageProps<"/notegpt">) {
+  const { session } = await searchParams;
+  const activeSessionId = typeof session === "string" ? session : null;
+  const [notes, folders, activeSession] = await Promise.all([
     getNotesAction(),
     getAllFoldersAction(),
+    activeSessionId ? getNoteGptSessionAction(activeSessionId) : null,
   ]);
 
   const topbarActions = (
@@ -40,20 +46,29 @@ export default async function NoteGptPage() {
     <>
       <PageTopbar icon="smart_toy" label="NoteGPT" actions={topbarActions} />
       <NoteGptWorkspace
-      notes={notes.map((note) => ({
-        id: note.id,
-        title: note.title,
-        icon: note.icon,
-        folderId: note.folderId ?? null,
-        updatedAtLabel: note.updatedAt.toISOString(),
-      }))}
-      folders={folders.map((folder) => ({
-        id: folder.id,
-        name: folder.name,
-        icon: folder.icon,
-        parentId: folder.parentId ?? null,
-      }))}
-    />
+        key={activeSession?.id ?? "new"}
+        initialSessionId={activeSession?.id ?? null}
+        initialMessages={
+          activeSession?.messages.map((message) => ({
+            id: message.id,
+            role: message.role,
+            content: message.content,
+          })) ?? []
+        }
+        notes={notes.map((note) => ({
+          id: note.id,
+          title: note.title,
+          icon: note.icon,
+          folderId: note.folderId ?? null,
+          updatedAtLabel: note.updatedAt.toISOString(),
+        }))}
+        folders={folders.map((folder) => ({
+          id: folder.id,
+          name: folder.name,
+          icon: folder.icon,
+          parentId: folder.parentId ?? null,
+        }))}
+      />
     </>
   );
 }

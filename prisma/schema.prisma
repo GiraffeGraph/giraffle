@@ -24,9 +24,11 @@ model User {
   assets   MediaAsset[]
   passwordResetTokens PasswordResetToken[]
   proposals NoteProposal[]
+  feeds WorkspaceFeed[]
   operationLogs OperationLog[]
   canvases Canvas[]
   noteCategories NoteCategory[]
+  noteGptSessions NoteGptSession[]
   universeState UniverseState?
 }
 
@@ -78,6 +80,7 @@ model Folder {
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   notes     Note[]
+  feedSources WorkspaceFeedSource[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -111,6 +114,7 @@ model Note {
   incomingLinks Link[]   @relation("IncomingLinks")
   assets       MediaAsset[]
   proposals    NoteProposal[]
+  feedSources  WorkspaceFeedSource[]
   canvasNodes  CanvasNode[]
 
   @@index([folderId])
@@ -130,6 +134,7 @@ model NoteCategory {
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   notes     Note[]
+  feedSources WorkspaceFeedSource[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -270,6 +275,79 @@ model OperationLog {
 
   @@index([userId, createdAt])
   @@index([entityType, entityId])
+}
+
+model WorkspaceFeed {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sources     WorkspaceFeedSource[]
+  items       WorkspaceFeedItem[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model WorkspaceFeedSource {
+  id         String   @id @default(uuid())
+  feedId     String
+  feed       WorkspaceFeed @relation(fields: [feedId], references: [id], onDelete: Cascade)
+  sourceType String   @default("manual")
+  folderId   String?
+  folder     Folder?  @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  noteId     String?
+  note       Note?    @relation(fields: [noteId], references: [id], onDelete: SetNull)
+  categoryId String?
+  category   NoteCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  createdAt  DateTime @default(now())
+
+  @@index([feedId])
+  @@index([folderId])
+  @@index([noteId])
+  @@index([categoryId])
+}
+
+model WorkspaceFeedItem {
+  id        String   @id @default(uuid())
+  feedId    String
+  feed      WorkspaceFeed @relation(fields: [feedId], references: [id], onDelete: Cascade)
+  title     String
+  summary   String?
+  sourceUrl String?
+  payload   Json     @default("{}")
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([feedId, createdAt])
+  @@index([feedId, position])
+}
+
+model NoteGptSession {
+  id            String   @id @default(uuid())
+  title         String   @default("Yeni sohbet")
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages      NoteGptMessage[]
+  lastMessageAt DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId, lastMessageAt])
+}
+
+model NoteGptMessage {
+  id        String   @id @default(uuid())
+  sessionId String
+  session   NoteGptSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  role      String
+  content   String
+  createdAt DateTime @default(now())
+
+  @@index([sessionId, createdAt])
 }
 
 // ─── Spatial Canvas Models ────────────────────────────────────

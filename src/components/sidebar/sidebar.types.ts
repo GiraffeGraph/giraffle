@@ -40,11 +40,19 @@ export interface SidebarTemplate {
   variables: TemplateVariable[];
 }
 
+export interface SidebarNoteGptSession {
+  id: string;
+  title: string;
+  lastMessageAt: Date;
+  createdAt: Date;
+}
+
 export interface SidebarProps {
   notes: SidebarNote[];
   folders: SidebarFolder[];
   templates: SidebarTemplate[];
   tags: SidebarTag[];
+  noteGptSessions: SidebarNoteGptSession[];
   activeNoteId?: string;
 }
 

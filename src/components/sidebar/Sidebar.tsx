@@ -15,7 +15,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   CommandPalette,
   type CommandPaletteItem,
@@ -68,6 +68,15 @@ import type { SidebarGroupAction } from "./SidebarGroup";
 import { SidebarNoteRow } from "./SidebarNoteRow";
 import { SidebarFolderItem } from "./SidebarFolderItem";
 import { encodeMaterialSymbol } from "./sidebar-icon-utils";
+
+const sidebarSessionDateFormatter = new Intl.DateTimeFormat("tr", {
+  day: "2-digit",
+  month: "short",
+});
+
+function formatSidebarSessionDate(value: Date) {
+  return sidebarSessionDateFormatter.format(new Date(value));
+}
 
 function PlusIcon() {
   return (
@@ -148,10 +157,12 @@ export function Sidebar({
   folders,
   templates,
   tags,
+  noteGptSessions,
   activeNoteId,
 }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const teardownResizeRef = useRef<(() => void) | null>(null);
   const isMobileViewport = useIsMobileViewport(900);
 
@@ -184,6 +195,8 @@ export function Sidebar({
   const normalizedPaletteQuery = paletteQuery.trim().toLowerCase();
   const currentNoteId =
     activeNoteId ?? extractActiveNoteId(pathname) ?? undefined;
+  const activeNoteGptSessionId =
+    pathname === "/notegpt" ? searchParams.get("session") : null;
   const effectiveIsSidebarCompact = !isMobileViewport && isSidebarCompact;
   const shouldShowSidebarPanel = !isMobileViewport || isMobileSidebarOpen;
 
@@ -196,6 +209,12 @@ export function Sidebar({
         return;
       }
       router.push(href);
+    },
+    [router],
+  );
+  const navigateToNoteGptSession = useCallback(
+    (sessionId: string) => {
+      router.push(`/notegpt?session=${sessionId}`);
     },
     [router],
   );
@@ -854,9 +873,28 @@ export function Sidebar({
         },
       }));
 
+    const noteGptSessionItems = noteGptSessions
+      .filter(
+        (session) =>
+          !normalizedPaletteQuery ||
+          session.title.toLowerCase().includes(normalizedPaletteQuery),
+      )
+      .slice(0, normalizedPaletteQuery ? 8 : 5)
+      .map<CommandPaletteItem>((session) => ({
+        id: `notegpt-session-${session.id}`,
+        group: "NoteGPT",
+        title: session.title,
+        description: "Sohbet oturumunu aç",
+        icon: encodeMaterialSymbol("forum"),
+        onSelect: async () => {
+          navigateToNoteGptSession(session.id);
+        },
+      }));
+
     if (!normalizedPaletteQuery)
       return [
         ...actionItems,
+        ...noteGptSessionItems,
         ...noteItems,
         ...folderItems,
         ...tagItems,
@@ -870,6 +908,7 @@ export function Sidebar({
     );
     return [
       ...filteredActions,
+      ...noteGptSessionItems,
       ...noteItems,
       ...folderItems,
       ...tagItems,
@@ -879,7 +918,10 @@ export function Sidebar({
     closePalette,
     flattenedFolders,
     handleStartCreateFolder,
+    navigateToNote,
+    navigateToNoteGptSession,
     normalizedPaletteQuery,
+    noteGptSessions,
     notes,
     router,
     tags,
@@ -1109,7 +1151,6 @@ export function Sidebar({
                         icon: "library_books",
                         label: "Kütüphane",
                       },
-                      { path: "/notegpt", icon: "smart_toy", label: "NoteGPT" },
                     ] as Array<{
                       path: string;
                       icon: string;
@@ -1136,6 +1177,63 @@ export function Sidebar({
                       )}
                     </button>
                   ))}
+                  <div className="sidebar-notegpt-block">
+                    <button
+                      type="button"
+                      className={`sidebar-item${
+                        pathname === "/notegpt" && !activeNoteGptSessionId
+                          ? " active"
+                          : ""
+                      }`}
+                      onClick={() => router.push("/notegpt")}
+                    >
+                      <span className="sidebar-item-icon" aria-hidden="true">
+                        <span
+                          className="material-symbols-outlined"
+                          style={{ fontSize: "16px", lineHeight: 1 }}
+                        >
+                          smart_toy
+                        </span>
+                      </span>
+                      <span className="sidebar-item-label">NoteGPT</span>
+                    </button>
+
+                    <div className="sidebar-nested-items sidebar-notegpt-sessions">
+                      <button
+                        type="button"
+                        className="sidebar-item sidebar-nested-item"
+                        onClick={() => router.push("/notegpt")}
+                      >
+                        <span className="sidebar-item-label">Yeni sohbet</span>
+                      </button>
+                      {noteGptSessions.length === 0 ? (
+                        <div className="sidebar-session-empty">
+                          Henüz sohbet yok.
+                        </div>
+                      ) : (
+                        noteGptSessions.map((session) => (
+                          <button
+                            key={session.id}
+                            type="button"
+                            className={`sidebar-item sidebar-nested-item${
+                              activeNoteGptSessionId === session.id
+                                ? " active"
+                                : ""
+                            }`}
+                            onClick={() => navigateToNoteGptSession(session.id)}
+                            title={session.title}
+                          >
+                            <span className="sidebar-item-label">
+                              {session.title}
+                            </span>
+                            <span className="sidebar-nested-item-date">
+                              {formatSidebarSessionDate(session.lastMessageAt)}
+                            </span>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  </div>
                 </div>
 
                 <div className="sidebar-divider" />

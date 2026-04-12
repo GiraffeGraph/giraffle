@@ -1,28 +1,19 @@
 import { Button } from "@/components/ui/Button";
 import styles from "./NoteGptWorkspace.module.css";
-import { PROMPT_MODES, type PromptModeId } from "./notegpt.types";
 
 interface PromptComposerProps {
   draft: string;
   isStreaming: boolean;
-  notesCount: number;
-  foldersCount: number;
-  activeMode: PromptModeId;
   composerRef: React.RefObject<HTMLTextAreaElement | null>;
   onDraftChange: (value: string) => void;
-  onModeChange: (mode: PromptModeId) => void;
   onSend: () => void;
 }
 
 export function PromptComposer({
   draft,
   isStreaming,
-  notesCount,
-  foldersCount,
-  activeMode,
   composerRef,
   onDraftChange,
-  onModeChange,
   onSend,
 }: PromptComposerProps) {
   return (
@@ -40,33 +31,13 @@ export function PromptComposer({
                 onSend();
               }
             }}
-            placeholder="NoteGPT'ye mesaj gönder..."
+            placeholder="Notların hakkında sor..."
             rows={3}
           />
         </div>
 
         <div className={styles.composerFooter}>
-          <div className={styles.composerMeta}>
-            <div className={styles.modeRow} role="list" aria-label="Yanıt modu">
-              {PROMPT_MODES.map((mode) => (
-                <button
-                  key={mode.id}
-                  type="button"
-                  className={`${styles.modeChip} ${
-                    activeMode === mode.id ? styles.modeChipActive : ""
-                  }`}
-                  onClick={() => onModeChange(mode.id)}
-                  title={mode.description}
-                >
-                  {mode.label}
-                </button>
-              ))}
-            </div>
-            <span className={styles.metaBadge}>
-              <span className="material-symbols-outlined sm">account_tree</span>
-              {notesCount} not · {foldersCount} klasör bağlı
-            </span>
-          </div>
+          <span className={styles.composerHintInline}>Ctrl/Cmd + Enter</span>
 
           <Button
             variant="filled"
@@ -80,7 +51,6 @@ export function PromptComposer({
           </Button>
         </div>
       </div>
-      <p className={styles.composerHint}>Ctrl/Cmd + Enter ile gönder</p>
     </section>
   );
 }

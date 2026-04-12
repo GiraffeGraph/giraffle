@@ -1,6 +1,5 @@
 .page {
   --ng-bg: var(--bg-page);
-  --ng-surface: color-mix(in srgb, var(--surface-overlay) 88%, transparent);
   --ng-surface-solid: var(--surface-overlay);
   --ng-surface-soft: color-mix(in srgb, var(--surface-glass-soft) 82%, transparent);
   --ng-border: var(--border-soft);
@@ -10,12 +9,13 @@
   --ng-text-soft: var(--text-tertiary);
   --ng-accent: var(--accent);
   --ng-accent-strong: var(--accent-strong);
-  --ng-accent-soft: var(--surface-accent-blend);
   min-height: calc(100vh - 80px);
   color: var(--ng-text);
-  background:
-    radial-gradient(circle at 18% 0%, color-mix(in srgb, var(--ng-accent) 12%, transparent) 0 220px, transparent 360px),
-    linear-gradient(180deg, color-mix(in srgb, var(--ng-bg) 76%, transparent), transparent 34%);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ng-bg) 76%, transparent),
+    transparent 34%
+  );
 }
 
 .pageEmbedded {
@@ -41,6 +41,12 @@
   min-height: calc(100vh - 144px);
 }
 
+.chatShellEmpty {
+  align-content: center;
+  grid-template-rows: auto auto;
+  gap: 26px;
+}
+
 .threadViewport {
   display: grid;
   align-content: center;
@@ -48,26 +54,18 @@
   padding: 12px 0 28px;
 }
 
+.chatShellEmpty .threadViewport {
+  align-content: end;
+  padding: 0;
+}
+
 .emptyState {
   display: grid;
   justify-items: center;
-  gap: 14px;
+  gap: 12px;
   width: min(100%, 780px);
   margin: 0 auto;
   text-align: center;
-}
-
-.emptyMark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border: 1px solid var(--ng-border);
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--ng-surface-solid) 88%, transparent);
-  color: var(--ng-accent-strong);
-  box-shadow: 0 12px 30px rgb(0 0 0 / 0.08);
 }
 
 .emptyEyebrow {
@@ -83,10 +81,10 @@
   max-width: 720px;
   margin: 0;
   color: var(--ng-text);
-  font-size: clamp(30px, 5vw, 54px);
-  font-weight: 780;
+  font-size: clamp(32px, 5vw, 56px);
+  font-weight: 760;
   letter-spacing: 0;
-  line-height: 1.04;
+  line-height: 1.05;
 }
 
 .emptyBody {
@@ -94,7 +92,7 @@
   margin: 0;
   color: var(--ng-text-secondary);
   font-size: 15px;
-  line-height: 1.7;
+  line-height: 1.65;
 }
 
 .composerDock {
@@ -102,14 +100,17 @@
   bottom: 18px;
   z-index: 5;
   display: grid;
-  gap: 10px;
   width: min(100%, 840px);
   margin: 0 auto;
 }
 
+.chatShellEmpty .composerDock {
+  position: relative;
+  bottom: auto;
+}
+
 .composerSection {
   display: grid;
-  gap: 8px;
 }
 
 .composerPanel {
@@ -129,8 +130,8 @@
 
 .composerInput {
   width: 100%;
-  min-height: 78px;
-  max-height: 220px;
+  min-height: 86px;
+  max-height: 240px;
   padding: 8px 8px 4px;
   border: 0;
   border-radius: 6px;
@@ -154,69 +155,10 @@
   gap: 12px;
 }
 
-.composerMeta {
-  display: flex;
-  align-items: center;
-  min-width: 0;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.modeRow {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.modeChip {
-  min-height: 30px;
-  padding: 0 10px;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--ng-text-secondary);
-  font-size: 12px;
-  font-weight: 720;
-  cursor: pointer;
-  transition:
-    border-color 150ms ease,
-    background 150ms ease,
-    color 150ms ease;
-}
-
-.modeChip:hover {
-  border-color: var(--ng-border);
-  background: var(--ng-surface-soft);
-  color: var(--ng-text);
-}
-
-.modeChipActive {
-  border-color: color-mix(in srgb, var(--ng-accent-strong) 34%, var(--ng-border));
-  background: var(--ng-accent-soft);
-  color: var(--ng-text);
-}
-
-.metaBadge {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  min-height: 30px;
-  padding: 0 10px;
-  border: 1px solid var(--ng-border);
-  border-radius: 8px;
-  background: var(--ng-surface-soft);
-  color: var(--ng-text-secondary);
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.composerHint {
-  margin: 0;
+.composerHintInline {
   color: var(--ng-text-soft);
   font-size: 11px;
   font-weight: 650;
-  text-align: center;
 }
 
 .sendButton {
@@ -227,130 +169,6 @@
 
 .sendText {
   display: inline;
-}
-
-.suggestionsSection {
-  min-width: 0;
-}
-
-.suggestionsList {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  padding: 2px 2px 4px;
-  scrollbar-width: none;
-}
-
-.suggestionsList::-webkit-scrollbar {
-  display: none;
-}
-
-.suggestionCard {
-  display: inline-flex;
-  align-items: center;
-  flex: 0 0 auto;
-  gap: 8px;
-  min-height: 34px;
-  max-width: 240px;
-  padding: 0 12px;
-  border: 1px solid var(--ng-border);
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--ng-surface-solid) 80%, transparent);
-  color: var(--ng-text-secondary);
-  text-align: left;
-  cursor: pointer;
-  backdrop-filter: blur(14px);
-  transition:
-    border-color 150ms ease,
-    background 150ms ease,
-    color 150ms ease;
-}
-
-.suggestionCard:hover {
-  border-color: var(--ng-border-strong);
-  background: var(--ng-surface-solid);
-  color: var(--ng-text);
-}
-
-.suggestionIcon {
-  display: inline-flex;
-  color: var(--ng-accent-strong);
-}
-
-.suggestionIcon :global(.material-symbols-outlined) {
-  font-size: 17px;
-}
-
-.suggestionTitle {
-  overflow: hidden;
-  color: inherit;
-  font-size: 12px;
-  font-weight: 730;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.starterSection {
-  width: 100%;
-  margin-top: 12px;
-}
-
-.starterGrid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.starterCard {
-  display: grid;
-  grid-template-rows: auto auto 1fr;
-  gap: 10px;
-  min-height: 154px;
-  padding: 15px;
-  border: 1px solid var(--ng-border);
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--ng-surface-solid) 72%, transparent);
-  color: var(--ng-text);
-  text-align: left;
-  cursor: pointer;
-  backdrop-filter: blur(16px);
-  transition:
-    transform 150ms ease,
-    border-color 150ms ease,
-    background 150ms ease;
-}
-
-.starterCard:hover {
-  transform: translateY(-2px);
-  border-color: var(--ng-border-strong);
-  background: color-mix(in srgb, var(--ng-surface-solid) 92%, transparent);
-}
-
-.starterIcon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  background: var(--ng-surface-soft);
-  color: var(--ng-accent-strong);
-}
-
-.starterIcon :global(.material-symbols-outlined) {
-  font-size: 19px;
-}
-
-.starterTitle {
-  color: var(--ng-text);
-  font-size: 14px;
-  font-weight: 760;
-}
-
-.starterBody {
-  color: var(--ng-text-secondary);
-  font-size: 13px;
-  line-height: 1.55;
 }
 
 .threadSection {
@@ -436,14 +254,6 @@
   .chatShell {
     min-height: calc(100vh - 132px);
   }
-
-  .starterGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .starterCard {
-    min-height: 126px;
-  }
 }
 
 @media (max-width: 720px) {
@@ -460,13 +270,18 @@
     min-height: calc(100vh - 118px);
   }
 
+  .chatShellEmpty {
+    gap: 18px;
+  }
+
   .threadViewport {
     align-content: start;
     padding-top: 20px;
   }
 
-  .emptyState {
-    gap: 12px;
+  .chatShellEmpty .threadViewport {
+    align-content: end;
+    padding-top: 0;
   }
 
   .emptyTitle {
@@ -485,27 +300,8 @@
     padding: 10px;
   }
 
-  .composerFooter {
-    align-items: flex-end;
-  }
-
-  .metaBadge {
+  .composerHintInline {
     display: none;
-  }
-
-  .modeRow {
-    max-width: calc(100vw - 96px);
-    overflow-x: auto;
-    flex-wrap: nowrap;
-    scrollbar-width: none;
-  }
-
-  .modeRow::-webkit-scrollbar {
-    display: none;
-  }
-
-  .modeChip {
-    flex: 0 0 auto;
   }
 
   .sendButton {
@@ -516,10 +312,6 @@
 
   .sendText {
     display: none;
-  }
-
-  .suggestionCard {
-    max-width: 210px;
   }
 
   .messageCard,

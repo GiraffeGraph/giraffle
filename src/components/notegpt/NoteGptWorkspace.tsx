@@ -1,30 +1,31 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { ConversationThread } from "./ConversationThread";
 import { PromptComposer } from "./PromptComposer";
-import { PromptSuggestions } from "./PromptSuggestions";
-import { StarterCards } from "./StarterCards";
 import styles from "./NoteGptWorkspace.module.css";
 import {
-  PROMPT_MODES,
-  PROMPT_SUGGESTIONS,
-  STARTER_CARDS,
   type ChatMessage,
   type NoteGptWorkspaceProps,
-  type PromptModeId,
 } from "./notegpt.types";
 
 export function NoteGptWorkspace({
   notes,
   folders,
   embedded = false,
+  initialSessionId = null,
+  initialMessages = [],
 }: NoteGptWorkspaceProps) {
+  const router = useRouter();
   const composerRef = useRef<HTMLTextAreaElement | null>(null);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(
+    initialSessionId,
+  );
+  const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [draft, setDraft] = useState("");
-  const [activeMode, setActiveMode] = useState<PromptModeId>("general");
   const [isStreaming, setIsStreaming] = useState(false);
+  const isEmpty = messages.length === 0 && !isStreaming;
 
   const folderMeta = useMemo(() => {
     const byId = new Map(
@@ -85,12 +86,6 @@ export function NoteGptWorkspace({
     ].join("\n");
   }, [folderMeta, folders, notes]);
 
-  const handlePromptSelect = (prompt: string, mode: PromptModeId) => {
-    setActiveMode(mode);
-    setDraft(prompt);
-    composerRef.current?.focus();
-  };
-
   const handleSend = async () => {
     const trimmed = draft.trim();
 
@@ -104,11 +99,7 @@ export function NoteGptWorkspace({
       content: trimmed,
     };
     const assistantMessageId = `assistant-${Date.now()}`;
-    const mode = PROMPT_MODES.find((item) => item.id === activeMode) ?? PROMPT_MODES[0];
-    const recentTranscript = [...messages, userMessage]
-      .slice(-8)
-      .map((message) => `${message.role === "user" ? "Kullanıcı" : "NoteGPT"}: ${message.content}`)
-      .join("\n\n");
+    let nextSessionId = activeSessionId;
 
     setDraft("");
     setIsStreaming(true);
@@ -123,14 +114,14 @@ export function NoteGptWorkspace({
     ]);
 
     try {
-      const response = await fetch("/api/agent", {
+      const response = await fetch("/api/notegpt/chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          mode: "workspace",
-          prompt: `[${mode.promptPrefix}]\n${recentTranscript}`,
+          sessionId: activeSessionId,
+          prompt: trimmed,
           context: workspaceContext,
         }),
       });
@@ -142,6 +133,12 @@ export function NoteGptWorkspace({
       const reader = response.body?.getReader();
       const decoder = new TextDecoder("utf-8");
       let streamed = "";
+      const responseSessionId = response.headers.get("X-NoteGPT-Session-Id");
+
+      if (responseSessionId) {
+        nextSessionId = responseSessionId;
+        setActiveSessionId(responseSessionId);
+      }
 
       if (reader) {
         while (true) {
@@ -164,6 +161,11 @@ export function NoteGptWorkspace({
           );
         }
       }
+
+      if (nextSessionId && !embedded) {
+        router.replace(`/notegpt?session=${nextSessionId}`, { scroll: false });
+        router.refresh();
+      }
     } catch (error) {
       console.error("NoteGPT error", error);
       setMessages((current) =>
@@ -185,41 +187,34 @@ export function NoteGptWorkspace({
   return (
     <div className={`${styles.page} ${embedded ? styles.pageEmbedded : ""}`}>
       <div className={styles.pageInner}>
-        <main className={styles.chatShell} aria-label="NoteGPT sohbet">
+        <main
+          className={`${styles.chatShell} ${isEmpty ? styles.chatShellEmpty : ""}`}
+          aria-label="NoteGPT sohbet"
+        >
           <div className={styles.threadViewport}>
-            {messages.length > 0 || isStreaming ? (
-              <ConversationThread messages={messages} isStreaming={isStreaming} />
-            ) : (
+            {isEmpty ? (
               <section className={styles.emptyState}>
-                <div className={styles.emptyMark} aria-hidden="true">
-                  <span className="material-symbols-outlined">auto_awesome</span>
-                </div>
                 <p className={styles.emptyEyebrow}>
                   {notes.length} not ve {folders.length} klasör hazır
                 </p>
-                <h1 className={styles.emptyTitle}>Bugün notlarınla ne yapalım?</h1>
+                <h1 className={styles.emptyTitle}>
+                  Bugün notlarınla neyi netleştirelim?
+                </h1>
                 <p className={styles.emptyBody}>
-                  Kütüphaneni özetle, dağınık fikirleri plana çevir veya klasör yapısını birlikte toparlayalım.
+                  Sorunu yaz; kütüphanendeki başlıkları ve klasörleri bağlam olarak kullanayım.
                 </p>
-                <StarterCards items={STARTER_CARDS} onSelect={handlePromptSelect} />
               </section>
+            ) : (
+              <ConversationThread messages={messages} isStreaming={isStreaming} />
             )}
           </div>
 
           <div className={styles.composerDock}>
-            <PromptSuggestions
-              items={PROMPT_SUGGESTIONS}
-              onSelect={handlePromptSelect}
-            />
             <PromptComposer
               composerRef={composerRef}
               draft={draft}
               isStreaming={isStreaming}
-              notesCount={notes.length}
-              foldersCount={folders.length}
-              activeMode={activeMode}
               onDraftChange={setDraft}
-              onModeChange={setActiveMode}
               onSend={() => void handleSend()}
             />
           </div>
