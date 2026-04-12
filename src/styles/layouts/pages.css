@@ -1406,17 +1406,11 @@
   flex-shrink: 0;
 }
 
-.lp-logo-mark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 9px;
-  background: linear-gradient(135deg, var(--accent), var(--logo-accent-end));
-  color: var(--text-on-accent);
-  font-size: 13px;
-  font-weight: 800;
+.lp-logo-img {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  object-fit: contain;
 }
 
 .lp-logo strong {
@@ -1452,7 +1446,7 @@
   align-items: center;
   height: 34px;
   padding: 0 16px;
-  border-radius: 9px;
+  border-radius: var(--radius-control-sm);
   background: var(--accent);
   color: var(--text-on-accent);
   font-size: 13px;
@@ -1466,6 +1460,36 @@
   opacity: 0.88;
   transform: translateY(-1px);
   color: var(--text-on-accent);
+}
+
+.lp-nav-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.lp-github-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: var(--radius-control-sm);
+  border: 1px solid rgba(79, 62, 40, 0.16);
+  background: transparent;
+  color: #5f5446;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+.lp-github-btn:hover {
+  background: rgba(79, 62, 40, 0.06);
+  border-color: rgba(79, 62, 40, 0.26);
+  color: #201911;
 }
 
 /* ── Hero ──────────────────────────────────────────────────────────────── */
@@ -1533,7 +1557,7 @@
   align-items: center;
   height: 48px;
   padding: 0 26px;
-  border-radius: 13px;
+  border-radius: var(--radius-card);
   background: var(--accent);
   color: var(--text-on-accent);
   font-size: 15px;
@@ -1563,7 +1587,7 @@
   align-items: center;
   height: 48px;
   padding: 0 22px;
-  border-radius: 13px;
+  border-radius: var(--radius-card);
   border: 1px solid rgba(79, 62, 40, 0.18);
   background: transparent;
   color: #5f5446;
@@ -1658,7 +1682,7 @@
   justify-content: center;
   width: 30px;
   height: 30px;
-  border-radius: 9px;
+  border-radius: var(--radius-control-sm);
   background: linear-gradient(135deg, var(--accent), var(--logo-accent-end));
   color: var(--text-on-accent);
   font-size: 13px;
@@ -1678,7 +1702,7 @@
   gap: 7px;
   height: 34px;
   padding: 0 10px;
-  border-radius: 9px;
+  border-radius: var(--radius-control-sm);
   color: #887a68;
   font-size: 12px;
 }
@@ -1763,7 +1787,7 @@
   align-items: center;
   gap: 7px;
   padding: 9px 14px;
-  border-radius: 10px;
+  border-radius: var(--radius-control);
   background: rgba(26, 109, 96, 0.06);
   border: 1px solid rgba(26, 109, 96, 0.12);
   color: #1a6d60;
@@ -1947,7 +1971,7 @@
   align-items: center;
   gap: 7px;
   padding: 9px 13px;
-  border-radius: 10px;
+  border-radius: var(--radius-control);
   background: rgba(26, 109, 96, 0.06);
   border: 1px solid rgba(26, 109, 96, 0.12);
   color: #1a6d60;

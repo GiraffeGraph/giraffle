@@ -87,6 +87,16 @@
   color: var(--text-primary);
 }
 
+.right-rail-btn--signout {
+  color: var(--color-error) !important;
+  opacity: 0.7;
+}
+
+.right-rail-btn--signout:hover {
+  opacity: 1;
+  background: rgb(var(--danger-rgb) / 0.1) !important;
+}
+
 .right-rail .md-icon-button {
   width: 32px;
   height: 32px;

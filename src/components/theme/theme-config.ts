@@ -9,8 +9,8 @@ export const APP_THEMES = [
   },
   {
     id: "midnight-gold",
-    label: "Gece Altını",
-    description: "Derin gece mavisi ve güneş altını vurgular.",
+    label: "Amber Giraffe",
+    description: "Sıcak amber ve bal rengi yüzeyler.",
   },
   {
     id: "graphite-night",

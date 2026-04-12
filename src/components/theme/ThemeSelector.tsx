@@ -10,6 +10,7 @@ import {
   persistAppTheme,
 } from "./theme-config";
 
+import Image from "next/image";
 import { Button } from "@/components/ui/Button";
 import { useIsMobileViewport } from "@/components/ui/useIsMobileViewport";
 
@@ -98,18 +99,7 @@ export function ThemeSelector({
 
     if (themeId === "midnight-gold") {
       return (
-        <svg
-          width="20"
-          height="20"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          viewBox="0 0 24 24"
-        >
-          <path d="M12 3l2.4 4.86L20 8.7l-4 3.9.94 5.5L12 15.9 7.06 18.1 8 12.6 4 8.7l5.6-.84L12 3z" />
-        </svg>
+        <Image src="/apple-icon.png" alt="Gece Altını" width={20} height={20} style={{ borderRadius: "4px" }} />
       );
     }
 
@@ -249,18 +239,7 @@ export function ThemeSelector({
         onClick={() => applyTheme("midnight-gold")}
         title="Gece Altını (Giraffe)"
       >
-        <svg
-          width="20"
-          height="20"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          viewBox="0 0 24 24"
-        >
-          <path d="M12 3l2.4 4.86L20 8.7l-4 3.9.94 5.5L12 15.9 7.06 18.1 8 12.6 4 8.7l5.6-.84L12 3z" />
-        </svg>
+        <Image src="/apple-icon.png" alt="Gece Altını" width={20} height={20} style={{ borderRadius: "4px" }} />
       </Button>
 
       <Button

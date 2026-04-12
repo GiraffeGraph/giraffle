@@ -139,7 +139,7 @@
   width: 40px;
   height: 40px;
   border: 1px solid var(--library-border);
-  border-radius: 14px;
+  border-radius: var(--radius-card);
   background: var(--surface-glass);
   color: var(--library-text-muted);
   cursor: pointer;
@@ -173,7 +173,7 @@
   width: min(420px, 100%);
   min-height: 46px;
   border: 1px solid var(--library-border);
-  border-radius: 16px;
+  border-radius: var(--radius-panel);
   background: var(--surface-glass);
   color: var(--library-text);
   padding: 0 16px;
@@ -216,7 +216,7 @@
 
 .tableSurface {
   border: 1px solid var(--library-border);
-  border-radius: 26px;
+  border-radius: var(--radius-md);
   background: var(--surface-overlay);
   box-shadow: var(--shadow-panel);
   overflow: hidden;
@@ -379,7 +379,7 @@
   width: 18px;
   height: 18px;
   border: 1px solid var(--library-border-strong);
-  border-radius: 6px;
+  border-radius: var(--md-sys-shape-small);
   background: var(--surface-glass);
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
   transition: border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
@@ -408,7 +408,7 @@
 
 .dragHandle {
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--radius-control-sm);
   background: transparent;
   color: var(--library-text-soft);
   cursor: grab;
@@ -435,7 +435,7 @@
   width: 22px;
   height: 22px;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--radius-control-sm);
   background: transparent;
   color: var(--library-text-soft);
   cursor: pointer;
@@ -457,7 +457,7 @@
   justify-content: center;
   width: 34px;
   height: 34px;
-  border-radius: 12px;
+  border-radius: var(--radius-sm);
   background: var(--surface-glass-muted);
   color: var(--library-text);
   border: 1px solid var(--library-border);
@@ -633,7 +633,7 @@
   gap: 16px;
   padding: 16px 18px;
   border: 1px solid var(--library-border);
-  border-radius: 22px;
+  border-radius: var(--radius-panel);
   background: var(--surface-glass);
   box-shadow: var(--shadow-soft);
 }

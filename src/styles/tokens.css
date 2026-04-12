@@ -366,126 +366,131 @@
    Altın aksanlar korundu, navy-midnight zemin eklendi.
    ========================================================================== */
 
+/* ==========================================================================
+   AMBER GIRAFFE — Warm honey/amber light theme v2
+   Soft yellow background, deep amber accents, easy on the eyes.
+   ========================================================================== */
+
 :root[data-theme="midnight-gold"] {
-  color-scheme: dark;
+  color-scheme: light;
 
-  /* ── md.sys.color — Primary (gold) ──────────────────────────────────── */
-  --md-sys-color-primary:                  #e8b84b;
-  --md-sys-color-on-primary:               #110e00;
-  --md-sys-color-primary-container:        rgba(232, 184, 75, 0.18);
-  --md-sys-color-on-primary-container:     #fce7a8;
-  --md-sys-color-primary-fixed:            #fce7a8;
-  --md-sys-color-primary-fixed-dim:        #e8b84b;
-  --md-sys-color-on-primary-fixed:         #110e00;
-  --md-sys-color-on-primary-fixed-variant: #3d2e00;
+  /* ── md.sys.color — Primary (deep amber) ────────────────────────────── */
+  --md-sys-color-primary:                  #9a5800;
+  --md-sys-color-on-primary:               #ffffff;
+  --md-sys-color-primary-container:        rgba(154, 88, 0, 0.1);
+  --md-sys-color-on-primary-container:     #321800;
+  --md-sys-color-primary-fixed:            #f6cd7b;
+  --md-sys-color-primary-fixed-dim:        #e8a020;
+  --md-sys-color-on-primary-fixed:         #321800;
+  --md-sys-color-on-primary-fixed-variant: #5c3000;
 
-  /* ── md.sys.color — Secondary (warm gold highlight) ─────────────────── */
-  --md-sys-color-secondary:                #f6cd7b;
-  --md-sys-color-on-secondary:             #110e00;
-  --md-sys-color-secondary-container:      rgba(246, 205, 123, 0.15);
-  --md-sys-color-on-secondary-container:   #fce7a8;
+  /* ── md.sys.color — Secondary (warm gold) ───────────────────────────── */
+  --md-sys-color-secondary:                #c47a00;
+  --md-sys-color-on-secondary:             #ffffff;
+  --md-sys-color-secondary-container:      rgba(196, 122, 0, 0.12);
+  --md-sys-color-on-secondary-container:   #3d2600;
 
-  /* ── md.sys.color — Tertiary ─────────────────────────────────────────── */
-  --md-sys-color-tertiary:                 #7bb8d4;
-  --md-sys-color-on-tertiary:              #003548;
-  --md-sys-color-tertiary-container:       rgba(123, 184, 212, 0.14);
-  --md-sys-color-on-tertiary-container:    #cce8f5;
+  /* ── md.sys.color — Tertiary (teal, links) ───────────────────────────── */
+  --md-sys-color-tertiary:                 #1a6d60;
+  --md-sys-color-on-tertiary:              #ffffff;
+  --md-sys-color-tertiary-container:       rgba(26, 109, 96, 0.1);
+  --md-sys-color-on-tertiary-container:    #001f1b;
 
   /* ── md.sys.color — Error ────────────────────────────────────────────── */
-  --md-sys-color-error:                    #f09a84;
-  --md-sys-color-on-error:                 #4a0000;
-  --md-sys-color-error-container:          rgba(240, 154, 132, 0.16);
-  --md-sys-color-on-error-container:       #ffd9d0;
+  --md-sys-color-error:                    #ad4b3b;
+  --md-sys-color-on-error:                 #ffffff;
+  --md-sys-color-error-container:          rgba(173, 75, 59, 0.12);
+  --md-sys-color-on-error-container:       #410002;
 
-  /* ── md.sys.color — Surface hierarchy (navy-midnight) ───────────────── */
-  --md-sys-color-background:               #0c0f16;
-  --md-sys-color-on-background:            #e8e4dc;
-  --md-sys-color-surface:                  #0f1219;
-  --md-sys-color-on-surface:               #fdfaf5;
-  --md-sys-color-surface-variant:          #1e2130;
-  --md-sys-color-on-surface-variant:       #c8c2b4;
-  --md-sys-color-surface-dim:              #0c0f16;
-  --md-sys-color-surface-bright:           #252a38;
-  --md-sys-color-surface-container-lowest: rgba(12, 8, 4, 0.9);
-  --md-sys-color-surface-container-low:    #131720;
-  --md-sys-color-surface-container:        #181c26;
-  --md-sys-color-surface-container-high:   #1e2130;
-  --md-sys-color-surface-container-highest:#252a38;
+  /* ── md.sys.color — Surface hierarchy (warm amber/honey) ─────────────── */
+  --md-sys-color-background:               #fdf3d0;
+  --md-sys-color-on-background:            #1c1000;
+  --md-sys-color-surface:                  #fef8e8;
+  --md-sys-color-on-surface:               #1c1000;
+  --md-sys-color-surface-variant:          #f5e8b4;
+  --md-sys-color-on-surface-variant:       #5c4212;
+  --md-sys-color-surface-dim:              #f5eccc;
+  --md-sys-color-surface-bright:           #fffdf0;
+  --md-sys-color-surface-container-lowest: rgba(255, 252, 238, 0.88);
+  --md-sys-color-surface-container-low:    #fef5d8;
+  --md-sys-color-surface-container:        #f8e9b8;
+  --md-sys-color-surface-container-high:   #f2dfa0;
+  --md-sys-color-surface-container-highest:rgba(255, 250, 220, 0.84);
 
   /* ── md.sys.color — Outline ──────────────────────────────────────────── */
-  --md-sys-color-outline:                  #a09468;
-  --md-sys-color-outline-variant:          rgba(232, 184, 75, 0.22);
+  --md-sys-color-outline:                  #8a6820;
+  --md-sys-color-outline-variant:          rgba(154, 88, 0, 0.15);
 
   /* ── md.sys.color — Inverse & Scrim ─────────────────────────────────── */
-  --md-sys-color-inverse-surface:          #e8e4dc;
-  --md-sys-color-inverse-on-surface:       #0c0f16;
-  --md-sys-color-inverse-primary:          #7a5c00;
+  --md-sys-color-inverse-surface:          #1c1000;
+  --md-sys-color-inverse-on-surface:       #fef8e8;
+  --md-sys-color-inverse-primary:          #f6cd7b;
   --md-sys-color-scrim:                    #000000;
   --md-sys-color-shadow:                   #000000;
-  --md-sys-color-surface-tint:             #e8b84b;
+  --md-sys-color-surface-tint:             #9a5800;
 
   /* ── md.sys.color — Semantic ─────────────────────────────────────────── */
-  --md-sys-color-success:                  #52c4a4;
-  --md-sys-color-on-success:               #00382a;
-  --md-sys-color-success-container:        rgba(82, 196, 164, 0.15);
-  --md-sys-color-warning:                  #e8b84b;
-  --md-sys-color-on-warning:               #110e00;
-  --md-sys-color-warning-container:        rgba(232, 184, 75, 0.15);
+  --md-sys-color-success:                  #2f7a58;
+  --md-sys-color-on-success:               #ffffff;
+  --md-sys-color-success-container:        rgba(47, 122, 88, 0.1);
+  --md-sys-color-warning:                  #a46a17;
+  --md-sys-color-on-warning:               #ffffff;
+  --md-sys-color-warning-container:        rgba(164, 106, 23, 0.12);
 
-  /* ── md.sys.color — Glass surfaces ───────────────────────────────────── */
-  --md-sys-color-glass-soft:               rgba(20, 24, 36, 0.4);
-  --md-sys-color-glass-muted:              rgba(20, 24, 36, 0.65);
-  --md-sys-color-glass:                    rgba(15, 18, 28, 0.75);
-  --md-sys-color-glass-mid:                rgba(15, 18, 28, 0.85);
-  --md-sys-color-glass-highlight:          rgba(232, 184, 75, 0.12);
-  --md-sys-color-glass-chip:               rgba(232, 184, 75, 0.18);
-  --md-sys-color-glass-strong:             #181c26;
-  --md-sys-color-glass-hover:              rgba(232, 184, 75, 0.22);
+  /* ── md.sys.color — Glass surfaces (warm amber tinted) ───────────────── */
+  --md-sys-color-glass-soft:               rgba(255, 248, 210, 0.50);
+  --md-sys-color-glass-muted:              rgba(255, 248, 210, 0.60);
+  --md-sys-color-glass:                    rgba(255, 248, 210, 0.70);
+  --md-sys-color-glass-mid:                rgba(255, 248, 210, 0.76);
+  --md-sys-color-glass-highlight:          rgba(255, 248, 210, 0.78);
+  --md-sys-color-glass-chip:               rgba(255, 248, 210, 0.84);
+  --md-sys-color-glass-strong:             rgba(255, 248, 210, 0.92);
+  --md-sys-color-glass-hover:              rgba(255, 250, 225, 0.97);
 
   /* ── md.sys.color — Shell backgrounds ───────────────────────────────── */
   --md-sys-color-shell-main: linear-gradient(
     180deg,
-    rgba(15, 18, 28, 0.85),
-    rgba(10, 12, 20, 0.96)
+    rgba(255, 250, 228, 0.80),
+    rgba(252, 236, 168, 0.90)
   );
   --md-sys-color-shell-sidebar: linear-gradient(
     180deg,
-    rgba(20, 24, 36, 0.92),
-    rgba(12, 15, 22, 0.98)
+    rgba(255, 248, 218, 0.96),
+    rgba(250, 232, 150, 0.98)
   );
   --md-sys-color-surface-overlay: linear-gradient(
     180deg,
-    rgba(20, 24, 36, 0.86),
-    rgba(12, 15, 22, 0.95)
+    rgba(255, 250, 230, 0.86),
+    rgba(252, 238, 170, 0.93)
   );
   --md-sys-color-surface-overlay-soft: linear-gradient(
     180deg,
-    rgba(20, 24, 36, 0.72),
-    rgba(12, 15, 22, 0.82)
+    rgba(255, 250, 228, 0.82),
+    rgba(252, 238, 168, 0.90)
   );
   --md-sys-color-surface-accent-blend: linear-gradient(
     135deg,
-    rgba(232, 184, 75, 0.16),
-    rgba(12, 15, 22, 0.6)
+    rgba(154, 88, 0, 0.10),
+    rgba(255, 248, 210, 0.70)
   );
   --md-sys-color-surface-accent-blend-strong: linear-gradient(
     135deg,
-    rgba(232, 184, 75, 0.28),
-    rgba(20, 24, 36, 0.82)
+    rgba(154, 88, 0, 0.15),
+    rgba(255, 248, 210, 0.80)
   );
 
   /* ── md.ref — Page & Grid ────────────────────────────────────────────── */
-  --md-ref-page-bg-start:    #0f1219;
-  --md-ref-page-bg-mid:      #0c0f16;
-  --md-ref-page-bg-deep:     #090b11;
-  --md-ref-page-grid-rgb:    160 148 104;
-  --md-ref-accent-rgb:       232 184 75;
-  --md-ref-accent-warm-rgb:  246 205 123;
+  --md-ref-page-bg-start:    #fef8e8;
+  --md-ref-page-bg-mid:      #fdf3d0;
+  --md-ref-page-bg-deep:     #f8ebba;
+  --md-ref-page-grid-rgb:    160 120 40;
+  --md-ref-accent-rgb:       154 88 0;
+  --md-ref-accent-warm-rgb:  196 122 0;
 
-  /* ── md.sys.elevation — dark mode ────────────────────────────────────── */
-  --md-sys-elevation-soft:  0 8px 24px rgba(0, 0, 0, 0.32);
-  --md-sys-elevation-panel: 0 12px 32px rgba(0, 0, 0, 0.42);
-  --md-sys-elevation-lift:  0 16px 40px rgba(0, 0, 0, 0.52);
+  /* ── md.sys.elevation ────────────────────────────────────────────────── */
+  --md-sys-elevation-soft:  0 18px 40px rgba(120, 80, 0, 0.10);
+  --md-sys-elevation-panel: 0 16px 36px rgba(120, 80, 0, 0.08);
+  --md-sys-elevation-lift:  0 18px 44px rgba(80,  50, 0, 0.14);
 
   /* ── Bridge aliases ──────────────────────────────────────────────────── */
   --bg-page:                  var(--md-ref-page-bg-mid);
@@ -494,36 +499,36 @@
   --surface-2:                var(--md-sys-color-surface-container-low);
   --surface-3:                var(--md-sys-color-surface-container);
   --surface-4:                var(--md-sys-color-surface-container-high);
-  --surface-ink:              #ffffff;
+  --surface-ink:              var(--md-sys-color-on-surface);
   --text-primary:             var(--md-sys-color-on-surface);
-  --text-secondary:           #e0d9cc;
-  --text-tertiary:            var(--md-sys-color-on-surface-variant);
-  --text-muted:               #6e6352;
+  --text-secondary:           var(--md-sys-color-on-surface-variant);
+  --text-tertiary:            var(--md-sys-color-outline);
+  --text-muted:               #b89050;
   --text-on-accent:           var(--md-sys-color-on-primary);
-  --heading-ink:              #ffffff;
+  --heading-ink:              #120c00;
   --accent:                   var(--md-sys-color-primary);
-  --accent-strong:            #f5c855;
-  --accent-rgb:               232 184 75;
+  --accent-strong:            #7a4400;
+  --accent-rgb:               154 88 0;
   --accent-subtle:            var(--md-sys-color-primary-container);
   --accent-warm:              var(--md-sys-color-secondary);
-  --accent-warm-rgb:          246 205 123;
+  --accent-warm-rgb:          196 122 0;
   --accent-warm-subtle:       var(--md-sys-color-secondary-container);
-  --accent-line:              rgba(232, 184, 75, 0.36);
-  --color-wikilink:           var(--md-sys-color-primary);
+  --accent-line:              rgba(154, 88, 0, 0.20);
+  --color-wikilink:           var(--md-sys-color-tertiary);
   --color-success:            var(--md-sys-color-success);
   --color-warning:            var(--md-sys-color-warning);
   --color-error:              var(--md-sys-color-error);
-  --info-rgb:                 123 184 212;
+  --info-rgb:                 29 109 128;
   --info-ink:                 var(--md-sys-color-tertiary);
-  --success-rgb:              82 196 164;
-  --success-ink:              #a7edd9;
-  --warning-rgb:              232 184 75;
-  --warning-ink:              var(--md-sys-color-secondary);
-  --danger-rgb:               240 154 132;
+  --success-rgb:              47 122 88;
+  --success-ink:              var(--md-sys-color-success);
+  --warning-rgb:              164 106 23;
+  --warning-ink:              var(--md-sys-color-warning);
+  --danger-rgb:               173 75 59;
   --danger-ink:               var(--md-sys-color-error);
   --border-color:             var(--md-sys-color-outline-variant);
-  --border-strong:            rgba(232, 184, 75, 0.42);
-  --border-soft:              rgba(232, 184, 75, 0.1);
+  --border-strong:            rgba(154, 88, 0, 0.28);
+  --border-soft:              rgba(220, 170, 60, 0.40);
   --surface-glass-soft:       var(--md-sys-color-glass-soft);
   --surface-glass-muted:      var(--md-sys-color-glass-muted);
   --surface-glass:            var(--md-sys-color-glass);
@@ -538,22 +543,29 @@
   --shell-sidebar-bg:         var(--md-sys-color-shell-sidebar);
   --surface-accent-blend:     var(--md-sys-color-surface-accent-blend);
   --surface-accent-blend-strong: var(--md-sys-color-surface-accent-blend-strong);
-  --logo-accent-end:          #e8b84b;
-  --page-grid-rgb:            var(--md-ref-page-grid-rgb);
-  --code-block-bg-start:      #090b11;
-  --code-block-bg-end:        #060709;
-  --code-block-text:          #e0d9cc;
-  --code-inline-color:        #f6cd7b;
+  --logo-accent-end:          #c47a00;
+  --page-grid-rgb:            160 120 40;
+  --code-block-bg-start:      #1e1800;
+  --code-block-bg-end:        #150f00;
+  --code-block-text:          #fef0c0;
+  --code-inline-color:        #7a4400;
+  --sidebar-width:            var(--md-layout-sidebar-width);
+  --radius-sm:                12px;
+  --radius-md:                18px;
+  --radius-lg:                var(--md-sys-shape-extra-large);
+  --radius-xl:                var(--md-sys-shape-shell);
+  --radius-card:              var(--md-sys-shape-card);
+  --radius-control:           var(--md-sys-shape-control);
+  --font-sans:                var(--md-sys-typeface-brand);
+  --font-display:             var(--md-sys-typeface-display);
+  --font-mono:                var(--md-sys-typeface-mono);
   --shadow-soft:              var(--md-sys-elevation-soft);
   --shadow-panel:             var(--md-sys-elevation-panel);
   --shadow-lift:              var(--md-sys-elevation-lift);
+  --transition-fast:          var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard);
+  --transition-normal:        var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-standard);
 }
 
-
-/* ==========================================================================
-   GRAPHITE NIGHT — Dark theme (Notion-benzeri grafit + giraffe sarısı aksan)
-   Grafit yüzey korunur, soğuk mavi aksanlar marka sarısına çekilir.
-   ========================================================================== */
 
 :root[data-theme="graphite-night"] {
   color-scheme: dark;
