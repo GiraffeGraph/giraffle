@@ -271,7 +271,7 @@ type SaveStatus = "saved" | "saving" | "unsaved";
 
 type InspectorStatus = "closed" | "loading" | "ready" | "error";
 
-type CanvasTool = "select" | "line" | "text" | "draw";
+type CanvasTool = "select" | "line" | "text" | "draw" | "link";
 
 type ScreenPoint = { x: number; y: number };
 
@@ -422,8 +422,8 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
   }, [inspectorNote?.id, inspectorNote?.title]);
 
   useEffect(() => {
-    if (tool !== "line") setLineSourceNodeId(null);
-    if (tool !== "draw") {
+    if (tool !== "link") setLineSourceNodeId(null);
+    if (tool !== "draw" && tool !== "line") {
       setIsDrawing(false);
       drawingPointerIdRef.current = null;
       clearDrawPreview();
@@ -521,7 +521,7 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
 
   const onNodeClick = useCallback(
     (_event: unknown, node: Node) => {
-      if (tool !== "line") return;
+      if (tool !== "link") return;
 
       if (!lineSourceNodeId) {
         setLineSourceNodeId(node.id);
@@ -541,7 +541,7 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
 
   const onPaneClick = useCallback(
     (event: unknown) => {
-      if (tool === "line") {
+      if (tool === "link") {
         setLineSourceNodeId(null);
         return;
       }
@@ -565,7 +565,7 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
         return;
       }
 
-      if (tool !== "draw") return;
+      if (tool !== "draw" && tool !== "line") return;
       if (pointerEvent.button !== 0) return;
 
       const clientPoint = getClientPoint(event);
@@ -590,7 +590,7 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
 
   const handlePaneMouseMove = useCallback(
     (event: unknown) => {
-      if (tool !== "draw" || !isDrawing) return;
+      if ((tool !== "draw" && tool !== "line") || !isDrawing) return;
       if (!isPaneEventTarget(event)) return;
 
       const pointerEvent = event as { pointerId?: number };
@@ -622,8 +622,17 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
 
       const flowPoint = screenToFlowPosition(clientPoint);
 
-      drawScreenPointsRef.current = [...drawScreenPointsRef.current, localPoint];
-      drawFlowPointsRef.current = [...drawFlowPointsRef.current, { x: flowPoint.x, y: flowPoint.y }];
+      if (tool === "line") {
+        const startScreen = drawScreenPointsRef.current[0];
+        const startFlow = drawFlowPointsRef.current[0];
+        if (!startScreen || !startFlow) return;
+
+        drawScreenPointsRef.current = [startScreen, localPoint];
+        drawFlowPointsRef.current = [startFlow, { x: flowPoint.x, y: flowPoint.y }];
+      } else {
+        drawScreenPointsRef.current = [...drawScreenPointsRef.current, localPoint];
+        drawFlowPointsRef.current = [...drawFlowPointsRef.current, { x: flowPoint.x, y: flowPoint.y }];
+      }
 
       scheduleDrawPreviewRender();
     },
@@ -677,7 +686,7 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
         setIsMiddleMousePressed(false);
       }
 
-      if (tool !== "draw") return;
+      if (tool !== "draw" && tool !== "line") return;
       if (!isPaneEventTarget(event) && !isDrawing) return;
       finalizeDrawStroke();
     },
@@ -1017,7 +1026,7 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
               icon: sourceNote?.icon ?? data.icon,
               onOpenPreview: openNotePreview,
               previewEnabled: tool === "select",
-              linkSelected: tool === "line" && lineSourceNodeId === node.id,
+              linkSelected: tool === "link" && lineSourceNodeId === node.id,
             } as NoteCardNodeData,
           };
         }
@@ -1108,17 +1117,21 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
           : "";
 
   const toolHint =
-    tool === "line"
+    tool === "link"
       ? lineSourceNodeId
-        ? "Select a second node to draw a line"
-        : "Select a node to start linking"
-      : tool === "text"
-        ? "Click anywhere on canvas to place text"
-        : tool === "draw"
-          ? isDrawing
-            ? "Release mouse to finish stroke"
-            : "Press and drag on canvas to draw"
-          : "Drag to select. Hold Space to pan with left drag, or use middle mouse drag.";
+        ? "Select second node to link"
+        : "Select first node to link"
+      : tool === "line"
+        ? isDrawing
+          ? "Release mouse to finish straight line"
+          : "Press and drag on canvas for a straight line"
+        : tool === "text"
+          ? "Click anywhere on canvas to place text"
+          : tool === "draw"
+            ? isDrawing
+              ? "Release mouse to finish stroke"
+              : "Press and drag on canvas to draw"
+            : "Cursor mode: drag to select. Hold Space or use middle mouse to pan.";
 
   return (
     <div ref={shellRef} className="svn-shell" data-tool={tool}>
@@ -1280,24 +1293,24 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
             className={`svn-topbar__btn${tool === "select" ? " svn-topbar__btn--active" : ""}`}
             onClick={() => setTool("select")}
           >
-            <span className="material-symbols-outlined">touch_app</span>
-            Select
+            <span className="material-symbols-outlined">ads_click</span>
+            Cursor
+          </button>
+          <button
+            type="button"
+            className={`svn-topbar__btn${tool === "link" ? " svn-topbar__btn--active" : ""}`}
+            onClick={() => setTool("link")}
+          >
+            <span className="material-symbols-outlined">device_hub</span>
+            Link
           </button>
           <button
             type="button"
             className={`svn-topbar__btn${tool === "line" ? " svn-topbar__btn--active" : ""}`}
             onClick={() => setTool("line")}
           >
-            <span className="material-symbols-outlined">timeline</span>
+            <span className="material-symbols-outlined">horizontal_rule</span>
             Line
-          </button>
-          <button
-            type="button"
-            className={`svn-topbar__btn${tool === "text" ? " svn-topbar__btn--active" : ""}`}
-            onClick={() => setTool("text")}
-          >
-            <span className="material-symbols-outlined">title</span>
-            Text Tool
           </button>
           <button
             type="button"
@@ -1305,19 +1318,15 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
             onClick={() => setTool("draw")}
           >
             <span className="material-symbols-outlined">draw</span>
-            Draw Tool
+            Draw
           </button>
-          <button type="button" className="svn-topbar__btn" onClick={addLabel}>
-            <span className="material-symbols-outlined">label</span>
-            Label
-          </button>
-          <button type="button" className="svn-topbar__btn" onClick={addZone}>
-            <span className="material-symbols-outlined">crop_square</span>
-            Zone
-          </button>
-          <button type="button" className="svn-topbar__btn" onClick={focusContent}>
-            <span className="material-symbols-outlined">center_focus_strong</span>
-            Focus
+          <button
+            type="button"
+            className={`svn-topbar__btn${tool === "text" ? " svn-topbar__btn--active" : ""}`}
+            onClick={() => setTool("text")}
+          >
+            <span className="material-symbols-outlined">title</span>
+            Text
           </button>
 
           <div className={`svn-save-status svn-save-status--${saveStatus}`} aria-live="polite">
@@ -1343,7 +1352,7 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
         </div>
       </header>
 
-      {tool === "draw" ? (
+      {tool === "draw" || tool === "line" ? (
         <svg className="svn-draw-overlay" aria-hidden="true">
           <path ref={drawPreviewPathRef} className="svn-draw-overlay__path" d="" />
         </svg>
@@ -1373,7 +1382,7 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
         panOnDrag={isSpacePressed ? [0, 1] : [1]}
         nodesDraggable={tool === "select" && !isSpacePressed && !isMiddleMousePressed}
         nodesConnectable={tool === "select" && !isSpacePressed && !isMiddleMousePressed}
-        elementsSelectable={tool === "select" || tool === "line"}
+        elementsSelectable={tool === "select" || tool === "link"}
         deleteKeyCode={["Backspace", "Delete"]}
         selectionOnDrag={tool === "select" && !isSpacePressed && !isMiddleMousePressed}
         proOptions={{ hideAttribution: true }}

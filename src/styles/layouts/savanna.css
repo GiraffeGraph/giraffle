@@ -220,6 +220,10 @@
 }
 
 .svn-shell[data-tool="line"] .react-flow__pane {
+  cursor: crosshair;
+}
+
+.svn-shell[data-tool="link"] .react-flow__pane {
   cursor: cell;
 }
 
