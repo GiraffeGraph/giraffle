@@ -211,6 +211,18 @@
   cursor: default;
 }
 
+.svn-shell[data-tool="text"] .react-flow__pane {
+  cursor: text;
+}
+
+.svn-shell[data-tool="draw"] .react-flow__pane {
+  cursor: crosshair;
+}
+
+.svn-shell[data-tool="line"] .react-flow__pane {
+  cursor: cell;
+}
+
 /* ─── Topbar ───────────────────────────────────────────────────── */
 
 .svn-topbar {
@@ -977,115 +989,88 @@
   resize: none;
 }
 
-/* ─── Node: TextBlock ──────────────────────────────────────────── */
+/* ─── Node: CanvasText ─────────────────────────────────────────── */
 
-.svn-node-text {
+.svn-node-canvas-text {
   width: 100%;
   height: 100%;
-  border: 1px solid var(--border-soft);
-  border-radius: 14px;
-  background: var(--surface-glass-strong);
-  box-shadow: var(--shadow-panel);
-  overflow: hidden;
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  border-radius: 10px;
+  border: 1px dashed transparent;
+  background: rgb(var(--surface-glass-rgb, 32 34 42) / 0.24);
+  cursor: text;
+  transition:
+    box-shadow var(--transition-fast),
+    background var(--transition-fast),
+    border-color var(--transition-fast);
 }
 
-.svn-node-text--selected {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px rgb(var(--accent-rgb) / 0.16), var(--shadow-lift);
+.svn-node-canvas-text:hover {
+  border-color: var(--border-soft);
 }
 
-.svn-node-text__content,
-.svn-node-text__input {
+.svn-node-canvas-text--selected {
+  background: rgb(var(--accent-rgb) / 0.08);
+  border-color: rgb(var(--accent-rgb) / 0.38);
+  box-shadow: 0 0 0 1px rgb(var(--accent-rgb) / 0.18);
+}
+
+.svn-node-canvas-text__value,
+.svn-node-canvas-text__input {
   width: 100%;
   height: 100%;
   margin: 0;
-  padding: 12px;
+  padding: 10px 12px;
   box-sizing: border-box;
   border: none;
   background: transparent;
   color: var(--text-primary);
   font: inherit;
-  font-size: 13px;
+  font-size: 15px;
   line-height: 1.6;
   white-space: pre-wrap;
   word-break: break-word;
 }
 
-.svn-node-text__content {
+.svn-node-canvas-text__value {
   overflow: auto;
 }
 
-.svn-node-text__input {
+.svn-node-canvas-text__input {
   resize: none;
   outline: none;
 }
 
-/* ─── Node: Draw ──────────────────────────────────────────────── */
+/* ─── Node: InkStroke ─────────────────────────────────────────── */
 
-.svn-node-draw {
+.svn-node-ink {
   width: 100%;
   height: 100%;
-  border: 1px solid var(--border-soft);
-  border-radius: 14px;
-  background: var(--surface-glass-strong);
-  box-shadow: var(--shadow-panel);
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  overflow: hidden;
-  color: var(--text-primary);
-}
-
-.svn-node-draw--selected {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px rgb(var(--accent-rgb) / 0.16), var(--shadow-lift);
-}
-
-.svn-node-draw__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 8px 10px;
-  border-bottom: 1px solid var(--border-soft);
-}
-
-.svn-node-draw__title {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-secondary);
-}
-
-.svn-node-draw__clear {
-  border: 1px solid var(--border-soft);
-  border-radius: 8px;
+  color: color-mix(in srgb, var(--text-primary) 78%, var(--accent));
+  border-radius: 10px;
   background: transparent;
-  color: var(--text-secondary);
-  font-size: 11px;
-  font-weight: 700;
-  padding: 2px 8px;
-  cursor: pointer;
 }
 
-.svn-node-draw__clear:hover {
-  color: var(--text-primary);
-  border-color: var(--border-strong);
-  background: var(--surface-highlight);
+.svn-node-ink--selected {
+  box-shadow: 0 0 0 1px rgb(var(--accent-rgb) / 0.35);
+  background: rgb(var(--accent-rgb) / 0.05);
 }
 
-.svn-node-draw__surface {
-  width: 100%;
-  height: 100%;
-  touch-action: none;
-  cursor: crosshair;
-}
-
-.svn-node-draw__svg {
+.svn-node-ink__svg {
   width: 100%;
   height: 100%;
   display: block;
+  overflow: visible;
+}
+
+/* ─── Draft Draw Overlay ──────────────────────────────────────── */
+
+.svn-draw-overlay {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  pointer-events: none;
+  z-index: 11;
 }
 
 /* ─── Node: Zone ───────────────────────────────────────────────── */

@@ -35,11 +35,11 @@ import {
   saveSavannaCameraAction,
   saveSavannaStateAction,
 } from "@/server/api/savanna";
-import { DrawNode, type DrawNodeData, type DrawStroke } from "./nodes/DrawNode";
+import { CanvasTextNode, type CanvasTextNodeData } from "./nodes/CanvasTextNode";
+import { InkStrokeNode, type InkPoint, type InkStrokeNodeData } from "./nodes/InkStrokeNode";
 import { NoteCardNode, type NoteCardNodeData } from "./nodes/NoteCardNode";
 import { LabelNode, type LabelNodeData } from "./nodes/LabelNode";
 import { ZoneNode, type ZoneNodeData } from "./nodes/ZoneNode";
-import { TextBlockNode, type TextBlockNodeData } from "./nodes/TextBlockNode";
 
 type SavannaNote = {
   id: string;
@@ -96,38 +96,61 @@ const NODE_TYPES: NodeTypes = {
   noteCard: NoteCardNode,
   label: LabelNode,
   zone: ZoneNode,
-  textBlock: TextBlockNode,
-  draw: DrawNode,
+  canvasText: CanvasTextNode,
+  inkStroke: InkStrokeNode,
 };
 
 function dbNodesToFlow(dbNodes: DbCanvasNode[]): Node[] {
-  return dbNodes.map((n) => ({
-    id: n.id,
-    type: n.type,
-    position: { x: n.x, y: n.y },
-    style: {
-      width: n.width,
-      height: n.type === "zone" || n.type === "textBlock" || n.type === "draw" ? n.height : undefined,
-    },
-    data:
-      n.type === "noteCard"
-        ? {
-            noteId: n.noteId ?? "",
-            title: (n.data as NoteCardNodeData)?.title ?? n.note?.title ?? "Untitled",
-            icon: (n.data as NoteCardNodeData)?.icon ?? n.note?.icon ?? null,
-            preview: (n.data as NoteCardNodeData)?.preview ?? null,
-          }
-        : n.type === "label"
-          ? { text: (n.data as LabelNodeData)?.text ?? "" }
-          : n.type === "textBlock"
-            ? { text: (n.data as TextBlockNodeData)?.text ?? "" }
-            : n.type === "draw"
-              ? { strokes: (n.data as DrawNodeData)?.strokes ?? [] }
-              : { label: (n.data as ZoneNodeData)?.label ?? "", color: n.color },
-    zIndex: n.type === "zone" ? -1 : 0,
-    draggable: true,
-    selectable: true,
-  }));
+  return dbNodes.map((n) => {
+    const resolvedType =
+      n.type === "textBlock" ? "canvasText" : n.type === "draw" ? "inkStroke" : n.type;
+
+    const legacyStrokes = ((n.data as { strokes?: InkPoint[][] })?.strokes ?? [])
+      .flat()
+      .filter((point): point is InkPoint =>
+        typeof point === "object" &&
+        point !== null &&
+        typeof (point as { x?: unknown }).x === "number" &&
+        typeof (point as { y?: unknown }).y === "number",
+      );
+
+    return {
+      id: n.id,
+      type: resolvedType,
+      position: { x: n.x, y: n.y },
+      style: {
+        width: n.width,
+        height:
+          resolvedType === "zone" || resolvedType === "canvasText" || resolvedType === "inkStroke"
+            ? n.height
+            : undefined,
+      },
+      data:
+        resolvedType === "noteCard"
+          ? {
+              noteId: n.noteId ?? "",
+              title: (n.data as NoteCardNodeData)?.title ?? n.note?.title ?? "Untitled",
+              icon: (n.data as NoteCardNodeData)?.icon ?? n.note?.icon ?? null,
+              preview: (n.data as NoteCardNodeData)?.preview ?? null,
+            }
+          : resolvedType === "label"
+            ? { text: (n.data as LabelNodeData)?.text ?? "" }
+            : resolvedType === "canvasText"
+              ? { text: (n.data as CanvasTextNodeData)?.text ?? "" }
+              : resolvedType === "inkStroke"
+                ? {
+                    points:
+                      (n.data as InkStrokeNodeData)?.points &&
+                      Array.isArray((n.data as InkStrokeNodeData).points)
+                        ? (n.data as InkStrokeNodeData).points
+                        : legacyStrokes,
+                  }
+                : { label: (n.data as ZoneNodeData)?.label ?? "", color: n.color },
+      zIndex: resolvedType === "zone" ? -1 : 0,
+      draggable: true,
+      selectable: true,
+    };
+  });
 }
 
 function dbEdgesToFlow(dbEdges: DbCanvasEdge[]): Edge[] {
@@ -159,8 +182,8 @@ function serializeNodeData(node: Node): Record<string, unknown> {
     return { text: data.text ?? "" };
   }
 
-  if (node.type === "textBlock") {
-    const data = node.data as TextBlockNodeData;
+  if (node.type === "canvasText") {
+    const data = node.data as CanvasTextNodeData;
     return { text: data.text ?? "" };
   }
 
@@ -172,10 +195,10 @@ function serializeNodeData(node: Node): Record<string, unknown> {
     };
   }
 
-  if (node.type === "draw") {
-    const data = node.data as DrawNodeData;
+  if (node.type === "inkStroke") {
+    const data = node.data as InkStrokeNodeData;
     return {
-      strokes: Array.isArray(data.strokes) ? data.strokes : [],
+      points: Array.isArray(data.points) ? data.points : [],
     };
   }
 
@@ -189,7 +212,9 @@ function flowNodesToPayload(nodes: Node[]) {
     x: n.position.x,
     y: n.position.y,
     width: (n.style?.width as number) ?? 220,
-    height: (n.style?.height as number) ?? (n.type === "textBlock" ? 180 : n.type === "draw" ? 260 : 80),
+    height:
+      (n.style?.height as number) ??
+      (n.type === "canvasText" ? 160 : n.type === "inkStroke" ? 220 : 80),
     noteId: n.type === "noteCard" ? ((n.data as NoteCardNodeData).noteId ?? null) : null,
     data: serializeNodeData(n),
     color: n.type === "zone" ? ((n.data as ZoneNodeData).color ?? null) : null,
@@ -230,9 +255,25 @@ function summarizeDocument(document: TiptapDocument | null | undefined, maxLengt
   return `${text.slice(0, maxLength).trimEnd()}…`;
 }
 
+function screenPointsToPath(points: ScreenPoint[]): string {
+  if (points.length === 0) return "";
+  if (points.length === 1) {
+    const point = points[0];
+    return `M ${point?.x ?? 0} ${point?.y ?? 0}`;
+  }
+
+  return points
+    .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`)
+    .join(" ");
+}
+
 type SaveStatus = "saved" | "saving" | "unsaved";
 
 type InspectorStatus = "closed" | "loading" | "ready" | "error";
+
+type CanvasTool = "select" | "line" | "text" | "draw";
+
+type ScreenPoint = { x: number; y: number };
 
 function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
   const router = useRouter();
@@ -242,8 +283,10 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
   const [notePanelOpen, setNotePanelOpen] = useState(canvas.nodes.length === 0);
   const [noteSearch, setNoteSearch] = useState("");
-  const [linkMode, setLinkMode] = useState(false);
-  const [linkSourceNodeId, setLinkSourceNodeId] = useState<string | null>(null);
+  const [tool, setTool] = useState<CanvasTool>("select");
+  const [lineSourceNodeId, setLineSourceNodeId] = useState<string | null>(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [draftStroke, setDraftStroke] = useState<ScreenPoint[]>([]);
   const [inspectorStatus, setInspectorStatus] = useState<InspectorStatus>("closed");
   const [inspectorNoteId, setInspectorNoteId] = useState<string | null>(null);
   const [inspectorNote, setInspectorNote] = useState<SavannaEditableNote | null>(null);
@@ -255,6 +298,7 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
   const latestNodesRef = useRef(nodes);
   const latestEdgesRef = useRef(edges);
   const inspectorRequestRef = useRef(0);
+  const drawingPointerIdRef = useRef<number | null>(null);
   const lastCameraRef = useRef<Viewport>({
     x: canvas.cameraX,
     y: canvas.cameraY,
@@ -286,14 +330,19 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
   }, [inspectorNote?.id, inspectorNote?.title]);
 
   useEffect(() => {
-    if (!linkMode) setLinkSourceNodeId(null);
-  }, [linkMode]);
+    if (tool !== "line") setLineSourceNodeId(null);
+    if (tool !== "draw") {
+      setIsDrawing(false);
+      setDraftStroke([]);
+      drawingPointerIdRef.current = null;
+    }
+  }, [tool]);
 
   useEffect(() => {
-    if (!linkSourceNodeId) return;
-    const exists = nodes.some((node) => node.id === linkSourceNodeId);
-    if (!exists) setLinkSourceNodeId(null);
-  }, [linkSourceNodeId, nodes]);
+    if (!lineSourceNodeId) return;
+    const exists = nodes.some((node) => node.id === lineSourceNodeId);
+    if (!exists) setLineSourceNodeId(null);
+  }, [lineSourceNodeId, nodes]);
 
   const triggerSave = useCallback(() => {
     setSaveStatus("unsaved");
@@ -352,29 +401,183 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
     [addConnectionByNodeIds],
   );
 
-  const onNodeClick = useCallback(
-    (_event: unknown, node: Node) => {
-      if (!linkMode) return;
+  const isPaneEventTarget = useCallback((event: unknown) => {
+    const target = (event as { target?: EventTarget }).target;
+    if (!(target instanceof HTMLElement)) return false;
+    return Boolean(target.closest(".react-flow__pane"));
+  }, []);
 
-      if (!linkSourceNodeId) {
-        setLinkSourceNodeId(node.id);
-        return;
-      }
+  const createCanvasTextAt = useCallback(
+    (screenPoint: ScreenPoint) => {
+      const flowPoint = screenToFlowPosition(screenPoint);
+      const newNode: Node = {
+        id: generateId(),
+        type: "canvasText",
+        position: { x: flowPoint.x, y: flowPoint.y },
+        data: {
+          text: "",
+          focusToken: generateId(),
+        } satisfies CanvasTextNodeData,
+        style: { width: 300, height: 120 },
+      };
 
-      if (linkSourceNodeId === node.id) {
-        setLinkSourceNodeId(null);
-        return;
-      }
-
-      addConnectionByNodeIds(linkSourceNodeId, node.id);
-      setLinkSourceNodeId(null);
+      setNodes((current) => [...current, newNode]);
+      triggerSave();
     },
-    [addConnectionByNodeIds, linkMode, linkSourceNodeId],
+    [screenToFlowPosition, setNodes, triggerSave],
   );
 
-  const onPaneClick = useCallback(() => {
-    if (linkMode) setLinkSourceNodeId(null);
-  }, [linkMode]);
+  const onNodeClick = useCallback(
+    (_event: unknown, node: Node) => {
+      if (tool !== "line") return;
+
+      if (!lineSourceNodeId) {
+        setLineSourceNodeId(node.id);
+        return;
+      }
+
+      if (lineSourceNodeId === node.id) {
+        setLineSourceNodeId(null);
+        return;
+      }
+
+      addConnectionByNodeIds(lineSourceNodeId, node.id);
+      setLineSourceNodeId(null);
+    },
+    [addConnectionByNodeIds, lineSourceNodeId, tool],
+  );
+
+  const onPaneClick = useCallback(
+    (event: unknown) => {
+      const pointerEvent = event as { clientX?: number; clientY?: number };
+
+      if (tool === "line") {
+        setLineSourceNodeId(null);
+        return;
+      }
+
+      if (tool === "text") {
+        if (typeof pointerEvent.clientX !== "number" || typeof pointerEvent.clientY !== "number") {
+          return;
+        }
+
+        createCanvasTextAt({ x: pointerEvent.clientX, y: pointerEvent.clientY });
+      }
+    },
+    [createCanvasTextAt, tool],
+  );
+
+  const handlePaneMouseDown = useCallback(
+    (event: unknown) => {
+      if (tool !== "draw") return;
+      if (!isPaneEventTarget(event)) return;
+
+      const pointerEvent = event as { clientX?: number; clientY?: number; button?: number; pointerId?: number };
+      if (pointerEvent.button !== 0) return;
+      if (typeof pointerEvent.clientX !== "number" || typeof pointerEvent.clientY !== "number") return;
+
+      drawingPointerIdRef.current = pointerEvent.pointerId ?? null;
+      setIsDrawing(true);
+      setDraftStroke([{ x: pointerEvent.clientX, y: pointerEvent.clientY }]);
+    },
+    [isPaneEventTarget, tool],
+  );
+
+  const handlePaneMouseMove = useCallback(
+    (event: unknown) => {
+      if (tool !== "draw" || !isDrawing) return;
+      if (!isPaneEventTarget(event)) return;
+
+      const pointerEvent = event as { clientX?: number; clientY?: number; pointerId?: number };
+      if (
+        drawingPointerIdRef.current !== null &&
+        typeof pointerEvent.pointerId === "number" &&
+        pointerEvent.pointerId !== drawingPointerIdRef.current
+      ) {
+        return;
+      }
+
+      if (typeof pointerEvent.clientX !== "number" || typeof pointerEvent.clientY !== "number") return;
+
+      setDraftStroke((current) => {
+        const last = current.at(-1);
+        if (last) {
+          const dx = pointerEvent.clientX! - last.x;
+          const dy = pointerEvent.clientY! - last.y;
+          if (dx * dx + dy * dy < 9) {
+            return current;
+          }
+        }
+
+        return [...current, { x: pointerEvent.clientX!, y: pointerEvent.clientY! }];
+      });
+    },
+    [isDrawing, isPaneEventTarget, tool],
+  );
+
+  const finalizeDrawStroke = useCallback(() => {
+    if (!isDrawing || draftStroke.length === 0) return;
+
+    const flowPoints: InkPoint[] = draftStroke.map((point) => {
+      const flowPoint = screenToFlowPosition(point);
+      return { x: flowPoint.x, y: flowPoint.y };
+    });
+
+    if (flowPoints.length < 2) {
+      setIsDrawing(false);
+      setDraftStroke([]);
+      drawingPointerIdRef.current = null;
+      return;
+    }
+
+    const minX = Math.min(...flowPoints.map((point) => point.x));
+    const minY = Math.min(...flowPoints.map((point) => point.y));
+    const maxX = Math.max(...flowPoints.map((point) => point.x));
+    const maxY = Math.max(...flowPoints.map((point) => point.y));
+
+    const padding = 6;
+    const width = Math.max(maxX - minX + padding * 2, 12);
+    const height = Math.max(maxY - minY + padding * 2, 12);
+
+    const normalizedPoints = flowPoints.map((point) => ({
+      x: point.x - minX + padding,
+      y: point.y - minY + padding,
+    }));
+
+    const newNode: Node = {
+      id: generateId(),
+      type: "inkStroke",
+      position: { x: minX - padding, y: minY - padding },
+      data: { points: normalizedPoints } satisfies InkStrokeNodeData,
+      style: { width, height },
+    };
+
+    setNodes((current) => [...current, newNode]);
+    setIsDrawing(false);
+    setDraftStroke([]);
+    drawingPointerIdRef.current = null;
+    triggerSave();
+  }, [draftStroke, isDrawing, screenToFlowPosition, setNodes, triggerSave]);
+
+  const handlePaneMouseUp = useCallback(
+    (event: unknown) => {
+      if (tool !== "draw") return;
+      if (!isPaneEventTarget(event) && !isDrawing) return;
+      finalizeDrawStroke();
+    },
+    [finalizeDrawStroke, isDrawing, isPaneEventTarget, tool],
+  );
+
+  useEffect(() => {
+    if (!isDrawing) return;
+
+    const handleWindowPointerUp = () => {
+      finalizeDrawStroke();
+    };
+
+    window.addEventListener("pointerup", handleWindowPointerUp);
+    return () => window.removeEventListener("pointerup", handleWindowPointerUp);
+  }, [finalizeDrawStroke, isDrawing]);
 
   const handleNodesChange = useCallback(
     (changes: Parameters<typeof onNodesChange>[0]) => {
@@ -484,42 +687,6 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
       data: { label: "New zone" } satisfies ZoneNodeData,
       style: { width: 420, height: 320 },
       zIndex: -1,
-    };
-
-    setNodes((current) => [...current, newNode]);
-    triggerSave();
-  }, [screenToFlowPosition, setNodes, triggerSave]);
-
-  const addTextBlock = useCallback(() => {
-    const center = screenToFlowPosition({
-      x: window.innerWidth / 2,
-      y: window.innerHeight / 2,
-    });
-
-    const newNode: Node = {
-      id: generateId(),
-      type: "textBlock",
-      position: { x: center.x - 160, y: center.y - 90 },
-      data: { text: "" } satisfies TextBlockNodeData,
-      style: { width: 320, height: 180 },
-    };
-
-    setNodes((current) => [...current, newNode]);
-    triggerSave();
-  }, [screenToFlowPosition, setNodes, triggerSave]);
-
-  const addDrawPad = useCallback(() => {
-    const center = screenToFlowPosition({
-      x: window.innerWidth / 2,
-      y: window.innerHeight / 2,
-    });
-
-    const newNode: Node = {
-      id: generateId(),
-      type: "draw",
-      position: { x: center.x - 220, y: center.y - 140 },
-      data: { strokes: [] } satisfies DrawNodeData,
-      style: { width: 440, height: 280 },
     };
 
     setNodes((current) => [...current, newNode]);
@@ -704,26 +871,12 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
     [setNodes, triggerSave],
   );
 
-  const updateTextBlock = useCallback(
+  const updateCanvasText = useCallback(
     (nodeId: string, text: string) => {
       setNodes((current) =>
         current.map((node) =>
           node.id === nodeId
-            ? { ...node, data: { ...(node.data as TextBlockNodeData), text } }
-            : node,
-        ),
-      );
-      triggerSave();
-    },
-    [setNodes, triggerSave],
-  );
-
-  const updateDrawStrokes = useCallback(
-    (nodeId: string, strokes: DrawStroke[]) => {
-      setNodes((current) =>
-        current.map((node) =>
-          node.id === nodeId
-            ? { ...node, data: { ...(node.data as DrawNodeData), strokes } }
+            ? { ...node, data: { ...(node.data as CanvasTextNodeData), text } }
             : node,
         ),
       );
@@ -746,8 +899,8 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
               title: sourceNote?.title ?? data.title,
               icon: sourceNote?.icon ?? data.icon,
               onOpenPreview: openNotePreview,
-              previewEnabled: !linkMode,
-              linkSelected: linkMode && linkSourceNodeId === node.id,
+              previewEnabled: tool === "select",
+              linkSelected: tool === "line" && lineSourceNodeId === node.id,
             } as NoteCardNodeData,
           };
         }
@@ -772,37 +925,26 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
           };
         }
 
-        if (node.type === "textBlock") {
+        if (node.type === "canvasText") {
           return {
             ...node,
             data: {
-              ...(node.data as TextBlockNodeData),
-              onTextChange: (text: string) => updateTextBlock(node.id, text),
-            } as TextBlockNodeData,
-          };
-        }
-
-        if (node.type === "draw") {
-          return {
-            ...node,
-            data: {
-              ...(node.data as DrawNodeData),
-              onStrokesChange: (strokes: DrawStroke[]) => updateDrawStrokes(node.id, strokes),
-            } as DrawNodeData,
+              ...(node.data as CanvasTextNodeData),
+              onTextChange: (text: string) => updateCanvasText(node.id, text),
+            } as CanvasTextNodeData,
           };
         }
 
         return node;
       }),
     [
-      linkMode,
-      linkSourceNodeId,
+      lineSourceNodeId,
       noteById,
       nodes,
       openNotePreview,
-      updateDrawStrokes,
+      tool,
+      updateCanvasText,
       updateLabelText,
-      updateTextBlock,
       updateZoneLabel,
     ],
   );
@@ -848,14 +990,21 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
           ? "Could not save note"
           : "";
 
-  const linkHint = linkMode
-    ? linkSourceNodeId
-      ? "Select a second node to draw a line"
-      : "Select a node to start linking"
-    : "";
+  const toolHint =
+    tool === "line"
+      ? lineSourceNodeId
+        ? "Select a second node to draw a line"
+        : "Select a node to start linking"
+      : tool === "text"
+        ? "Click anywhere on canvas to place text"
+        : tool === "draw"
+          ? isDrawing
+            ? "Release mouse to finish stroke"
+            : "Press and drag on canvas to draw"
+          : "";
 
   return (
-    <div className="svn-shell">
+    <div className="svn-shell" data-tool={tool}>
       <div className={`svn-note-panel${notePanelOpen ? " svn-note-panel--open" : ""}`}>
         <div className="svn-note-panel__header">
           <span className="svn-note-panel__title">Notes</span>
@@ -995,7 +1144,7 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
           </button>
           <div className="svn-topbar__title-wrap">
             <h1 className="svn-topbar__title">{canvas.title}</h1>
-            {linkHint ? <p className="svn-topbar__hint">{linkHint}</p> : null}
+            {toolHint ? <p className="svn-topbar__hint">{toolHint}</p> : null}
           </div>
         </div>
 
@@ -1009,13 +1158,37 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
             <span className="material-symbols-outlined">note_add</span>
             Notes
           </button>
-          <button type="button" className="svn-topbar__btn" onClick={addTextBlock}>
-            <span className="material-symbols-outlined">edit_note</span>
-            Text
+          <button
+            type="button"
+            className={`svn-topbar__btn${tool === "select" ? " svn-topbar__btn--active" : ""}`}
+            onClick={() => setTool("select")}
+          >
+            <span className="material-symbols-outlined">touch_app</span>
+            Select
           </button>
-          <button type="button" className="svn-topbar__btn" onClick={addDrawPad}>
+          <button
+            type="button"
+            className={`svn-topbar__btn${tool === "line" ? " svn-topbar__btn--active" : ""}`}
+            onClick={() => setTool("line")}
+          >
+            <span className="material-symbols-outlined">timeline</span>
+            Line
+          </button>
+          <button
+            type="button"
+            className={`svn-topbar__btn${tool === "text" ? " svn-topbar__btn--active" : ""}`}
+            onClick={() => setTool("text")}
+          >
+            <span className="material-symbols-outlined">title</span>
+            Text Tool
+          </button>
+          <button
+            type="button"
+            className={`svn-topbar__btn${tool === "draw" ? " svn-topbar__btn--active" : ""}`}
+            onClick={() => setTool("draw")}
+          >
             <span className="material-symbols-outlined">draw</span>
-            Draw
+            Draw Tool
           </button>
           <button type="button" className="svn-topbar__btn" onClick={addLabel}>
             <span className="material-symbols-outlined">label</span>
@@ -1024,14 +1197,6 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
           <button type="button" className="svn-topbar__btn" onClick={addZone}>
             <span className="material-symbols-outlined">crop_square</span>
             Zone
-          </button>
-          <button
-            type="button"
-            className={`svn-topbar__btn${linkMode ? " svn-topbar__btn--active" : ""}`}
-            onClick={() => setLinkMode((current) => !current)}
-          >
-            <span className="material-symbols-outlined">timeline</span>
-            Line
           </button>
           <button type="button" className="svn-topbar__btn" onClick={focusContent}>
             <span className="material-symbols-outlined">center_focus_strong</span>
@@ -1061,6 +1226,19 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
         </div>
       </header>
 
+      {draftStroke.length > 0 && tool === "draw" ? (
+        <svg className="svn-draw-overlay" aria-hidden="true">
+          <path
+            d={screenPointsToPath(draftStroke)}
+            stroke="var(--accent)"
+            strokeWidth={3}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill="none"
+          />
+        </svg>
+      ) : null}
+
       <ReactFlow
         nodes={nodesWithHandlers}
         edges={edges}
@@ -1070,6 +1248,9 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
         onConnect={onConnect}
         onNodeClick={onNodeClick}
         onPaneClick={onPaneClick}
+        onMouseDown={handlePaneMouseDown}
+        onMouseMove={handlePaneMouseMove}
+        onMouseUp={handlePaneMouseUp}
         onMoveEnd={handleMoveEnd}
         connectionMode={ConnectionMode.Loose}
         fitView={canvas.nodes.length > 0}
@@ -1079,12 +1260,12 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
         panOnScroll
         zoomOnScroll
         zoomOnPinch
-        panOnDrag
-        nodesDraggable
-        nodesConnectable
-        elementsSelectable
+        panOnDrag={tool === "select"}
+        nodesDraggable={tool === "select"}
+        nodesConnectable={tool === "select"}
+        elementsSelectable={tool === "select" || tool === "line"}
         deleteKeyCode={["Backspace", "Delete"]}
-        selectionOnDrag={!linkMode}
+        selectionOnDrag={tool === "select"}
         proOptions={{ hideAttribution: true }}
       >
         <Background variant={BackgroundVariant.Dots} gap={28} size={1} color="var(--border-strong)" />
@@ -1111,13 +1292,21 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
                 <span className="material-symbols-outlined">sticky_note_2</span>
                 Add notes
               </button>
-              <button type="button" className="svn-empty-overlay__btn" onClick={addTextBlock}>
-                <span className="material-symbols-outlined">edit_note</span>
-                Add text
+              <button
+                type="button"
+                className="svn-empty-overlay__btn"
+                onClick={() => setTool("text")}
+              >
+                <span className="material-symbols-outlined">title</span>
+                Text tool
               </button>
-              <button type="button" className="svn-empty-overlay__btn" onClick={addDrawPad}>
+              <button
+                type="button"
+                className="svn-empty-overlay__btn"
+                onClick={() => setTool("draw")}
+              >
                 <span className="material-symbols-outlined">draw</span>
-                Add draw pad
+                Draw tool
               </button>
               <button type="button" className="svn-empty-overlay__btn" onClick={addLabel}>
                 <span className="material-symbols-outlined">label</span>

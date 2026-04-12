@@ -3,15 +3,16 @@
 import { type Node, type NodeProps } from "@xyflow/react";
 import { useEffect, useRef, useState } from "react";
 
-export type TextBlockNodeData = {
+export type CanvasTextNodeData = {
   text: string;
+  focusToken?: string;
   onTextChange?: (text: string) => void;
 };
 
-export function TextBlockNode({
+export function CanvasTextNode({
   data,
   selected,
-}: NodeProps<Node<TextBlockNodeData>>) {
+}: NodeProps<Node<CanvasTextNodeData>>) {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(data.text ?? "");
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -23,9 +24,15 @@ export function TextBlockNode({
   useEffect(() => {
     if (editing) {
       inputRef.current?.focus();
-      inputRef.current?.setSelectionRange(value.length, value.length);
+      const length = inputRef.current?.value.length ?? 0;
+      inputRef.current?.setSelectionRange(length, length);
     }
-  }, [editing, value.length]);
+  }, [editing]);
+
+  useEffect(() => {
+    if (!data.focusToken) return;
+    setEditing(true);
+  }, [data.focusToken]);
 
   const commit = () => {
     setEditing(false);
@@ -34,13 +41,14 @@ export function TextBlockNode({
 
   return (
     <div
-      className={`svn-node-text${selected ? " svn-node-text--selected" : ""}`}
+      className={`svn-node-canvas-text${selected ? " svn-node-canvas-text--selected" : ""}`}
       onDoubleClick={() => setEditing(true)}
+      title="Double-click to edit"
     >
       {editing ? (
         <textarea
           ref={inputRef}
-          className="svn-node-text__input"
+          className="svn-node-canvas-text__input"
           value={value}
           onChange={(event) => setValue(event.target.value)}
           onBlur={commit}
@@ -54,10 +62,9 @@ export function TextBlockNode({
               setEditing(false);
             }
           }}
-          spellCheck
         />
       ) : (
-        <pre className="svn-node-text__content">{value.trim() ? value : "Double-click and start writing…"}</pre>
+        <pre className="svn-node-canvas-text__value">{value.trim() ? value : "Type…"}</pre>
       )}
     </div>
   );
