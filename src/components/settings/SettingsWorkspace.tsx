@@ -6,11 +6,14 @@ import {
   type LocalSyncQueueItem,
 } from "@/lib/workspace-preferences";
 import { FeedSettingsPanel } from "@/components/feeds/FeedSettingsPanel";
+import { UpdateCenterCard } from "@/components/update/UpdateCenterCard";
 import { Button } from "@/components/ui/Button";
 import { Card, CardHeader, CardTitle, CardContent, CardActions } from "@/components/ui/Card";
 import type { WorkspaceFeedSummary } from "@/domain/feed/feed.types";
+import type { AppUpdateStatus } from "@/domain/update/update.types";
 
 export interface SettingsWorkspaceProps {
+  updateStatus?: AppUpdateStatus;
   feeds?: WorkspaceFeedSummary[];
   notes?: Array<{ id: string; title: string }>;
   folders?: Array<{ id: string; name: string }>;
@@ -29,6 +32,7 @@ export interface SettingsWorkspaceProps {
 }
 
 export function SettingsWorkspace({
+  updateStatus,
   feeds = [],
   notes = [],
   folders = [],
@@ -85,6 +89,8 @@ export function SettingsWorkspace({
           Sistem Ayarları
         </h1>
       ) : null}
+
+      {updateStatus ? <UpdateCenterCard status={updateStatus} /> : null}
 
       {feeds.length > 0 || notes.length > 0 || folders.length > 0 ? (
         <Card variant="outlined">

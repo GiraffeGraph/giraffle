@@ -446,6 +446,21 @@
   color: var(--text-primary);
 }
 
+.editor-bubble-spotter {
+  gap: 6px;
+  padding: 0 11px;
+  color: var(--accent-warm, #C47A2B);
+  font-size: 12px;
+  font-weight: 720;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.editor-bubble-spotter:hover {
+  background: color-mix(in srgb, var(--accent-warm, #C47A2B) 12%, transparent);
+  color: var(--accent-warm, #C47A2B);
+}
+
 .color-picker {
   display: grid;
   gap: 12px;

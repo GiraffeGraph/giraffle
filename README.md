@@ -49,6 +49,7 @@ Instead of storing notes as loose markdown files first and reconstructing struct
 - Markdown and MDX export from canonical note data
 - Public note routes and slug-based published pages
 - Self-hosted production stack with Docker Compose, PostgreSQL, and nginx
+- In-app update center that checks GitHub Releases and shows the recommended upgrade command
 
 ## Current Foundation
 
@@ -222,6 +223,18 @@ $EDITOR .env.production
 docker compose --env-file .env.production -f docker-compose.prod.yml ps
 docker compose --env-file .env.production -f docker-compose.prod.yml restart app
 docker compose --env-file .env.production -f docker-compose.prod.yml down
+```
+
+### In-app update notifications
+
+Giraffle checks the latest GitHub Release and shows an update notice inside the dashboard and settings screens.
+
+Recommended upgrade command:
+
+```bash
+cd giraffle
+git pull
+./scripts/prod-up.sh
 ```
 
 ### Maintainer Note

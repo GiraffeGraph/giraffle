@@ -1,9 +1,10 @@
 import { DashboardFeedSections } from "@/components/feeds/DashboardFeedSections";
 import { PageTopbar } from "@/components/ui/PageTopbar";
+import { getAppUpdateStatus } from "@/domain/update/update.service";
 import { getWorkspaceFeedsAction } from "@/server/api/feeds";
 
 export default async function DashboardPage() {
-  const [suggestionFeeds, newsFeeds] = await Promise.all([
+  const [suggestionFeeds, newsFeeds, updateStatus] = await Promise.all([
     getWorkspaceFeedsAction("suggestion", {
       showOnDashboard: true,
       itemLimit: 3,
@@ -12,6 +13,7 @@ export default async function DashboardPage() {
       showOnDashboard: true,
       itemLimit: 3,
     }),
+    getAppUpdateStatus(),
   ]);
 
   return (
@@ -20,6 +22,7 @@ export default async function DashboardPage() {
       <DashboardFeedSections
         suggestionFeeds={suggestionFeeds}
         newsFeeds={newsFeeds}
+        updateStatus={updateStatus}
       />
     </>
   );

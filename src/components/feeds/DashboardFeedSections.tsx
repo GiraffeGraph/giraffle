@@ -1,16 +1,23 @@
 import Link from "next/link";
+import { UpdateBanner } from "@/components/update/UpdateBanner";
 import type { WorkspaceFeedSummary } from "@/domain/feed/feed.types";
+import type { AppUpdateStatus } from "@/domain/update/update.types";
 import { FeedCollection } from "./FeedCards";
 
 export function DashboardFeedSections({
   suggestionFeeds,
   newsFeeds,
+  updateStatus,
 }: {
   suggestionFeeds: WorkspaceFeedSummary[];
   newsFeeds: WorkspaceFeedSummary[];
+  updateStatus: AppUpdateStatus;
 }) {
   return (
-    <div className="dashboard app-page" style={{ paddingTop: "24px", paddingBottom: "40px", display: "grid", gap: "28px" }}>
+    <div
+      className="dashboard app-page"
+      style={{ paddingTop: "24px", paddingBottom: "40px", display: "grid", gap: "28px" }}
+    >
       <section className="dashboard-hero">
         <div className="dashboard-kicker">Pano</div>
         <h1 className="dashboard-title">Akışların</h1>
@@ -30,10 +37,15 @@ export function DashboardFeedSections({
         </div>
       </section>
 
+      <UpdateBanner status={updateStatus} />
+
       <section>
         <div className="dashboard-section-head" style={{ marginBottom: "14px" }}>
           <span className="dashboard-section-kicker">Öneriler</span>
-          <Link href="/proposals" style={{ color: "var(--md-sys-color-primary)", textDecoration: "none", fontSize: "13px" }}>
+          <Link
+            href="/proposals"
+            style={{ color: "var(--md-sys-color-primary)", textDecoration: "none", fontSize: "13px" }}
+          >
             Tümünü gör
           </Link>
         </div>
@@ -47,7 +59,10 @@ export function DashboardFeedSections({
       <section>
         <div className="dashboard-section-head" style={{ marginBottom: "14px" }}>
           <span className="dashboard-section-kicker">Keşfet</span>
-          <Link href="/discover" style={{ color: "var(--md-sys-color-primary)", textDecoration: "none", fontSize: "13px" }}>
+          <Link
+            href="/discover"
+            style={{ color: "var(--md-sys-color-primary)", textDecoration: "none", fontSize: "13px" }}
+          >
             Tümünü gör
           </Link>
         </div>

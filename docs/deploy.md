@@ -129,9 +129,12 @@ That adds the nginx service from:
 
 ## 6. Updating to a new version
 
-When a new Docker image is published by the project maintainers, update the server with:
+When a new Docker image is published by the project maintainers, the app will also show an in-product update notice on the dashboard and settings screens.
+
+Update the server with:
 
 ```bash
+cd giraffle
 git pull
 ./scripts/prod-up.sh
 ```
