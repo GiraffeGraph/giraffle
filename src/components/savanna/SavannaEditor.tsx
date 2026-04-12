@@ -211,9 +211,13 @@ function flowNodesToPayload(nodes: Node[]) {
     type: n.type ?? "noteCard",
     x: n.position.x,
     y: n.position.y,
-    width: (n.style?.width as number) ?? 220,
+    width:
+      (typeof n.width === "number" ? n.width : undefined) ??
+      (typeof n.style?.width === "number" ? n.style.width : undefined) ??
+      220,
     height:
-      (n.style?.height as number) ??
+      (typeof n.height === "number" ? n.height : undefined) ??
+      (typeof n.style?.height === "number" ? n.style.height : undefined) ??
       (n.type === "canvasText" ? 160 : n.type === "inkStroke" ? 220 : 80),
     noteId: n.type === "noteCard" ? ((n.data as NoteCardNodeData).noteId ?? null) : null,
     data: serializeNodeData(n),
@@ -521,6 +525,9 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
 
   const onNodeClick = useCallback(
     (_event: unknown, node: Node) => {
+      const mouseEvent = _event as { stopPropagation?: () => void };
+      mouseEvent.stopPropagation?.();
+
       if (tool !== "link") return;
 
       if (!lineSourceNodeId) {
@@ -542,7 +549,9 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
   const onPaneClick = useCallback(
     (event: unknown) => {
       if (tool === "link") {
-        setLineSourceNodeId(null);
+        if (isPaneEventTarget(event)) {
+          setLineSourceNodeId(null);
+        }
         return;
       }
 
@@ -550,9 +559,10 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
         const clientPoint = getClientPoint(event);
         if (!clientPoint) return;
         createCanvasTextAt(clientPoint);
+        setTool("select");
       }
     },
-    [createCanvasTextAt, tool],
+    [createCanvasTextAt, isPaneEventTarget, tool],
   );
 
   const handlePaneMouseDown = useCallback(
@@ -1116,6 +1126,17 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
           ? "Could not save note"
           : "";
 
+  const activateTool = useCallback((nextTool: CanvasTool) => {
+    setTool(nextTool);
+    if (nextTool !== "link") {
+      setLineSourceNodeId(null);
+    }
+    setIsMiddleMousePressed(false);
+    if (nextTool !== "select") {
+      setIsSpacePressed(false);
+    }
+  }, []);
+
   const toolHint =
     tool === "link"
       ? lineSourceNodeId
@@ -1291,7 +1312,7 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
           <button
             type="button"
             className={`svn-topbar__btn${tool === "select" ? " svn-topbar__btn--active" : ""}`}
-            onClick={() => setTool("select")}
+            onClick={() => activateTool("select")}
           >
             <span className="material-symbols-outlined">ads_click</span>
             Cursor
@@ -1299,7 +1320,7 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
           <button
             type="button"
             className={`svn-topbar__btn${tool === "link" ? " svn-topbar__btn--active" : ""}`}
-            onClick={() => setTool("link")}
+            onClick={() => activateTool("link")}
           >
             <span className="material-symbols-outlined">device_hub</span>
             Link
@@ -1307,7 +1328,7 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
           <button
             type="button"
             className={`svn-topbar__btn${tool === "line" ? " svn-topbar__btn--active" : ""}`}
-            onClick={() => setTool("line")}
+            onClick={() => activateTool("line")}
           >
             <span className="material-symbols-outlined">horizontal_rule</span>
             Line
@@ -1315,7 +1336,7 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
           <button
             type="button"
             className={`svn-topbar__btn${tool === "draw" ? " svn-topbar__btn--active" : ""}`}
-            onClick={() => setTool("draw")}
+            onClick={() => activateTool("draw")}
           >
             <span className="material-symbols-outlined">draw</span>
             Draw
@@ -1323,10 +1344,14 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
           <button
             type="button"
             className={`svn-topbar__btn${tool === "text" ? " svn-topbar__btn--active" : ""}`}
-            onClick={() => setTool("text")}
+            onClick={() => activateTool("text")}
           >
             <span className="material-symbols-outlined">title</span>
             Text
+          </button>
+          <button type="button" className="svn-topbar__btn" onClick={addZone}>
+            <span className="material-symbols-outlined">crop_square</span>
+            Zone
           </button>
 
           <div className={`svn-save-status svn-save-status--${saveStatus}`} aria-live="polite">
@@ -1381,7 +1406,7 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
         zoomOnPinch
         panOnDrag={isSpacePressed ? [0, 1] : [1]}
         nodesDraggable={tool === "select" && !isSpacePressed && !isMiddleMousePressed}
-        nodesConnectable={tool === "select" && !isSpacePressed && !isMiddleMousePressed}
+        nodesConnectable={(tool === "select" || tool === "link") && !isSpacePressed && !isMiddleMousePressed}
         elementsSelectable={tool === "select" || tool === "link"}
         deleteKeyCode={["Backspace", "Delete"]}
         selectionOnDrag={tool === "select" && !isSpacePressed && !isMiddleMousePressed}
@@ -1414,7 +1439,7 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
               <button
                 type="button"
                 className="svn-empty-overlay__btn"
-                onClick={() => setTool("text")}
+                onClick={() => activateTool("text")}
               >
                 <span className="material-symbols-outlined">title</span>
                 Text tool
@@ -1422,7 +1447,7 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
               <button
                 type="button"
                 className="svn-empty-overlay__btn"
-                onClick={() => setTool("draw")}
+                onClick={() => activateTool("draw")}
               >
                 <span className="material-symbols-outlined">draw</span>
                 Draw tool

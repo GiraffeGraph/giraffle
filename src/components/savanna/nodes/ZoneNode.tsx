@@ -1,6 +1,6 @@
 "use client";
 
-import { type Node, type NodeProps } from "@xyflow/react";
+import { NodeResizer, type Node, type NodeProps } from "@xyflow/react";
 import { useState, useRef, useEffect } from "react";
 
 export type ZoneNodeData = {
@@ -36,12 +36,17 @@ export function ZoneNode({
   return (
     <div
       className={`svn-node-zone${selected ? " svn-node-zone--selected" : ""}`}
-      style={data.color ? { "--zone-color": data.color } as React.CSSProperties : undefined}
+      style={data.color ? ({ "--zone-color": data.color } as React.CSSProperties) : undefined}
     >
-      <div
-        className="svn-node-zone__header"
-        onDoubleClick={() => setEditing(true)}
-      >
+      <NodeResizer
+        isVisible={selected}
+        minWidth={180}
+        minHeight={120}
+        lineClassName="svn-zone-resize-line"
+        handleClassName="svn-zone-resize-handle"
+      />
+
+      <div className="svn-node-zone__header" onDoubleClick={() => setEditing(true)}>
         {editing ? (
           <input
             ref={inputRef}
