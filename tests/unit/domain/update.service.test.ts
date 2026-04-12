@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import packageJson from "../../../package.json";
 import { compareVersions, getAppUpdateStatus } from "@/domain/update/update.service";
 
 describe("update.service", () => {
@@ -31,7 +32,7 @@ describe("update.service", () => {
 
     const status = await getAppUpdateStatus();
 
-    expect(status.currentVersion).toBe("0.1.0");
+    expect(status.currentVersion).toBe(packageJson.version);
     expect(status.latestVersion).toBe("0.2.0");
     expect(status.updateAvailable).toBe(true);
     expect(status.error).toBeNull();
