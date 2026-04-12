@@ -11,8 +11,10 @@ import { syncNoteTags } from "@/domain/tag/tag.service";
 import { slugify } from "@/lib/utils";
 import {
   DEFAULT_NOTE_TITLE,
+  EISENHOWER_QUADRANTS,
 } from "./note.types";
 import type {
+  EisenhowerQuadrant,
   CreateNoteInput,
   InsertBlockInput,
   NoteReference,
@@ -207,7 +209,7 @@ export async function getNote(userId: string, noteId: string) {
  * Get all non-archived notes, ordered by last update.
  */
 export async function getNotes(userId: string) {
-  return db.note.findMany({
+  const rows = await db.note.findMany({
     where: { userId, isArchived: false },
     orderBy: [{ isPinned: "desc" }, { position: "asc" }, { updatedAt: "desc" }],
     select: {
@@ -218,10 +220,18 @@ export async function getNotes(userId: string) {
       folderId: true,
       position: true,
       isPinned: true,
+      quadrant: true,
       updatedAt: true,
       createdAt: true,
     },
   });
+
+  return rows.map((row) => ({
+    ...row,
+    quadrant: (EISENHOWER_QUADRANTS as readonly string[]).includes(row.quadrant ?? "")
+      ? (row.quadrant as EisenhowerQuadrant)
+      : null,
+  }));
 }
 
 export async function searchNotesByTitle(

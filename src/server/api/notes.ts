@@ -28,6 +28,7 @@ import { buildNoteExportArtifact } from "@/domain/note/note.export";
 import type {
   InsertBlockInput,
   CreateNoteInput,
+  EisenhowerQuadrant,
   NoteReference,
   TiptapDocument,
   UpdateBlockInput,
@@ -259,4 +260,13 @@ export async function getPublishedExportsAction() {
 
 export async function getPublicNoteBySlugAction(slug: string) {
   return getPublicNoteBySlug(slug);
+}
+
+export async function assignNoteToQuadrantAction(
+  noteId: string,
+  quadrant: EisenhowerQuadrant | null
+) {
+  const { userId } = await requireAuthenticatedUser();
+  await updateNote(userId, noteId, { quadrant });
+  revalidatePath("/matrix");
 }

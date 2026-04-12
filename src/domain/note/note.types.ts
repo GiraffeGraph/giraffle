@@ -23,6 +23,16 @@ export const BLOCK_TYPES = [
 export type BlockType = (typeof BLOCK_TYPES)[number];
 export const DEFAULT_NOTE_TITLE = "Adsız";
 
+// ─── Eisenhower Matrix ────────────────────────────────────────
+export type EisenhowerQuadrant = "DO" | "SCHEDULE" | "DELEGATE" | "ELIMINATE";
+
+export const EISENHOWER_QUADRANTS = [
+  "DO",
+  "SCHEDULE",
+  "DELEGATE",
+  "ELIMINATE",
+] as const satisfies EisenhowerQuadrant[];
+
 // ─── Block Content (Tiptap JSON-compatible) ───────────────────
 export interface BlockMark {
   type: string;
@@ -80,6 +90,7 @@ export interface Note {
   isPinned: boolean;
   isArchived: boolean;
   isPublished: boolean;
+  quadrant: EisenhowerQuadrant | null;
   createdAt: Date;
   updatedAt: Date;
   blocks?: Block[];
@@ -113,6 +124,7 @@ export interface UpdateNoteInput {
   isPinned?: boolean;
   isArchived?: boolean;
   isPublished?: boolean;
+  quadrant?: EisenhowerQuadrant | null;
 }
 
 export interface BlockPlacementInput {

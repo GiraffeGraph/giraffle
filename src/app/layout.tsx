@@ -27,6 +27,7 @@ import "@/styles/layouts/sidebar-v2.css";
 import "@/styles/layouts/spotter-canvas.css";
 import "@/styles/layouts/sidebar-rail-v2.css";
 import "@/styles/layouts/universe.css";
+import "@/styles/layouts/matrix.css";
 import "./globals.css";
 
 export const metadata: Metadata = {
