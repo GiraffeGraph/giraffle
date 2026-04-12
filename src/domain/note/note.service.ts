@@ -14,6 +14,7 @@ import {
   EISENHOWER_QUADRANTS,
 } from "./note.types";
 import type {
+  BlockNodeContent,
   EisenhowerQuadrant,
   CreateNoteInput,
   InsertBlockInput,
@@ -1320,6 +1321,7 @@ export async function getNotesWithTodoSummary(userId: string) {
 
 /**
  * Get taskItem blocks for a note (used in the Tower Matrix inner panel).
+ * Text lives in child paragraph blocks, not in the taskItem itself.
  */
 export async function getNoteTodoBlocks(userId: string, noteId: string) {
   const note = await db.note.findFirst({
@@ -1327,7 +1329,16 @@ export async function getNoteTodoBlocks(userId: string, noteId: string) {
     select: {
       blocks: {
         where: { type: "taskItem" },
-        select: { id: true, content: true, attributes: true, position: true },
+        select: {
+          id: true,
+          content: true,
+          attributes: true,
+          position: true,
+          children: {
+            select: { content: true },
+            orderBy: { position: "asc" },
+          },
+        },
         orderBy: { position: "asc" },
       },
     },
@@ -1337,16 +1348,63 @@ export async function getNoteTodoBlocks(userId: string, noteId: string) {
 
   return note.blocks.map((b) => {
     const attrs = (b.attributes ?? {}) as Record<string, unknown>;
+    // Text is in child blocks (paragraph), fall back to own content
+    const text =
+      b.children.length > 0
+        ? b.children.map((c) => extractBlockText(c.content)).join("")
+        : extractBlockText(b.content);
     return {
       id: b.id,
-      text: extractBlockText(b.content),
+      text,
       checked: attrs.checked === true,
-      quadrant: (EISENHOWER_QUADRANTS as readonly string[]).includes(String(attrs.quadrant ?? ""))
+      quadrant: (EISENHOWER_QUADRANTS as readonly string[]).includes(
+        String(attrs.quadrant ?? "")
+      )
         ? (attrs.quadrant as EisenhowerQuadrant)
         : null,
       position: b.position,
     };
   });
+}
+
+/**
+ * Add a todo item to a note's task list (creates a taskList if none exists).
+ */
+export async function addTodoToNote(
+  userId: string,
+  noteId: string,
+  text: string
+): Promise<void> {
+  // Check for an existing taskList block in this note
+  const existingTaskList = await db.block.findFirst({
+    where: { noteId, type: "taskList", note: { userId } },
+    select: { id: true },
+  });
+
+  const taskItemNode: BlockNodeContent = {
+    type: "taskItem",
+    attrs: { checked: false },
+    content: [
+      {
+        type: "paragraph",
+        content: text.trim()
+          ? [{ type: "text", text: text.trim() } as { type: "text"; text: string }]
+          : [],
+      },
+    ],
+  };
+
+  if (existingTaskList) {
+    await insertBlock(userId, noteId, {
+      block: taskItemNode,
+      parentBlockId: existingTaskList.id,
+    });
+  } else {
+    // Wrap in a new taskList
+    await insertBlock(userId, noteId, {
+      block: { type: "taskList", content: [taskItemNode] },
+    });
+  }
 }
 
 /**

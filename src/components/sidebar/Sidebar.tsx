@@ -1175,6 +1175,11 @@ export function Sidebar({
                         label: "Tower Matrix",
                       },
                       {
+                        path: "/coat-canvas",
+                        icon: "texture",
+                        label: "Coat Canvas",
+                      },
+                      {
                         path: "/discover",
                         icon: "newspaper",
                         label: "Keşfet",

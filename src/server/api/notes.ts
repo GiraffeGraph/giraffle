@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getBacklinks } from "@/domain/link/link.service";
 import {
+  addTodoToNote,
   archiveNote,
   createNote,
   deleteBlock,
@@ -297,4 +298,10 @@ export async function assignTodoToQuadrantAction(
 export async function toggleTodoAction(blockId: string, checked: boolean) {
   const { userId } = await requireAuthenticatedUser();
   await toggleTodoBlock(userId, blockId, checked);
+}
+
+export async function addTodoToNoteAction(noteId: string, text: string) {
+  const { userId } = await requireAuthenticatedUser();
+  await addTodoToNote(userId, noteId, text);
+  revalidatePath("/tower-matrix");
 }

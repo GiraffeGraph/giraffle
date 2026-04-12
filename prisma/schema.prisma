@@ -29,6 +29,7 @@ model User {
   noteCategories      NoteCategory[]
   spotterSessions     SpotterSession[]
   universeState       UniverseState?
+  coatCanvases        CoatCanvas[]
 }
 
 model Account {
@@ -413,4 +414,36 @@ model CanvasEdge {
   @@index([canvasId])
   @@index([sourceNodeId])
   @@index([targetNodeId])
+}
+
+// ─── Coat Canvas Models ───────────────────────────────────────
+
+model CoatCanvas {
+  id        String     @id @default(uuid())
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String     @default("Yeni Canvas")
+  columns   Int        @default(12)
+  cells     CoatCell[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([userId])
+}
+
+model CoatCell {
+  id        String     @id @default(uuid())
+  canvasId  String
+  canvas    CoatCanvas @relation(fields: [canvasId], references: [id], onDelete: Cascade)
+  title     String     @default("")
+  content   String     @default("")
+  colSpan   Int        @default(4)
+  rowSpan   Int        @default(1)
+  position  Int        @default(0)
+  color     String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([canvasId])
+  @@index([canvasId, position])
 }
