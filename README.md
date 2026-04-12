@@ -156,6 +156,21 @@ GitHub Actions now runs a clean release pipeline:
 - `quality`: install, Prisma validation, lint, typecheck, unit/integration tests, production build, security audit
 - `smoke`: build the production image and boot the real Docker Compose stack until `/api/health/ready` responds
 - `publish`: push multi-arch Docker images to Docker Hub only after the quality and smoke gates pass
+- `release`: when a `v*` tag is pushed, create a GitHub Release automatically
+
+### Release standard
+
+- `main` publishes rolling Docker tags such as `latest` and `sha-<shortsha>`
+- `vMAJOR.MINOR.PATCH` tags create immutable release builds such as `v0.1.1`
+- the in-app update center follows **GitHub Releases**, not raw commits on `main`
+- `package.json` version must match the git tag
+
+Example:
+
+- `package.json`: `0.1.1`
+- git tag: `v0.1.1`
+
+For the maintainer release flow, see [`docs/releasing.md`](./docs/releasing.md).
 
 ## Production Deployment
 
@@ -228,6 +243,12 @@ docker compose --env-file .env.production -f docker-compose.prod.yml down
 ### In-app update notifications
 
 Giraffle checks the latest GitHub Release and shows an update notice inside the dashboard and settings screens.
+
+If you maintain a fork and want update checks to point to your own release feed, set:
+
+```env
+APP_UPDATE_REPOSITORY=your-org/your-fork
+```
 
 Recommended upgrade command:
 
