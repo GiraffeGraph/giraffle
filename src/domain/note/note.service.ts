@@ -1260,6 +1260,135 @@ async function getNextNotePosition(userId: string, folderId: string | null) {
   return typeof lastNote?.position === "number" ? lastNote.position + 1 : 0;
 }
 
+// ─── Tower Matrix ─────────────────────────────────────────────
+
+function extractBlockText(content: unknown): string {
+  if (!content || typeof content !== "object") return "";
+  const node = content as Record<string, unknown>;
+  if (node.type === "text" && typeof node.text === "string") return node.text;
+  if (Array.isArray(node.content)) {
+    return (node.content as unknown[]).map(extractBlockText).join("");
+  }
+  return "";
+}
+
+/**
+ * Get all non-archived notes enriched with todo summary for the Tower Matrix.
+ */
+export async function getNotesWithTodoSummary(userId: string) {
+  const rows = await db.note.findMany({
+    where: { userId, isArchived: false },
+    orderBy: [{ isPinned: "desc" }, { position: "asc" }, { updatedAt: "desc" }],
+    select: {
+      id: true,
+      title: true,
+      icon: true,
+      quadrant: true,
+      blocks: {
+        where: { type: "taskItem" },
+        select: { id: true, attributes: true },
+      },
+    },
+  });
+
+  return rows.map((row) => {
+    const todos = row.blocks.map((b) => {
+      const attrs = (b.attributes ?? {}) as Record<string, unknown>;
+      return {
+        checked: attrs.checked === true,
+        quadrant: (EISENHOWER_QUADRANTS as readonly string[]).includes(String(attrs.quadrant ?? ""))
+          ? (attrs.quadrant as EisenhowerQuadrant)
+          : null,
+      };
+    });
+
+    return {
+      id: row.id,
+      title: row.title,
+      icon: row.icon,
+      quadrant: (EISENHOWER_QUADRANTS as readonly string[]).includes(row.quadrant ?? "")
+        ? (row.quadrant as EisenhowerQuadrant)
+        : null,
+      todoTotal: todos.length,
+      todoCompleted: todos.filter((t) => t.checked).length,
+      todoByQuadrant: Object.fromEntries(
+        EISENHOWER_QUADRANTS.map((q) => [q, todos.filter((t) => t.quadrant === q).length])
+      ) as Record<EisenhowerQuadrant, number>,
+    };
+  });
+}
+
+/**
+ * Get taskItem blocks for a note (used in the Tower Matrix inner panel).
+ */
+export async function getNoteTodoBlocks(userId: string, noteId: string) {
+  const note = await db.note.findFirst({
+    where: { id: noteId, userId },
+    select: {
+      blocks: {
+        where: { type: "taskItem" },
+        select: { id: true, content: true, attributes: true, position: true },
+        orderBy: { position: "asc" },
+      },
+    },
+  });
+
+  if (!note) return [];
+
+  return note.blocks.map((b) => {
+    const attrs = (b.attributes ?? {}) as Record<string, unknown>;
+    return {
+      id: b.id,
+      text: extractBlockText(b.content),
+      checked: attrs.checked === true,
+      quadrant: (EISENHOWER_QUADRANTS as readonly string[]).includes(String(attrs.quadrant ?? ""))
+        ? (attrs.quadrant as EisenhowerQuadrant)
+        : null,
+      position: b.position,
+    };
+  });
+}
+
+/**
+ * Set the quadrant of a taskItem block (Tower Matrix inner matrix).
+ */
+export async function setTodoBlockQuadrant(
+  userId: string,
+  blockId: string,
+  quadrant: EisenhowerQuadrant | null
+): Promise<void> {
+  const block = await db.block.findFirst({
+    where: { id: blockId, note: { userId } },
+    select: { attributes: true },
+  });
+  if (!block) throw new Error("Block not found");
+  const attrs = (block.attributes ?? {}) as Record<string, unknown>;
+  await db.block.update({
+    where: { id: blockId },
+    data: { attributes: { ...attrs, quadrant } },
+  });
+}
+
+/**
+ * Toggle the checked state of a taskItem block.
+ */
+export async function toggleTodoBlock(
+  userId: string,
+  blockId: string,
+  checked: boolean
+): Promise<void> {
+  const block = await db.block.findFirst({
+    where: { id: blockId, note: { userId } },
+    select: { attributes: true },
+  });
+  if (!block) throw new Error("Block not found");
+  const attrs = (block.attributes ?? {}) as Record<string, unknown>;
+  await db.block.update({
+    where: { id: blockId },
+    data: { attributes: { ...attrs, checked } },
+  });
+}
+
 function buildFolderPath(
   folders: Awaited<ReturnType<typeof getAllFolders>>,
   folderId: string | null

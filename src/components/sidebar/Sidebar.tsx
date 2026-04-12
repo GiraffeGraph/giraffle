@@ -1170,9 +1170,9 @@ export function Sidebar({
                         label: "Kütüphane",
                       },
                       {
-                        path: "/matrix",
+                        path: "/tower-matrix",
                         icon: "grid_4x4",
-                        label: "Matris",
+                        label: "Tower Matrix",
                       },
                       {
                         path: "/discover",

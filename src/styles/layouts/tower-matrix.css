@@ -1,0 +1,830 @@
+/* ==========================================================================
+   tower-matrix.css — Tower Matrix Layout & Animations
+   GiraffeGraph Design System
+   ========================================================================== */
+
+/* ─── Page ─────────────────────────────────────────────────── */
+
+.tm-page {
+  position: relative;
+  min-height: 100%;
+}
+
+.tm-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px 28px 48px;
+  width: min(100%, 1100px);
+  margin: 0 auto;
+  animation: md-rise-in var(--md-sys-motion-duration-medium4)
+    var(--md-sys-motion-easing-emphasized-decelerate) both;
+}
+
+/* ─── 2×2 Grid ─────────────────────────────────────────────── */
+
+.tm-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+/* ─── Quadrant ─────────────────────────────────────────────── */
+
+.tm-quadrant {
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  background: var(--surface-overlay);
+  box-shadow: var(--shadow-panel);
+  backdrop-filter: blur(16px);
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast),
+    transform var(--transition-fast);
+  overflow: hidden;
+}
+
+.tm-quadrant:nth-child(1) { animation: md-rise-in 360ms var(--md-sys-motion-easing-emphasized-decelerate) 40ms both; }
+.tm-quadrant:nth-child(2) { animation: md-rise-in 360ms var(--md-sys-motion-easing-emphasized-decelerate) 90ms both; }
+.tm-quadrant:nth-child(3) { animation: md-rise-in 360ms var(--md-sys-motion-easing-emphasized-decelerate) 140ms both; }
+.tm-quadrant:nth-child(4) { animation: md-rise-in 360ms var(--md-sys-motion-easing-emphasized-decelerate) 190ms both; }
+
+.tm-quadrant--over {
+  border-color: var(--md-sys-color-primary);
+  box-shadow:
+    0 0 0 2px rgba(225, 166, 62, 0.22),
+    var(--shadow-panel);
+  transform: scale(1.008);
+}
+
+/* Accent tokens per quadrant */
+.tm-quadrant--do       { --q-accent: var(--md-sys-color-error); }
+.tm-quadrant--schedule { --q-accent: var(--md-sys-color-success); }
+.tm-quadrant--delegate { --q-accent: var(--md-sys-color-warning); }
+.tm-quadrant--eliminate{ --q-accent: var(--md-sys-color-outline); }
+
+.tm-quadrant-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid var(--border-soft);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--q-accent) 7%, transparent),
+    transparent 60%
+  );
+}
+
+.tm-quadrant-icon {
+  font-size: 18px;
+  color: var(--q-accent);
+  flex-shrink: 0;
+}
+
+.tm-quadrant-labels {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.tm-quadrant-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--md-sys-color-on-surface-variant);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tm-quadrant-sublabel {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--q-accent);
+}
+
+.tm-quadrant-count {
+  font-size: 11px;
+  font-weight: 600;
+  background: color-mix(in srgb, var(--q-accent) 12%, transparent);
+  color: var(--q-accent);
+  border-radius: 100px;
+  padding: 2px 8px;
+  flex-shrink: 0;
+}
+
+.tm-quadrant-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px;
+  min-height: 100px;
+}
+
+.tm-quadrant-empty {
+  margin: auto;
+  font-size: 12px;
+  color: var(--md-sys-color-outline);
+  opacity: 0.6;
+  user-select: none;
+  pointer-events: none;
+  text-align: center;
+}
+
+/* ─── Note Card ────────────────────────────────────────────── */
+
+.tm-note-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  border-radius: 10px;
+  background: var(--md-sys-color-glass-chip);
+  border: 1px solid var(--border-soft);
+  overflow: visible;
+  transition:
+    background var(--transition-fast),
+    opacity var(--transition-fast),
+    transform var(--transition-fast);
+  cursor: grab;
+  animation: md-rise-in var(--md-sys-motion-duration-short4)
+    var(--md-sys-motion-easing-standard) both;
+}
+
+.tm-note-card:hover {
+  background: var(--md-sys-color-glass-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  z-index: 1;
+}
+
+.tm-note-card--dragging {
+  opacity: 0.4;
+  cursor: grabbing;
+  transform: scale(0.97);
+}
+
+.tm-note-card-body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 8px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.tm-note-card-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.tm-note-card-title {
+  flex: 1;
+  font-size: 13px;
+  color: var(--md-sys-color-on-surface);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tm-note-card-badge {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--md-sys-color-on-surface-variant);
+  background: var(--md-sys-color-surface-container);
+  border-radius: 100px;
+  padding: 1px 6px;
+}
+
+.tm-note-card-remove {
+  flex-shrink: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  margin-right: 4px;
+  border: none;
+  background: transparent;
+  color: var(--md-sys-color-outline);
+  border-radius: 50%;
+  cursor: pointer;
+  padding: 0;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.tm-note-card:hover .tm-note-card-remove {
+  display: flex;
+}
+
+.tm-note-card-remove:hover {
+  background: var(--md-sys-color-error-container);
+  color: var(--md-sys-color-error);
+}
+
+/* ─── Hover Tooltip ────────────────────────────────────────── */
+
+.tm-note-tooltip {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 8px);
+  z-index: 100;
+  min-width: 180px;
+  max-width: 240px;
+  padding: 10px 12px;
+  background: var(--md-sys-color-inverse-surface);
+  color: var(--md-sys-color-inverse-on-surface);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(6px) scale(0.96);
+  transition:
+    opacity var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard),
+    transform var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard);
+  transition-delay: 0.35s;
+}
+
+.tm-note-card:hover .tm-note-tooltip {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.tm-tooltip-header {
+  margin-bottom: 8px;
+}
+
+.tm-tooltip-title {
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+
+.tm-tooltip-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.tm-tooltip-progress-bar {
+  flex: 1;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 100px;
+  overflow: hidden;
+}
+
+.tm-tooltip-progress-fill {
+  height: 100%;
+  background: var(--md-sys-color-primary);
+  border-radius: 100px;
+  transition: width var(--transition-normal);
+}
+
+.tm-tooltip-pct {
+  font-size: 10px;
+  opacity: 0.7;
+  white-space: nowrap;
+}
+
+.tm-tooltip-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  padding: 2px 0;
+  opacity: 0.85;
+}
+
+.tm-tooltip-row-count {
+  margin-left: auto;
+  font-weight: 600;
+  opacity: 0.9;
+}
+
+/* ─── Pool ─────────────────────────────────────────────────── */
+
+.tm-pool {
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  background: var(--surface-overlay);
+  box-shadow: var(--shadow-panel);
+  backdrop-filter: blur(16px);
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+  animation: md-rise-in 360ms var(--md-sys-motion-easing-emphasized-decelerate) 240ms both;
+}
+
+.tm-pool--over {
+  border-color: var(--md-sys-color-primary);
+  box-shadow:
+    0 0 0 2px rgba(225, 166, 62, 0.18),
+    var(--shadow-panel);
+}
+
+.tm-pool-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-soft);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.tm-pool-count {
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--md-sys-color-surface-container);
+  border-radius: 100px;
+  padding: 1px 8px;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.tm-pool-filter {
+  margin-left: auto;
+  height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--border-soft);
+  border-radius: 100px;
+  background: var(--md-sys-color-surface-container-low);
+  font-size: 12px;
+  color: var(--md-sys-color-on-surface);
+  outline: none;
+  width: 140px;
+  transition: border-color var(--transition-fast);
+}
+
+.tm-pool-filter:focus {
+  border-color: var(--md-sys-color-primary);
+}
+
+.tm-pool-body {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 10px;
+  min-height: 52px;
+}
+
+.tm-pool-body .tm-note-card {
+  flex: 0 0 auto;
+  max-width: 220px;
+}
+
+.tm-pool-empty {
+  font-size: 12px;
+  color: var(--md-sys-color-outline);
+  opacity: 0.6;
+  margin: auto;
+  padding: 4px 0;
+  user-select: none;
+}
+
+/* ─── Side Panel Backdrop ───────────────────────────────────── */
+
+.tm-panel-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0);
+  pointer-events: none;
+  transition: background var(--md-sys-motion-duration-medium2)
+    var(--md-sys-motion-easing-standard);
+}
+
+.tm-panel-backdrop--visible {
+  background: rgba(0, 0, 0, 0.24);
+  pointer-events: all;
+  cursor: pointer;
+}
+
+/* ─── Side Panel ────────────────────────────────────────────── */
+
+.tm-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 201;
+  width: min(520px, 90vw);
+  display: flex;
+  flex-direction: column;
+  background: var(--md-sys-color-surface-bright);
+  border-left: 1px solid var(--border-soft);
+  box-shadow: -12px 0 48px rgba(0, 0, 0, 0.12);
+  transform: translateX(100%);
+  transition: transform var(--md-sys-motion-duration-medium4)
+    var(--md-sys-motion-easing-emphasized-decelerate);
+  will-change: transform;
+  overflow: hidden;
+}
+
+.tm-panel--visible {
+  transform: translateX(0);
+}
+
+/* Panel Header */
+.tm-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-soft);
+  background: var(--surface-overlay);
+  flex-shrink: 0;
+}
+
+.tm-panel-note-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.tm-panel-note-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.tm-panel-note-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--md-sys-color-on-surface);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tm-panel-note-progress {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--md-sys-color-on-surface-variant);
+  background: var(--md-sys-color-surface-container);
+  border-radius: 100px;
+  padding: 2px 8px;
+}
+
+.tm-panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.tm-panel-open-btn,
+.tm-panel-close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  color: var(--md-sys-color-on-surface-variant);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.tm-panel-open-btn:hover {
+  background: var(--md-sys-color-surface-container);
+  color: var(--md-sys-color-on-surface);
+}
+
+.tm-panel-close-btn:hover {
+  background: var(--md-sys-color-error-container);
+  color: var(--md-sys-color-error);
+}
+
+/* Panel Body */
+.tm-panel-body {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ─── Inner Matrix Grid ─────────────────────────────────────── */
+
+.tm-inner-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+/* ─── Inner Quadrant ────────────────────────────────────────── */
+
+.tm-inner-quadrant {
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  background: var(--md-sys-color-surface-container-low);
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast),
+    transform var(--transition-fast);
+  animation: md-rise-in var(--md-sys-motion-duration-medium2)
+    var(--md-sys-motion-easing-emphasized-decelerate) both;
+}
+
+.tm-inner-quadrant--over {
+  border-color: var(--md-sys-color-primary);
+  box-shadow: 0 0 0 2px rgba(225, 166, 62, 0.2);
+  transform: scale(1.01);
+}
+
+.tm-inner--do       { --q-accent: var(--md-sys-color-error); }
+.tm-inner--schedule { --q-accent: var(--md-sys-color-success); }
+.tm-inner--delegate { --q-accent: var(--md-sys-color-warning); }
+.tm-inner--eliminate{ --q-accent: var(--md-sys-color-outline); }
+
+.tm-inner-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 10px 7px;
+  border-bottom: 1px solid var(--border-soft);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--q-accent) 8%, transparent),
+    transparent 70%
+  );
+}
+
+.tm-inner-icon {
+  font-size: 14px;
+  color: var(--q-accent);
+  flex-shrink: 0;
+}
+
+.tm-inner-labels {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.tm-inner-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--q-accent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tm-inner-sublabel {
+  font-size: 10px;
+  color: var(--md-sys-color-on-surface-variant);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tm-inner-count {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--q-accent);
+  background: color-mix(in srgb, var(--q-accent) 12%, transparent);
+  border-radius: 100px;
+  padding: 1px 6px;
+  flex-shrink: 0;
+}
+
+.tm-inner-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  min-height: 60px;
+}
+
+.tm-inner-empty {
+  font-size: 11px;
+  color: var(--md-sys-color-outline);
+  opacity: 0.5;
+  margin: auto;
+  user-select: none;
+  pointer-events: none;
+}
+
+/* ─── Todo Card ─────────────────────────────────────────────── */
+
+.tm-todo-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 5px 6px;
+  border-radius: 8px;
+  background: var(--md-sys-color-glass-chip);
+  border: 1px solid var(--border-soft);
+  cursor: grab;
+  transition:
+    background var(--transition-fast),
+    opacity var(--transition-fast),
+    transform var(--transition-fast);
+  animation: md-rise-in var(--md-sys-motion-duration-short3)
+    var(--md-sys-motion-easing-standard) both;
+}
+
+.tm-todo-card:hover {
+  background: var(--md-sys-color-glass-hover);
+}
+
+.tm-todo-card--dragging {
+  opacity: 0.4;
+  cursor: grabbing;
+  transform: scale(0.96);
+}
+
+.tm-todo-card--checked .tm-todo-text {
+  text-decoration: line-through;
+  opacity: 0.45;
+}
+
+.tm-todo-card--checked .tm-todo-checkbox {
+  color: var(--md-sys-color-success);
+}
+
+.tm-todo-checkbox {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--md-sys-color-outline);
+  cursor: pointer;
+  transition: color var(--transition-fast), transform var(--transition-fast);
+  border-radius: 50%;
+}
+
+.tm-todo-checkbox:hover {
+  color: var(--md-sys-color-primary);
+  transform: scale(1.15);
+}
+
+.tm-todo-text {
+  flex: 1;
+  font-size: 12px;
+  color: var(--md-sys-color-on-surface);
+  line-height: 1.4;
+  word-break: break-word;
+  padding-top: 2px;
+  transition: opacity var(--transition-fast);
+}
+
+/* ─── Todo Pool (unassigned) ────────────────────────────────── */
+
+.tm-todo-pool {
+  border: 1px dashed var(--border-soft);
+  border-radius: 12px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.tm-todo-pool--over {
+  border-color: var(--md-sys-color-primary);
+  background: var(--md-sys-color-primary-container);
+}
+
+.tm-todo-pool-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--md-sys-color-on-surface-variant);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.tm-todo-pool-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* ─── Loading skeleton ──────────────────────────────────────── */
+
+.tm-panel-loading {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tm-panel-skeleton--grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.tm-panel-skeleton-quadrant {
+  height: 130px;
+  border-radius: 14px;
+  background: linear-gradient(
+    90deg,
+    var(--md-sys-color-surface-container-low) 0%,
+    var(--md-sys-color-surface-container) 50%,
+    var(--md-sys-color-surface-container-low) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s ease infinite;
+}
+
+@keyframes skeleton-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ─── Empty state ───────────────────────────────────────────── */
+
+.tm-panel-no-todos {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--md-sys-color-on-surface-variant);
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.tm-panel-no-todos p {
+  font-size: 13px;
+  opacity: 0.7;
+  margin: 0;
+}
+
+.tm-panel-open-btn--text {
+  width: auto;
+  height: auto;
+  padding: 6px 14px;
+  border-radius: 100px;
+  font-size: 13px;
+  font-weight: 500;
+  background: var(--md-sys-color-surface-container);
+  gap: 4px;
+}
+
+.tm-panel-open-btn--text:hover {
+  background: var(--md-sys-color-surface-container-high);
+}
+
+/* ─── Responsive ─────────────────────────────────────────────── */
+
+@media (max-width: 720px) {
+  .tm-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .tm-layout {
+    padding: 14px 14px 40px;
+  }
+
+  .tm-panel {
+    width: 100vw;
+  }
+
+  .tm-inner-grid {
+    grid-template-columns: 1fr;
+  }
+}

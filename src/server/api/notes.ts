@@ -12,6 +12,8 @@ import {
   getNote,
   getNoteForExport,
   getNotes,
+  getNotesWithTodoSummary,
+  getNoteTodoBlocks,
   getPublicNoteBySlug,
   getPublishedNotesForExport,
   insertBlock,
@@ -21,6 +23,8 @@ import {
   restoreNote,
   saveNoteContent,
   searchNotesByTitle,
+  setTodoBlockQuadrant,
+  toggleTodoBlock,
   updateBlock,
   updateNote,
 } from "@/domain/note/note.service";
@@ -262,11 +266,35 @@ export async function getPublicNoteBySlugAction(slug: string) {
   return getPublicNoteBySlug(slug);
 }
 
+export async function getNotesWithTodoSummaryAction() {
+  const { userId } = await requireAuthenticatedUser();
+  return getNotesWithTodoSummary(userId);
+}
+
 export async function assignNoteToQuadrantAction(
   noteId: string,
   quadrant: EisenhowerQuadrant | null
 ) {
   const { userId } = await requireAuthenticatedUser();
   await updateNote(userId, noteId, { quadrant });
-  revalidatePath("/matrix");
+  revalidatePath("/tower-matrix");
+}
+
+export async function getNoteTodosAction(noteId: string) {
+  const { userId } = await requireAuthenticatedUser();
+  return getNoteTodoBlocks(userId, noteId);
+}
+
+export async function assignTodoToQuadrantAction(
+  blockId: string,
+  quadrant: EisenhowerQuadrant | null
+) {
+  const { userId } = await requireAuthenticatedUser();
+  await setTodoBlockQuadrant(userId, blockId, quadrant);
+  revalidatePath("/tower-matrix");
+}
+
+export async function toggleTodoAction(blockId: string, checked: boolean) {
+  const { userId } = await requireAuthenticatedUser();
+  await toggleTodoBlock(userId, blockId, checked);
 }
