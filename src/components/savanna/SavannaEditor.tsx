@@ -292,6 +292,7 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
   const [inspectorNote, setInspectorNote] = useState<SavannaEditableNote | null>(null);
   const [inspectorTitleDraft, setInspectorTitleDraft] = useState("");
   const [inspectorSaveState, setInspectorSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [viewportSize, setViewportSize] = useState({ width: 1, height: 1 });
 
   const saveTimerRef = useRef<number | null>(null);
   const cameraTimerRef = useRef<number | null>(null);
@@ -316,6 +317,19 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
   useEffect(() => {
     setViewport({ x: canvas.cameraX, y: canvas.cameraY, zoom: canvas.zoom }, { duration: 0 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const syncViewportSize = () => {
+      setViewportSize({
+        width: Math.max(window.innerWidth, 1),
+        height: Math.max(window.innerHeight, 1),
+      });
+    };
+
+    syncViewportSize();
+    window.addEventListener("resize", syncViewportSize);
+    return () => window.removeEventListener("resize", syncViewportSize);
   }, []);
 
   useEffect(() => {
@@ -1227,7 +1241,12 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
       </header>
 
       {draftStroke.length > 0 && tool === "draw" ? (
-        <svg className="svn-draw-overlay" aria-hidden="true">
+        <svg
+          className="svn-draw-overlay"
+          aria-hidden="true"
+          width={viewportSize.width}
+          height={viewportSize.height}
+        >
           <path
             d={screenPointsToPath(draftStroke)}
             stroke="var(--accent)"

@@ -1067,8 +1067,7 @@
 .svn-draw-overlay {
   position: fixed;
   inset: 0;
-  width: 100vw;
-  height: 100dvh;
+  display: block;
   pointer-events: none;
   z-index: 11;
 }
