@@ -192,13 +192,13 @@
 /* ─── Savanna Editor Shell ─────────────────────────────────────── */
 
 .svn-shell {
-  position: fixed;
+  position: absolute;
   inset: 0;
-  width: 100vw;
-  height: 100dvh;
   overflow: hidden;
   background: var(--shell-main-bg);
   color: var(--text-primary);
+  display: flex;
+  flex-direction: column;
 }
 
 .svn-shell .react-flow__renderer,
@@ -227,86 +227,7 @@
   cursor: cell;
 }
 
-/* ─── Topbar ───────────────────────────────────────────────────── */
-
-.svn-topbar {
-  position: fixed;
-  top: 12px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 14;
-  width: min(1220px, calc(100vw - 36px));
-  min-height: 56px;
-  padding: 8px 10px;
-  border: 1px solid var(--border-soft);
-  border-radius: 16px;
-  background: var(--surface-glass-strong);
-  backdrop-filter: blur(18px);
-  box-shadow: var(--shadow-panel);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.svn-topbar__left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-}
-
-.svn-topbar__back {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border: none;
-  border-radius: 10px;
-  background: transparent;
-  color: var(--text-secondary);
-  cursor: pointer;
-}
-
-.svn-topbar__back:hover {
-  background: var(--surface-highlight);
-  color: var(--text-primary);
-}
-
-.svn-topbar__title-wrap {
-  min-width: 0;
-  display: grid;
-  gap: 2px;
-}
-
-.svn-topbar__title {
-  margin: 0;
-  color: var(--text-primary);
-  font-size: 14px;
-  line-height: 1.25;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 260px;
-}
-
-.svn-topbar__hint {
-  margin: 0;
-  color: var(--accent);
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 1.2;
-}
-
-.svn-topbar__actions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-  min-width: 0;
-  flex-wrap: wrap;
-}
+/* ─── Topbar Tool Buttons ──────────────────────────────────────── */
 
 .svn-topbar__btn {
   display: inline-flex;
@@ -346,8 +267,8 @@
 /* ─── Note Picker Panel ────────────────────────────────────────── */
 
 .svn-note-panel {
-  position: fixed;
-  top: 76px;
+  position: absolute;
+  top: 36px;
   left: 0;
   bottom: 0;
   width: 300px;
@@ -484,8 +405,8 @@
 /* ─── Note Inspector ───────────────────────────────────────────── */
 
 .svn-note-inspector {
-  position: fixed;
-  top: 76px;
+  position: absolute;
+  top: 36px;
   right: 0;
   bottom: 0;
   width: min(420px, calc(100vw - 24px));
@@ -1069,10 +990,8 @@
 /* ─── Draw Overlay ─────────────────────────────────────────────── */
 
 .svn-draw-overlay {
-  position: fixed;
+  position: absolute;
   inset: 0;
-  width: 100vw;
-  height: 100dvh;
   pointer-events: none;
   z-index: 11;
   overflow: visible;
@@ -1141,18 +1060,6 @@
 }
 
 @media (max-width: 980px) {
-  .svn-topbar {
-    left: 12px;
-    right: 12px;
-    transform: none;
-    width: auto;
-    align-items: flex-start;
-  }
-
-  .svn-topbar__actions {
-    justify-content: flex-start;
-  }
-
   .svn-note-panel {
     width: min(86vw, 320px);
   }

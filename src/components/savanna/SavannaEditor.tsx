@@ -13,6 +13,7 @@ import {
   useReactFlow,
   type Connection,
   type Edge,
+  type FinalConnectionState,
   type Node,
   type NodeTypes,
   type Viewport,
@@ -39,6 +40,7 @@ import { InkStrokeNode, type InkPoint, type InkStrokeNodeData } from "./nodes/In
 import { NoteCardNode, type NoteCardNodeData } from "./nodes/NoteCardNode";
 import { LabelNode, type LabelNodeData } from "./nodes/LabelNode";
 import { ZoneNode, type ZoneNodeData } from "./nodes/ZoneNode";
+import { PageTopbar } from "@/components/ui/PageTopbar";
 
 type SavannaNote = {
   id: string;
@@ -541,10 +543,12 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
       );
       if (exists) return;
 
+      const edgeId = generateId();
+
       setEdges((current) => [
         ...current,
         {
-          id: generateId(),
+          id: edgeId,
           source: sourceNodeId,
           target: targetNodeId,
           sourceHandle,
@@ -577,11 +581,18 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
   }, []);
 
   const onConnectEnd = useCallback(
-    (event: unknown) => {
+    (event: MouseEvent | TouchEvent, connectionState: FinalConnectionState) => {
+      // onConnect already handled valid handle-to-handle drops — skip to avoid double-add
+      if (connectionState.isValid) {
+        connectSourceNodeIdRef.current = null;
+        return;
+      }
+
       const sourceNodeId = connectSourceNodeIdRef.current;
       connectSourceNodeIdRef.current = null;
       if (!sourceNodeId) return;
 
+      // Fallback: loose-mode drop on a node body that ReactFlow didn't match to a handle
       const target = (event as { target?: EventTarget }).target;
       if (!(target instanceof HTMLElement)) return;
 
@@ -806,9 +817,8 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
       onEdgesChange(changes);
 
       const hasMeaningfulChange = changes.some(
-        (change) => change.type === "remove" || change.type === "replace" || change.type === "add",
+        (change) => change.type === "remove" || change.type === "add",
       );
-
       if (hasMeaningfulChange) triggerSave();
     },
     [onEdgesChange, triggerSave],
@@ -1199,19 +1209,6 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
     }
   }, []);
 
-  const toolHint =
-    tool === "line"
-      ? isDrawing
-        ? "Release mouse to finish straight line"
-        : "Press and drag on canvas for a straight line"
-      : tool === "text"
-        ? "Click anywhere on canvas to place text"
-        : tool === "draw"
-          ? isDrawing
-            ? "Release mouse to finish stroke"
-            : "Press and drag on canvas to draw"
-          : "Cursor mode: drag to select. Hold Space or use middle mouse to pan.";
-
   return (
     <div ref={shellRef} className="svn-shell" data-tool={tool}>
       <div className={`svn-note-panel${notePanelOpen ? " svn-note-panel--open" : ""}`}>
@@ -1341,91 +1338,79 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
         </div>
       </aside>
 
-      <header className="svn-topbar">
-        <div className="svn-topbar__left">
-          <button
-            type="button"
-            className="svn-topbar__back"
-            onClick={() => router.push("/savanna")}
-            aria-label="Back to Savanna list"
-          >
-            <span className="material-symbols-outlined">arrow_back</span>
-          </button>
-          <div className="svn-topbar__title-wrap">
-            <h1 className="svn-topbar__title">{canvas.title}</h1>
-            {toolHint ? <p className="svn-topbar__hint">{toolHint}</p> : null}
-          </div>
-        </div>
-
-        <div className="svn-topbar__actions">
-          <button
-            type="button"
-            className="svn-topbar__btn"
-            onClick={() => setNotePanelOpen((current) => !current)}
-            title="Toggle notes panel"
-          >
-            <span className="material-symbols-outlined">note_add</span>
-            Notes
-          </button>
-          <button
-            type="button"
-            className={`svn-topbar__btn${tool === "select" ? " svn-topbar__btn--active" : ""}`}
-            onClick={() => activateTool("select")}
-          >
-            <span className="material-symbols-outlined">ads_click</span>
-            Cursor
-          </button>
-          <button
-            type="button"
-            className={`svn-topbar__btn${tool === "line" ? " svn-topbar__btn--active" : ""}`}
-            onClick={() => activateTool("line")}
-          >
-            <span className="material-symbols-outlined">horizontal_rule</span>
-            Line
-          </button>
-          <button
-            type="button"
-            className={`svn-topbar__btn${tool === "draw" ? " svn-topbar__btn--active" : ""}`}
-            onClick={() => activateTool("draw")}
-          >
-            <span className="material-symbols-outlined">draw</span>
-            Draw
-          </button>
-          <button
-            type="button"
-            className={`svn-topbar__btn${tool === "text" ? " svn-topbar__btn--active" : ""}`}
-            onClick={() => activateTool("text")}
-          >
-            <span className="material-symbols-outlined">title</span>
-            Text
-          </button>
-          <button type="button" className="svn-topbar__btn" onClick={addZone}>
-            <span className="material-symbols-outlined">crop_square</span>
-            Zone
-          </button>
-
-          <div className={`svn-save-status svn-save-status--${saveStatus}`} aria-live="polite">
-            {saveStatus === "saving" && (
-              <>
-                <span className="svn-save-dot" />
-                Saving…
-              </>
-            )}
-            {saveStatus === "saved" && (
-              <>
-                <span className="material-symbols-outlined">cloud_done</span>
-                Saved
-              </>
-            )}
-            {saveStatus === "unsaved" && (
-              <>
-                <span className="svn-save-dot svn-save-dot--unsaved" />
-                Unsaved
-              </>
-            )}
-          </div>
-        </div>
-      </header>
+      <PageTopbar
+        icon="landscape"
+        label={canvas.title}
+        actions={
+          <>
+            <button
+              type="button"
+              className="svn-topbar__btn"
+              onClick={() => setNotePanelOpen((current) => !current)}
+              title="Toggle notes panel"
+            >
+              <span className="material-symbols-outlined">note_add</span>
+              Notes
+            </button>
+            <button
+              type="button"
+              className={`svn-topbar__btn${tool === "select" ? " svn-topbar__btn--active" : ""}`}
+              onClick={() => activateTool("select")}
+            >
+              <span className="material-symbols-outlined">ads_click</span>
+              Cursor
+            </button>
+            <button
+              type="button"
+              className={`svn-topbar__btn${tool === "line" ? " svn-topbar__btn--active" : ""}`}
+              onClick={() => activateTool("line")}
+            >
+              <span className="material-symbols-outlined">horizontal_rule</span>
+              Line
+            </button>
+            <button
+              type="button"
+              className={`svn-topbar__btn${tool === "draw" ? " svn-topbar__btn--active" : ""}`}
+              onClick={() => activateTool("draw")}
+            >
+              <span className="material-symbols-outlined">draw</span>
+              Draw
+            </button>
+            <button
+              type="button"
+              className={`svn-topbar__btn${tool === "text" ? " svn-topbar__btn--active" : ""}`}
+              onClick={() => activateTool("text")}
+            >
+              <span className="material-symbols-outlined">title</span>
+              Text
+            </button>
+            <button type="button" className="svn-topbar__btn" onClick={addZone}>
+              <span className="material-symbols-outlined">crop_square</span>
+              Zone
+            </button>
+            <div className={`svn-save-status svn-save-status--${saveStatus}`} aria-live="polite">
+              {saveStatus === "saving" && (
+                <>
+                  <span className="svn-save-dot" />
+                  Saving…
+                </>
+              )}
+              {saveStatus === "saved" && (
+                <>
+                  <span className="material-symbols-outlined">cloud_done</span>
+                  Saved
+                </>
+              )}
+              {saveStatus === "unsaved" && (
+                <>
+                  <span className="svn-save-dot svn-save-dot--unsaved" />
+                  Unsaved
+                </>
+              )}
+            </div>
+          </>
+        }
+      />
 
       {tool === "draw" || tool === "line" ? (
         <svg className="svn-draw-overlay" aria-hidden="true">
@@ -1434,6 +1419,7 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
       ) : null}
 
       <ReactFlow
+        style={{ flex: 1, minHeight: 0 }}
         nodes={nodesWithHandlers}
         edges={edges}
         nodeTypes={NODE_TYPES}
