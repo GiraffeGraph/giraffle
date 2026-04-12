@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/auth", () => ({
   auth: vi.fn(),
@@ -24,7 +24,10 @@ const { streamText } = await import("ai");
 const { POST } = await import("@/app/api/agent/route");
 
 describe("POST /api/agent", () => {
+  const originalOpenAiApiKey = process.env.OPENAI_API_KEY;
+
   beforeEach(() => {
+    process.env.OPENAI_API_KEY = "test-openai-key";
     vi.clearAllMocks();
     vi.mocked(auth).mockResolvedValue({ user: { id: "user-1" } } as never);
     vi.mocked(consumeRateLimit).mockReturnValue({
@@ -68,6 +71,22 @@ describe("POST /api/agent", () => {
     expect(streamText).not.toHaveBeenCalled();
   });
 
+  it("returns 503 when the AI service is not configured", async () => {
+    delete process.env.OPENAI_API_KEY;
+
+    const response = await POST(
+      new Request("http://localhost/api/agent", {
+        method: "POST",
+        body: JSON.stringify({ prompt: "hello" }),
+        headers: { "content-type": "application/json" },
+      })
+    );
+
+    expect(response.status).toBe(503);
+    expect(await response.text()).toBe("AI service is not configured");
+    expect(streamText).not.toHaveBeenCalled();
+  });
+
   it("rejects prompts that exceed the length limit", async () => {
     const response = await POST(
       new Request("http://localhost/api/agent", {
@@ -80,5 +99,9 @@ describe("POST /api/agent", () => {
     expect(response.status).toBe(400);
     expect(await response.text()).toBe("Prompt is too long");
     expect(streamText).not.toHaveBeenCalled();
+  });
+
+  afterAll(() => {
+    process.env.OPENAI_API_KEY = originalOpenAiApiKey;
   });
 });

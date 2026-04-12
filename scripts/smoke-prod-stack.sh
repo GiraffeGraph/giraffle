@@ -18,7 +18,7 @@ fi
 
 APP_PORT=${APP_PORT:-$(grep -E '^[[:space:]]*APP_PORT=' "$ENV_FILE" | tail -n 1 | cut -d= -f2- | tr -d '"' | tr -d "'" || true)}
 APP_PORT=${APP_PORT:-3000}
-HEALTHCHECK_URL=${HEALTHCHECK_URL:-"http://127.0.0.1:${APP_PORT}/api/health"}
+HEALTHCHECK_URL=${HEALTHCHECK_URL:-"http://127.0.0.1:${APP_PORT}/api/health/ready"}
 
 compose_args="--env-file $ENV_FILE -f $BASE_COMPOSE_FILE -f $BUILD_COMPOSE_FILE"
 

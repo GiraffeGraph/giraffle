@@ -1,6 +1,8 @@
 import { openai } from "@ai-sdk/openai";
 import { streamText } from "ai";
 import { auth } from "@/lib/auth";
+import { getAiRuntimeEnv } from "@/lib/env.server";
+import { getRequestId, logger } from "@/lib/logger";
 import { consumeRateLimit } from "@/lib/rate-limit";
 
 export const maxDuration = 30;
@@ -14,6 +16,8 @@ const AGENT_RATE_LIMIT = {
 } as const;
 
 export async function POST(req: Request) {
+  const requestId = getRequestId(req);
+
   try {
     const session = await auth();
     const userId = session?.user?.id;
@@ -25,12 +29,24 @@ export async function POST(req: Request) {
     const rateLimit = consumeRateLimit(`agent:${userId}`, AGENT_RATE_LIMIT);
 
     if (!rateLimit.allowed) {
+      logger.warn("agent_rate_limited", {
+        requestId,
+        userId,
+        retryAfterMs: rateLimit.retryAfterMs,
+      });
+
       return new Response("Too many requests", {
         status: 429,
         headers: {
           "Retry-After": String(Math.ceil(rateLimit.retryAfterMs / 1000)),
         },
       });
+    }
+
+    const ai = getAiRuntimeEnv();
+
+    if (!ai.apiKey) {
+      return new Response("AI service is not configured", { status: 503 });
     }
 
     const body = await req.json();
@@ -58,7 +74,11 @@ export async function POST(req: Request) {
 
     return result.toTextStreamResponse();
   } catch (error) {
-    console.error("AI Stream Error:", error);
+    logger.error("agent_request_failed", {
+      requestId,
+      route: "/api/agent",
+      error,
+    });
 
     if (error instanceof Error) {
       return new Response(error.message, { status: 500 });

@@ -1,6 +1,7 @@
 import { Prisma, PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
+import { getAppRuntimeEnv, getDatabaseRuntimeEnv } from "@/lib/env.server";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
@@ -20,8 +21,10 @@ function hasCurrentModelDelegates(client: PrismaClient) {
 }
 
 function createPrismaClient(): PrismaClient {
+  const app = getAppRuntimeEnv();
+  const database = getDatabaseRuntimeEnv();
   const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
+    connectionString: database.url,
     max: 3,
     idleTimeoutMillis: 30_000,
     connectionTimeoutMillis: 3_000,
@@ -30,7 +33,7 @@ function createPrismaClient(): PrismaClient {
 
   return new PrismaClient({
     adapter,
-    log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
+    log: app.isDevelopment ? ["error", "warn"] : ["error"],
   });
 }
 
@@ -43,6 +46,6 @@ if (cachedClient && !hasCurrentModelDelegates(cachedClient)) {
 
 export const db = globalForPrisma.prisma ?? createPrismaClient();
 
-if (process.env.NODE_ENV !== "production") {
+if (!getAppRuntimeEnv().isProduction) {
   globalForPrisma.prisma = db;
 }

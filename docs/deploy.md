@@ -46,6 +46,9 @@ POSTGRES_DB=giraffle
 DATABASE_URL=postgresql://giraffle:change-this-to-a-strong-password@postgres:5432/giraffle?connection_limit=3&pool_timeout=10
 AUTH_SECRET=replace-this-with-a-long-random-secret
 NEXTAUTH_URL=http://YOUR_SERVER_IP_OR_DOMAIN
+LOG_LEVEL=info
+# Optional: enable AI-assisted routes
+# OPENAI_API_KEY=YOUR_OPENAI_API_KEY
 NODE_ENV=production
 ```
 
@@ -90,6 +93,11 @@ Then check logs:
 ```bash
 ./scripts/prod-logs.sh
 ```
+
+Health endpoints:
+
+- `GET /api/health/live`
+- `GET /api/health/ready`
 
 Check running containers:
 

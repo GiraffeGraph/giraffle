@@ -11,9 +11,20 @@
   --ng-text-soft: var(--text-tertiary);
   --ng-accent: var(--accent);
   --ng-accent-strong: var(--accent-strong);
+  position: relative;
   min-height: calc(100vh - 80px);
   color: var(--ng-text);
   background: var(--ng-canvas);
+  overflow: hidden;
+}
+
+.spotsBg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0.055;
 }
 
 .pageEmbedded {

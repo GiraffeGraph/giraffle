@@ -114,7 +114,7 @@ For coverage reports:
 npm run test:coverage
 ```
 
-For a production-like smoke test that builds the Docker image, starts PostgreSQL, applies migrations, and checks `/api/health`:
+For a production-like smoke test that builds the Docker image, starts PostgreSQL, applies migrations, and checks `/api/health/ready`:
 
 ```bash
 ENV_FILE=.env.production npm run smoke:prod
@@ -153,7 +153,7 @@ ENV_FILE=.env.production npm run smoke:prod
 GitHub Actions now runs a clean release pipeline:
 
 - `quality`: install, Prisma validation, lint, typecheck, unit/integration tests, production build, security audit
-- `smoke`: build the production image and boot the real Docker Compose stack until `/api/health` responds
+- `smoke`: build the production image and boot the real Docker Compose stack until `/api/health/ready` responds
 - `publish`: push multi-arch Docker images to Docker Hub only after the quality and smoke gates pass
 
 ## Production Deployment
@@ -185,7 +185,7 @@ Then open `http://localhost:3000` for a production smoke test, or point your dom
 - pulls the app image from Docker Hub via `APP_IMAGE`
 - runs `prisma migrate deploy` on startup
 - publishes the app directly on `APP_PORT` (default `3000`)
-- exposes `/api/health` for health checks
+- exposes `/api/health/live` and `/api/health/ready` for liveness and readiness checks
 - persists PostgreSQL data in `giraffle_pgdata`
 - persists uploaded images in `giraffle_uploads`
 - keeps `prisma.config.ts` inside the image because Prisma 7 reads datasource config from it during `migrate deploy`
@@ -196,7 +196,11 @@ Then open `http://localhost:3000` for a production smoke test, or point your dom
 - `DATABASE_URL`
 - `AUTH_SECRET`
 - `NEXTAUTH_URL`
+- `LOG_LEVEL`
 - `APP_PORT`
+- optional: `OPENAI_API_KEY` to enable AI-assisted routes
+- optional: `FEED_REFRESH_SECRET` to enable authenticated feed refresh jobs
+- optional: `DEPLOYMENT_ID` for version-skew protection during rolling deploys
 - `POSTGRES_USER`
 - `POSTGRES_PASSWORD`
 - `POSTGRES_DB`

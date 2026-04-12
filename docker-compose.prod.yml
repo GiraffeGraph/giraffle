@@ -41,18 +41,18 @@ services:
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-}
       NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
       AUTH_DISABLE_SECURE_COOKIES: ${AUTH_DISABLE_SECURE_COOKIES:-0}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
       POSTGRES_USER: ${POSTGRES_USER:-giraffle}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB:-giraffle}
       HOSTNAME: "0.0.0.0"
       PORT: "3000"
       NODE_OPTIONS: "--max-old-space-size=512"
-    command: >-
-      sh -lc "npx prisma migrate deploy && node server.js"
+    command: ["sh", "./scripts/container-start.sh"]
     volumes:
       - giraffle_uploads:/app/public/uploads
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/api/health"]
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/api/health/ready"]
       interval: 30s
       timeout: 10s
       retries: 3

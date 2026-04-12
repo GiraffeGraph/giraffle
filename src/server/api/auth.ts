@@ -11,8 +11,10 @@ import {
   requireAuthenticatedUser,
 } from "@/lib/auth-session";
 import { db } from "@/lib/db";
+import { getAppRuntimeEnv } from "@/lib/env.server";
 import { consumeRateLimit, resetRateLimit } from "@/lib/rate-limit";
 
+const app = getAppRuntimeEnv();
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function registerAction(formData: FormData) {
@@ -229,10 +231,10 @@ export async function requestPasswordResetAction(email: string) {
   return {
     ok: true,
     message:
-      process.env.NODE_ENV === "production"
+      app.isProduction
         ? "Reset request recorded."
         : `Development link: /reset-password/${token}`,
-    token: process.env.NODE_ENV === "production" ? undefined : token,
+    token: app.isProduction ? undefined : token,
   } as const;
 }
 

@@ -32,7 +32,7 @@ Your task:
 4. Fill `.env.production` with working production values.
 5. Start the stack with `./scripts/prod-up.sh`.
 6. Verify the containers are healthy.
-7. Verify the app responds on `/api/health`.
+7. Verify the app responds on `/api/health/ready`.
 8. Return a concise deployment summary.
 
 Use these environment settings unless the machine/domain requires a different public URL:
@@ -63,12 +63,12 @@ Detailed instructions:
 - Inspect logs if needed:
   `./scripts/prod-logs.sh`
 - Verify health:
-  `curl -fsS http://127.0.0.1:3000/api/health`
+  `curl -fsS http://127.0.0.1:3000/api/health/ready`
 
 Success criteria:
 - `postgres` container is healthy
 - `app` container is healthy
-- `curl http://127.0.0.1:3000/api/health` succeeds
+- `curl http://127.0.0.1:3000/api/health/ready` succeeds
 - The app is reachable at the final public URL
 
 At the end, report:

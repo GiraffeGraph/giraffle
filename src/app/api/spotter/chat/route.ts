@@ -3,6 +3,8 @@ import { streamText } from "ai";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import { consumeRateLimit } from "@/lib/rate-limit";
+import { getAiRuntimeEnv } from "@/lib/env.server";
+import { getRequestId, logger } from "@/lib/logger";
 import {
   appendSpotterMessage,
   assertSpotterSessionOwner,
@@ -22,6 +24,8 @@ const SPOTTER_RATE_LIMIT = {
 } as const;
 
 export async function POST(req: Request) {
+  const requestId = getRequestId(req);
+
   try {
     const session = await auth();
     const userId = session?.user?.id;
@@ -33,12 +37,24 @@ export async function POST(req: Request) {
     const rateLimit = consumeRateLimit(`spotter:${userId}`, SPOTTER_RATE_LIMIT);
 
     if (!rateLimit.allowed) {
+      logger.warn("spotter_rate_limited", {
+        requestId,
+        userId,
+        retryAfterMs: rateLimit.retryAfterMs,
+      });
+
       return new Response("Too many requests", {
         status: 429,
         headers: {
           "Retry-After": String(Math.ceil(rateLimit.retryAfterMs / 1000)),
         },
       });
+    }
+
+    const ai = getAiRuntimeEnv();
+
+    if (!ai.apiKey) {
+      return new Response("AI service is not configured", { status: 503 });
     }
 
     const body = await req.json();
@@ -110,7 +126,11 @@ export async function POST(req: Request) {
       },
     });
   } catch (error) {
-    console.error("Spotter chat error", error);
+    logger.error("spotter_request_failed", {
+      requestId,
+      route: "/api/spotter/chat",
+      error,
+    });
 
     if (error instanceof Error) {
       return new Response(error.message, { status: 500 });
