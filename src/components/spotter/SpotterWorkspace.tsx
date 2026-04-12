@@ -271,7 +271,7 @@ export function SpotterWorkspace({
                   {notes.length} not ve {folders.length} klasör hazır
                 </p>
                 <h1 className={styles.emptyTitle}>
-                  Bugün ne spot edelim?
+                  Bugün ne spotlayalım?
                 </h1>
                 <p className={styles.emptyBody}>
                   Sorunu yaz; kütüphanendeki başlıklar ve klasörler içinden bağlantıları spot edeyim.

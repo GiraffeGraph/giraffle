@@ -64,7 +64,7 @@ export function GraphView({ graph, unresolvedLinks }: GraphViewProps) {
       <div className="graph-layout">
         <div className="graph-canvas">
           <svg viewBox="0 0 920 560" className="graph-svg" role="img">
-            {graph.edges.map((edge) => {
+            {graph.edges.map((edge, edgeIdx) => {
               const sourcePosition = layout.get(edge.source);
               const targetPosition = layout.get(edge.target);
 
@@ -79,7 +79,7 @@ export function GraphView({ graph, unresolvedLinks }: GraphViewProps) {
 
               return (
                 <line
-                  key={`${edge.source}-${edge.target}-${edge.label}`}
+                  key={`${edge.source}-${edge.target}-${edge.label}-${edgeIdx}`}
                   x1={sourcePosition.x}
                   y1={sourcePosition.y}
                   x2={targetPosition.x}
@@ -137,9 +137,9 @@ export function GraphView({ graph, unresolvedLinks }: GraphViewProps) {
                     Bu not için çözümlenmiş bağlantı yok.
                   </div>
                 ) : (
-                  activeEdges.map((edge) => (
+                  activeEdges.map((edge, edgeIdx) => (
                     <button
-                      key={`${edge.source}-${edge.target}-${edge.label}`}
+                      key={`${edge.source}-${edge.target}-${edge.label}-${edgeIdx}`}
                       type="button"
                       className="graph-panel-link"
                       onClick={() =>
