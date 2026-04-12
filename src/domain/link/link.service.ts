@@ -27,7 +27,9 @@ export async function extractAndSaveLinks(
     select: { id: true, content: true },
   });
 
-  await db.link.deleteMany({ where: { sourceNoteId: noteId } });
+  // Keep non-editor links (e.g. Savanna-created links) intact.
+  // The editor re-index should only replace wikilink-derived rows.
+  await db.link.deleteMany({ where: { sourceNoteId: noteId, linkType: "wikilink" } });
 
   const linksToCreate: {
     sourceNoteId: string;

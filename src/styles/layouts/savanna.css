@@ -207,26 +207,134 @@
   background: transparent;
 }
 
-.svn-shell[data-cursor-mode="move"] .react-flow__pane {
-  cursor: grab;
-}
-
-.svn-shell[data-cursor-mode="move"] .react-flow__pane:active {
-  cursor: grabbing;
-}
-
-.svn-shell[data-cursor-mode="interact"] .react-flow__pane {
+.svn-shell .react-flow__pane {
   cursor: default;
+}
+
+/* ─── Topbar ───────────────────────────────────────────────────── */
+
+.svn-topbar {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 14;
+  width: min(1220px, calc(100vw - 36px));
+  min-height: 56px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-soft);
+  border-radius: 16px;
+  background: var(--surface-glass-strong);
+  backdrop-filter: blur(18px);
+  box-shadow: var(--shadow-panel);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.svn-topbar__left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.svn-topbar__back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.svn-topbar__back:hover {
+  background: var(--surface-highlight);
+  color: var(--text-primary);
+}
+
+.svn-topbar__title-wrap {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.svn-topbar__title {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 260px;
+}
+
+.svn-topbar__hint {
+  margin: 0;
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.svn-topbar__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.svn-topbar__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.svn-topbar__btn:hover {
+  background: var(--surface-highlight);
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+}
+
+.svn-topbar__btn--active {
+  background: var(--surface-glass-hover);
+  color: var(--text-primary);
+  border-color: var(--accent);
+}
+
+.svn-topbar__btn .material-symbols-outlined {
+  font-size: 16px;
 }
 
 /* ─── Note Picker Panel ────────────────────────────────────────── */
 
 .svn-note-panel {
   position: fixed;
-  top: 0;
+  top: 76px;
   left: 0;
   bottom: 0;
-  width: 280px;
+  width: 300px;
   display: flex;
   flex-direction: column;
   border-right: 1px solid var(--border-soft);
@@ -355,6 +463,173 @@
   font-size: 16px;
   color: var(--accent);
   flex-shrink: 0;
+}
+
+/* ─── Note Inspector ───────────────────────────────────────────── */
+
+.svn-note-inspector {
+  position: fixed;
+  top: 76px;
+  right: 0;
+  bottom: 0;
+  width: min(420px, calc(100vw - 24px));
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--border-soft);
+  background: var(--surface-glass-strong);
+  backdrop-filter: blur(20px);
+  z-index: 10;
+  transform: translateX(100%);
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.svn-note-inspector--open {
+  transform: translateX(0);
+}
+
+.svn-note-inspector__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 64px;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.svn-note-inspector__title-wrap {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.svn-note-inspector__eyebrow {
+  color: var(--text-tertiary);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.svn-note-inspector__title {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.svn-note-inspector__title-input {
+  width: 100%;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background: var(--surface-overlay-soft);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.35;
+  padding: 6px 8px;
+  outline: none;
+}
+
+.svn-note-inspector__title-input:focus {
+  border-color: var(--accent);
+}
+
+.svn-note-inspector__save {
+  color: var(--text-tertiary);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.svn-note-inspector__save--saving {
+  color: var(--accent);
+}
+
+.svn-note-inspector__save--error {
+  color: var(--error, #ef4444);
+}
+
+.svn-note-inspector__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.svn-note-inspector__close:hover {
+  background: var(--surface-highlight);
+  color: var(--text-primary);
+}
+
+.svn-note-inspector__body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 12px 14px;
+}
+
+.svn-note-inspector__state {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.svn-note-inspector__state--error {
+  color: var(--error, #ef4444);
+}
+
+.svn-note-inspector__editor-shell {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 10px;
+  height: 100%;
+  min-height: 0;
+}
+
+.svn-note-inspector__editor {
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  background: var(--surface-overlay-soft);
+  padding: 8px;
+}
+
+.svn-note-inspector__editor .giraffle-editor-content {
+  min-height: 220px;
+}
+
+.svn-note-inspector__open-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 36px;
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  background: var(--surface-highlight);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.svn-note-inspector__open-btn:hover {
+  background: var(--surface-glass-hover);
+  border-color: var(--border-strong);
+}
+
+.svn-note-inspector__open-btn .material-symbols-outlined {
+  font-size: 16px;
 }
 
 /* ─── Top-left Panel ───────────────────────────────────────────── */
@@ -510,7 +785,7 @@
 /* ─── Empty overlay ─────────────────────────────────────────────── */
 
 .svn-empty-overlay {
-  margin-top: 24px;
+  margin-top: 96px;
   width: min(560px, calc(100vw - 40px));
   padding: 18px;
   border: 1px solid var(--border-soft);
@@ -589,6 +864,11 @@
   box-shadow: 0 0 0 2px rgb(var(--accent-rgb) / 0.18), var(--shadow-lift);
 }
 
+.svn-node-note--link-source {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgb(var(--accent-rgb) / 0.25), var(--shadow-lift);
+}
+
 .svn-node-note__inner {
   display: flex;
   align-items: flex-start;
@@ -602,6 +882,12 @@
   line-height: 1.4;
 }
 
+.svn-node-note__content {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
 .svn-node-note__title {
   color: var(--text-primary);
   font-size: 13px;
@@ -610,9 +896,32 @@
   word-break: break-word;
 }
 
+.svn-node-note__preview {
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.svn-node-note__link-badge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgb(var(--accent-rgb) / 0.16);
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
 .svn-handle {
-  width: 10px !important;
-  height: 10px !important;
+  width: 12px !important;
+  height: 12px !important;
   border: 2px solid var(--border-strong) !important;
   background: var(--surface-glass-strong) !important;
   transition: border-color var(--transition-fast) !important;
@@ -668,6 +977,117 @@
   resize: none;
 }
 
+/* ─── Node: TextBlock ──────────────────────────────────────────── */
+
+.svn-node-text {
+  width: 100%;
+  height: 100%;
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  background: var(--surface-glass-strong);
+  box-shadow: var(--shadow-panel);
+  overflow: hidden;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.svn-node-text--selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgb(var(--accent-rgb) / 0.16), var(--shadow-lift);
+}
+
+.svn-node-text__content,
+.svn-node-text__input {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 12px;
+  box-sizing: border-box;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.svn-node-text__content {
+  overflow: auto;
+}
+
+.svn-node-text__input {
+  resize: none;
+  outline: none;
+}
+
+/* ─── Node: Draw ──────────────────────────────────────────────── */
+
+.svn-node-draw {
+  width: 100%;
+  height: 100%;
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  background: var(--surface-glass-strong);
+  box-shadow: var(--shadow-panel);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+  color: var(--text-primary);
+}
+
+.svn-node-draw--selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgb(var(--accent-rgb) / 0.16), var(--shadow-lift);
+}
+
+.svn-node-draw__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.svn-node-draw__title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.svn-node-draw__clear {
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  cursor: pointer;
+}
+
+.svn-node-draw__clear:hover {
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+  background: var(--surface-highlight);
+}
+
+.svn-node-draw__surface {
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.svn-node-draw__svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
 /* ─── Node: Zone ───────────────────────────────────────────────── */
 
 .svn-node-zone {
@@ -708,4 +1128,26 @@
   text-transform: uppercase;
   outline: none;
   width: 160px;
+}
+
+@media (max-width: 980px) {
+  .svn-topbar {
+    left: 12px;
+    right: 12px;
+    transform: none;
+    width: auto;
+    align-items: flex-start;
+  }
+
+  .svn-topbar__actions {
+    justify-content: flex-start;
+  }
+
+  .svn-note-panel {
+    width: min(86vw, 320px);
+  }
+
+  .svn-note-inspector {
+    width: min(90vw, 360px);
+  }
 }
