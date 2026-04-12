@@ -756,8 +756,8 @@ export function NoteEditorPage({
         onSelect: toggleMetaPanel,
       },
       {
-        label: "Kanvasta Aç",
-        hint: "Bu notu merkez alarak uzamsal haritasını çıkar",
+        label: "Open in Savanna",
+        hint: "Create a spatial map centered on this note",
         onSelect: handleOpenInCanvas,
       },
       {
@@ -1218,7 +1218,7 @@ export function NoteEditorPage({
               },
               {
                 icon: "hub",
-                label: "Kanvasta Aç",
+                label: "Open in Savanna",
                 onClick: handleOpenInCanvas,
                 active: false,
                 disabled: false,

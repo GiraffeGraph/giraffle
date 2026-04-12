@@ -197,7 +197,7 @@ export async function createSavannaFromNoteAction(noteId: string) {
   const canvas = await db.canvas.create({
     data: {
       userId,
-      title: `${note.title} — map`,
+      title: `${note.title} — Savanna`,
       nodes: {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         create: nodeRows.map(({ canvasId: _c, ...n }) => ({ ...n, data: n.data as any })),

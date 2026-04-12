@@ -108,6 +108,56 @@ function dbEdgesToFlow(dbEdges: DbCanvasEdge[]): Edge[] {
   }));
 }
 
+function serializeNodeData(node: Node): Record<string, unknown> {
+  if (node.type === "noteCard") {
+    const data = node.data as NoteCardNodeData;
+    return {
+      noteId: data.noteId,
+      title: data.title,
+      icon: data.icon ?? null,
+    };
+  }
+
+  if (node.type === "label") {
+    const data = node.data as LabelNodeData;
+    return { text: data.text ?? "" };
+  }
+
+  if (node.type === "zone") {
+    const data = node.data as ZoneNodeData;
+    return {
+      label: data.label ?? "",
+      color: data.color ?? null,
+    };
+  }
+
+  return {};
+}
+
+function flowNodesToPayload(nodes: Node[]) {
+  return nodes.map((n) => ({
+    id: n.id,
+    type: n.type ?? "noteCard",
+    x: n.position.x,
+    y: n.position.y,
+    width: (n.style?.width as number) ?? 220,
+    height: (n.style?.height as number) ?? 80,
+    noteId: n.type === "noteCard" ? ((n.data as NoteCardNodeData).noteId ?? null) : null,
+    data: serializeNodeData(n),
+    color: n.type === "zone" ? ((n.data as ZoneNodeData).color ?? null) : null,
+  }));
+}
+
+function flowEdgesToPayload(edges: Edge[]) {
+  return edges.map((e) => ({
+    id: e.id,
+    sourceNodeId: e.source,
+    targetNodeId: e.target,
+    sourceHandle: e.sourceHandle ?? null,
+    targetHandle: e.targetHandle ?? null,
+  }));
+}
+
 function generateId() {
   return crypto.randomUUID();
 }
@@ -117,12 +167,12 @@ type SaveStatus = "saved" | "saving" | "unsaved";
 
 function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
   const router = useRouter();
-  const { setViewport, screenToFlowPosition } = useReactFlow();
+  const { setViewport, screenToFlowPosition, fitView } = useReactFlow();
   const [nodes, setNodes, onNodesChange] = useNodesState(dbNodesToFlow(canvas.nodes));
   const [edges, setEdges, onEdgesChange] = useEdgesState(dbEdgesToFlow(canvas.edges));
   const [cursorMode, setCursorMode] = useState<CursorMode>("interact");
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
-  const [notePanelOpen, setNotePanelOpen] = useState(false);
+  const [notePanelOpen, setNotePanelOpen] = useState(canvas.nodes.length === 0);
   const [noteSearch, setNoteSearch] = useState("");
   const saveTimerRef = useRef<number | null>(null);
   const cameraTimerRef = useRef<number | null>(null);
@@ -161,29 +211,18 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
       const currentEdges = latestEdgesRef.current;
       const camera = lastCameraRef.current;
 
-      await saveSavannaStateAction(
-        canvas.id,
-        currentNodes.map((n) => ({
-          id: n.id,
-          type: n.type ?? "noteCard",
-          x: n.position.x,
-          y: n.position.y,
-          width: (n.style?.width as number) ?? 220,
-          height: (n.style?.height as number) ?? 80,
-          noteId: (n.data as NoteCardNodeData).noteId ?? null,
-          data: n.data as Record<string, unknown>,
-          color: (n.data as ZoneNodeData).color ?? null,
-        })),
-        currentEdges.map((e) => ({
-          id: e.id,
-          sourceNodeId: e.source,
-          targetNodeId: e.target,
-          sourceHandle: e.sourceHandle ?? null,
-          targetHandle: e.targetHandle ?? null,
-        })),
-        camera
-      );
-      setSaveStatus("saved");
+      try {
+        await saveSavannaStateAction(
+          canvas.id,
+          flowNodesToPayload(currentNodes),
+          flowEdgesToPayload(currentEdges),
+          camera,
+        );
+        setSaveStatus("saved");
+      } catch (error) {
+        console.error("Failed to save Savanna state:", error);
+        setSaveStatus("unsaved");
+      }
     }, 1500);
   }, [canvas.id]);
 
@@ -231,29 +270,18 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
       if (cameraTimerRef.current) window.clearTimeout(cameraTimerRef.current);
       cameraTimerRef.current = window.setTimeout(async () => {
         setSaveStatus("saving");
-        await saveSavannaStateAction(
-          canvas.id,
-          latestNodesRef.current.map((n) => ({
-            id: n.id,
-            type: n.type ?? "noteCard",
-            x: n.position.x,
-            y: n.position.y,
-            width: (n.style?.width as number) ?? 220,
-            height: (n.style?.height as number) ?? 80,
-            noteId: (n.data as NoteCardNodeData).noteId ?? null,
-            data: n.data as Record<string, unknown>,
-            color: (n.data as ZoneNodeData).color ?? null,
-          })),
-          latestEdgesRef.current.map((e) => ({
-            id: e.id,
-            sourceNodeId: e.source,
-            targetNodeId: e.target,
-            sourceHandle: e.sourceHandle ?? null,
-            targetHandle: e.targetHandle ?? null,
-          })),
-          viewport
-        );
-        setSaveStatus("saved");
+        try {
+          await saveSavannaStateAction(
+            canvas.id,
+            flowNodesToPayload(latestNodesRef.current),
+            flowEdgesToPayload(latestEdgesRef.current),
+            viewport,
+          );
+          setSaveStatus("saved");
+        } catch (error) {
+          console.error("Failed to persist Savanna camera:", error);
+          setSaveStatus("unsaved");
+        }
       }, 1200);
     },
     [canvas.id]
@@ -311,6 +339,70 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
     setNodes((nds) => [...nds, newNode]);
     triggerSave();
   }, [screenToFlowPosition, setNodes, triggerSave]);
+
+  const updateLabelText = useCallback(
+    (nodeId: string, text: string) => {
+      setNodes((prev) =>
+        prev.map((node) =>
+          node.id === nodeId
+            ? { ...node, data: { ...(node.data as LabelNodeData), text } }
+            : node,
+        ),
+      );
+      triggerSave();
+    },
+    [setNodes, triggerSave],
+  );
+
+  const updateZoneLabel = useCallback(
+    (nodeId: string, label: string) => {
+      setNodes((prev) =>
+        prev.map((node) =>
+          node.id === nodeId
+            ? { ...node, data: { ...(node.data as ZoneNodeData), label } }
+            : node,
+        ),
+      );
+      triggerSave();
+    },
+    [setNodes, triggerSave],
+  );
+
+  const nodesWithHandlers = useMemo(
+    () =>
+      nodes.map((node) => {
+        if (node.type === "label") {
+          return {
+            ...node,
+            data: {
+              ...(node.data as LabelNodeData),
+              onTextChange: (text: string) => updateLabelText(node.id, text),
+            } as LabelNodeData,
+          };
+        }
+
+        if (node.type === "zone") {
+          return {
+            ...node,
+            data: {
+              ...(node.data as ZoneNodeData),
+              onLabelChange: (label: string) => updateZoneLabel(node.id, label),
+            } as ZoneNodeData,
+          };
+        }
+
+        return node;
+      }),
+    [nodes, updateLabelText, updateZoneLabel],
+  );
+
+  const focusContent = useCallback(() => {
+    if (latestNodesRef.current.length === 0) {
+      void setViewport({ x: 0, y: 0, zoom: canvas.zoom }, { duration: 300 });
+      return;
+    }
+    void fitView({ padding: 0.2, duration: 300 });
+  }, [canvas.zoom, fitView, setViewport]);
 
   const filteredNotes = useMemo(() => {
     const q = noteSearch.trim().toLowerCase();
@@ -379,7 +471,7 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
       </div>
 
       <ReactFlow
-        nodes={nodes}
+        nodes={nodesWithHandlers}
         edges={edges}
         nodeTypes={NODE_TYPES}
         onNodesChange={handleNodesChange}
@@ -416,6 +508,41 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
             borderRadius: "14px",
           }}
         />
+
+        {nodes.length === 0 && (
+          <Panel position="top-center" className="svn-empty-overlay">
+            <h2 className="svn-empty-overlay__title">Start building your Savanna</h2>
+            <p className="svn-empty-overlay__body">
+              Add notes, labels, and zones to build a spatial map of your ideas.
+            </p>
+            <div className="svn-empty-overlay__actions">
+              <button
+                type="button"
+                className="svn-empty-overlay__btn"
+                onClick={() => setNotePanelOpen(true)}
+              >
+                <span className="material-symbols-outlined">sticky_note_2</span>
+                Add notes
+              </button>
+              <button
+                type="button"
+                className="svn-empty-overlay__btn"
+                onClick={addLabel}
+              >
+                <span className="material-symbols-outlined">label</span>
+                Add label
+              </button>
+              <button
+                type="button"
+                className="svn-empty-overlay__btn"
+                onClick={addZone}
+              >
+                <span className="material-symbols-outlined">crop_square</span>
+                Add zone
+              </button>
+            </div>
+          </Panel>
+        )}
 
         {/* Back + save status */}
         <Panel position="top-left" className="svn-top-left">
@@ -478,6 +605,14 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
             title="Add zone"
           >
             <span className="material-symbols-outlined">rectangle</span>
+          </button>
+          <button
+            type="button"
+            className="svn-toolbar__btn"
+            onClick={focusContent}
+            title="Focus content"
+          >
+            <span className="material-symbols-outlined">center_focus_strong</span>
           </button>
           <div className="svn-toolbar__divider" />
           <button

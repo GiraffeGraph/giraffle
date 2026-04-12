@@ -507,6 +507,66 @@
   right: 16px !important;
 }
 
+/* ─── Empty overlay ─────────────────────────────────────────────── */
+
+.svn-empty-overlay {
+  margin-top: 24px;
+  width: min(560px, calc(100vw - 40px));
+  padding: 18px;
+  border: 1px solid var(--border-soft);
+  border-radius: 16px;
+  background: var(--surface-glass-strong);
+  backdrop-filter: blur(16px);
+  box-shadow: var(--shadow-panel);
+  display: grid;
+  gap: 10px;
+}
+
+.svn-empty-overlay__title {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 16px;
+  line-height: 1.3;
+}
+
+.svn-empty-overlay__body {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.svn-empty-overlay__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.svn-empty-overlay__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  background: var(--surface-highlight);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.svn-empty-overlay__btn:hover {
+  background: var(--surface-glass-hover);
+  border-color: var(--border-strong);
+}
+
+.svn-empty-overlay__btn .material-symbols-outlined {
+  font-size: 16px;
+}
+
 /* ─── Node: NoteCard ───────────────────────────────────────────── */
 
 .svn-node-note {
