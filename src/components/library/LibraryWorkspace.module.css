@@ -17,38 +17,26 @@
   position: relative;
   width: min(100%, 1280px);
   margin: 0 auto;
-  padding: 16px 18px 24px;
+  padding: 0 12px 18px;
   color: var(--library-text);
 }
 
 .surface {
   position: relative;
   display: grid;
-  gap: 12px;
+  gap: 8px;
   min-width: 0;
+  padding-top: 8px;
 }
 
-.header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 2px 2px 0;
-}
-
-.headerMain {
-  display: grid;
-  gap: 10px;
-  min-width: 0;
-}
-
-.meta {
+.metaCompact {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   color: var(--library-text-soft);
-  font-size: 12px;
+  font-size: 11px;
   flex-wrap: wrap;
+  padding: 0 2px;
 }
 
 .metaDot {
@@ -58,59 +46,52 @@
   background: var(--library-border-strong);
 }
 
-.tabs {
+.topbarTabs {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
 
-.tab {
+.topbarTabs::-webkit-scrollbar {
+  display: none;
+}
+
+.topbarTab {
   border: 1px solid var(--library-border);
   border-radius: 999px;
   background: var(--surface-glass-soft);
   color: var(--library-text-muted);
-  padding: 7px 11px;
-  font-size: 12px;
+  padding: 4px 9px;
+  font-size: 11px;
   font-weight: 600;
   cursor: pointer;
+  white-space: nowrap;
   transition:
     border-color 160ms ease,
     background 160ms ease,
-    color 160ms ease,
-    transform 160ms ease;
+    color 160ms ease;
 }
 
-.tab:hover {
+.topbarTab:hover {
   background: var(--surface-glass-hover);
   color: var(--library-text);
 }
 
-.tabActive {
+.topbarTabActive {
   border-color: var(--accent-line);
   background: var(--surface-accent-blend);
   color: var(--library-text);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
-}
-
-.headerActions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
-.toolbar {
-  display: flex;
-  align-items: center;
-  gap: 6px;
 }
 
 .iconButton {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  width: 30px;
+  height: 30px;
   border: 1px solid var(--library-border);
   border-radius: var(--radius-card);
   background: var(--surface-glass);
@@ -131,7 +112,7 @@
 
 .controls {
   display: grid;
-  gap: 10px;
+  gap: 8px;
   padding: 0 2px 2px;
 }
 
@@ -200,8 +181,8 @@
 }
 
 .table {
-  min-width: 960px;
-  --library-row-height: 68px;
+  min-width: 920px;
+  --library-row-height: 56px;
 }
 
 .facetPanel {
@@ -641,11 +622,7 @@
 
 @media (max-width: 1080px) {
   .root {
-    padding: 14px 14px 24px;
-  }
-
-  .header {
-    padding: 2px 0 0;
+    padding: 0 10px 16px;
   }
 
   .controls {
@@ -655,19 +632,7 @@
 
 @media (max-width: 760px) {
   .root {
-    padding: 12px 12px 20px;
-  }
-
-  .header {
-    grid-template-columns: 1fr;
-    display: grid;
-    gap: 16px;
-    padding: 4px 0 0;
-  }
-
-  .headerActions {
-    flex-wrap: wrap;
-    justify-content: flex-start;
+    padding: 0 8px 14px;
   }
 
   .bulkBar {
@@ -677,13 +642,5 @@
 
   .controls {
     padding: 0;
-  }
-
-  .tabs {
-    gap: 8px;
-  }
-
-  .tab {
-    padding: 8px 12px;
   }
 }

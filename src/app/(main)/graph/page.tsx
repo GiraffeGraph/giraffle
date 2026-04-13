@@ -13,7 +13,11 @@ export default async function GraphPage() {
 
   return (
     <>
-      <PageTopbar icon="hub" label="Bağlantı ağı" />
+      <PageTopbar
+        icon="hub"
+        label="Bağlantı ağı"
+        meta={<span style={{ whiteSpace: "nowrap" }}>{graph.nodes.length} düğüm · {unresolvedLinks.length} eksik</span>}
+      />
       <GraphView graph={graph} unresolvedLinks={unresolvedLinks} />
     </>
   );

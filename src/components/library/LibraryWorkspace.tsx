@@ -16,6 +16,7 @@ import {
 } from "react";
 import { getNoteCategoryColorTokens } from "@/domain/category/category.types";
 import { Button } from "@/components/ui/Button";
+import { PageTopbar } from "@/components/ui/PageTopbar";
 import {
   archiveLibraryNotesAction,
   createLibraryNoteAction,
@@ -229,35 +230,41 @@ export function LibraryWorkspace({
     });
   };
 
+  const topbarMeta = (
+    <div className={styles.topbarTabs}>
+      {LIBRARY_TABS.map((tab) => (
+        <button key={tab.id} type="button" className={`${styles.topbarTab} ${activeTab === tab.id ? styles.topbarTabActive : ""}`} onClick={() => setActiveTab(tab.id)}>{tab.label}</button>
+      ))}
+    </div>
+  );
+
+  const topbarActions = (
+    <>
+      <button type="button" className={`${styles.iconButton} ${filterPanelVisible ? styles.iconButtonActive : ""}`} onClick={() => setFilterPanelVisible((current) => !current)} title="Filtreler"><span className="material-symbols-outlined">filter_alt</span></button>
+      <button type="button" className={`${styles.iconButton} ${searchVisible ? styles.iconButtonActive : ""}`} onClick={() => setSearchVisible((current) => !current)} title="Arama"><span className="material-symbols-outlined">search</span></button>
+      <button type="button" className={`${styles.iconButton} ${compactMode ? styles.iconButtonActive : ""}`} onClick={() => setCompactMode((current) => !current)} title="Sıkılık"><span className="material-symbols-outlined">density_small</span></button>
+      <Button variant="filled" leadingIcon="add" onClick={handleCreatePage} disabled={isCreatingPage}>{isCreatingPage ? "Oluşturuluyor..." : "Yeni"}</Button>
+    </>
+  );
+
   return (
     <div className={styles.root}>
+      <PageTopbar
+        icon="library_books"
+        label="Kütüphane"
+        meta={topbarMeta}
+        actions={topbarActions}
+      />
       <section className={styles.surface}>
-        <header className={styles.header}>
-          <div className={styles.headerMain}>
-            <div className={styles.tabs}>
-              {LIBRARY_TABS.map((tab) => (
-                <button key={tab.id} type="button" className={`${styles.tab} ${activeTab === tab.id ? styles.tabActive : ""}`} onClick={() => setActiveTab(tab.id)}>{tab.label}</button>
-              ))}
-            </div>
-            <div className={styles.meta}>
-              <span>{visibleRows.length} kayıt</span>
-              <span className={styles.metaDot} />
-              <span>Seçili: {activeRow?.title ?? "Yok"}</span>
-              <span className={styles.metaDot} />
-              <span>{totalCanvases} canvas</span>
-              <span className={styles.metaDot} />
-              <span>{totalAssets} dosya</span>
-            </div>
-          </div>
-          <div className={styles.headerActions}>
-            <div className={styles.toolbar}>
-              <button type="button" className={`${styles.iconButton} ${filterPanelVisible ? styles.iconButtonActive : ""}`} onClick={() => setFilterPanelVisible((current) => !current)} title="Filtreler"><span className="material-symbols-outlined">filter_alt</span></button>
-              <button type="button" className={`${styles.iconButton} ${searchVisible ? styles.iconButtonActive : ""}`} onClick={() => setSearchVisible((current) => !current)} title="Arama"><span className="material-symbols-outlined">search</span></button>
-              <button type="button" className={`${styles.iconButton} ${compactMode ? styles.iconButtonActive : ""}`} onClick={() => setCompactMode((current) => !current)} title="Sıkılık"><span className="material-symbols-outlined">density_small</span></button>
-            </div>
-            <Button variant="filled" leadingIcon="add" onClick={handleCreatePage} disabled={isCreatingPage}>{isCreatingPage ? "Oluşturuluyor..." : "Yeni sayfa"}</Button>
-          </div>
-        </header>
+        <div className={styles.metaCompact}>
+          <span>{visibleRows.length} kayıt</span>
+          <span className={styles.metaDot} />
+          <span>{activeRow?.title ?? "Seçim yok"}</span>
+          <span className={styles.metaDot} />
+          <span>{totalCanvases} canvas</span>
+          <span className={styles.metaDot} />
+          <span>{totalAssets} dosya</span>
+        </div>
 
         {selectedNoteEntries.length > 0 ? (
           <div className={styles.bulkBar}>
@@ -299,7 +306,7 @@ export function LibraryWorkspace({
         <div className={styles.tableWrap}>
           <div className={styles.tableSurface}>
             <div className={styles.tableScroller}>
-              <div className={styles.table} style={compactMode ? { ["--library-row-height" as string]: "58px" } : undefined}>
+              <div className={styles.table} style={compactMode ? { ["--library-row-height" as string]: "48px" } : undefined}>
                 <div className={styles.headerRow}>
                   <div className={styles.headerCellPrimary}>
                     <label className={styles.checkboxWrap}><input ref={headerCheckboxRef} type="checkbox" checked={allVisibleNotesSelected} onChange={() => setSelectedNoteIds((current) => { const next = new Set(current); if (allVisibleNotesSelected) visibleNoteIds.forEach((id) => next.delete(id)); else visibleNoteIds.forEach((id) => next.add(id)); return next; })} /><span className={styles.checkboxVisual} /></label>

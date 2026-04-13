@@ -7,7 +7,11 @@ export default async function CoatCanvasPage() {
 
   return (
     <>
-      <PageTopbar icon="texture" label="Coat Canvas" />
+      <PageTopbar
+        icon="texture"
+        label="Coat Canvas"
+        meta={<span style={{ whiteSpace: "nowrap" }}>{canvases.length} canvas</span>}
+      />
       <CoatCanvasListPage canvases={canvases} />
     </>
   );

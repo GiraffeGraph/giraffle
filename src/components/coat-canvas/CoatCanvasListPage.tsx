@@ -135,9 +135,7 @@ export function CoatCanvasListPage({
     <div className="cc-list-page">
       {/* Header */}
       <div className="cc-list-header">
-        <div className="cc-list-header-text">
-          <h1 className="cc-list-title">Coat Canvas</h1>
-        </div>
+        <div className="cc-list-header-text" />
         <button
           className="cc-btn cc-btn--primary"
           type="button"

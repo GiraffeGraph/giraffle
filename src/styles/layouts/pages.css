@@ -39,7 +39,7 @@
 
 .dashboard-hero {
   position: relative;
-  padding: 18px 20px;
+  padding: 12px 14px;
   overflow: hidden;
 }
 
@@ -1283,10 +1283,9 @@
 .graph-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 14px 16px;
-  margin-bottom: 12px;
+  gap: 8px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
 }
 
 .graph-title {
@@ -1296,9 +1295,9 @@
 }
 
 .graph-subtitle {
-  margin-top: 4px;
+  margin-top: 0;
   max-width: 420px;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .graph-stat-row {

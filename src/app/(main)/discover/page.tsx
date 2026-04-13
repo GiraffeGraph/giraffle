@@ -7,7 +7,11 @@ export default async function DiscoverPage() {
 
   return (
     <>
-      <PageTopbar icon="newspaper" label="Keşfet" />
+      <PageTopbar
+        icon="newspaper"
+        label="Keşfet"
+        meta={<span style={{ whiteSpace: "nowrap" }}>{feeds.length} akış</span>}
+      />
       <FeedPageClient feeds={feeds} kind="news" />
     </>
   );

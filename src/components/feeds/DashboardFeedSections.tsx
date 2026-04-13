@@ -19,8 +19,6 @@ export function DashboardFeedSections({
       style={{ paddingTop: "16px", paddingBottom: "24px", display: "grid", gap: "20px" }}
     >
       <section className="dashboard-hero">
-        <div className="dashboard-kicker">Pano</div>
-        <h1 className="dashboard-title">Akışlar</h1>
         <p className="dashboard-subtitle">
           Öneri ve haber akışların burada.
         </p>

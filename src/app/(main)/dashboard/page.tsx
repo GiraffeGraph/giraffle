@@ -18,7 +18,11 @@ export default async function DashboardPage() {
 
   return (
     <>
-      <PageTopbar icon="home" label="Pano" />
+      <PageTopbar
+        icon="home"
+        label="Pano"
+        meta={<span style={{ whiteSpace: "nowrap" }}>{suggestionFeeds.length} öneri · {newsFeeds.length} haber</span>}
+      />
       <DashboardFeedSections
         suggestionFeeds={suggestionFeeds}
         newsFeeds={newsFeeds}

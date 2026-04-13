@@ -47,12 +47,7 @@ export function GraphView({ graph, unresolvedLinks }: GraphViewProps) {
     <div className="graph-page app-page">
       <header className="graph-header">
         <div>
-          <h1 className="graph-title">Bağlantı ağı</h1>
           <p className="graph-subtitle">Not ilişkileri ve eksik bağlantılar.</p>
-        </div>
-        <div className="graph-stat-row">
-          <span className="graph-stat-chip"><strong className="graph-stat-number">{graph.nodes.length}</strong><span className="graph-stat-label">düğüm</span></span>
-          <span className="graph-stat-chip"><strong className="graph-stat-number">{unresolvedLinks.length}</strong><span className="graph-stat-label">eksik</span></span>
         </div>
       </header>
 
