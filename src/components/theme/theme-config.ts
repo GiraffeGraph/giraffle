@@ -4,18 +4,18 @@ export const APP_THEME_COOKIE_KEY = "giraffle.theme";
 export const APP_THEMES = [
   {
     id: "warm-paper",
-    label: "Sıcak Kağıt",
-    description: "Açık, sakin ve kağıt hissi veren varsayılan tema.",
+    label: "Warm Paper",
+    description: "The default light theme with a calm, paper-like feel.",
   },
   {
     id: "midnight-gold",
     label: "Amber Giraffe",
-    description: "Sıcak amber ve bal rengi yüzeyler.",
+    description: "Warm amber and honey-toned surfaces.",
   },
   {
     id: "graphite-night",
-    label: "Grafit Gece",
-    description: "Notion ve Obsidian'a yakın koyu grafit arayüz.",
+    label: "Graphite Night",
+    description: "A dark graphite interface inspired by Notion and Obsidian.",
   },
 ] as const;
 

@@ -17,7 +17,7 @@ export function PageTopbar({ icon, label, meta, actions }: PageTopbarProps) {
             {icon}
           </span>
           <Link href="/dashboard" className="page-topbar-link">
-            Çalışma alanı
+            Workspace
           </Link>
           <span className="page-topbar-separator">/</span>
           <span className="page-topbar-title">{label}</span>

@@ -10,7 +10,7 @@ export function buildTemplatePreviewFromBlocks(
     .trim();
 
   if (!text) {
-    return "Bu şablon için henüz içerik önizlemesi yok.";
+    return "No content preview is available for this template yet.";
   }
 
   if (text.length <= maxLength) {

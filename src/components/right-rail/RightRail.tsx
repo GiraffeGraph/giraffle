@@ -7,14 +7,14 @@ import { useIsMobileViewport } from "@/components/ui/useIsMobileViewport";
 import { signOutAction } from "@/server/api/auth";
 
 const NAV_ITEMS = [
-  { path: "/search", icon: "\uE8B6", label: "Arama" },
-  { path: "/discover", icon: "newspaper", label: "Keşfet" },
-  { path: "/templates", icon: "\uE02F", label: "Şablonlar" },
-  { path: "/publish", icon: "\uE255", label: "Yayın" },
-  { path: "/suggestions", icon: "\uE65F", label: "Öneriler" },
-  { path: "/archive", icon: "inventory_2", label: "Arşiv" },
-  { path: "/settings", icon: "\uE8B8", label: "Ayarlar" },
-  { path: "/account", icon: "\uF20B", label: "Hesap" },
+  { path: "/search", icon: "\uE8B6", label: "Search" },
+  { path: "/discover", icon: "newspaper", label: "Discover" },
+  { path: "/templates", icon: "\uE02F", label: "Templates" },
+  { path: "/publish", icon: "\uE255", label: "Publish" },
+  { path: "/suggestions", icon: "\uE65F", label: "Suggestions" },
+  { path: "/archive", icon: "inventory_2", label: "Archive" },
+  { path: "/settings", icon: "\uE8B8", label: "Settings" },
+  { path: "/account", icon: "\uF20B", label: "Account" },
 ] as const;
 
 export function RightRail() {
@@ -28,8 +28,8 @@ export function RightRail() {
         type="button"
         className={`right-rail-btn${pathname === "/graph" ? " active" : ""}`}
         onClick={() => router.push("/graph")}
-        aria-label="Bağlantı ağı"
-        title="Bağlantı ağı"
+        aria-label="Connection graph"
+        title="Connection graph"
       >
         <GraphIcon size={18} />
       </button>
@@ -60,8 +60,8 @@ export function RightRail() {
           type="button"
           className="right-rail-btn right-rail-btn--signout"
           onClick={() => void signOutAction()}
-          aria-label="Çıkış yap"
-          title="Çıkış yap"
+          aria-label="Sign out"
+          title="Sign out"
         >
           <span
             className="material-symbols-outlined"

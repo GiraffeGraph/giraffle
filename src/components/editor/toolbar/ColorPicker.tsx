@@ -11,29 +11,29 @@ interface ColorOption {
 }
 
 const TEXT_COLORS: ColorOption[] = [
-  { name: "Varsayılan", color: "inherit" },
-  { name: "Gri", color: "#787774" },
-  { name: "Kahverengi", color: "#9F6B53" },
-  { name: "Turuncu", color: "#D9730D" },
-  { name: "Sarı", color: "#CB912F" },
-  { name: "Yeşil", color: "#448361" },
-  { name: "Mavi", color: "#337EA9" },
-  { name: "Mor", color: "#9065B0" },
-  { name: "Pembe", color: "#C14C8A" },
-  { name: "Kırmızı", color: "#D44C47" },
+  { name: "Default", color: "inherit" },
+  { name: "Gray", color: "#787774" },
+  { name: "Brown", color: "#9F6B53" },
+  { name: "Orange", color: "#D9730D" },
+  { name: "Yellow", color: "#CB912F" },
+  { name: "Green", color: "#448361" },
+  { name: "Blue", color: "#337EA9" },
+  { name: "Purple", color: "#9065B0" },
+  { name: "Pink", color: "#C14C8A" },
+  { name: "Red", color: "#D44C47" },
 ];
 
 const BG_COLORS: ColorOption[] = [
-  { name: "Varsayılan", color: "transparent" },
-  { name: "Gri", color: "rgba(120, 119, 116, 0.13)" },
-  { name: "Kahverengi", color: "rgba(159, 107, 83, 0.13)" },
-  { name: "Turuncu", color: "rgba(217, 115, 13, 0.13)" },
-  { name: "Sarı", color: "rgba(203, 145, 47, 0.13)" },
-  { name: "Yeşil", color: "rgba(68, 131, 97, 0.13)" },
-  { name: "Mavi", color: "rgba(51, 126, 169, 0.13)" },
-  { name: "Mor", color: "rgba(144, 101, 176, 0.13)" },
-  { name: "Pembe", color: "rgba(193, 76, 138, 0.13)" },
-  { name: "Kırmızı", color: "rgba(212, 76, 71, 0.13)" },
+  { name: "Default", color: "transparent" },
+  { name: "Gray", color: "rgba(120, 119, 116, 0.13)" },
+  { name: "Brown", color: "rgba(159, 107, 83, 0.13)" },
+  { name: "Orange", color: "rgba(217, 115, 13, 0.13)" },
+  { name: "Yellow", color: "rgba(203, 145, 47, 0.13)" },
+  { name: "Green", color: "rgba(68, 131, 97, 0.13)" },
+  { name: "Blue", color: "rgba(51, 126, 169, 0.13)" },
+  { name: "Purple", color: "rgba(144, 101, 176, 0.13)" },
+  { name: "Pink", color: "rgba(193, 76, 138, 0.13)" },
+  { name: "Red", color: "rgba(212, 76, 71, 0.13)" },
 ];
 
 export type ColorPickerTab = "text" | "background" | "cell";
@@ -106,7 +106,7 @@ export function ColorPicker({
           >
             A
           </span>
-          Yazı Rengi
+          Text Color
         </button>
         <button
           type="button"
@@ -123,7 +123,7 @@ export function ColorPicker({
           >
             A
           </span>
-          Arka Plan
+          Background
         </button>
         {allowCellColor ? (
           <button
@@ -141,7 +141,7 @@ export function ColorPicker({
             >
               田
             </span>
-            Hücre
+            Cell
           </button>
         ) : null}
       </div>

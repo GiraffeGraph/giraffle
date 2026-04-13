@@ -35,13 +35,13 @@ export function ConversationThread({
             </div>
             <div className={styles.messageContent}>
               <div className={styles.messageRole}>
-                {message.role === "assistant" ? "Spotter" : "Sen"}
+                {message.role === "assistant" ? "Spotter" : "You"}
               </div>
               <div className={styles.messageBody}>
                 {message.content ? (
                   message.content
                 ) : isStreaming && message.role === "assistant" ? (
-                  <span className={styles.typingIndicator} aria-label="Düşünüyor">
+                  <span className={styles.typingIndicator} aria-label="Thinking">
                     <span />
                     <span />
                     <span />

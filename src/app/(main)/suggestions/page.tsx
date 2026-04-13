@@ -9,8 +9,8 @@ export default async function SuggestionsPage() {
     <>
       <PageTopbar
         icon="auto_awesome"
-        label="Öneriler"
-        meta={<span style={{ whiteSpace: "nowrap" }}>{feeds.length} akış</span>}
+        label="Suggestions"
+        meta={<span style={{ whiteSpace: "nowrap" }}>{feeds.length} feeds</span>}
       />
       <FeedPageClient feeds={feeds} kind="suggestion" />
     </>

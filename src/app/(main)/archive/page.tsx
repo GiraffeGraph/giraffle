@@ -9,7 +9,7 @@ export default async function ArchivePage() {
 
   return (
     <>
-      <PageTopbar icon="inventory_2" label="Arşiv" />
+      <PageTopbar icon="inventory_2" label="Archive" />
       <ArchiveWorkspace notes={notes} />
     </>
   );

@@ -14,7 +14,7 @@ export interface SlashCommandItem {
 export const defaultSlashCommands: SlashCommandItem[] = [
   {
     title: "Spotter",
-    description: "Not içinde Spotter yardımı al",
+    description: "Get Spotter help inside the note",
     icon: "✨",
     shortcut: "/spotter",
     command: (editor) => {
@@ -22,8 +22,8 @@ export const defaultSlashCommands: SlashCommandItem[] = [
     },
   },
   {
-    title: "Metin",
-    description: "Düz metin bloğu",
+    title: "Text",
+    description: "Plain text block",
     icon: "TXT",
     shortcut: "/text",
     command: (editor) => {
@@ -31,8 +31,8 @@ export const defaultSlashCommands: SlashCommandItem[] = [
     },
   },
   {
-    title: "Başlık 1",
-    description: "Büyük bölüm başlığı",
+    title: "Heading 1",
+    description: "Large section heading",
     icon: "H1",
     shortcut: "/h1",
     command: (editor) => {
@@ -40,8 +40,8 @@ export const defaultSlashCommands: SlashCommandItem[] = [
     },
   },
   {
-    title: "Başlık 2",
-    description: "Orta bölüm başlığı",
+    title: "Heading 2",
+    description: "Medium section heading",
     icon: "H2",
     shortcut: "/h2",
     command: (editor) => {
@@ -49,8 +49,8 @@ export const defaultSlashCommands: SlashCommandItem[] = [
     },
   },
   {
-    title: "Başlık 3",
-    description: "Küçük bölüm başlığı",
+    title: "Heading 3",
+    description: "Small section heading",
     icon: "H3",
     shortcut: "/h3",
     command: (editor) => {
@@ -58,8 +58,8 @@ export const defaultSlashCommands: SlashCommandItem[] = [
     },
   },
   {
-    title: "Madde Listesi",
-    description: "Sırasız liste",
+    title: "Bullet List",
+    description: "Unordered list",
     icon: "UL",
     shortcut: "/ul",
     command: (editor) => {
@@ -67,8 +67,8 @@ export const defaultSlashCommands: SlashCommandItem[] = [
     },
   },
   {
-    title: "Numaralı Liste",
-    description: "Sıralı liste",
+    title: "Numbered List",
+    description: "Ordered list",
     icon: "1.",
     shortcut: "/ol",
     command: (editor) => {
@@ -76,8 +76,8 @@ export const defaultSlashCommands: SlashCommandItem[] = [
     },
   },
   {
-    title: "Kod Bloğu",
-    description: "Kod parçası",
+    title: "Code Block",
+    description: "Code snippet",
     icon: "</>",
     shortcut: "/code",
     command: (editor) => {
@@ -85,8 +85,8 @@ export const defaultSlashCommands: SlashCommandItem[] = [
     },
   },
   {
-    title: "Alıntı",
-    description: "Alıntı bloğu",
+    title: "Quote",
+    description: "Quote block",
     icon: "QT",
     shortcut: "/quote",
     command: (editor) => {
@@ -94,8 +94,8 @@ export const defaultSlashCommands: SlashCommandItem[] = [
     },
   },
   {
-    title: "Ayraç",
-    description: "Yatay çizgi",
+    title: "Divider",
+    description: "Horizontal rule",
     icon: "---",
     shortcut: "/hr",
     command: (editor) => {
@@ -103,8 +103,8 @@ export const defaultSlashCommands: SlashCommandItem[] = [
     },
   },
   {
-    title: "Vurgu Kutusu",
-    description: "Öne çıkan not bloğu",
+    title: "Callout",
+    description: "Highlighted note block",
     icon: "!",
     shortcut: "/callout",
     command: (editor) => {
@@ -115,7 +115,7 @@ export const defaultSlashCommands: SlashCommandItem[] = [
           type: "callout",
           attrs: {
             tone: "info",
-            title: "Bilgi",
+            title: "Info",
           },
           content: [
             {
@@ -127,8 +127,8 @@ export const defaultSlashCommands: SlashCommandItem[] = [
     },
   },
   {
-    title: "Açılır Blok",
-    description: "Açılıp kapanan iç içe blok",
+    title: "Toggle Block",
+    description: "Collapsible nested block",
     icon: "+/-",
     shortcut: "/toggle",
     command: (editor) => {
@@ -138,7 +138,7 @@ export const defaultSlashCommands: SlashCommandItem[] = [
         .insertContent({
           type: "toggle",
           attrs: {
-            summary: "Ayrıntılar",
+            summary: "Details",
           },
           content: [
             {
@@ -150,15 +150,15 @@ export const defaultSlashCommands: SlashCommandItem[] = [
     },
   },
   {
-    title: "Görsel",
-    description: "URL ile görsel ekle",
+    title: "Image",
+    description: "Insert an image by URL",
     icon: "IMG",
     shortcut: "/image",
     command: (editor) => {
       const src =
         typeof window === "undefined"
           ? ""
-          : window.prompt("Görsel URL'si", "https://")?.trim() || "";
+          : window.prompt("Image URL", "https://")?.trim() || "";
 
       if (!src) {
         return;
@@ -168,8 +168,8 @@ export const defaultSlashCommands: SlashCommandItem[] = [
     },
   },
   {
-    title: "Tablo",
-    description: "Düzenlenebilir tablo ekle",
+    title: "Table",
+    description: "Insert an editable table",
     icon: "TB",
     shortcut: "/table",
     command: (editor) => {
@@ -181,8 +181,8 @@ export const defaultSlashCommands: SlashCommandItem[] = [
     },
   },
   {
-    title: "Yapılacaklar",
-    description: "Kontrol listesi bloğu",
+    title: "To-do List",
+    description: "Checklist block",
     icon: "☑",
     shortcut: "/todo",
     command: (editor) => {
@@ -210,7 +210,7 @@ export const defaultSlashCommands: SlashCommandItem[] = [
   },
   {
     title: "Kanban",
-    description: "Suruklenebilir gorev panosu",
+    description: "Draggable task board",
     icon: "KB",
     shortcut: "/kanban",
     command: (editor) => {

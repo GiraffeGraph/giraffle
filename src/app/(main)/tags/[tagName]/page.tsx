@@ -18,7 +18,7 @@ export default async function TagPage({ params }: TagPageProps) {
       <div className="dashboard">
       {notes.length === 0 ? (
         <div className="dashboard-empty">
-          <p className="dashboard-empty-text">Bu etiket için not bulunamadı.</p>
+          <p className="dashboard-empty-text">No notes were found for this tag.</p>
         </div>
       ) : (
         <div className="dashboard-grid">

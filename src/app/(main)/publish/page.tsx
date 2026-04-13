@@ -7,12 +7,12 @@ export default async function PublishPage() {
 
   return (
     <>
-      <PageTopbar icon="publish" label="Yayınlar" />
+      <PageTopbar icon="publish" label="Publications" />
       <div className="dashboard publish-page app-page">
 
       <div className="search-result-grid">
         {exports.length === 0 ? (
-          <div className="dashboard-empty">Yayında not yok.</div>
+          <div className="dashboard-empty">No published notes yet.</div>
         ) : (
           exports.map((artifact) => (
             <div key={artifact.noteId} className="search-result-card publish-card">
@@ -20,9 +20,9 @@ export default async function PublishPage() {
               <span className="search-result-meta">{artifact.publishPath}</span>
               <div className="publish-card-actions">
                 <Link href={`/published/${artifact.publishPath.replace(/\.mdx$/, "")}`}>
-                  Açık bağlantı
+                  Open link
                 </Link>
-                <Link href={`/notes/${artifact.noteId}`}>Notu aç</Link>
+                <Link href={`/notes/${artifact.noteId}`}>Open note</Link>
               </div>
             </div>
           ))

@@ -86,7 +86,7 @@ export function SettingsWorkspace({
             color: "var(--md-sys-color-on-background)",
           }}
         >
-          Sistem Ayarları
+          System Settings
         </h1>
       ) : null}
 
@@ -95,7 +95,7 @@ export function SettingsWorkspace({
       {feeds.length > 0 || notes.length > 0 || folders.length > 0 ? (
         <Card variant="outlined">
           <CardHeader>
-            <CardTitle>Akış Yönetimi</CardTitle>
+            <CardTitle>Feed Management</CardTitle>
           </CardHeader>
           <CardContent>
             <FeedSettingsPanel feeds={feeds} notes={notes} folders={folders} />
@@ -105,12 +105,12 @@ export function SettingsWorkspace({
 
       <Card variant="outlined">
         <CardHeader>
-          <CardTitle>Yerel Eşitleme Sınırı</CardTitle>
+          <CardTitle>Local Sync Queue</CardTitle>
         </CardHeader>
         <CardContent>
           <div style={{ display: "flex", gap: "16px", marginBottom: "24px" }}>
             <div style={{ padding: "16px", borderRadius: "12px", background: "var(--md-sys-color-secondary-container)", color: "var(--md-sys-color-on-secondary-container)", flex: 1 }}>
-              <div style={{ fontSize: "var(--md-sys-typescale-label-medium-size)" }}>Kuyruktaki İşlem</div>
+              <div style={{ fontSize: "var(--md-sys-typescale-label-medium-size)" }}>Queued operations</div>
               <div style={{ fontSize: "var(--md-sys-typescale-display-small-size)", fontWeight: "bold" }}>{queuedItems.length}</div>
             </div>
           </div>
@@ -120,7 +120,7 @@ export function SettingsWorkspace({
               {queuedItems.length === 0 ? (
                 <li className="md-list-item">
                   <div className="md-list-item-content">
-                    <span className="md-list-item-headline" style={{ color: "var(--md-sys-color-on-surface-variant)" }}>Bekleyen yerel işlem yok.</span>
+                    <span className="md-list-item-headline" style={{ color: "var(--md-sys-color-on-surface-variant)" }}>No pending local operations.</span>
                   </div>
                 </li>
               ) : (
@@ -128,7 +128,7 @@ export function SettingsWorkspace({
                   <li key={item.id} className="md-list-item" style={{ borderBottom: index < queuedItems.length - 1 ? "1px solid var(--md-sys-color-outline-variant)" : "none" }}>
                     <div className="md-list-item-content">
                       <span className="md-list-item-headline">{item.entityType}:{item.actionType}</span>
-                      <span className="md-list-item-supporting-text">{item.entityId} · {new Date(item.queuedAt).toLocaleString("tr-TR")}</span>
+                      <span className="md-list-item-supporting-text">{item.entityId} · {new Date(item.queuedAt).toLocaleString("en-US")}</span>
                     </div>
                   </li>
                 ))
@@ -142,14 +142,14 @@ export function SettingsWorkspace({
             onClick={clearQueue}
             disabled={queuedItems.length === 0}
           >
-            Yerel kuyruğu temizle
+            Clear local queue
           </Button>
         </CardActions>
       </Card>
 
       <Card variant="outlined">
         <CardHeader>
-          <CardTitle>Sunucu Operasyonları</CardTitle>
+          <CardTitle>Server Operations</CardTitle>
         </CardHeader>
         <CardContent>
           <div style={{ border: "1px solid var(--md-sys-color-outline-variant)", borderRadius: "var(--md-sys-shape-medium)", overflow: "hidden" }}>
@@ -157,7 +157,7 @@ export function SettingsWorkspace({
               {operationLogs.length === 0 ? (
                 <li className="md-list-item">
                   <div className="md-list-item-content">
-                    <span className="md-list-item-headline" style={{ color: "var(--md-sys-color-on-surface-variant)" }}>Henüz işlem kaydı yok.</span>
+                    <span className="md-list-item-headline" style={{ color: "var(--md-sys-color-on-surface-variant)" }}>No operation logs yet.</span>
                   </div>
                 </li>
               ) : (
@@ -165,7 +165,7 @@ export function SettingsWorkspace({
                   <li key={entry.id} className="md-list-item" style={{ borderBottom: index < operationLogs.length - 1 ? "1px solid var(--md-sys-color-outline-variant)" : "none" }}>
                     <div className="md-list-item-content">
                       <span className="md-list-item-headline">{entry.entityType}:{entry.actionType}</span>
-                      <span className="md-list-item-supporting-text">{entry.entityId} · {new Date(entry.createdAt).toLocaleString("tr-TR")}</span>
+                      <span className="md-list-item-supporting-text">{entry.entityId} · {new Date(entry.createdAt).toLocaleString("en-US")}</span>
                     </div>
                     <div className="md-list-item-end" style={{ fontSize: "var(--md-sys-typescale-label-small-size)", color: "var(--md-sys-color-primary)", padding: "4px 8px", background: "var(--md-sys-color-primary-container)", borderRadius: "12px" }}>
                       {entry.source}

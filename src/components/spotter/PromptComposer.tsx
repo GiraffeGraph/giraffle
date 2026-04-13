@@ -21,7 +21,7 @@ export function PromptComposer({
   onSend,
 }: PromptComposerProps) {
   return (
-    <section className={styles.composerSection} aria-label="Mesaj yaz">
+    <section className={styles.composerSection} aria-label="Write message">
       <div className={styles.composerPanel}>
         <div className={styles.composerBody}>
           <textarea
@@ -35,7 +35,7 @@ export function PromptComposer({
                 onSend();
               }
             }}
-            placeholder="Spotter'a sor..."
+            placeholder="Ask Spotter..."
             rows={3}
           />
         </div>
@@ -46,13 +46,13 @@ export function PromptComposer({
               <span className="material-symbols-outlined sm" aria-hidden="true">
                 account_tree
               </span>
-              {notesCount} not
+              {notesCount} notes
             </span>
             <span className={styles.contextPill}>
               <span className="material-symbols-outlined sm" aria-hidden="true">
                 folder
               </span>
-              {foldersCount} klasör
+              {foldersCount} folders
             </span>
             <span className={styles.composerHintInline}>Ctrl/Cmd + Enter</span>
           </div>
@@ -63,9 +63,9 @@ export function PromptComposer({
             className={styles.sendButton}
             onClick={onSend}
             disabled={!draft.trim() || isStreaming}
-            aria-label={isStreaming ? "Yanıtlanıyor" : "Mesaj gönder"}
+            aria-label={isStreaming ? "Responding" : "Send message"}
           >
-            <span className={styles.sendText}>{isStreaming ? "Yazıyor" : "Gönder"}</span>
+            <span className={styles.sendText}>{isStreaming ? "Streaming" : "Send"}</span>
           </Button>
         </div>
       </div>

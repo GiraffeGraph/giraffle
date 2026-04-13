@@ -407,18 +407,18 @@ function buildWhyRelevant(input: {
   const labels = input.sourceLabels.slice(0, 2);
 
   if (topTerms.length > 0 && labels.length > 0) {
-    return `${labels.join(" ve ")} içinde geçen ${topTerms.join(", ")} kavramlarıyla örtüşüyor.`;
+    return `It overlaps with the concepts ${topTerms.join(", ")} found in ${labels.join(" and ")}.`;
   }
 
   if (topTerms.length > 0) {
-    return `${topTerms.join(", ")} kavramları seçtiğin kaynaklarla eşleşiyor.`;
+    return `The concepts ${topTerms.join(", ")} match your selected sources.`;
   }
 
   if (labels.length > 0) {
-    return `${labels.join(" ve ")} etrafındaki gündemle ilişkili görünüyor.`;
+    return `It appears related to the agenda around ${labels.join(" and ")}.`;
   }
 
-  return "Seçtiğin kaynakların ana temasıyla ilişkili görünüyor.";
+  return "It appears related to the main theme of your selected sources.";
 }
 
 function escapeForRegex(value: string) {

@@ -30,7 +30,7 @@ export default async function SpotterPage({
         color: "var(--text-secondary)",
       }}>
         <span className="material-symbols-outlined" style={{ fontSize: "12px" }} aria-hidden="true">description</span>
-        {notes.length} not
+        {notes.length} notes
       </span>
       <span style={{
         display: "inline-flex", alignItems: "center", gap: "5px",
@@ -41,7 +41,7 @@ export default async function SpotterPage({
         color: "var(--text-secondary)",
       }}>
         <span className="material-symbols-outlined" style={{ fontSize: "12px" }} aria-hidden="true">folder</span>
-        {folders.length} klasör
+        {folders.length} folders
       </span>
     </div>
   );

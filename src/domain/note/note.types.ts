@@ -21,7 +21,7 @@ export const BLOCK_TYPES = [
 ] as const;
 
 export type BlockType = (typeof BLOCK_TYPES)[number];
-export const DEFAULT_NOTE_TITLE = "Adsız";
+export const DEFAULT_NOTE_TITLE = "Untitled";
 
 // ─── Eisenhower Matrix ────────────────────────────────────────
 export type EisenhowerQuadrant = "DO" | "SCHEDULE" | "DELEGATE" | "ELIMINATE";

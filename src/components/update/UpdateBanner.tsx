@@ -55,19 +55,19 @@ export function UpdateBanner({
             color: "var(--md-sys-color-primary)",
           }}
         >
-          Güncelleme hazır
+          Update available
         </div>
         <div style={{ fontSize: "20px", fontWeight: 700, color: "var(--md-sys-color-on-surface)" }}>
-          Giraffle {status.latestVersion} yayınlandı
+          Giraffle {status.latestVersion} has been released
         </div>
         <div style={{ fontSize: "14px", color: "var(--md-sys-color-on-surface-variant)" }}>
-          Şu an {status.currentVersion} kullanıyorsun. Ayrıntıları ve güncelleme komutlarını ayarlardan açabilirsin.
+          You are currently on {status.currentVersion}. Open settings for details and update commands.
         </div>
       </div>
 
       <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
         <Link href="/settings#updates" className="dashboard-empty-btn">
-          Güncellemeyi aç
+          Open update
         </Link>
         <Button
           type="button"
@@ -86,7 +86,7 @@ export function UpdateBanner({
             setDismissedVersion(status.latestVersion);
           }}
         >
-          Daha sonra
+          Later
         </Button>
       </div>
     </section>

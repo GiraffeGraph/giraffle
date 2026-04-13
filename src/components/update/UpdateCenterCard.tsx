@@ -7,10 +7,10 @@ import type { AppUpdateStatus } from "@/domain/update/update.types";
 
 function formatReleaseDate(value: string | null) {
   if (!value) {
-    return "Bilinmiyor";
+    return "Unknown";
   }
 
-  return new Date(value).toLocaleString("tr-TR", {
+  return new Date(value).toLocaleString("en-US", {
     dateStyle: "medium",
     timeStyle: "short",
   });
@@ -48,7 +48,7 @@ export function UpdateCenterCard({
   return (
     <Card id="updates" variant="outlined">
       <CardHeader>
-        <CardTitle>Güncelleme Merkezi</CardTitle>
+        <CardTitle>Update Center</CardTitle>
       </CardHeader>
       <CardContent>
         <div style={{ display: "grid", gap: "16px" }}>
@@ -69,22 +69,22 @@ export function UpdateCenterCard({
             <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
               <strong>
                 {status.updateAvailable && status.latestVersion
-                  ? `Yeni sürüm hazır: ${status.latestVersion}`
-                  : "Kurulu sürüm güncel görünüyor"}
+                  ? `New version available: ${status.latestVersion}`
+                  : "Installed version is up to date"}
               </strong>
-              <span style={{ opacity: 0.85 }}>Kurulu: {status.currentVersion}</span>
+              <span style={{ opacity: 0.85 }}>Installed: {status.currentVersion}</span>
             </div>
 
             <div style={{ fontSize: "14px", lineHeight: 1.5 }}>
               {status.updateAvailable
-                ? "Kullanıcıların doğrudan görebileceği bir bildirim aktif. Sunucuda aşağıdaki komutları çalıştırarak yeni sürüme geçebilirsin."
-                : "GitHub release kaydı üzerinden periyodik sürüm kontrolü yapılıyor. Yeni bir sürüm yayınlandığında burada bildirim görünecek."}
+                ? "A user-facing notification is active. Run the commands below on the server to upgrade to the new version."
+                : "The app checks GitHub Releases periodically. When a new release is published, a notification will appear here."}
             </div>
 
             <div style={{ display: "grid", gap: "4px", fontSize: "13px", opacity: 0.9 }}>
-              <span>Kaynak: GitHub Releases</span>
-              <span>Kontrol zamanı: {formatReleaseDate(status.checkedAt)}</span>
-              <span>Yayın tarihi: {formatReleaseDate(status.publishedAt)}</span>
+              <span>Source: GitHub Releases</span>
+              <span>Checked at: {formatReleaseDate(status.checkedAt)}</span>
+              <span>Published at: {formatReleaseDate(status.publishedAt)}</span>
             </div>
           </div>
 
@@ -98,7 +98,7 @@ export function UpdateCenterCard({
               }}
             >
               <div style={{ fontSize: "13px", fontWeight: 600, marginBottom: "8px" }}>
-                Sürüm özeti
+                Release summary
               </div>
               <pre
                 style={{
@@ -116,7 +116,7 @@ export function UpdateCenterCard({
           ) : null}
 
           <div style={{ display: "grid", gap: "8px" }}>
-            <div style={{ fontSize: "13px", fontWeight: 600 }}>Önerilen güncelleme akışı</div>
+            <div style={{ fontSize: "13px", fontWeight: 600 }}>Recommended update flow</div>
             <pre
               style={{
                 margin: 0,
@@ -135,14 +135,14 @@ export function UpdateCenterCard({
 
           {status.error ? (
             <div style={{ fontSize: "13px", color: "var(--md-sys-color-error)" }}>
-              Güncelleme kontrolü notu: {status.error}
+              Update check note: {status.error}
             </div>
           ) : null}
         </div>
       </CardContent>
       <CardActions align="start" style={{ gap: "10px", flexWrap: "wrap" }}>
         <Button type="button" variant="filled" onClick={() => void copyCommand()}>
-          {copied ? "Komut kopyalandı" : "Güncelleme komutunu kopyala"}
+          {copied ? "Command copied" : "Copy update command"}
         </Button>
         {status.releaseUrl ? (
           <a
@@ -151,7 +151,7 @@ export function UpdateCenterCard({
             rel="noreferrer"
             className="dashboard-secondary-btn"
           >
-            Sürüm notlarını aç
+            Open release notes
           </a>
         ) : null}
       </CardActions>

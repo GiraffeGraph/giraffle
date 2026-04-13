@@ -43,11 +43,11 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   );
   return (
     <>
-      <PageTopbar icon="search" label="Arama" />
+      <PageTopbar icon="search" label="Search" />
       <div className="dashboard search-page app-page">
 
         {(scope === "all" || scope === "notes") && (
-          <SearchSection title="Notlar" count={noteResults.length}>
+          <SearchSection title="Notes" count={noteResults.length}>
             {noteResults.map((note) => (
               <Link
                 key={note.id}
@@ -56,7 +56,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
               >
                 <span className="search-result-title">{note.title}</span>
                 <span className="search-result-meta">
-                  {note.isPinned ? "Pinli" : "Not"}
+                  {note.isPinned ? "Pinned" : "Note"}
                 </span>
               </Link>
             ))}
@@ -64,7 +64,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         )}
 
         {(scope === "all" || scope === "folders") && (
-          <SearchSection title="Klasörler" count={folderResults.length}>
+          <SearchSection title="Folders" count={folderResults.length}>
             {folderResults.map((folder) => (
               <Link
                 key={folder.id}
@@ -72,14 +72,14 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                 className="search-result-card"
               >
                 <span className="search-result-title">{folder.name}</span>
-                <span className="search-result-meta">Klasör</span>
+                <span className="search-result-meta">Folder</span>
               </Link>
             ))}
           </SearchSection>
         )}
 
         {(scope === "all" || scope === "templates") && (
-          <SearchSection title="Şablonlar" count={templateResults.length}>
+          <SearchSection title="Templates" count={templateResults.length}>
             {templateResults.map((template) => (
               <Link
                 key={template.id}
@@ -97,14 +97,14 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
 
         {(scope === "all" || scope === "unresolved") && (
           <SearchSection
-            title="Çözülmemiş bağlantılar"
+            title="Unresolved links"
             count={unresolvedResults.length}
           >
             {unresolvedResults.map((item) => (
               <div key={item.targetRaw} className="search-result-card">
                 <span className="search-result-title">{item.targetRaw}</span>
                 <span className="search-result-meta">
-                  {item.count} notta geçiyor
+                  appears in {item.count} notes
                 </span>
               </div>
             ))}
@@ -131,7 +131,7 @@ function SearchSection({
         <span className="search-section-count">{count}</span>
       </div>
       <div className="search-result-grid">
-        {count === 0 ? <div className="dashboard-empty">Sonuç yok.</div> : children}
+        {count === 0 ? <div className="dashboard-empty">No results.</div> : children}
       </div>
     </section>
   );

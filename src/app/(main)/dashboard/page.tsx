@@ -20,8 +20,8 @@ export default async function DashboardPage() {
     <>
       <PageTopbar
         icon="home"
-        label="Pano"
-        meta={<span style={{ whiteSpace: "nowrap" }}>{suggestionFeeds.length} öneri · {newsFeeds.length} haber</span>}
+        label="Dashboard"
+        meta={<span style={{ whiteSpace: "nowrap" }}>{suggestionFeeds.length} suggestions · {newsFeeds.length} news</span>}
       />
       <DashboardFeedSections
         suggestionFeeds={suggestionFeeds}

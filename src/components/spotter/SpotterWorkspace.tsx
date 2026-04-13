@@ -67,25 +67,25 @@ export function SpotterWorkspace({
   const workspaceContext = useMemo(() => {
     const folderLines = folders
       .map((folder) => folderMeta.get(folder.id)?.path ?? folder.name)
-      .sort((left, right) => left.localeCompare(right, "tr"))
+      .sort((left, right) => left.localeCompare(right, "en"))
       .map((folderPath) => `- ${folderPath}`);
 
     const noteLines = notes
       .map((note) => {
         const folderPath = note.folderId
-          ? folderMeta.get(note.folderId)?.path ?? "Klasörsüz"
-          : "Klasörsüz";
+          ? folderMeta.get(note.folderId)?.path ?? "Unfiled"
+          : "Unfiled";
 
         return `- ${note.title} [${folderPath}]`;
       })
-      .sort((left, right) => left.localeCompare(right, "tr"));
+      .sort((left, right) => left.localeCompare(right, "en"));
 
     return [
-      "Klasörler:",
-      ...(folderLines.length > 0 ? folderLines : ["- Klasör yok"]),
+      "Folders:",
+      ...(folderLines.length > 0 ? folderLines : ["- No folders"]),
       "",
-      "Notlar:",
-      ...(noteLines.length > 0 ? noteLines : ["- Not yok"]),
+      "Notes:",
+      ...(noteLines.length > 0 ? noteLines : ["- No notes"]),
     ].join("\n");
   }, [folderMeta, folders, notes]);
 
@@ -174,8 +174,8 @@ export function SpotterWorkspace({
       console.error("Spotter error", error);
       const fallbackMessage =
         error instanceof Error && error.message === "AI service is not configured"
-          ? "Spotter şu anda yapılandırılmadı. Yönetici OPENAI_API_KEY tanımladığında tekrar deneyebilirsin."
-          : "Yanıtta bir hata oluştu. İsteği tekrar dene ya da bağlamı biraz daha daralt.";
+          ? "Spotter is not configured right now. Try again after an administrator sets OPENAI_API_KEY."
+          : "There was an error generating the response. Try again or narrow the context a bit more.";
 
       setMessages((current) =>
         current.map((message) =>
@@ -262,19 +262,19 @@ export function SpotterWorkspace({
       <div className={styles.pageInner}>
         <main
           className={`${styles.chatShell} ${isEmpty ? styles.chatShellEmpty : ""}`}
-          aria-label="Spotter sohbet"
+          aria-label="Spotter chat"
         >
           <div className={styles.threadViewport}>
             {isEmpty ? (
               <section className={styles.emptyState}>
                 <p className={styles.emptyEyebrow}>
-                  {notes.length} not ve {folders.length} klasör hazır
+                  {notes.length} notes and {folders.length} folders ready
                 </p>
                 <h1 className={styles.emptyTitle}>
-                  Bugün ne spotlayalım?
+                  What should we spot today?
                 </h1>
                 <p className={styles.emptyBody}>
-                  Sorunu yaz; kütüphanendeki başlıklar ve klasörler içinden bağlantıları spot edeyim.
+                  Write your question and I’ll spot connections across the titles and folders in your library.
                 </p>
               </section>
             ) : (

@@ -251,12 +251,12 @@ export async function createFeedFromSource(
       kind: input.kind,
       title:
         input.kind === "news"
-          ? `${note.title} gündemi`
-          : `${note.title} önerileri`,
+          ? `${note.title} news`
+          : `${note.title} suggestions`,
       description:
         input.kind === "news"
-          ? "Seçilen not etrafında güncel içerik akışı"
-          : "Seçilen not etrafında düzen ve bağlantı önerileri",
+          ? "A current content feed built around the selected note"
+          : "Organization and linking suggestions built around the selected note",
       language: "mixed",
       refreshIntervalHours:
         input.kind === "news" ? NEWS_REFRESH_HOURS : SUGGESTION_REFRESH_HOURS,
@@ -275,12 +275,12 @@ export async function createFeedFromSource(
     kind: input.kind,
     title:
       input.kind === "news"
-        ? `${folder.name} gündemi`
-        : `${folder.name} önerileri`,
+        ? `${folder.name} news`
+        : `${folder.name} suggestions`,
     description:
       input.kind === "news"
-        ? "Seçilen klasör etrafında güncel içerik akışı"
-        : "Seçilen klasör etrafında düzen önerileri",
+        ? "A current content feed built around the selected folder"
+        : "Organization suggestions built around the selected folder",
     language: "mixed",
     refreshIntervalHours:
       input.kind === "news" ? NEWS_REFRESH_HOURS : SUGGESTION_REFRESH_HOURS,

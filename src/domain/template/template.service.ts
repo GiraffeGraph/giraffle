@@ -35,17 +35,17 @@ const DEFAULT_TEMPLATES: Array<{
   legacyNames?: string[];
 }> = [
   {
-    name: "Günlük Not",
-    description: "Odak, kazanımlar ve takip maddeleri için günlük çalışma alanı notu.",
+    name: "Daily Note",
+    description: "A daily workspace note for focus, wins, and follow-up items.",
     category: "daily",
     icon: "Calendar",
     legacyNames: ["Daily Log"],
     variables: [
       {
         name: "focus",
-        label: "Ana odak",
+        label: "Main focus",
         type: "text",
-        defaultValue: "Bugün en önemli konu ne?",
+        defaultValue: "What matters most today?",
       },
     ],
     blocks: [
@@ -53,12 +53,12 @@ const DEFAULT_TEMPLATES: Array<{
         type: "heading",
         attributes: { level: 1 },
         content: {
-          content: [{ type: "text", text: "Günlük Not {{date}}" }],
+          content: [{ type: "text", text: "Daily Note {{date}}" }],
         },
       },
       {
         type: "callout",
-        attributes: { tone: "info", title: "Odak" },
+        attributes: { tone: "info", title: "Focus" },
         content: {},
         children: [
           {
@@ -73,7 +73,7 @@ const DEFAULT_TEMPLATES: Array<{
         type: "heading",
         attributes: { level: 2 },
         content: {
-          content: [{ type: "text", text: "Bugünün Kazanımları" }],
+          content: [{ type: "text", text: "Today’s Wins" }],
         },
       },
       {
@@ -87,7 +87,7 @@ const DEFAULT_TEMPLATES: Array<{
               {
                 type: "paragraph",
                 content: {
-                  content: [{ type: "text", text: "Tamamlanan is" }],
+                  content: [{ type: "text", text: "Completed work" }],
                 },
               },
             ],
@@ -98,35 +98,35 @@ const DEFAULT_TEMPLATES: Array<{
         type: "heading",
         attributes: { level: 2 },
         content: {
-          content: [{ type: "text", text: "Notlar" }],
+          content: [{ type: "text", text: "Notes" }],
         },
       },
       {
         type: "paragraph",
         content: {
-          content: [{ type: "text", text: "#gunluk" }],
+          content: [{ type: "text", text: "#daily" }],
         },
       },
     ],
   },
   {
-    name: "Toplantı Notu",
-    description: "Gündem, kararlar, takip maddeleri ve bağlantılı aksiyonlar.",
+    name: "Meeting Note",
+    description: "Agenda, decisions, follow-ups, and linked actions.",
     category: "meeting",
     icon: "Meeting",
     legacyNames: ["Meeting Notes"],
     variables: [
       {
         name: "meeting_name",
-        label: "Toplantı adı",
+        label: "Meeting name",
         type: "text",
-        defaultValue: "Haftalık durum toplantısı",
+        defaultValue: "Weekly status meeting",
       },
       {
         name: "attendees",
-        label: "Katılımcılar",
+        label: "Attendees",
         type: "text",
-        defaultValue: "Kisi A, Kisi B",
+        defaultValue: "Person A, Person B",
       },
     ],
     blocks: [
@@ -140,25 +140,25 @@ const DEFAULT_TEMPLATES: Array<{
       {
         type: "paragraph",
         content: {
-          content: [{ type: "text", text: "Katılımcılar: {{attendees}}" }],
+          content: [{ type: "text", text: "Attendees: {{attendees}}" }],
         },
       },
       {
         type: "callout",
-        attributes: { tone: "warning", title: "Kararlar" },
+        attributes: { tone: "warning", title: "Decisions" },
         content: {},
         children: [
           {
             type: "paragraph",
             content: {
-              content: [{ type: "text", text: "Ana sonucu buraya yazın." }],
+              content: [{ type: "text", text: "Write the main outcome here." }],
             },
           },
         ],
       },
       {
         type: "toggle",
-        attributes: { summary: "Gündem" },
+        attributes: { summary: "Agenda" },
         content: {},
         children: [
           {
@@ -172,7 +172,7 @@ const DEFAULT_TEMPLATES: Array<{
                   {
                     type: "paragraph",
                     content: {
-                      content: [{ type: "text", text: "Gündem maddesi 1" }],
+                      content: [{ type: "text", text: "Agenda item 1" }],
                     },
                   },
                 ],
@@ -184,29 +184,29 @@ const DEFAULT_TEMPLATES: Array<{
       {
         type: "paragraph",
         content: {
-          content: [{ type: "text", text: "#toplanti" }],
+          content: [{ type: "text", text: "#meeting" }],
         },
       },
     ],
   },
   {
-    name: "Proje Özeti",
-    description: "Hedefler, kapsam, riskler ve açık sorular için başlangıç notu.",
+    name: "Project Brief",
+    description: "A starter note for goals, scope, risks, and open questions.",
     category: "project",
     icon: "Project",
     legacyNames: ["Project Brief"],
     variables: [
       {
         name: "project_name",
-        label: "Proje adı",
+        label: "Project name",
         type: "text",
-        defaultValue: "Adsız Proje",
+        defaultValue: "Untitled Project",
       },
       {
         name: "owner",
-        label: "Sahip",
+        label: "Owner",
         type: "text",
-        defaultValue: "Sorumlu kisi",
+        defaultValue: "Responsible person",
       },
     ],
     blocks: [
@@ -219,7 +219,7 @@ const DEFAULT_TEMPLATES: Array<{
       },
       {
         type: "callout",
-        attributes: { tone: "tip", title: "Sahip" },
+        attributes: { tone: "tip", title: "Owner" },
         content: {},
         children: [
           {
@@ -234,7 +234,7 @@ const DEFAULT_TEMPLATES: Array<{
         type: "heading",
         attributes: { level: 2 },
         content: {
-          content: [{ type: "text", text: "Hedefler" }],
+          content: [{ type: "text", text: "Goals" }],
         },
       },
       {
@@ -248,7 +248,7 @@ const DEFAULT_TEMPLATES: Array<{
               {
                 type: "paragraph",
                 content: {
-                  content: [{ type: "text", text: "Ana hedef" }],
+                  content: [{ type: "text", text: "Primary goal" }],
                 },
               },
             ],
@@ -257,13 +257,13 @@ const DEFAULT_TEMPLATES: Array<{
       },
       {
         type: "toggle",
-        attributes: { summary: "Açık sorular" },
+        attributes: { summary: "Open questions" },
         content: {},
         children: [
           {
             type: "paragraph",
             content: {
-              content: [{ type: "text", text: "Hangi sorular hâlâ cevap bekliyor?" }],
+              content: [{ type: "text", text: "Which questions still need answers?" }],
             },
           },
         ],
@@ -271,7 +271,7 @@ const DEFAULT_TEMPLATES: Array<{
       {
         type: "paragraph",
         content: {
-          content: [{ type: "text", text: "#proje" }],
+          content: [{ type: "text", text: "#project" }],
         },
       },
     ],

@@ -20,17 +20,17 @@ export function DashboardFeedSections({
     >
       <section className="dashboard-hero">
         <p className="dashboard-subtitle">
-          Öneri ve haber akışların burada.
+          Your suggestion and news feeds live here.
         </p>
         <div className="dashboard-quick-actions">
           <Link href="/suggestions" className="dashboard-empty-btn">
-            Önerileri aç
+            Open suggestions
           </Link>
           <Link href="/discover" className="dashboard-secondary-btn">
-            Keşfeti aç
+            Open discover
           </Link>
           <Link href="/settings" className="dashboard-secondary-btn">
-            Akış ayarları
+            Feed settings
           </Link>
         </div>
       </section>
@@ -39,35 +39,35 @@ export function DashboardFeedSections({
 
       <section>
         <div className="dashboard-section-head" style={{ marginBottom: "14px" }}>
-          <span className="dashboard-section-kicker">Öneriler</span>
+          <span className="dashboard-section-kicker">Suggestions</span>
           <Link
             href="/suggestions"
             style={{ color: "var(--md-sys-color-primary)", textDecoration: "none", fontSize: "13px" }}
           >
-            Tümünü gör
+            View all
           </Link>
         </div>
         <FeedCollection
           feeds={suggestionFeeds}
-          emptyTitle="Henüz öneri akışı görünmüyor"
-          emptyBody="Bir not ya da klasörden yeni öneri akışı başlatabilirsin."
+          emptyTitle="No suggestion feeds yet"
+          emptyBody="Start a new suggestion feed from a note or folder."
         />
       </section>
 
       <section>
         <div className="dashboard-section-head" style={{ marginBottom: "14px" }}>
-          <span className="dashboard-section-kicker">Keşfet</span>
+          <span className="dashboard-section-kicker">Discover</span>
           <Link
             href="/discover"
             style={{ color: "var(--md-sys-color-primary)", textDecoration: "none", fontSize: "13px" }}
           >
-            Tümünü gör
+            View all
           </Link>
         </div>
         <FeedCollection
           feeds={newsFeeds}
-          emptyTitle="Henüz haber akışı görünmüyor"
-          emptyBody="Bir not ya da klasörden haber akışı başlatabilirsin."
+          emptyTitle="No news feeds yet"
+          emptyBody="Start a news feed from a note or folder."
         />
       </section>
     </div>

@@ -9,8 +9,8 @@ export default async function DiscoverPage() {
     <>
       <PageTopbar
         icon="newspaper"
-        label="Keşfet"
-        meta={<span style={{ whiteSpace: "nowrap" }}>{feeds.length} akış</span>}
+        label="Discover"
+        meta={<span style={{ whiteSpace: "nowrap" }}>{feeds.length} feeds</span>}
       />
       <FeedPageClient feeds={feeds} kind="news" />
     </>

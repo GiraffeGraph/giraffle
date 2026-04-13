@@ -106,7 +106,7 @@ export function ThemeSelector({
       return (
         <Image
           src="/apple-icon.png"
-          alt="Gece Altını"
+          alt="Midnight Gold"
           width={20}
           height={20}
           style={{ borderRadius: "4px" }}
@@ -161,8 +161,8 @@ export function ThemeSelector({
           icon
           variant="tonal"
           onClick={() => applyTheme(nextTheme.id)}
-          title={`Temayı değiştir · Sonraki: ${nextTheme.label}`}
-          aria-label={`Temayı değiştir. Sonraki tema: ${nextTheme.label}`}
+          title={`Switch theme · Next: ${nextTheme.label}`}
+          aria-label={`Switch theme. Next theme: ${nextTheme.label}`}
           style={
             mobileInline
               ? {
@@ -218,7 +218,7 @@ export function ThemeSelector({
         icon
         variant={activeThemeId === "warm-paper" ? "tonal" : "text"}
         onClick={() => applyTheme("warm-paper")}
-        title="Sıcak Kağıt (Aydınlık)"
+        title="Warm Paper (Light)"
       >
         <svg
           width="20"
@@ -246,11 +246,11 @@ export function ThemeSelector({
         icon
         variant={activeThemeId === "midnight-gold" ? "tonal" : "text"}
         onClick={() => applyTheme("midnight-gold")}
-        title="Gece Altını (Giraffe)"
+        title="Midnight Gold (Giraffe)"
       >
         <Image
           src="/apple-icon.png"
-          alt="Gece Altını"
+          alt="Midnight Gold"
           width={20}
           height={20}
           style={{ borderRadius: "4px" }}
@@ -261,7 +261,7 @@ export function ThemeSelector({
         icon
         variant={activeThemeId === "graphite-night" ? "tonal" : "text"}
         onClick={() => applyTheme("graphite-night")}
-        title="Grafit Gece (Karanlık)"
+        title="Graphite Night (Dark)"
       >
         <svg
           width="20"

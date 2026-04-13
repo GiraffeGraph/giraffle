@@ -32,9 +32,9 @@ import "@/styles/layouts/coat-canvas.css";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Giraffle — Bilgi Grafiği Editörü",
+  title: "Giraffle — Knowledge Graph Editor",
   description:
-    "Bağlantılı notlar, wikilinkler ve bilgi grafiği yapısıyla blok tabanlı bir bilgi editörü.",
+    "A block-based knowledge editor built around linked notes, wikilinks, and a knowledge graph.",
 };
 
 export default async function RootLayout({
@@ -48,7 +48,7 @@ export default async function RootLayout({
     storedTheme && isAppThemeId(storedTheme) ? storedTheme : DEFAULT_APP_THEME;
 
   return (
-    <html lang="tr" data-theme={initialTheme} suppressHydrationWarning>
+    <html lang="en" data-theme={initialTheme} suppressHydrationWarning>
       <body>
         {children}
       </body>

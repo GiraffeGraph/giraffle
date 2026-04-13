@@ -32,14 +32,14 @@ export function ArchiveWorkspace({ notes }: ArchiveWorkspaceProps) {
     <div className="dashboard app-page">
       <section className="search-section">
         <div className="dashboard-section-head search-section-head">
-          <span className="dashboard-section-kicker">Arşivlenen notlar</span>
+          <span className="dashboard-section-kicker">Archived notes</span>
           <span className="search-section-count">{notes.length}</span>
         </div>
 
         {notes.length === 0 ? (
           <div className="dashboard-empty">
             <p className="dashboard-empty-text">
-              Arşivlenen not yok. Bir notu arşivlediğinde burada görünecek.
+              No archived notes yet. Archived notes will appear here.
             </p>
           </div>
         ) : (
@@ -59,10 +59,10 @@ export function ArchiveWorkspace({ notes }: ArchiveWorkspaceProps) {
                   )}
                   <div className="archive-row-text">
                     <span className="archive-row-title">
-                      {note.title || "Başlıksız"}
+                      {note.title || "Untitled"}
                     </span>
                     <span className="archive-row-meta">
-                      Son güncelleme {formatDate(note.updatedAt)}
+                      Last updated {formatDate(note.updatedAt)}
                     </span>
                   </div>
                 </div>
@@ -71,7 +71,7 @@ export function ArchiveWorkspace({ notes }: ArchiveWorkspaceProps) {
                   className="archive-restore-btn"
                   onClick={() => handleRestore(note.id)}
                   disabled={isPending}
-                  title="Geri yükle"
+                  title="Restore"
                 >
                   <span
                     className="material-symbols-outlined"
@@ -80,7 +80,7 @@ export function ArchiveWorkspace({ notes }: ArchiveWorkspaceProps) {
                   >
                     restore_from_trash
                   </span>
-                  Geri yükle
+                  Restore
                 </button>
               </div>
             ))}

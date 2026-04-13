@@ -19,7 +19,7 @@ export default async function SettingsPage() {
 
   return (
     <>
-      <PageTopbar icon="settings" label="Ayarlar" />
+      <PageTopbar icon="settings" label="Settings" />
       <div className="dashboard settings-page app-page">
         <SettingsWorkspace
           updateStatus={updateStatus}

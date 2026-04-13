@@ -55,10 +55,10 @@ type QuadrantConfig = {
 };
 
 const QUADRANTS: QuadrantConfig[] = [
-  { key: "DO",       label: "Acil + Önemli",        sublabel: "Hemen Yap", colorClass: "tm-q--do",       icon: "bolt" },
-  { key: "SCHEDULE", label: "Önemli + Acil Değil",   sublabel: "Planla",    colorClass: "tm-q--schedule", icon: "event" },
-  { key: "DELEGATE", label: "Acil + Önemsiz",        sublabel: "Devret",    colorClass: "tm-q--delegate", icon: "group" },
-  { key: "ELIMINATE",label: "Acil Değil + Önemsiz",  sublabel: "Vazgeç",    colorClass: "tm-q--eliminate",icon: "delete_sweep" },
+  { key: "DO",       label: "Urgent + Important",      sublabel: "Do now",      colorClass: "tm-q--do",       icon: "bolt" },
+  { key: "SCHEDULE", label: "Important + Not urgent",  sublabel: "Schedule",    colorClass: "tm-q--schedule", icon: "event" },
+  { key: "DELEGATE", label: "Urgent + Not important",  sublabel: "Delegate",    colorClass: "tm-q--delegate", icon: "group" },
+  { key: "ELIMINATE",label: "Not urgent + Not important", sublabel: "Eliminate", colorClass: "tm-q--eliminate",icon: "delete_sweep" },
 ];
 
 // ─── Drag protocols ───────────────────────────────────────────
@@ -84,7 +84,7 @@ function NoteTooltip({ note }: { note: NoteWithTodoSummary }) {
   const pct = Math.round((note.todoCompleted / note.todoTotal) * 100);
   return (
     <div className="tm-tooltip" role="tooltip">
-      <div className="tm-tooltip-title">{note.title || "Adsız"}</div>
+      <div className="tm-tooltip-title">{note.title || "Untitled"}</div>
       <div className="tm-tooltip-progress">
         <div className="tm-tooltip-bar">
           <div className="tm-tooltip-bar-fill" style={{ width: `${pct}%` }} />
@@ -144,7 +144,7 @@ function NoteCard({
     >
       <button className="tm-note-card-body" type="button" onClick={() => onSelect(note)}>
         {note.icon && <span className="tm-note-card-icon">{note.icon}</span>}
-        <span className="tm-note-card-title">{note.title || "Adsız"}</span>
+        <span className="tm-note-card-title">{note.title || "Untitled"}</span>
         {note.todoTotal > 0 && (
           <span className="tm-note-card-badge">
             {note.todoCompleted}/{note.todoTotal}
@@ -155,7 +155,7 @@ function NoteCard({
         className="tm-note-card-remove"
         type="button"
         onClick={(e) => { e.stopPropagation(); onRemove(note.id); }}
-        aria-label="Matristen çıkar"
+        aria-label="Remove from matrix"
       >
         <span className="material-symbols-outlined" style={{ fontSize: 13 }}>close</span>
       </button>
@@ -214,7 +214,7 @@ function OuterQuadrant({
         {notes.map((n) => (
           <NoteCard key={n.id} note={n} isSelected={n.id === selectedNoteId} onSelect={onSelect} onRemove={onRemove} />
         ))}
-        {notes.length === 0 && <p className="tm-empty-hint">Buraya not sürükle</p>}
+        {notes.length === 0 && <p className="tm-empty-hint">Drag a note here</p>}
       </div>
     </div>
   );
@@ -261,12 +261,12 @@ function NotePool({
     <div ref={ref} className={`tm-pool${isOver ? " tm-pool--over" : ""}`}>
       <div className="tm-pool-header">
         <span className="material-symbols-outlined" style={{ fontSize: 15 }}>inbox</span>
-        <span>Notlar</span>
+        <span>Notes</span>
         <span className="tm-pool-count">{notes.length}</span>
         {notes.length > 5 && (
           <input
             className="tm-pool-filter"
-            placeholder="Filtrele..."
+            placeholder="Filter..."
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
             onClick={(e) => e.stopPropagation()}
@@ -277,7 +277,7 @@ function NotePool({
         {filtered.map((n) => (
           <NoteCard key={n.id} note={n} isSelected={n.id === selectedNoteId} onSelect={onSelect} onRemove={() => {}} />
         ))}
-        {filtered.length === 0 && <p className="tm-empty-hint">{notes.length === 0 ? "Tüm notlar atandı" : "Eşleşen yok"}</p>}
+        {filtered.length === 0 && <p className="tm-empty-hint">{notes.length === 0 ? "All notes are assigned" : "No matches"}</p>}
       </div>
     </div>
   );
@@ -323,7 +323,7 @@ function TodoCard({
         className="tm-todo-check"
         type="button"
         onClick={() => onToggle(todo.id, !todo.checked)}
-        aria-label={todo.checked ? "Tamamlanmadı olarak işaretle" : "Tamamlandı"}
+        aria-label={todo.checked ? "Mark as incomplete" : "Mark as complete"}
       >
         <span className="material-symbols-outlined" style={{ fontSize: 15 }}>
           {todo.checked ? "check_circle" : "radio_button_unchecked"}
@@ -386,7 +386,7 @@ function InnerQuadrant({
         {todos.map((t) => (
           <TodoCard key={t.id} todo={t} onToggle={onToggle} />
         ))}
-        {todos.length === 0 && <p className="tm-empty-hint tm-empty-hint--sm">Sürükle</p>}
+        {todos.length === 0 && <p className="tm-empty-hint tm-empty-hint--sm">Drag here</p>}
       </div>
     </div>
   );
@@ -428,14 +428,14 @@ function QuickAddTodo({
         <span className="material-symbols-outlined" style={{ fontSize: 15 }}>
           add_task
         </span>
-        Görev ekle
+        Add task
       </label>
       <div className="tm-quick-add-row">
         <input
           id={inputId}
           ref={inputRef}
           className="tm-quick-add-input"
-          placeholder="Görev yaz..."
+          placeholder="Write a task..."
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={(e) => {
@@ -459,7 +459,7 @@ function QuickAddTodo({
         </button>
       </div>
       <p className="tm-quick-add-hint">
-        Enter ile ekle · Birden fazla görev ekleyebilirsin
+        Press Enter to add · You can add multiple tasks
       </p>
     </div>
   );
@@ -520,8 +520,8 @@ function InnerPanel({
     return (
       <div className="tm-inner-panel tm-inner-panel--empty">
         <span className="material-symbols-outlined tm-inner-empty-icon">grid_4x4</span>
-        <p className="tm-inner-empty-text">Bir nota tıkla</p>
-        <p className="tm-inner-empty-sub">İçindeki görevleri burada önceliklendir</p>
+        <p className="tm-inner-empty-text">Select a note</p>
+        <p className="tm-inner-empty-sub">Prioritize its tasks here</p>
       </div>
     );
   }
@@ -534,7 +534,7 @@ function InnerPanel({
       <div className="tm-inner-header-bar">
         <div className="tm-inner-note-info">
           {note.icon && <span className="tm-inner-note-icon">{note.icon}</span>}
-          <span className="tm-inner-note-title">{note.title || "Adsız"}</span>
+          <span className="tm-inner-note-title">{note.title || "Untitled"}</span>
           {todos.length > 0 && (
             <span className="tm-inner-note-prog">{completedCount}/{todos.length}</span>
           )}
@@ -543,7 +543,7 @@ function InnerPanel({
           <button
             className="tm-icon-btn"
             type="button"
-            title="Notu aç"
+            title="Open note"
             onClick={() => router.push(`/notes/${note.id}`)}
           >
             <span className="material-symbols-outlined" style={{ fontSize: 16 }}>open_in_new</span>
@@ -551,7 +551,7 @@ function InnerPanel({
           <button
             className="tm-icon-btn"
             type="button"
-            title="Kapat"
+            title="Close"
             onClick={onClear}
           >
             <span className="material-symbols-outlined" style={{ fontSize: 16 }}>close</span>
@@ -573,7 +573,7 @@ function InnerPanel({
               <span className="material-symbols-outlined" style={{ fontSize: 26, opacity: 0.25 }}>
                 check_box_outline_blank
               </span>
-              <p>Bu notta henüz görev yok</p>
+              <p>This note has no tasks yet</p>
             </div>
             <QuickAddTodo
               noteId={note.id}
@@ -644,7 +644,7 @@ function UnassignedTodoPool({
 
   return (
     <div ref={ref} className={`tm-todo-pool${isOver ? " tm-todo-pool--over" : ""}`}>
-      <span className="tm-todo-pool-label">Atanmamış</span>
+      <span className="tm-todo-pool-label">Unassigned</span>
       <div className="tm-todo-pool-body">
         {todos.map((t) => (
           <TodoCard key={t.id} todo={t} onToggle={onToggle} />

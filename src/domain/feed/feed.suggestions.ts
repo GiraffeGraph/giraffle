@@ -64,9 +64,9 @@ export function buildSuggestionCandidates(input: {
     if (note.folderId === null && bestCandidate?.note.folderId && bestCandidate.score >= 0.32) {
       pushCandidate(candidates, {
         itemType: "note",
-        title: `“${note.title}” için klasör önerisi`,
-        summary: `${bestCandidate.note.folderName} klasörüne taşımayı düşünebilirsin.`,
-        whyRelevant: `${bestCandidate.matchedTerms.slice(0, 3).join(", ")} başlık ve etiketleri benzer bir küme oluşturuyor.`,
+        title: `Folder suggestion for “${note.title}”`,
+        summary: `You could consider moving this note into the ${bestCandidate.note.folderName} folder.`,
+        whyRelevant: `${bestCandidate.matchedTerms.slice(0, 3).join(", ")} form a similar cluster across titles and tags.`,
         sourceUrl: `/notes/${note.id}`,
         sourceName: bestCandidate.note.folderName,
         sourceKey: `move:${note.id}:${bestCandidate.note.folderId}`,
@@ -83,11 +83,11 @@ export function buildSuggestionCandidates(input: {
     if (note.tags.length === 0 && bestCandidate?.note.tags.length) {
       pushCandidate(candidates, {
         itemType: "note",
-        title: `“${note.title}” için etiket önerisi`,
-        summary: `${bestCandidate.note.tags.slice(0, 3).map((tag) => `#${tag}`).join(", ")} etiketleri bu notu bulmayı kolaylaştırabilir.`,
-        whyRelevant: `${bestCandidate.note.title} ile benzer konu kümeleri bulundu.`,
+        title: `Tag suggestion for “${note.title}”`,
+        summary: `${bestCandidate.note.tags.slice(0, 3).map((tag) => `#${tag}`).join(", ")} could make this note easier to find.`,
+        whyRelevant: `Similar topic clusters were found alongside ${bestCandidate.note.title}.`,
         sourceUrl: `/notes/${note.id}`,
-        sourceName: "Etiket önerisi",
+        sourceName: "Tag suggestion",
         sourceKey: `tag:${note.id}:${bestCandidate.note.tags.slice(0, 3).join("|")}`,
         positionScore: bestCandidate.score + 0.15,
         payload: {
@@ -101,11 +101,11 @@ export function buildSuggestionCandidates(input: {
     if (bestCandidate && bestCandidate.score >= 0.4) {
       pushCandidate(candidates, {
         itemType: "note",
-        title: `“${note.title}” ile “${bestCandidate.note.title}” notlarını ilişkilendir`,
-        summary: `Bu iki not aynı konu etrafında toplanıyor; bağlantı veya ortak klasör düşünebilirsin.`,
-        whyRelevant: `${bestCandidate.matchedTerms.slice(0, 3).join(", ")} kavramları ortak.`,
+        title: `Connect “${note.title}” and “${bestCandidate.note.title}”`,
+        summary: `These two notes cluster around the same topic, so a link or shared folder may make sense.`,
+        whyRelevant: `They share the concepts ${bestCandidate.matchedTerms.slice(0, 3).join(", ")}.`,
         sourceUrl: `/notes/${bestCandidate.note.id}`,
-        sourceName: bestCandidate.note.folderName ?? "İlgili not",
+        sourceName: bestCandidate.note.folderName ?? "Related note",
         sourceKey: buildPairKey(note.id, bestCandidate.note.id),
         positionScore: bestCandidate.score,
         payload: {
@@ -137,9 +137,9 @@ export function buildSuggestionCandidates(input: {
     for (const candidate of matches) {
       pushCandidate(candidates, {
         itemType: "folder",
-        title: `“${candidate.note.title}” notu “${folder.name}” klasörüne uyuyor`,
-        summary: `Bu notu ${folder.name} içine alırsan aynı temadaki içerikleri bir araya getirebilirsin.`,
-        whyRelevant: `${candidate.match.matchedKeywords.slice(0, 3).join(", ")} kavramları klasör adıyla eşleşiyor.`,
+        title: `“${candidate.note.title}” fits the “${folder.name}” folder`,
+        summary: `Moving this note into ${folder.name} could group related content together.`,
+        whyRelevant: `${candidate.match.matchedKeywords.slice(0, 3).join(", ")} match the folder name.`,
         sourceUrl: `/notes/${candidate.note.id}`,
         sourceName: folder.name,
         sourceKey: `folder-match:${folder.id}:${candidate.note.id}`,

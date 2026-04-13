@@ -26,49 +26,49 @@ export default async function AccountPage() {
 
   return (
     <>
-      <PageTopbar icon="account_circle" label="Hesap" />
+      <PageTopbar icon="account_circle" label="Account" />
       <div className="dashboard account-page app-page">
 
       <div className="templates-layout">
         <section className="templates-column">
           <div className="dashboard-section-head">
-            <span className="dashboard-section-kicker">Profil</span>
+            <span className="dashboard-section-kicker">Profile</span>
           </div>
           <form action={handleProfileUpdate} className="settings-panel">
             <label className="settings-field">
-              <span>Ad</span>
+              <span>Name</span>
               <input name="name" defaultValue={profile?.name ?? ""} />
             </label>
             <label className="settings-field">
-              <span>E-posta</span>
+              <span>Email</span>
               <input value={profile?.email ?? ""} disabled readOnly />
             </label>
             <button type="submit" className="dashboard-empty-btn">
-              Profili kaydet
+              Save profile
             </button>
           </form>
         </section>
 
         <section className="templates-column">
           <div className="dashboard-section-head">
-            <span className="dashboard-section-kicker">Şifre</span>
+            <span className="dashboard-section-kicker">Password</span>
           </div>
           <form action={handlePasswordChange} className="settings-panel">
             <label className="settings-field">
-              <span>Mevcut şifre</span>
+              <span>Current password</span>
               <input name="currentPassword" type="password" required />
             </label>
             <label className="settings-field">
-              <span>Yeni şifre</span>
+              <span>New password</span>
               <input name="nextPassword" type="password" minLength={8} required />
             </label>
             <button type="submit" className="dashboard-empty-btn">
-              Şifreyi değiştir
+              Change password
             </button>
           </form>
 
           <Link href="/forgot-password" className="dashboard-secondary-btn">
-            Sıfırlama akışını aç
+            Open reset flow
           </Link>
         </section>
       </div>

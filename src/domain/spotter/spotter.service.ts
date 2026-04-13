@@ -11,7 +11,7 @@ export function buildSpotterSessionTitle(prompt: string) {
   const normalized = prompt.replace(/\s+/g, " ").trim();
 
   if (!normalized) {
-    return "Yeni sohbet";
+    return "New chat";
   }
 
   if (normalized.length <= SESSION_TITLE_MAX_LENGTH) {
