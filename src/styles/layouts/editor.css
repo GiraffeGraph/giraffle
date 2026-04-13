@@ -114,6 +114,12 @@
   margin-bottom: 24px;
 }
 
+.note-topbar.topbar-shell {
+  background: var(--shell-main-bg, var(--md-sys-color-surface));
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
 .note-topbar-left {
   display: flex;
   align-items: center;
