@@ -95,37 +95,10 @@ export function FolderDetailPage({
     window.setTimeout(() => setIsCopyingLink(false), 1200);
   }, [folder.id]);
 
-  const topbarSidePadding = isMobileViewport ? "0 12px" : "0 16px";
-
   return (
     <>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: isMobileViewport ? "8px" : "12px",
-          minHeight: "36px",
-          padding: topbarSidePadding,
-          borderBottom: "1px solid var(--md-sys-color-outline-variant)",
-          fontSize: "12px",
-          color: "var(--md-sys-color-on-surface-variant)",
-          flexShrink: 0,
-          position: "sticky",
-          top: 0,
-          zIndex: 10,
-          background: "var(--shell-main-bg, var(--md-sys-color-surface))",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            minWidth: 0,
-            overflow: "hidden",
-            flex: 1,
-          }}
-        >
+      <div className="topbar-shell">
+        <div className="topbar-shell-main">
           <button
             type="button"
             title="Klasör ikonunu değiştir"
@@ -262,14 +235,7 @@ export function FolderDetailPage({
           )}
         </div>
 
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "4px",
-            flexShrink: 0,
-          }}
-        >
+        <div className="topbar-shell-actions">
           <button
             type="button"
             title="Klasör bağlantısını kopyala"
