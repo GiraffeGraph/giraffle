@@ -817,6 +817,7 @@ export function NoteEditorPage({
     ],
   );
 
+  const topbarSidePadding = isMobileViewport ? "0 12px" : "0 16px";
   const contentShellPadding = isMobileViewport ? "0" : "0 24px";
   const contentSidePadding = isMobileViewport ? "0 16px" : "0 32px";
   const titleSectionPadding = isMobileViewport ? "28px 0 12px" : "48px 0 16px";
@@ -825,8 +826,35 @@ export function NoteEditorPage({
 
   return (
     <>
-      <div className="page-topbar note-topbar" onContextMenu={openContextMenuAtPointer}>
-        <div className="note-topbar-main">
+      <div
+        className="note-topbar"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: isMobileViewport ? "8px" : "12px",
+          minHeight: "36px",
+          padding: topbarSidePadding,
+          borderBottom: "1px solid var(--md-sys-color-outline-variant)",
+          fontSize: "12px",
+          color: "var(--md-sys-color-on-surface-variant)",
+          flexShrink: 0,
+          position: "sticky",
+          top: 0,
+          zIndex: 10,
+          background: "var(--shell-main-bg, var(--md-sys-color-surface))",
+        }}
+        onContextMenu={openContextMenuAtPointer}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            minWidth: 0,
+            overflow: "hidden",
+            flex: 1,
+          }}
+        >
           <button
             type="button"
             title="Not ikonunu değiştir"
@@ -1116,7 +1144,14 @@ export function NoteEditorPage({
           )}
         </div>
 
-        <div className="note-topbar-actions">
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: isMobileViewport ? "4px" : "8px",
+            flexShrink: 0,
+          }}
+        >
           {isMobileViewport ? null : (
             <span
               style={{
