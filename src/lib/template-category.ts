@@ -1,17 +1,17 @@
 export function getTemplateCategoryLabel(category: string) {
   switch (category) {
     case "blank":
-      return "Boş";
+      return "Blank";
     case "daily":
-      return "Günlük";
+      return "Daily";
     case "meeting":
-      return "Toplantı";
+      return "Meeting";
     case "project":
-      return "Proje";
+      return "Project";
     case "weekly":
-      return "Haftalık";
+      return "Weekly";
     case "custom":
-      return "Özel";
+      return "Custom";
     default:
       return category;
   }

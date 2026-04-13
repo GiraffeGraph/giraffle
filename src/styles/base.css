@@ -17,7 +17,7 @@ body {
   background-color: var(--md-sys-color-background);
 }
 
-/* Page background — degrade + ızgara (mevcut tasarım korundu) */
+/* Page background — gradient + grid (existing design preserved) */
 body {
   background:
     radial-gradient(circle at top left, rgb(var(--md-ref-accent-rgb) / 0.15), transparent 28%),
@@ -74,13 +74,13 @@ a:hover {
 }
 
 /* ==========================================================================
-   M3 State Layer Mixin — interactive bileşenler için temel
+   M3 State Layer Mixin — foundation for interactive components
    ========================================================================== */
 
-/* Her interactive bileşen bu yapıyı kullanır:
+/* Every interactive component uses this structure:
    1. position: relative + isolation: isolate + overflow: hidden
    2. ::before → state layer
-   Örnek:
+   Example:
    .md-button {
      position: relative;
      isolation: isolate;
@@ -319,7 +319,7 @@ a:hover {
   }
 }
 
-/* Legacy bridge — mevcut CSS'te rise-in kullanılıyor */
+/* Legacy bridge — rise-in is used in existing CSS */
 @keyframes rise-in {
   from {
     opacity: 0;

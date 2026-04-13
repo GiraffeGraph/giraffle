@@ -1,6 +1,6 @@
 ---
 name: giraffle-frontend-ux
-description: Continue Giraffle frontend localization and product-surface work in the giraffle repository. Use when changing Turkish product copy, visual design tokens, layout hierarchy, sidebar information architecture, note page UX, menus, context menus, responsive behavior, or shared interaction patterns. Prefer this skill for work touching src/app/globals.css, src/components/sidebar, src/components/notes, src/components/templates, src/components/graph, dashboard routes, or authenticated app-shell surfaces.
+description: Continue Giraffle frontend localization and product-surface work in the giraffle repository. Use when changing English product copy, visual design tokens, layout hierarchy, sidebar information architecture, note page UX, menus, context menus, responsive behavior, or shared interaction patterns. Prefer this skill for work touching src/app/globals.css, src/components/sidebar, src/components/notes, src/components/templates, src/components/graph, dashboard routes, or authenticated app-shell surfaces.
 ---
 
 # Giraffle Frontend UX
@@ -11,7 +11,7 @@ If the work is backlog-driven, read `/docs/backlog/roadmap.md` and the chosen `/
 
 ## Core Rules
 
-- Make the product language Turkish-first across user-facing app surfaces.
+- Make the product language English-first across user-facing app surfaces.
 - Keep domain logic in server actions and domain modules, not inside presentation-only components.
 - Reduce clutter before adding UI chrome; prefer fewer clearer actions.
 - Use context menus for secondary actions and keep a visible click fallback for touch.

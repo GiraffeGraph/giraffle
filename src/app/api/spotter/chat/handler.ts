@@ -132,7 +132,7 @@ export async function handleSpotterChatRequest(
       );
       modelPrompt = recentMessages
         .map((message) =>
-          `${message.role === "user" ? "Kullanıcı" : "Spotter"}: ${message.content}`,
+          `${message.role === "user" ? "User" : "Spotter"}: ${message.content}`,
         )
         .join("\n\n");
     }

@@ -3,7 +3,7 @@ import { formatDate } from "@/lib/utils";
 import type { WorkspaceFeedKind, WorkspaceFeedSummary } from "@/domain/feed/feed.types";
 
 export function getFeedKindLabel(kind: WorkspaceFeedKind) {
-  return kind === "news" ? "Haber" : "Öneri";
+  return kind === "news" ? "News" : "Suggestion";
 }
 
 export function getFeedKindIcon(kind: WorkspaceFeedKind) {
@@ -28,7 +28,7 @@ export function FeedCard({
           </span>
           {feed.title}
           <span className="feed-kind-badge">{getFeedKindLabel(feed.kind)}</span>
-          {!feed.isEnabled ? <span className="feed-kind-badge feed-kind-badge--off">Pasif</span> : null}
+          {!feed.isEnabled ? <span className="feed-kind-badge feed-kind-badge--off">Inactive</span> : null}
         </div>
         {onRefresh ? (
           <button
@@ -36,12 +36,12 @@ export function FeedCard({
             className="feed-refresh-btn"
             onClick={onRefresh}
             disabled={isRefreshing}
-            title="Akışı yenile"
+            title="Refresh feed"
           >
             <span className="material-symbols-outlined" style={{ fontSize: "15px" }} aria-hidden="true">
               {isRefreshing ? "sync" : "refresh"}
             </span>
-            {isRefreshing ? "Yenileniyor" : "Yenile"}
+            {isRefreshing ? "Refreshing" : "Refresh"}
           </button>
         ) : null}
       </div>
@@ -63,13 +63,13 @@ export function FeedCard({
         </div>
       ) : (
         <p className="feed-no-sources">
-          Henüz kaynak seçilmedi — ayarlardan not veya klasör bağlayabilirsin.
+          No source selected yet — you can connect a note or folder from settings.
         </p>
       )}
 
       {feed.items.length === 0 ? (
         <p className="feed-empty-items">
-          Bu akışta henüz içerik yok. Yenile butonuna tıklayarak güncellemeyi deneyebilirsin.
+          There is no content in this feed yet. Click Refresh to try fetching updates.
         </p>
       ) : (
         <div className="feed-items">
@@ -156,10 +156,10 @@ export function FeedEmptyState() {
   return (
     <div className="dashboard-empty" style={{ minHeight: "200px" }}>
       <p className="dashboard-empty-text" style={{ fontWeight: 700, marginBottom: "6px" }}>
-        Henüz akış oluşturulmadı
+        No feeds created yet
       </p>
       <p className="dashboard-empty-text">
-        Ayarlar sayfasından haber veya öneri akışı başlatabilirsin.
+        You can start a news or suggestion feed from the settings page.
       </p>
     </div>
   );

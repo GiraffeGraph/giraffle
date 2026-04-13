@@ -225,12 +225,12 @@ export function SpotterWorkspace({
             patternUnits="userSpaceOnUse"
             patternTransform="rotate(12)"
           >
-            {/* blob 1 — büyük, sol üst */}
+            {/* blob 1 — large, top left */}
             <path
               d="M14,16 C28,8 50,13 54,28 C58,43 46,58 30,60 C14,62 5,50 6,35 C7,20 0,24 14,16 Z"
               fill="#C47A2B"
             />
-            {/* blob 2 — sağ üst */}
+            {/* blob 2 — top right */}
             <path
               d="M88,20 C102,12 122,18 124,34 C126,50 113,63 98,62 C83,61 76,50 78,36 C80,22 74,28 88,20 Z"
               fill="#B8681E"
@@ -240,7 +240,7 @@ export function SpotterWorkspace({
               d="M42,95 C57,86 76,91 77,105 C78,119 65,130 50,128 C35,126 27,115 30,102 C33,89 27,104 42,95 Z"
               fill="#C47A2B"
             />
-            {/* blob 4 — sağ alt, küçük */}
+            {/* blob 4 — bottom right, small */}
             <path
               d="M104,98 C113,92 124,96 124,106 C124,116 115,123 106,121 C97,119 94,112 97,104 C100,96 95,104 104,98 Z"
               fill="#A85D15"

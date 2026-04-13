@@ -11,7 +11,7 @@ const RELATIVE_FORMATTER = new Intl.RelativeTimeFormat("tr", { numeric: "auto" }
 function relativeTime(date: Date): string {
   const diff = (date.getTime() - Date.now()) / 1000;
   const abs = Math.abs(diff);
-  if (abs < 60) return "az önce";
+  if (abs < 60) return "just now";
   if (abs < 3600) return RELATIVE_FORMATTER.format(Math.round(diff / 60), "minute");
   if (abs < 86400) return RELATIVE_FORMATTER.format(Math.round(diff / 3600), "hour");
   return RELATIVE_FORMATTER.format(Math.round(diff / 86400), "day");
@@ -36,7 +36,7 @@ function TemplateCard({
       <span className="material-symbols-outlined cc-template-icon">{template.icon}</span>
       <span className="cc-template-name">{template.name}</span>
       <span className="cc-template-desc">{template.description}</span>
-      {cellCount > 0 && <span className="cc-template-count">{cellCount} kutu</span>}
+      {cellCount > 0 && <span className="cc-template-count">{cellCount} box</span>}
     </button>
   );
 }
@@ -66,7 +66,7 @@ function NewCanvasModal({ onClose }: { onClose: () => void }) {
     <div className="cc-modal-backdrop" onClick={onClose}>
       <div className="cc-modal" onClick={(e) => e.stopPropagation()}>
         <div className="cc-modal-header">
-          <h2 className="cc-modal-title">Yeni Canvas</h2>
+          <h2 className="cc-modal-title">New Canvas</h2>
           <button className="cc-modal-close" type="button" onClick={onClose}>
             <span className="material-symbols-outlined" style={{ fontSize: 18 }}>close</span>
           </button>
@@ -74,7 +74,7 @@ function NewCanvasModal({ onClose }: { onClose: () => void }) {
 
         {/* Title input */}
         <div className="cc-modal-section">
-          <label className="cc-modal-label">Canvas adı</label>
+          <label className="cc-modal-label">Canvas name</label>
           <input
             className="cc-modal-input"
             placeholder={template.name}
@@ -87,7 +87,7 @@ function NewCanvasModal({ onClose }: { onClose: () => void }) {
 
         {/* Template picker */}
         <div className="cc-modal-section">
-          <label className="cc-modal-label">Şablon seç</label>
+          <label className="cc-modal-label">Select template</label>
           <div className="cc-template-grid">
             {COAT_TEMPLATES.map((t) => (
               <TemplateCard
@@ -102,7 +102,7 @@ function NewCanvasModal({ onClose }: { onClose: () => void }) {
 
         <div className="cc-modal-footer">
           <button className="cc-btn cc-btn--ghost" type="button" onClick={onClose}>
-            İptal
+            Cancel
           </button>
           <button
             className="cc-btn cc-btn--primary"
@@ -115,7 +115,7 @@ function NewCanvasModal({ onClose }: { onClose: () => void }) {
             ) : (
               <span className="material-symbols-outlined" style={{ fontSize: 16 }}>add</span>
             )}
-            Oluştur
+            Create
           </button>
         </div>
       </div>
@@ -142,7 +142,7 @@ export function CoatCanvasListPage({
           onClick={() => setShowModal(true)}
         >
           <span className="material-symbols-outlined" style={{ fontSize: 16 }}>add</span>
-          Yeni Canvas
+          New Canvas
         </button>
       </div>
 
@@ -150,15 +150,15 @@ export function CoatCanvasListPage({
       {canvases.length === 0 ? (
         <div className="cc-empty">
           <span className="material-symbols-outlined cc-empty-icon">texture</span>
-          <p className="cc-empty-title">Henüz canvas yok</p>
-          <p className="cc-empty-sub">İlk canvas&apos;ını oluştur.</p>
+          <p className="cc-empty-title">No canvases yet</p>
+          <p className="cc-empty-sub">Create your first canvas.</p>
           <button
             className="cc-btn cc-btn--primary"
             type="button"
             onClick={() => setShowModal(true)}
           >
             <span className="material-symbols-outlined" style={{ fontSize: 16 }}>add</span>
-            Yeni Canvas
+            New Canvas
           </button>
         </div>
       ) : (
@@ -183,7 +183,7 @@ export function CoatCanvasListPage({
               <div className="cc-canvas-card-body">
                 <span className="cc-canvas-card-title">{canvas.title}</span>
                 <div className="cc-canvas-card-meta">
-                  <span>{canvas.cellCount} kutu</span>
+                  <span>{canvas.cellCount} box</span>
                   <span>·</span>
                   <span>{relativeTime(new Date(canvas.updatedAt))}</span>
                 </div>
@@ -198,7 +198,7 @@ export function CoatCanvasListPage({
             onClick={() => setShowModal(true)}
           >
             <span className="material-symbols-outlined" style={{ fontSize: 28 }}>add</span>
-            <span>Yeni Canvas</span>
+            <span>New Canvas</span>
           </button>
         </div>
       )}

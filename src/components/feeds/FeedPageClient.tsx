@@ -37,7 +37,7 @@ export function FeedPageClient({
           <span className="material-symbols-outlined" style={{ fontSize: "15px" }} aria-hidden="true">
             settings
           </span>
-          Akış ayarları
+          Feed settings
         </Link>
       </div>
 

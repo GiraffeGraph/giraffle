@@ -153,7 +153,7 @@ export function SidebarIconPicker({
         onClick={(event) => event.stopPropagation()}
       >
         <div className="icon-picker-topbar">
-          <div className="icon-picker-tabs" role="tablist" aria-label="Ikon sekmeleri">
+          <div className="icon-picker-tabs" role="tablist" aria-label="Icon tabs">
             {([
               { id: "emoji", label: "Emoji" },
               { id: "icons", label: "Icons" },
@@ -186,7 +186,7 @@ export function SidebarIconPicker({
             <EmojiPicker
               onEmojiClick={(emojiData) => void handleEmojiClick(emojiData)}
               autoFocusSearch
-              searchPlaceholder="Emoji ara"
+              searchPlaceholder="Search emoji"
               suggestedEmojisMode={SuggestionMode.RECENT}
               emojiStyle={EmojiStyle.NATIVE}
               previewConfig={{ showPreview: false }}
@@ -208,7 +208,7 @@ export function SidebarIconPicker({
                   value={query}
                   disabled={isSaving}
                   onChange={(event) => setQuery(event.currentTarget.value)}
-                  placeholder="Material Symbols filtrele..."
+                  placeholder="Filter Material Symbols..."
                 />
               </label>
             </div>
@@ -260,7 +260,7 @@ export function SidebarIconPicker({
             </div>
 
               {filteredMaterialIcons.length === 0 ? (
-                <div className="icon-picker-empty">Bu filtre icin sonuc yok.</div>
+                <div className="icon-picker-empty">No results for this filter.</div>
               ) : null}
             </>
           )}

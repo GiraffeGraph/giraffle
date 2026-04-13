@@ -47,7 +47,7 @@ export function GraphView({ graph, unresolvedLinks }: GraphViewProps) {
     <div className="graph-page app-page">
       <header className="graph-header">
         <div>
-          <p className="graph-subtitle">Not ilişkileri ve eksik bağlantılar.</p>
+          <p className="graph-subtitle">Note relationships and missing links.</p>
         </div>
       </header>
 
@@ -118,13 +118,13 @@ export function GraphView({ graph, unresolvedLinks }: GraphViewProps) {
             <>
               <div className="graph-panel-title">{activeNode.title}</div>
               <div className="graph-panel-meta">
-                Bağ sayısı {activeNode.degree} · {activeNode.isPublished ? "Yayında" : "Özel"}
+                Link count {activeNode.degree} · {activeNode.isPublished ? "Published" : "Private"}
               </div>
-              <div className="graph-panel-section-title">Bağlantılar</div>
+              <div className="graph-panel-section-title">Links</div>
               <div className="graph-panel-list">
                 {activeEdges.length === 0 ? (
                   <div className="graph-panel-empty">
-                    Bu not için çözümlenmiş bağlantı yok.
+                    There are no resolved links for this note.
                   </div>
                 ) : (
                   activeEdges.map((edge, edgeIdx) => (
@@ -148,14 +148,14 @@ export function GraphView({ graph, unresolvedLinks }: GraphViewProps) {
             </>
           ) : (
             <div className="graph-panel-empty">
-              İlk kayıttan sonra notlar ve bağlantılar burada görünür.
+              Notes and links will appear here after the first entry.
             </div>
           )}
 
-          <div className="graph-panel-section-title">Çözülmemiş bağlantılar</div>
+          <div className="graph-panel-section-title">Unresolved links</div>
           <div className="graph-panel-list">
             {unresolvedLinks.length === 0 ? (
-              <div className="graph-panel-empty">Çözülmemiş hedef yok.</div>
+              <div className="graph-panel-empty">No unresolved targets.</div>
             ) : (
               unresolvedLinks.slice(0, 8).map((item) => (
                 <div key={item.targetRaw} className="graph-panel-link">

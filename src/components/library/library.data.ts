@@ -162,7 +162,7 @@ const MEETING_KEYWORDS = [
   "1:1",
   "degerlendirme",
   "gorusme",
-  "görüşme",
+  "meeting",
 ];
 
 export function buildLibraryWorkspaceSeed(input: {

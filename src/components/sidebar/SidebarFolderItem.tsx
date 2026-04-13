@@ -176,7 +176,7 @@ export function SidebarFolderItem({
                     onOpen(folder.id);
                   }
             }
-            aria-label={hasContent ? (isOpen ? "Klasörü kapat" : "Klasörü aç") : "Klasöre git"}
+            aria-label={hasContent ? (isOpen ? "Collapse folder" : "Expand folder") : "Open folder"}
           >
             <span className="sidebar-folder-icon-stack" aria-hidden="true">
               {folderIcon}
@@ -204,8 +204,8 @@ export function SidebarFolderItem({
               event.stopPropagation();
               void onQuickCreate(folder.id);
             }}
-            aria-label="Not oluştur"
-            title="Not oluştur"
+            aria-label="Create note"
+            title="Create note"
           >
             <PlusIcon />
           </button>
@@ -218,8 +218,8 @@ export function SidebarFolderItem({
               setIsCreatingSubFolder(true);
               setIsOpen(true);
             }}
-            aria-label="Alt klasör oluştur"
-            title="Alt klasör oluştur"
+            aria-label="Create subfolder"
+            title="Create subfolder"
           >
             <FolderPlusIcon />
           </button>
@@ -237,8 +237,8 @@ export function SidebarFolderItem({
                 autoFocus
                 type="text"
                 className="sidebar-inline-creator-input"
-                defaultValue="Yeni Klasör"
-                placeholder="Klasör adı"
+                defaultValue="New Folder"
+                placeholder="Folder name"
                 onFocus={(event) => event.currentTarget.select()}
                 onKeyDown={(event) => {
                   if (event.key === "Enter") {

@@ -149,7 +149,7 @@ export function NoteEditorPage({
   const currentFolderLabel = useMemo(
     () =>
       folderOptions.find((folder) => folder.id === currentFolderId)?.name ??
-      "Çalışma alanı",
+      "Workspace",
     [currentFolderId, folderOptions],
   );
 
@@ -170,17 +170,17 @@ export function NoteEditorPage({
     switch (saveStatus) {
       case "saving":
         return {
-          label: "Kaydediliyor...",
+          label: "Saving...",
           color: "var(--md-sys-color-primary)",
         };
       case "pending":
         return {
-          label: "Kaydetme bekliyor",
+          label: "Save pending",
           color: "var(--md-sys-color-tertiary)",
         };
       default:
         return {
-          label: "Kaydedildi",
+          label: "Saved",
           color: "var(--md-sys-color-on-surface-variant)",
         };
     }
@@ -742,18 +742,18 @@ export function NoteEditorPage({
   const noteContextItems = useMemo<ContextMenuItem[]>(
     () => [
       {
-        label: isPinned ? "Sabitlemeyi kaldır" : "Sabitle",
-        hint: "Not sırasında üstte tut veya serbest bırak",
+        label: isPinned ? "Unpin" : "Pin",
+        hint: "Keep near the top of the note list or release it",
         onSelect: handlePinToggle,
       },
       {
-        label: isPublished ? "Yayımdan kaldır" : "Yayımla",
-        hint: "Notun yayın durumunu değiştir",
+        label: isPublished ? "Unpublish" : "Publish",
+        hint: "Change the publication status of the note",
         onSelect: handlePublishToggle,
       },
       {
-        label: isMetaPanelOpen ? "Sayfa ayarlarını gizle" : "Sayfa ayarları",
-        hint: "Yayın adresi ve ikincil seçenekleri aç",
+        label: isMetaPanelOpen ? "Hide page settings" : "Page settings",
+        hint: "Open the publish path and secondary options",
         onSelect: toggleMetaPanel,
       },
       {
@@ -762,41 +762,41 @@ export function NoteEditorPage({
         onSelect: handleOpenInCanvas,
       },
       {
-        label: "Yukarı taşı",
-        hint: "Bulunduğu listede bir adım yukarı al",
+        label: "Move up",
+        hint: "Move it up by one position in its list",
         onSelect: () => handleMoveNote("up"),
       },
       {
-        label: "Aşağı taşı",
-        hint: "Bulunduğu listede bir adım aşağı al",
+        label: "Move down",
+        hint: "Move it down by one position in its list",
         onSelect: () => handleMoveNote("down"),
       },
       {
-        label: "Not bağlantısını kopyala",
-        hint: "Dahili not adresini panoya kopyala",
+        label: "Copy note link",
+        hint: "Copy the internal note address to the clipboard",
         onSelect: handleCopyNoteLink,
       },
       {
-        label: "Markdown kopyala",
-        hint: "Dışa aktarılan Markdown sürümünü kopyala",
+        label: "Copy Markdown",
+        hint: "Copy the exported Markdown version",
         disabled: isExportPending,
         onSelect: () => handleCopyExport("markdown"),
       },
       {
-        label: "MDX kopyala",
-        hint: "Dışa aktarılan MDX sürümünü kopyala",
+        label: "Copy MDX",
+        hint: "Copy the exported MDX version",
         disabled: isExportPending,
         onSelect: () => handleCopyExport("mdx"),
       },
       {
-        label: "Yayımdaki sayfayı aç",
-        hint: "Genel görünümü yeni sekmede aç",
+        label: "Open published page",
+        hint: "Open the public view in a new tab",
         disabled: !isPublished,
         onSelect: handleOpenPublishedPage,
       },
       {
-        label: "Arşive taşı",
-        hint: "Notu aktif listelerden kaldır",
+        label: "Move to archive",
+        hint: "Remove the note from active lists",
         tone: "danger",
         onSelect: handleArchiveNote,
       },
@@ -971,7 +971,7 @@ export function NoteEditorPage({
                               color: "var(--md-sys-color-on-surface)",
                             }}
                           >
-                            Kategori
+                            Category
                           </div>
                           <div
                             style={{
@@ -980,7 +980,7 @@ export function NoteEditorPage({
                               color: "var(--md-sys-color-on-surface-variant)",
                             }}
                           >
-                            Notu taglerden ayri bir ana gruba yerlestir.
+                            Place the note in a main group separate from tags.
                           </div>
                         </div>
                         <Button
@@ -991,7 +991,7 @@ export function NoteEditorPage({
                             )
                           }
                         >
-                          {isCreateCategoryOpen ? "Kapat" : "Yeni kategori"}
+                          {isCreateCategoryOpen ? "Close" : "New category"}
                         </Button>
                       </div>
 
@@ -1015,7 +1015,7 @@ export function NoteEditorPage({
                             },
                           )}
                         >
-                          Kategori yok
+                          No category
                         </button>
                         {availableCategories.map((category) => (
                           <button
@@ -1063,7 +1063,7 @@ export function NoteEditorPage({
                                 placeholder=" "
                               />
                               <span className="md-text-field-label">
-                                Kategori adi
+                                Category name
                               </span>
                             </div>
                           </div>
@@ -1091,7 +1091,7 @@ export function NoteEditorPage({
                                   placeholder=" "
                                 />
                                 <span className="md-text-field-label">
-                                  Ikon (opsiyonel)
+                                  Icon (optional)
                                 </span>
                               </div>
                             </div>
@@ -1105,7 +1105,7 @@ export function NoteEditorPage({
                                 color: "var(--md-sys-color-on-surface-variant)",
                               }}
                             >
-                              <span>Renk</span>
+                              <span>Color</span>
                               <select
                                 value={newCategoryColor}
                                 onChange={(event) =>
@@ -1145,8 +1145,8 @@ export function NoteEditorPage({
                               onClick={handleCreateCategory}
                             >
                               {isCategoryPending
-                                ? "Olusturuluyor..."
-                                : "Kategori olustur"}
+                                ? "Creating..."
+                                : "Create category"}
                             </Button>
                           </div>
                         </div>
@@ -1165,11 +1165,11 @@ export function NoteEditorPage({
                           onBlur={(event) =>
                             void handleSlugChange(event.target.value)
                           }
-                          placeholder="yayin-adresi"
+                          placeholder="publish-path"
                           spellCheck={false}
                         />
                         <span className="md-text-field-label">
-                          Yayın Adresi
+                          Publish Path
                         </span>
                       </div>
                     </div>
@@ -1181,8 +1181,8 @@ export function NoteEditorPage({
                       }}
                     >
                       {slug?.trim()
-                        ? `Yayın yolu: /published/${slug}`
-                        : "Yayımlandığında otomatik bir adres oluşturulur."}
+                        ? `Published path: /published/${slug}`
+                        : "A path is created automatically when published."}
                     </p>
                     <div
                       style={{
@@ -1206,7 +1206,7 @@ export function NoteEditorPage({
                             color: "var(--md-sys-color-on-surface)",
                           }}
                         >
-                          Template akisi
+                          Template flow
                         </div>
                         <div
                           style={{
@@ -1214,8 +1214,7 @@ export function NoteEditorPage({
                             color: "var(--md-sys-color-on-surface-variant)",
                           }}
                         >
-                          Bu notu tekrar kullanilabilir bir baslangic olarak
-                          kaydet.
+                          Save this note as a reusable starting point.
                         </div>
                       </div>
                       <Button
@@ -1223,7 +1222,7 @@ export function NoteEditorPage({
                         onClick={handleOpenTemplateDialog}
                         disabled={isTemplatePending}
                       >
-                        Template olarak kaydet
+                        Save as template
                       </Button>
                     </div>
                   </CardContent>
@@ -1271,7 +1270,7 @@ export function NoteEditorPage({
                   <span className="material-symbols-outlined" aria-hidden="true" style={{ fontSize: "16px" }}>
                     link
                   </span>
-                  {backlinks.length} geri bağlantı
+                  {backlinks.length} backlinks
                 </summary>
                 <ul
                   style={{
@@ -1316,8 +1315,8 @@ export function NoteEditorPage({
             }}
           >
             <FeedAssignmentsCard
-              title="Akış bağlantıları"
-              description="Bu notu hangi öneri ve haber akışlarının besleyeceğini buradan seçebilir, istersen doğrudan yeni akış başlatabilirsin."
+              title="Feed connections"
+              description="Choose which suggestion and news feeds should be fed by this note here, or start a new feed directly."
               assignments={feedAssignments}
               sourceType="note"
               sourceId={note.id}
@@ -1333,7 +1332,7 @@ export function NoteEditorPage({
               style={{ position: "sticky", top: "56px", paddingTop: "64px" }}
             >
               {headings.length > 0 ? (
-                <nav aria-label="İçindekiler">
+                <nav aria-label="Table of contents">
                   <div
                     style={{
                       fontSize: "11px",
@@ -1344,7 +1343,7 @@ export function NoteEditorPage({
                       marginBottom: "10px",
                     }}
                   >
-                    İçindekiler
+                    Table of contents
                   </div>
                   <ul
                     style={{
@@ -1409,7 +1408,7 @@ export function NoteEditorPage({
             style={{ maxWidth: "560px", width: "90vw" }}
             onClick={(event) => event.stopPropagation()}
           >
-            <h2 className="md-dialog-headline">Template olarak kaydet</h2>
+            <h2 className="md-dialog-headline">Save as template</h2>
             <div
               className="md-dialog-content"
               style={{ display: "grid", gap: "16px" }}
@@ -1422,7 +1421,7 @@ export function NoteEditorPage({
                     onChange={(event) => setTemplateName(event.target.value)}
                     placeholder=" "
                   />
-                  <span className="md-text-field-label">Template adi</span>
+                  <span className="md-text-field-label">Template name</span>
                 </div>
               </div>
 
@@ -1445,7 +1444,7 @@ export function NoteEditorPage({
                     placeholder=" "
                     style={{ resize: "vertical", paddingTop: 0 }}
                   />
-                  <span className="md-text-field-label">Aciklama</span>
+                  <span className="md-text-field-label">Description</span>
                 </div>
               </div>
 
@@ -1466,7 +1465,7 @@ export function NoteEditorPage({
                     color: "var(--md-sys-color-on-surface-variant)",
                   }}
                 >
-                  <span>Template kategorisi</span>
+                  <span>Template category</span>
                   <select
                     value={templateCategory}
                     onChange={(event) =>
@@ -1490,7 +1489,7 @@ export function NoteEditorPage({
                       onChange={(event) => setTemplateIcon(event.target.value)}
                       placeholder=" "
                     />
-                    <span className="md-text-field-label">Ikon</span>
+                    <span className="md-text-field-label">Icon</span>
                   </div>
                 </div>
               </div>
@@ -1501,14 +1500,14 @@ export function NoteEditorPage({
                 variant="text"
                 onClick={() => setIsTemplateDialogOpen(false)}
               >
-                Vazgec
+                Cancel
               </Button>
               <Button
                 variant="filled"
                 disabled={!templateName.trim() || isTemplatePending}
                 onClick={handleSaveTemplate}
               >
-                {isTemplatePending ? "Kaydediliyor..." : "Template kaydet"}
+                {isTemplatePending ? "Saving..." : "Save template"}
               </Button>
             </div>
           </div>

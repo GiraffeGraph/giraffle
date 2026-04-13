@@ -82,10 +82,10 @@ export function FeedAssignmentsCard({
       </CardContent>
       <CardActions align="start" style={{ gap: "8px", flexWrap: "wrap" }}>
         <Button variant="outlined" onClick={() => handleCreate("suggestion")} disabled={isPending}>
-          Yeni öneri akışı
+          New suggestion feed
         </Button>
         <Button variant="outlined" onClick={() => handleCreate("news")} disabled={isPending}>
-          Yeni haber akışı
+          New news feed
         </Button>
       </CardActions>
     </Card>
@@ -119,7 +119,7 @@ function FeedAssignmentGroup({
             fontSize: "13px",
           }}
         >
-          Bu türde akış yok.
+          There is no feed of this type.
         </div>
       ) : (
         feeds.map((feed) => (
@@ -138,14 +138,14 @@ function FeedAssignmentGroup({
             <div style={{ minWidth: 0 }}>
               <div style={{ fontWeight: 600, color: "var(--md-sys-color-on-surface)" }}>{feed.title}</div>
               <div style={{ fontSize: "12px", color: "var(--md-sys-color-on-surface-variant)" }}>
-                {feed.itemCount} öğe · {feed.refreshIntervalHours} saatte bir
+                {feed.itemCount} items · {feed.refreshIntervalHours}h cadence
               </div>
             </div>
             <Button
               variant={feed.isSelected ? "filled" : "outlined"}
               onClick={() => onToggle(feed.id, !feed.isSelected)}
             >
-              {feed.isSelected ? "Bağlı" : "Bağla"}
+              {feed.isSelected ? "Connected" : "Connect"}
             </Button>
           </div>
         ))

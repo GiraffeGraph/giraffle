@@ -8,7 +8,7 @@ CREATE INDEX IF NOT EXISTS "Note_quadrant_idx" ON "Note"("quadrant");
 CREATE TABLE IF NOT EXISTS "CoatCanvas" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
-    "title" TEXT NOT NULL DEFAULT 'Yeni Canvas',
+    "title" TEXT NOT NULL DEFAULT 'New Canvas',
     "columns" INTEGER NOT NULL DEFAULT 12,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,

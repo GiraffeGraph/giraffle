@@ -25,7 +25,7 @@ describe("update.service", () => {
           name: "v0.2.0",
           html_url: "https://github.com/GiraffeGraph/giraffle/releases/tag/v0.2.0",
           published_at: "2026-04-12T10:00:00.000Z",
-          body: "- Yeni özellik\n- Hata düzeltmeleri",
+          body: "- New feature\n- Bug fixes",
         }),
       })
     );

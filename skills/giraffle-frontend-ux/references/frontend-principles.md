@@ -2,15 +2,15 @@
 
 ## Product Language
 
-- Use Turkish for user-facing labels, buttons, empty states, section titles, and helper text.
+- Use English for user-facing labels, buttons, empty states, section titles, and helper text.
 - Keep technical code identifiers in English.
 - Use stable terms consistently:
-  - `Not` for note
-  - `Klasor` or `Klasorler` for folder surfaces if ASCII is preferred in code
-  - `Etiket` for tag
-  - `Sablon` for template when ASCII is preferred in code
-  - `Yayinla` for publish actions when ASCII is preferred in code
-- Avoid mixed English and Turkish in the same surface unless the term is clearly technical.
+  - `Note` for note
+  - `Folder` for folder surfaces
+  - `Tag` for tag
+  - `Template` for template
+  - `Publish` for publish actions
+- Avoid mixed English and non-English copy in the same surface unless the term is clearly technical.
 
 ## Visual Direction
 

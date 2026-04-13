@@ -44,9 +44,9 @@ export function createKanbanColumn(
 
 export function createDefaultKanbanColumns(): KanbanColumn[] {
   return [
-    createKanbanColumn("Yapilacak", "accent", [createKanbanCard("Yeni gorev")]),
-    createKanbanColumn("Yapiliyor", "sky"),
-    createKanbanColumn("Yapildi", "emerald"),
+    createKanbanColumn("To do", "accent", [createKanbanCard("New task")]),
+    createKanbanColumn("Doing", "sky"),
+    createKanbanColumn("Done", "emerald"),
   ];
 }
 
@@ -68,7 +68,7 @@ export function normalizeKanbanColumns(value: unknown): KanbanColumn[] {
         title:
           typeof column.title === "string" && column.title.trim().length > 0
             ? column.title
-            : `Kolon ${index + 1}`,
+            : `Column ${index + 1}`,
         tone: normalizeKanbanTone(column.tone, index),
         cards: cardsSource
           .filter((card): card is Record<string, unknown> => isRecord(card))

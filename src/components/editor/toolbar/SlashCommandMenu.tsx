@@ -23,8 +23,8 @@ export function SlashCommandMenu<T extends CommandMenuItem>({
   items,
   command,
   style,
-  title = "Komutlar",
-  subtitle = "Yön tuşları ile gezin, Enter ile uygula",
+  title = "Commands",
+  subtitle = "Use arrow keys to navigate, press Enter to apply",
 }: SlashCommandMenuProps<T>) {
   const getItemKey = useCallback(
     (item: T, index: number) =>

@@ -2,13 +2,13 @@
    globals.css — Component & Layout Styles
    GiraffeGraph Design System v2
 
-   Token katmanı artık src/styles/tokens.css dosyasındadır.
-   Bu dosyada yalnızca bileşen ve layout stilleri yer alır.
-   Tüm renk/tipografi/motion değerleri var(--md-sys-*) veya
-   bridge alias var(--accent), var(--surface-*) vb. üzerinden gelir.
+   The token layer now lives in src/styles/tokens.css.
+   This file contains only component and layout styles.
+   All color/typography/motion values come from var(--md-sys-*) or
+   bridge aliases such as var(--accent) and var(--surface-*).
    ========================================================================== */
 
-/* graphite-night teması için min-height override (içerik sayfaları) */
+/* min-height override for the graphite-night theme (content pages) */
 
 @media (max-width: 900px) {
   html,

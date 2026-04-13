@@ -157,7 +157,7 @@ export function FolderDetailPage({
                 fontSize: "14px",
               }}
             >
-              {folder.children.length} alt klasör · {folder.notes.length} not
+              {folder.children.length} subfolders · {folder.notes.length} notes
             </p>
           </div>
         </div>
@@ -194,8 +194,8 @@ export function FolderDetailPage({
 
         <div style={{ marginBottom: "24px" }}>
           <FeedAssignmentsCard
-            title="Akış bağlantıları"
-            description="Bu klasörü hangi öneri ve haber akışlarının besleyeceğini buradan seçebilirsin."
+            title="Feed connections"
+            description="Choose which suggestion and news feeds should be fed by this folder here."
             assignments={feedAssignments}
             sourceType="folder"
             sourceId={folder.id}
@@ -204,7 +204,7 @@ export function FolderDetailPage({
 
         {folder.notes.length === 0 ? (
           <div className="dashboard-empty">
-            <p className="dashboard-empty-text">Bu klasörde henüz not yok.</p>
+            <p className="dashboard-empty-text">There are no notes in this folder yet.</p>
           </div>
         ) : (
           <div className="dashboard-grid">

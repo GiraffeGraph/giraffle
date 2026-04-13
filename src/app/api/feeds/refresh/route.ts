@@ -14,7 +14,7 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json(
-      { error: "FEED_REFRESH_SECRET tanımlı değil." },
+      { error: "FEED_REFRESH_SECRET is not configured." },
       { status: 503 }
     );
   }
@@ -29,7 +29,7 @@ export async function POST(request: Request) {
       route: "/api/feeds/refresh",
     });
 
-    return NextResponse.json({ error: "Yetkisiz istek." }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized request." }, { status: 401 });
   }
 
   let limit = 12;

@@ -51,32 +51,32 @@ export function FeedSettingsPanel({
 
   return (
     <div className="feed-settings-panel">
-      {/* Yeni akış oluştur */}
+      {/* Create new feed */}
       <div className="feed-editor-card">
         <div className="feed-editor-head">
-          <span className="feed-editor-head-title">Yeni akış</span>
+          <span className="feed-editor-head-title">New feed</span>
         </div>
         <div className="feed-editor-body">
           <div className="feed-editor-row">
             <div className="feed-editor-field" style={{ flex: 1 }}>
-              <label className="feed-field-label">Başlık</label>
+              <label className="feed-field-label">Title</label>
               <input
                 className="feed-field-input"
                 value={newFeedTitle}
                 onChange={(e) => setNewFeedTitle(e.target.value)}
-                placeholder={newFeedKind === "news" ? "Örn. Yapay zeka gündemi" : "Örn. Ürün notları önerileri"}
+                placeholder={newFeedKind === "news" ? "e.g. AI agenda" : "e.g. Product note suggestions"}
                 onKeyDown={(e) => e.key === "Enter" && handleCreate()}
               />
             </div>
             <div className="feed-editor-field">
-              <label className="feed-field-label">Tip</label>
+              <label className="feed-field-label">Type</label>
               <select
                 className="feed-field-input"
                 value={newFeedKind}
                 onChange={(e) => setNewFeedKind(e.target.value as WorkspaceFeedKind)}
               >
-                <option value="news">Haber</option>
-                <option value="suggestion">Öneri</option>
+                <option value="news">News</option>
+                <option value="suggestion">Suggestion</option>
               </select>
             </div>
           </div>
@@ -88,15 +88,15 @@ export function FeedSettingsPanel({
             onClick={handleCreate}
             disabled={isPending || !newFeedTitle.trim()}
           >
-            Oluştur
+            Create
           </button>
         </div>
       </div>
 
-      {/* Mevcut akışlar */}
+      {/* Existing feeds */}
       {sortedFeeds.length === 0 ? (
         <p className="feed-settings-empty">
-          Henüz akış yok. Yukarıdan haber veya öneri akışı oluşturabilirsin.
+          No feeds yet. Create a news or suggestion feed above.
         </p>
       ) : (
         sortedFeeds.map((feed) => (
@@ -188,9 +188,9 @@ function FeedEditorCard({
       </div>
 
       <div className="feed-editor-body">
-        {/* Başlık */}
+        {/* Title */}
         <div className="feed-editor-field">
-          <label className="feed-field-label">Başlık</label>
+          <label className="feed-field-label">Title</label>
           <input
             className="feed-field-input"
             value={title}
@@ -198,21 +198,21 @@ function FeedEditorCard({
           />
         </div>
 
-        {/* Açıklama */}
+        {/* Description */}
         <div className="feed-editor-field">
-          <label className="feed-field-label">Açıklama</label>
+          <label className="feed-field-label">Description</label>
           <textarea
             className="feed-field-input"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Bu akışın neyi izlediğini kısaca anlat"
+            placeholder="Briefly describe what this feed tracks"
             style={{ minHeight: "68px", resize: "vertical" }}
           />
         </div>
 
-        {/* Kaynaklar */}
+        {/* Sources */}
         <div className="feed-editor-field">
-          <label className="feed-field-label">Kaynaklar</label>
+          <label className="feed-field-label">Sources</label>
           {feed.sources.length > 0 ? (
             <div className="feed-sources-list">
               {feed.sources.map((source) => (
@@ -222,7 +222,7 @@ function FeedEditorCard({
                   className="feed-source-remove-btn"
                   onClick={() => handleRemoveSource(source.sourceType, source.sourceId)}
                   disabled={isPending}
-                  title="Kaynağı kaldır"
+                  title="Remove source"
                 >
                   <span className="material-symbols-outlined" style={{ fontSize: "13px" }} aria-hidden="true">
                     {source.sourceType === "note" ? "description" : "folder"}
@@ -235,14 +235,14 @@ function FeedEditorCard({
               ))}
             </div>
           ) : (
-            <p className="feed-no-sources-hint">Henüz kaynak eklenmedi.</p>
+            <p className="feed-no-sources-hint">No sources added yet.</p>
           )}
         </div>
 
-        {/* Not ekle */}
+        {/* Add note */}
         {notes.length > 0 ? (
           <div className="feed-editor-field">
-            <label className="feed-field-label">Not ekle</label>
+            <label className="feed-field-label">Add note</label>
             <div className="feed-add-source-row">
               <select
                 className="feed-field-input"
@@ -251,7 +251,7 @@ function FeedEditorCard({
                 style={{ flex: 1 }}
               >
                 {notes.map((note) => (
-                  <option key={note.id} value={note.id}>{note.title || "Başlıksız"}</option>
+                  <option key={note.id} value={note.id}>{note.title || "Untitled"}</option>
                 ))}
               </select>
               <button
@@ -260,16 +260,16 @@ function FeedEditorCard({
                 onClick={() => handleAddSource("note")}
                 disabled={!selectedNoteId || isPending}
               >
-                Ekle
+                Add
               </button>
             </div>
           </div>
         ) : null}
 
-        {/* Klasör ekle */}
+        {/* Add folder */}
         {folders.length > 0 ? (
           <div className="feed-editor-field">
-            <label className="feed-field-label">Klasör ekle</label>
+            <label className="feed-field-label">Add folder</label>
             <div className="feed-add-source-row">
               <select
                 className="feed-field-input"
@@ -287,20 +287,20 @@ function FeedEditorCard({
                 onClick={() => handleAddSource("folder")}
                 disabled={!selectedFolderId || isPending}
               >
-                Ekle
+                Add
               </button>
             </div>
           </div>
         ) : null}
 
-        {/* Etkin toggle */}
+        {/* Active toggle */}
         <label className="feed-toggle-label">
           <input
             type="checkbox"
             checked={isEnabled}
             onChange={(e) => setIsEnabled(e.target.checked)}
           />
-          Akışı etkin tut
+          Keep feed active
         </label>
       </div>
 
@@ -311,7 +311,7 @@ function FeedEditorCard({
           onClick={handleSave}
           disabled={isPending}
         >
-          Kaydet
+          Save
         </button>
         <button
           type="button"
@@ -319,7 +319,7 @@ function FeedEditorCard({
           onClick={handleRefresh}
           disabled={isPending}
         >
-          Yenile
+          Refresh
         </button>
         <button
           type="button"
@@ -327,7 +327,7 @@ function FeedEditorCard({
           onClick={handleDelete}
           disabled={isPending}
         >
-          Sil
+          Delete
         </button>
       </div>
     </div>

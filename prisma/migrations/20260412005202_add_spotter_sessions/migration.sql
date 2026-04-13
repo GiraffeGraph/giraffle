@@ -1,7 +1,7 @@
 -- CreateTable
 CREATE TABLE "SpotterSession" (
     "id" TEXT NOT NULL,
-    "title" TEXT NOT NULL DEFAULT 'Yeni sohbet',
+    "title" TEXT NOT NULL DEFAULT 'New chat',
     "userId" TEXT NOT NULL,
     "lastMessageAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,

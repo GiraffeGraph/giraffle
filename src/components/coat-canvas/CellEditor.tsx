@@ -29,7 +29,7 @@ export function CellEditor({ cellId: _cellId, initialContent, onSave }: CellEdit
       StarterKit,
       TaskList,
       TaskItem.configure({ nested: true }),
-      Placeholder.configure({ placeholder: "İçerik ekle…" }),
+      Placeholder.configure({ placeholder: "Add content…" }),
     ],
     immediatelyRender: false,
     content: parsed,
@@ -88,25 +88,25 @@ export function CellEditor({ cellId: _cellId, initialContent, onSave }: CellEdit
               type="button"
               className={`cc-bubble-btn${editor.isActive("bulletList") ? " cc-bubble-btn--active" : ""}`}
               onMouseDown={(e) => { e.preventDefault(); editor.chain().focus().toggleBulletList().run(); }}
-              title="Madde listesi"
+              title="Bullet list"
             ><span className="material-symbols-outlined" style={{ fontSize: 13 }}>format_list_bulleted</span></button>
             <button
               type="button"
               className={`cc-bubble-btn${editor.isActive("orderedList") ? " cc-bubble-btn--active" : ""}`}
               onMouseDown={(e) => { e.preventDefault(); editor.chain().focus().toggleOrderedList().run(); }}
-              title="Numaralı liste"
+              title="Numbered list"
             ><span className="material-symbols-outlined" style={{ fontSize: 13 }}>format_list_numbered</span></button>
             <button
               type="button"
               className={`cc-bubble-btn${editor.isActive("taskList") ? " cc-bubble-btn--active" : ""}`}
               onMouseDown={(e) => { e.preventDefault(); editor.chain().focus().toggleTaskList().run(); }}
-              title="Görev listesi"
+              title="Task list"
             ><span className="material-symbols-outlined" style={{ fontSize: 13 }}>checklist</span></button>
             <button
               type="button"
               className={`cc-bubble-btn${editor.isActive("blockquote") ? " cc-bubble-btn--active" : ""}`}
               onMouseDown={(e) => { e.preventDefault(); editor.chain().focus().toggleBlockquote().run(); }}
-              title="Alıntı"
+              title="Quote"
             ><span className="material-symbols-outlined" style={{ fontSize: 13 }}>format_quote</span></button>
           </div>
         </BubbleMenu>

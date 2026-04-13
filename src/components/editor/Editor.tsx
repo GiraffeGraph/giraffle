@@ -152,8 +152,8 @@ export function Editor({
   const slashCommandItems = useMemo<SlashCommandItem[]>(
     () => [
       {
-        title: "Görsel yükle",
-        description: "Cihazından görsel seç ve nota ekle",
+        title: "Upload image",
+        description: "Choose an image from your device and insert it into the note",
         icon: "IMG",
         shortcut: "/image",
         command: () => {
@@ -330,7 +330,7 @@ export function Editor({
       const normalizedTarget = currentTarget.toLowerCase();
       const items: WikilinkMenuItem[] = matchingNotes.map((note) => ({
         title: note.title,
-        description: "Var olan nota bağlan",
+        description: "Link to an existing note",
         icon: "[[",
         menuKey: `note:${note.id}`,
         note,
@@ -344,8 +344,8 @@ export function Editor({
         )
       ) {
         items.push({
-          title: `"${currentTarget}" notunu oluştur`,
-          description: "Not oluştur ve çözümlenmiş wikilink ekle",
+          title: `"${currentTarget}"" note`,
+          description: "Create the note and insert a resolved wikilink",
           icon: "+",
           menuKey: `create:${normalizedTarget}`,
           createTarget: currentTarget,
@@ -387,7 +387,7 @@ export function Editor({
         allowBase64: false,
       }),
       Placeholder.configure({
-        placeholder: "Yazmaya başla...\n/ ile blok ekle · [[ ile sayfa bağla",
+        placeholder: "Start writing...\n/ to add a block · [[ to link a page",
         emptyEditorClass: "is-editor-empty",
       }),
       // ─── Text styling ───────────────────────
@@ -570,7 +570,7 @@ export function Editor({
         }
 
         const shouldCreate = window.confirm(
-          `Bu wikilinkten "${wikilinkTarget}" notu oluşturulsun mu?`
+          `Create the note "${wikilinkTarget}" from this wikilink?`
         );
 
         if (!shouldCreate) {
@@ -782,7 +782,7 @@ export function Editor({
     }
 
     if (!normalizedUrl) {
-      setImageError("Bir gÃ¶rsel URL'si gir.");
+      setImageError("Enter an image URL.");
       return;
     }
 
@@ -1068,14 +1068,14 @@ export function Editor({
           nextAttrs.tone =
             typeof nextAttrs.tone === "string" ? nextAttrs.tone : "info";
           nextAttrs.title =
-            typeof nextAttrs.title === "string" ? nextAttrs.title : "Bilgi";
+            typeof nextAttrs.title === "string" ? nextAttrs.title : "Info";
         }
 
         if (nextType === "toggle") {
           nextAttrs.summary =
             typeof nextAttrs.summary === "string"
               ? nextAttrs.summary
-              : "Ayrıntılar";
+              : "Details";
         }
 
         if (nextType === "paragraph") {
@@ -1124,7 +1124,7 @@ export function Editor({
         });
 
         if (!response.ok) {
-          throw new Error("Görsel yüklenemedi");
+          throw new Error("Upload imagenemedi");
         }
 
         const payload = (await response.json()) as {
@@ -1297,10 +1297,10 @@ export function Editor({
               setDraggedBlockId(blockToolbar.blockId);
               setIsBlockMenuOpen(false);
             }}
-            aria-label="Blok menüsünü aç veya sürükle"
+            aria-label="Open block menu or drag"
             aria-haspopup="menu"
             aria-expanded={isBlockMenuOpen}
-            title="Sürükle veya menüyü aç"
+            title="Drag or open menu"
           >
             <span className="material-symbols-outlined" aria-hidden="true">
               drag_indicator
@@ -1327,7 +1327,7 @@ export function Editor({
               setIsBlockMenuOpen(false);
             }}
           >
-            Alta yeni blok ekle
+            Add block below
           </button>
           <button
             type="button"
@@ -1337,7 +1337,7 @@ export function Editor({
               setIsBlockMenuOpen(false);
             }}
           >
-            Yukarı taşı
+            Move up
           </button>
           <button
             type="button"
@@ -1347,7 +1347,7 @@ export function Editor({
               setIsBlockMenuOpen(false);
             }}
           >
-            Aşağı taşı
+            Move down
           </button>
           <button
             type="button"
@@ -1357,7 +1357,7 @@ export function Editor({
               setIsBlockMenuOpen(false);
             }}
           >
-            Kopyasını oluştur
+            Duplicate
           </button>
           <div className="editor-block-context-divider" />
           <button
@@ -1365,28 +1365,28 @@ export function Editor({
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => handleTransformBlock("paragraph")}
           >
-            Paragrafa dönüştür
+            Convert to paragraph
           </button>
           <button
             type="button"
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => handleTransformBlock("heading")}
           >
-            Başlığa dönüştür
+            Convert to heading
           </button>
           <button
             type="button"
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => handleTransformBlock("callout")}
           >
-            Vurgu yap
+            Turn into callout
           </button>
           <button
             type="button"
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => handleTransformBlock("toggle")}
           >
-            Açılır bölüm yap
+            Turn into toggle section
           </button>
           <div className="editor-block-context-divider" />
           <button
@@ -1398,7 +1398,7 @@ export function Editor({
               setIsBlockMenuOpen(false);
             }}
           >
-            Sil
+            Delete
           </button>
         </div>
       ) : null}
@@ -1448,7 +1448,7 @@ export function Editor({
                 instance.chain().focus().toggleBold().run();
               });
             }}
-            title="Kalın (Ctrl+B)"
+            title="Bold (Ctrl+B)"
           >
             B
           </button>
@@ -1465,7 +1465,7 @@ export function Editor({
                 instance.chain().focus().toggleItalic().run();
               });
             }}
-            title="İtalik (Ctrl+I)"
+            title="Italic (Ctrl+I)"
           >
             <em>I</em>
           </button>
@@ -1482,7 +1482,7 @@ export function Editor({
                 instance.chain().focus().toggleUnderline().run();
               });
             }}
-            title="Altı Çizili (Ctrl+U)"
+            title="Underline (Ctrl+U)"
           >
             <u>U</u>
           </button>
@@ -1499,7 +1499,7 @@ export function Editor({
                 instance.chain().focus().toggleStrike().run();
               });
             }}
-            title="Üstü Çizili"
+            title="Strikethrough"
           >
             <s>S</s>
           </button>
@@ -1516,7 +1516,7 @@ export function Editor({
                 instance.chain().focus().toggleCode().run();
               });
             }}
-            title="Kod"
+            title="Code"
           >
             {"</>"}
           </button>
@@ -1530,7 +1530,7 @@ export function Editor({
               event.preventDefault();
               handleOpenLinkDialog();
             }}
-            title="Link ekle veya dÃ¼zenle"
+            title="Add or edit link"
           >
             LN
           </button>
@@ -1549,7 +1549,7 @@ export function Editor({
                 instance.chain().focus().toggleHeading({ level: 1 }).run();
               });
             }}
-            title="Başlık 1"
+            title="Heading 1"
           >
             H1
           </button>
@@ -1564,7 +1564,7 @@ export function Editor({
                 instance.chain().focus().toggleHeading({ level: 2 }).run();
               });
             }}
-            title="Başlık 2"
+            title="Heading 2"
           >
             H2
           </button>
@@ -1579,7 +1579,7 @@ export function Editor({
                 instance.chain().focus().toggleHeading({ level: 3 }).run();
               });
             }}
-            title="Başlık 3"
+            title="Heading 3"
           >
             H3
           </button>
@@ -1598,7 +1598,7 @@ export function Editor({
                 instance.chain().focus().toggleBulletList().run();
               });
             }}
-            title="Madde Listesi"
+            title="Bullet List"
           >
             UL
           </button>
@@ -1613,7 +1613,7 @@ export function Editor({
                 instance.chain().focus().toggleBlockquote().run();
               });
             }}
-            title="Alıntı"
+            title="Quote"
           >
             QT
           </button>
@@ -1630,7 +1630,7 @@ export function Editor({
                     instance.chain().focus().addRowAfter().run();
                   });
                 }}
-                title="SatÄ±r ekle"
+                title="Add row"
               >
                 +R
               </button>
@@ -1643,7 +1643,7 @@ export function Editor({
                     instance.chain().focus().addColumnAfter().run();
                   });
                 }}
-                title="SÃ¼tun ekle"
+                title="Add column"
               >
                 +C
               </button>
@@ -1656,7 +1656,7 @@ export function Editor({
                     instance.chain().focus().toggleHeaderRow().run();
                   });
                 }}
-                title="BaÅŸlÄ±k satÄ±rÄ±"
+                title="Header row"
               >
                 HR
               </button>
@@ -1669,7 +1669,7 @@ export function Editor({
                     instance.chain().focus().deleteRow().run();
                   });
                 }}
-                title="SatÄ±r sil"
+                title="Delete row"
               >
                 -R
               </button>
@@ -1682,7 +1682,7 @@ export function Editor({
                     instance.chain().focus().deleteColumn().run();
                   });
                 }}
-                title="SÃ¼tun sil"
+                title="Delete column"
               >
                 -C
               </button>
@@ -1695,7 +1695,7 @@ export function Editor({
                     instance.chain().focus().deleteTable().run();
                   });
                 }}
-                title="Tabloyu sil"
+                title="Delete table"
               >
                 TB
               </button>
@@ -1750,7 +1750,7 @@ export function Editor({
                 event.stopPropagation();
                 handleOpenColorPicker();
               }}
-              title="Yazı & Arka Plan Rengi"
+              title="Text & Background Color"
             >
               <span
                 style={{
@@ -1787,7 +1787,7 @@ export function Editor({
             style={{ maxWidth: "340px", width: "92vw" }}
             onClick={(event) => event.stopPropagation()}
           >
-            <h2 className="md-dialog-headline">Renkler</h2>
+            <h2 className="md-dialog-headline">Colors</h2>
             <div className="md-dialog-content" style={{ paddingTop: "4px" }}>
               <ColorPicker
                 currentTextColor={editor.getAttributes("textStyle")?.color ?? undefined}
@@ -1813,7 +1813,7 @@ export function Editor({
             </div>
             <div className="md-dialog-actions">
               <Button variant="text" onClick={handleCloseColorPicker}>
-                Kapat
+                Close
               </Button>
             </div>
           </div>
@@ -1843,8 +1843,8 @@ export function Editor({
         <SlashCommandMenu
           items={wikilinkItems}
           command={handleWikilinkCommand}
-          title="Wikilinkler"
-          subtitle="Var olan notu seç veya yeni not oluştur"
+          title="Wikilinks"
+          subtitle="Select an existing note or create a new one"
           style={{
             top: wikilinkMenu.position.top,
             left: wikilinkMenu.position.left,
@@ -1858,8 +1858,8 @@ export function Editor({
         <SlashCommandMenu
           items={slashItems}
           command={handleSlashCommand}
-          title="Blok komutları"
-          subtitle="Yön tuşları ile gezin, Enter ile ekle"
+          title="Block commands"
+          subtitle="Use arrow keys to navigate, press Enter to insert"
           style={{
             top: slashMenu.position.top,
             left: slashMenu.position.left,

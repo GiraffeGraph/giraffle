@@ -183,7 +183,7 @@ export function TemplatePicker({
               >
                 <div>
                   <h2 className="md-dialog-headline" style={{ marginBottom: "4px" }}>
-                    Sablondan not olustur
+                    Create note from template
                   </h2>
                   <p
                     style={{
@@ -192,7 +192,7 @@ export function TemplatePicker({
                       fontSize: "var(--md-sys-typescale-body-medium-size)",
                     }}
                   >
-                    Arama yap, kategoriye gore daralt ve onizlemeyi incele.
+                    Search, narrow by category, and inspect the preview.
                   </p>
                 </div>
 
@@ -204,7 +204,7 @@ export function TemplatePicker({
                       onChange={(event) => setSearchQuery(event.target.value)}
                       placeholder=" "
                     />
-                    <span className="md-text-field-label">Template ara</span>
+                    <span className="md-text-field-label">Search templates</span>
                   </div>
                 </div>
 
@@ -216,13 +216,13 @@ export function TemplatePicker({
                     color: "var(--md-sys-color-on-surface-variant)",
                   }}
                 >
-                  <span>Kategori</span>
+                  <span>Category</span>
                   <select
                     value={selectedCategory}
                     onChange={(event) => setSelectedCategory(event.target.value)}
                     style={buildTemplateSelectStyle()}
                   >
-                    <option value="all">Tum kategoriler</option>
+                    <option value="all">All categories</option>
                     {categoryOptions.map((category) => (
                       <option key={category} value={category}>
                         {getTemplateCategoryLabel(category)}
@@ -287,7 +287,7 @@ export function TemplatePicker({
                         background: "var(--md-sys-color-surface)",
                       }}
                     >
-                      Filtrelere uyan template bulunamadi.
+                      No templates match the filters.
                     </div>
                   )}
                 </div>
@@ -343,7 +343,7 @@ export function TemplatePicker({
                           fontSize: "var(--md-sys-typescale-title-large-size)",
                         }}
                       >
-                        {selectedTemplate?.name ?? "Template sec"}
+                        {selectedTemplate?.name ?? "Select a template"}
                       </h3>
                       <p
                         style={{
@@ -355,7 +355,7 @@ export function TemplatePicker({
                         {selectedTemplate
                           ? selectedTemplate.description ??
                             `${getTemplateCategoryLabel(selectedTemplate.category)} template`
-                          : "Soldaki listeden bir template sec."}
+                          : "Select a template from the list on the left."}
                       </p>
                     </div>
                   </div>
@@ -396,7 +396,7 @@ export function TemplatePicker({
                           letterSpacing: "0.04em",
                         }}
                       >
-                        Onizleme
+                        Preview
                       </div>
                       <div
                         style={{
@@ -407,7 +407,7 @@ export function TemplatePicker({
                       >
                         {selectedTemplate.previewText ??
                           selectedTemplate.description ??
-                          "Bu template icin onizleme yok."}
+                          "There is no preview for this template."}
                       </div>
                     </div>
 
@@ -426,7 +426,7 @@ export function TemplatePicker({
                             onChange={(event) => setTitle(event.target.value)}
                           />
                           <span className="md-text-field-label">
-                            Not basligi (opsiyonel)
+                            Note title (optional)
                           </span>
                         </div>
                       </div>
@@ -473,7 +473,7 @@ export function TemplatePicker({
                           <span className="material-symbols-outlined" aria-hidden="true">
                             inventory_2
                           </span>
-                          Bu template degisken istemiyor.
+                          This template does not require variables.
                         </div>
                       )}
                     </div>
@@ -488,20 +488,20 @@ export function TemplatePicker({
                       color: "var(--md-sys-color-on-surface-variant)",
                     }}
                   >
-                    Filtrelere uyan bir template sec.
+                    Select a template matching the filters.
                   </div>
                 )}
 
                 <div className="md-dialog-actions" style={{ marginTop: "auto" }}>
                   <Button variant="text" onClick={closePicker}>
-                    Vazgec
+                    Cancel
                   </Button>
                   <Button
                     variant="filled"
                     disabled={isPending || !selectedTemplate}
                     onClick={handleCreateNote}
                   >
-                    {isPending ? "Olusturuluyor..." : "Not olustur"}
+                    {isPending ? "Creating..." : "Create note"}
                   </Button>
                 </div>
               </div>

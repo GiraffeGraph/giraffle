@@ -39,8 +39,8 @@ export function FolderTopbar({
         <>
           <button
             type="button"
-            title="Klasör ikonunu değiştir"
-            aria-label="Klasör ikonunu değiştir"
+            title="Change folder icon"
+            aria-label="Change folder icon"
             onClick={onOpenIconPicker}
             style={{
               background: iconPickerPosition
@@ -77,7 +77,7 @@ export function FolderTopbar({
               materialClassName: "material-symbols-outlined",
               emojiStyle: { fontSize: "16px", lineHeight: 1 },
             })}
-            {isMobileViewport ? null : <span>İkon</span>}
+            {isMobileViewport ? null : <span>Icon</span>}
           </button>
 
           {isMobileViewport ? (
@@ -90,7 +90,7 @@ export function FolderTopbar({
                   whiteSpace: "nowrap",
                 }}
               >
-                Çalışma alanı / Klasör
+                Workspace / Folder
               </span>
               <span
                 style={{
@@ -120,7 +120,7 @@ export function FolderTopbar({
                 }}
                 onClick={onGoDashboard}
               >
-                Çalışma alanı
+                Workspace
               </button>
               {breadcrumbs.map((crumb, index) => {
                 const isLast = index === breadcrumbs.length - 1;
@@ -176,8 +176,8 @@ export function FolderTopbar({
       right={
         <button
           type="button"
-          title="Klasör bağlantısını kopyala"
-          aria-label="Klasör bağlantısını kopyala"
+          title="Copy folder link"
+          aria-label="Copy folder link"
           onClick={() => void onCopyFolderLink()}
           style={{
             width: "28px",

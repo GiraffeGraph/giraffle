@@ -159,7 +159,7 @@ export function CommandPalette({
         className="md-dialog"
         role="dialog"
         aria-modal="true"
-        aria-label="Komut paleti"
+        aria-label="Command palette"
         style={{ padding: 0, width: "100%", maxWidth: "700px", minHeight: "200px" }}
       >
         <div style={{ display: "flex", alignItems: "center", borderBottom: "1px solid var(--md-sys-color-outline-variant)", padding: "16px 24px" }}>
@@ -168,7 +168,7 @@ export function CommandPalette({
             type="text"
             value={query}
             onChange={(event) => onQueryChange(event.target.value)}
-            placeholder="Not, klasör, etiket veya komut ara..."
+            placeholder="Search notes, folders, tags, or commands..."
             spellCheck={false}
             style={{ flex: 1, border: "none", background: "transparent", fontSize: "var(--md-sys-typescale-headline-small-size)", color: "var(--md-sys-color-on-surface)", outline: "none" }}
           />
@@ -178,7 +178,7 @@ export function CommandPalette({
         <div style={{ maxHeight: "60vh", overflowY: "auto", padding: "12px 16px" }}>
           {groupedItems.length === 0 ? (
             <div style={{ padding: "32px", textAlign: "center", color: "var(--md-sys-color-on-surface-variant)" }}>
-              Bu sorgu için sonuç bulunamadı.
+              No results found for this query.
             </div>
           ) : (
             groupedItems.map(([groupLabel, groupItems]) => (

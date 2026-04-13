@@ -69,14 +69,14 @@ class EditorErrorBoundary extends React.Component<
           gap: 10,
         }}
       >
-        <strong style={{ fontSize: 14 }}>Editör yüklenemedi</strong>
+        <strong style={{ fontSize: 14 }}>Editor failed to load</strong>
         <span
           style={{
             fontSize: 12,
             color: "var(--md-sys-color-on-surface-variant)",
           }}
         >
-          Not açıldı ancak gelişmiş editör bu cihazda hata verdi.
+          The note opened, but the advanced editor failed on this device.
         </span>
         <button
           type="button"
@@ -94,7 +94,7 @@ class EditorErrorBoundary extends React.Component<
             cursor: "pointer",
           }}
         >
-          Editörü tekrar dene
+          Retry editor
         </button>
         <pre
           style={{
@@ -160,5 +160,5 @@ function extractText(document: TiptapDocument | undefined): string {
     return parts;
   };
 
-  return walk(document).join(" ").trim() || "(İçerik boş)";
+  return walk(document).join(" ").trim() || "(Empty content)";
 }

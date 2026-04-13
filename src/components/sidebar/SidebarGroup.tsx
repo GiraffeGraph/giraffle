@@ -41,14 +41,14 @@ export function SidebarGroup({
   children,
 }: {
   label: string;
-  /** Etiketin solunda görünecek ikon */
+  /** Icon shown to the left of the label */
   icon?: ReactNode;
   meta?: string;
   collapsed?: boolean;
   collapsible?: boolean;
   showChevron?: boolean;
   onToggle?: () => void;
-  /** VS Code tarzı hover ikonları — her biri bir aksiyon butonudur */
+  /** VS Code-style hover icons — each is an action button */
   actions?: SidebarGroupAction[];
   children: ReactNode;
 }) {

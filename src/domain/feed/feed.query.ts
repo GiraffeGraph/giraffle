@@ -1,25 +1,25 @@
 const RAW_STOP_WORDS = [
-  "ve",
-  "veya",
-  "ile",
-  "için",
-  "bir",
-  "bu",
-  "şu",
-  "o",
-  "da",
-  "de",
-  "mi",
-  "mı",
-  "mu",
-  "mü",
-  "gibi",
-  "çok",
-  "daha",
-  "güncel",
-  "haber",
-  "not",
-  "klasör",
+  "and",
+  "or",
+  "with",
+  "for",
+  "one",
+  "this",
+  "that",
+  "it",
+  "too",
+  "also",
+  "is",
+  "is",
+  "is",
+  "is",
+  "like",
+  "very",
+  "more",
+  "current",
+  "news",
+  "note",
+  "folder",
   "the",
   "and",
   "for",
@@ -42,8 +42,7 @@ export interface FeedQueryProfile {
 
 export function normalizeFeedText(value: string | null | undefined) {
   return (value ?? "")
-    .toLocaleLowerCase("tr-TR")
-    .replace(/ı/g, "i")
+    .toLocaleLowerCase("en-US")
     .normalize("NFKD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^\p{L}\p{N}\s-]/gu, " ")
@@ -109,7 +108,7 @@ export function buildFeedQueryProfile(input: {
         return right[1] - left[1];
       }
 
-      return left[0].localeCompare(right[0], "tr");
+      return left[0].localeCompare(right[0], "en");
     })
     .map(([keyword]) => keyword)
     .slice(0, 12);

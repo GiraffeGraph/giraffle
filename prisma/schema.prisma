@@ -332,7 +332,7 @@ model WorkspaceFeedItem {
 
 model SpotterSession {
   id            String           @id @default(uuid())
-  title         String           @default("Yeni sohbet")
+  title         String           @default("New chat")
   userId        String
   user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   messages      SpotterMessage[]
@@ -358,7 +358,7 @@ model SpotterMessage {
 
 model Canvas {
   id        String       @id @default(uuid())
-  title     String       @default("Yeni Harita")
+  title     String       @default("New Map")
   userId    String
   user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   nodes     CanvasNode[]
@@ -412,7 +412,7 @@ model CoatCanvas {
   id        String     @id @default(uuid())
   userId    String
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title     String     @default("Yeni Canvas")
+  title     String     @default("New Canvas")
   columns   Int        @default(12)
   cells     CoatCell[]
   createdAt DateTime   @default(now())

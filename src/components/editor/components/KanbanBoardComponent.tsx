@@ -115,7 +115,7 @@ export function KanbanBoardComponent({ node, updateAttributes }: NodeViewProps) 
     updateColumns([
       ...columns,
       createKanbanColumn(
-        `Kolon ${columns.length + 1}`,
+        `Column ${columns.length + 1}`,
         getNextKanbanTone(columns.length)
       ),
     ]);
@@ -458,8 +458,8 @@ export function KanbanBoardComponent({ node, updateAttributes }: NodeViewProps) 
                       }}
                       type="button"
                       className="giraffle-kanban-column-grip"
-                      title="Kolonu surukle"
-                      aria-label="Kolonu surukle"
+                      title="Drag column"
+                      aria-label="Drag column"
                     >
                       ::
                     </button>
@@ -470,7 +470,7 @@ export function KanbanBoardComponent({ node, updateAttributes }: NodeViewProps) 
                       onChange={(event) =>
                         handleColumnTitleChange(column.id, event.target.value)
                       }
-                      placeholder="Kolon"
+                      placeholder="Column"
                       draggable={false}
                     />
                   </div>
@@ -483,7 +483,7 @@ export function KanbanBoardComponent({ node, updateAttributes }: NodeViewProps) 
                       className="giraffle-kanban-column-remove"
                       onClick={() => handleRemoveColumn(column.id)}
                       disabled={columns.length <= 1}
-                      title="Kolonu sil"
+                      title="Delete column"
                     >
                       x
                     </button>
@@ -523,7 +523,7 @@ export function KanbanBoardComponent({ node, updateAttributes }: NodeViewProps) 
                               event.target.value
                             )
                           }
-                          placeholder="Gorev karti"
+                          placeholder="Task card"
                           rows={Math.max(
                             2,
                             Math.min(6, card.title.split("\n").length)
@@ -538,8 +538,8 @@ export function KanbanBoardComponent({ node, updateAttributes }: NodeViewProps) 
                             }}
                             type="button"
                             className="giraffle-kanban-card-grip"
-                            title="Karti surukle"
-                            aria-label="Karti surukle"
+                            title="Drag card"
+                            aria-label="Drag card"
                           >
                             ::
                           </button>
@@ -549,14 +549,14 @@ export function KanbanBoardComponent({ node, updateAttributes }: NodeViewProps) 
                               className="giraffle-kanban-card-action"
                               onClick={() => handleDuplicateCard(column.id, card)}
                             >
-                              Kopyala
+                              Copy
                             </button>
                             <button
                               type="button"
                               className="giraffle-kanban-card-action danger"
                               onClick={() => handleRemoveCard(column.id, card.id)}
                             >
-                              Sil
+                              Delete
                             </button>
                           </div>
                         </div>
@@ -583,7 +583,7 @@ export function KanbanBoardComponent({ node, updateAttributes }: NodeViewProps) 
                   className="giraffle-kanban-add-card"
                   onClick={() => handleAddCard(column.id)}
                 >
-                  + Kart ekle
+                  + Add card
                 </button>
               </div>
 
@@ -604,7 +604,7 @@ export function KanbanBoardComponent({ node, updateAttributes }: NodeViewProps) 
             className="giraffle-kanban-add-column"
             onClick={handleAddColumn}
           >
-            + Kolon
+            + Column
           </button>
         </div>
       </div>

@@ -87,8 +87,8 @@ export function NoteTopbar({
         <>
           <button
             type="button"
-            title="Not ikonunu değiştir"
-            aria-label="Not ikonunu değiştir"
+            title="Change note icon"
+            aria-label="Change note icon"
             onClick={onOpenIconPicker}
             style={{
               background: iconPickerPosition
@@ -125,7 +125,7 @@ export function NoteTopbar({
               materialClassName: "material-symbols-outlined",
               emojiStyle: { fontSize: "16px", lineHeight: 1 },
             })}
-            {isMobileViewport ? null : <span>İkon</span>}
+            {isMobileViewport ? null : <span>Icon</span>}
           </button>
 
           {isMobileViewport ? (
@@ -161,7 +161,7 @@ export function NoteTopbar({
                       whiteSpace: "nowrap",
                     }}
                   >
-                    {currentFolderId ? currentFolderLabel : "Kök klasör"}
+                    {currentFolderId ? currentFolderLabel : "Root folder"}
                   </span>
                   <ChevronDownIcon />
                 </button>
@@ -202,7 +202,7 @@ export function NoteTopbar({
                       }}
                       onClick={() => onSelectFolder(null)}
                     >
-                      Kök klasör
+                      Root folder
                     </button>
                     {folderOptions.map((folder) => (
                       <button
@@ -262,7 +262,7 @@ export function NoteTopbar({
                 }}
                 onClick={onGoDashboard}
               >
-                Çalışma alanı
+                Workspace
               </button>
               <span style={{ opacity: 0.4 }}>/</span>
               <div ref={folderMenuRef} style={{ position: "relative" }}>
@@ -286,7 +286,7 @@ export function NoteTopbar({
                   aria-expanded={isFolderMenuOpen}
                 >
                   <span>
-                    {currentFolderId ? currentFolderLabel : "Kök klasör"}
+                    {currentFolderId ? currentFolderLabel : "Root folder"}
                   </span>
                   <ChevronDownIcon />
                 </button>
@@ -326,7 +326,7 @@ export function NoteTopbar({
                       }}
                       onClick={() => onSelectFolder(null)}
                     >
-                      Kök klasör
+                      Root folder
                     </button>
                     {folderOptions.map((folder) => (
                       <button
@@ -390,8 +390,8 @@ export function NoteTopbar({
           {isMobileViewport ? (
             <button
               type="button"
-              title="Not işlemleri"
-              aria-label="Not işlemleri"
+              title="Note actions"
+              aria-label="Note actions"
               onClick={onOpenContextMenuFromTrigger}
               style={{
                 background: "none",
@@ -416,7 +416,7 @@ export function NoteTopbar({
             [
               {
                 icon: "share",
-                label: isPublished ? "Yayımdan kaldır" : "Yayımla",
+                label: isPublished ? "Unpublish" : "Publish",
                 onClick: onTogglePublish,
                 active: isPublished,
                 disabled: false,
@@ -424,7 +424,7 @@ export function NoteTopbar({
               },
               {
                 icon: "push_pin",
-                label: isPinned ? "Sabitlemeyi kaldır" : "Sabitle",
+                label: isPinned ? "Unpin" : "Pin",
                 onClick: onTogglePin,
                 active: isPinned,
                 disabled: false,
@@ -433,8 +433,8 @@ export function NoteTopbar({
               {
                 icon: "tune",
                 label: isMetaPanelOpen
-                  ? "Sayfa ayarlarını gizle"
-                  : "Sayfa ayarları",
+                  ? "Hide page settings"
+                  : "Page settings",
                 onClick: onToggleMetaPanel,
                 active: isMetaPanelOpen,
                 disabled: false,
@@ -450,7 +450,7 @@ export function NoteTopbar({
               },
               {
                 icon: "arrow_upward",
-                label: "Yukarı taşı",
+                label: "Move up",
                 onClick: onMoveUp,
                 active: false,
                 disabled: false,
@@ -458,7 +458,7 @@ export function NoteTopbar({
               },
               {
                 icon: "arrow_downward",
-                label: "Aşağı taşı",
+                label: "Move down",
                 onClick: onMoveDown,
                 active: false,
                 disabled: false,
@@ -466,7 +466,7 @@ export function NoteTopbar({
               },
               {
                 icon: "link",
-                label: "Not bağlantısını kopyala",
+                label: "Copy note link",
                 onClick: onCopyNoteLink,
                 active: false,
                 disabled: false,
@@ -474,7 +474,7 @@ export function NoteTopbar({
               },
               {
                 icon: "description",
-                label: "Markdown kopyala",
+                label: "Copy Markdown",
                 onClick: () => onCopyExport("markdown"),
                 active: false,
                 disabled: isExportPending,
@@ -482,7 +482,7 @@ export function NoteTopbar({
               },
               {
                 icon: "code",
-                label: "MDX kopyala",
+                label: "Copy MDX",
                 onClick: () => onCopyExport("mdx"),
                 active: false,
                 disabled: isExportPending,
@@ -490,7 +490,7 @@ export function NoteTopbar({
               },
               {
                 icon: "open_in_new",
-                label: "Yayımdaki sayfayı aç",
+                label: "Open published page",
                 onClick: onOpenPublishedPage,
                 active: false,
                 disabled: !isPublished,
@@ -498,7 +498,7 @@ export function NoteTopbar({
               },
               {
                 icon: "archive",
-                label: "Arşive taşı",
+                label: "Move to archive",
                 onClick: onArchive,
                 active: false,
                 disabled: false,

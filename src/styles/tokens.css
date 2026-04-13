@@ -18,7 +18,7 @@
 
 /* ==========================================================================
    WARM PAPER — Light theme (default)
-   Renk değerleri mevcut sistemden birebir alınmıştır, değiştirilmemiştir.
+   Color values were taken directly from the existing system, unchanged.
    ========================================================================== */
 
 :root {
@@ -285,7 +285,7 @@
   /* ── Layout ───────────────────────────────────────────────────────────── */
   --md-layout-sidebar-width: 318px;
 
-  /* ── Bridge aliases — tüm mevcut CSS bozulmasın ─────────────────────── */
+  /* ── Bridge aliases — so that existing CSS does not break ─────────────────────── */
   --bg-page:                  var(--md-ref-page-bg-mid);
   --bg-page-deep:             var(--md-ref-page-bg-deep);
   --surface-1:                var(--md-sys-color-surface-container-lowest);
@@ -362,8 +362,8 @@
 
 /* ==========================================================================
    MIDNIGHT GOLD — Dark theme (GiraffeGraph.com navy + gold — rafine edildi)
-   Arka plan renkleri GiraffeGraph.com'dan esinlenerek güncellendi.
-   Altın aksanlar korundu, navy-midnight zemin eklendi.
+   Background colors were updated with inspiration from GiraffeGraph.com.
+   Golden accents were preserved, and a navy-midnight base was added.
    ========================================================================== */
 
 /* ==========================================================================
@@ -659,7 +659,7 @@
   --md-ref-accent-rgb:       225 166 62;
   --md-ref-accent-warm-rgb:  240 193 95;
 
-  /* ── md.sys.elevation — dark mode (düz grafit, az gölge) ────────────── */
+  /* ── md.sys.elevation — dark mode (flat graphite, minimal shadow) ────────────── */
   --md-sys-elevation-soft:  0 1px 2px rgba(0, 0, 0, 0.24);
   --md-sys-elevation-panel: 0 12px 28px rgba(0, 0, 0, 0.24);
   --md-sys-elevation-lift:  0 20px 40px rgba(0, 0, 0, 0.3);

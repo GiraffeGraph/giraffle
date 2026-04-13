@@ -397,7 +397,7 @@ export function Sidebar({
 
   const handleStartCreateFolder = useCallback(() => {
     setIsCreatingFolder(true);
-    // Klasörler bölümü kapalıysa aç
+    // Open the folders section if it is collapsed
     setCollapsedSections((s) => ({ ...s, folders: false }));
   }, []);
 
@@ -441,42 +441,42 @@ export function Sidebar({
       isPinned?: boolean;
     }): ContextMenuItem[] => [
       {
-        label: "Notu aç",
-        hint: "Seçili notu düzenleyicide aç",
+        label: "Open note",
+        hint: "Open the selected note in the editor",
         onSelect: () => navigateToNote(note.id),
       },
       {
-        label: note.isPinned ? "Sabitlemeyi kaldır" : "Sabitle",
-        hint: "Notu sıralı listelerde üstte tut veya bırak",
+        label: note.isPinned ? "Unpin" : "Pin",
+        hint: "Keep the note at the top of ordered lists or release it",
         onSelect: async () => {
           await updateNoteAction(note.id, { isPinned: !note.isPinned });
           router.refresh();
         },
       },
       {
-        label: "Yukarı taşı",
-        hint: "Not sırasını bir adım yukarı al",
+        label: "Move up",
+        hint: "Move the note up by one position",
         onSelect: async () => {
           await moveNoteAction(note.id, "up");
           router.refresh();
         },
       },
       {
-        label: "Aşağı taşı",
-        hint: "Not sırasını bir adım aşağı al",
+        label: "Move down",
+        hint: "Move the note down by one position",
         onSelect: async () => {
           await moveNoteAction(note.id, "down");
           router.refresh();
         },
       },
       {
-        label: "Not bağlantısını kopyala",
-        hint: "Dahili not adresini panoya kopyala",
+        label: "Copy note link",
+        hint: "Copy the internal note address to the clipboard",
         onSelect: () => copyInternalLink(`/notes/${note.id}`),
       },
       {
-        label: "Arşive taşı",
-        hint: "Notu aktif listelerden kaldır",
+        label: "Move to archive",
+        hint: "Remove the note from active lists",
         tone: "danger" as const,
         onSelect: async () => {
           await archiveNoteAction(note.id);
@@ -653,9 +653,9 @@ export function Sidebar({
     const actionItems: CommandPaletteItem[] = [
       {
         id: "action-new-note",
-        group: "Hızlı işlemler",
-        title: "Yeni not oluştur",
-        description: "Boş bir not aç",
+        group: "Quick actions",
+        title: "Create new note",
+        description: "Open a blank note",
         icon: encodeMaterialSymbol("add"),
         hint: "Enter",
         onSelect: async () => {
@@ -665,9 +665,9 @@ export function Sidebar({
       },
       {
         id: "action-new-folder",
-        group: "Hızlı işlemler",
-        title: "Yeni klasör oluştur",
-        description: "Çalışma alanına yeni klasör ekle",
+        group: "Quick actions",
+        title: "Create new folder",
+        description: "Add a new folder to the workspace",
         icon: encodeMaterialSymbol("create_new_folder"),
         onSelect: async () => {
           closePalette();
@@ -676,9 +676,9 @@ export function Sidebar({
       },
       {
         id: "action-template-note",
-        group: "Hızlı işlemler",
-        title: "Şablondan not oluştur",
-        description: "Şablon seçiciyi aç",
+        group: "Quick actions",
+        title: "Create note from template",
+        description: "Open the template picker",
         icon: encodeMaterialSymbol("tooltip"),
         onSelect: async () => {
           setTemplatePickerOpenSignal((v) => v + 1);
@@ -686,9 +686,9 @@ export function Sidebar({
       },
       {
         id: "action-dashboard",
-        group: "Geçişler",
-        title: "Panoya git",
-        description: "Ana çalışma alanı görünümü",
+        group: "Navigation",
+        title: "Go to dashboard",
+        description: "Main workspace view",
         icon: encodeMaterialSymbol("dashboard"),
         onSelect: async () => {
           router.push("/dashboard");
@@ -696,7 +696,7 @@ export function Sidebar({
       },
       {
         id: "action-savanna",
-        group: "Geçişler",
+        group: "Navigation",
         title: "Savanna",
         description: "Open free-form infinite canvas",
         icon: encodeMaterialSymbol("landscape"),
@@ -706,9 +706,9 @@ export function Sidebar({
       },
       {
         id: "action-library",
-        group: "Geçişler",
-        title: "Kütüphane",
-        description: "Tüm notlar ve klasörleri tek sayfada aç",
+        group: "Navigation",
+        title: "Library",
+        description: "Open all notes and folders on one page",
         icon: encodeMaterialSymbol("library_books"),
         onSelect: async () => {
           router.push("/library");
@@ -716,9 +716,9 @@ export function Sidebar({
       },
       {
         id: "action-spotter",
-        group: "Geçişler",
+        group: "Navigation",
         title: "Ask Spotter",
-        description: "Insight spotter çalışma alanını aç",
+        description: "Open the insight spotter workspace",
         icon: encodeMaterialSymbol("smart_toy"),
         onSelect: async () => {
           router.push("/spotter");
@@ -726,9 +726,9 @@ export function Sidebar({
       },
       {
         id: "action-graph",
-        group: "Geçişler",
-        title: "Bağlantı ağına git",
-        description: "Not grafiği görünümü",
+        group: "Navigation",
+        title: "Go to graph view",
+        description: "Note graph view",
         icon: "__graph__",
         onSelect: async () => {
           router.push("/graph");
@@ -736,9 +736,9 @@ export function Sidebar({
       },
       {
         id: "action-inbox",
-        group: "Geçişler",
-        title: "Gelen kutusuna git",
-        description: "Klasörsüz notları aç",
+        group: "Navigation",
+        title: "Go to inbox",
+        description: "Open notes without folders",
         icon: encodeMaterialSymbol("inbox"),
         onSelect: async () => {
           router.push("/inbox");
@@ -746,9 +746,9 @@ export function Sidebar({
       },
       {
         id: "action-search",
-        group: "Geçişler",
-        title: "Arama çalışma alanını aç",
-        description: "Filtreli arama sayfası",
+        group: "Navigation",
+        title: "Open search workspace",
+        description: "Filtered search page",
         icon: encodeMaterialSymbol("search"),
         onSelect: async () => {
           router.push("/search");
@@ -756,9 +756,9 @@ export function Sidebar({
       },
       {
         id: "action-discover",
-        group: "Geçişler",
-        title: "Keşfet akışını aç",
-        description: "Haber ve dış dünya akışını gör",
+        group: "Navigation",
+        title: "Open discover feed",
+        description: "See news and external world feeds",
         icon: encodeMaterialSymbol("newspaper"),
         onSelect: async () => {
           router.push("/discover");
@@ -766,9 +766,9 @@ export function Sidebar({
       },
       {
         id: "action-templates",
-        group: "Geçişler",
-        title: "Şablon kütüphanesi",
-        description: "Şablon yönetim alanını aç",
+        group: "Navigation",
+        title: "Template library",
+        description: "Open the template management area",
         icon: encodeMaterialSymbol("tooltip"),
         onSelect: async () => {
           router.push("/templates");
@@ -776,9 +776,9 @@ export function Sidebar({
       },
       {
         id: "action-publish",
-        group: "Geçişler",
-        title: "Yayın alanı",
-        description: "Yayımdaki notları ve dışa aktarımları gör",
+        group: "Navigation",
+        title: "Publishing area",
+        description: "See published notes and exports",
         icon: encodeMaterialSymbol("publish"),
         onSelect: async () => {
           router.push("/publish");
@@ -786,9 +786,9 @@ export function Sidebar({
       },
       {
         id: "action-suggestions",
-        group: "Geçişler",
-        title: "Öneri akışını aç",
-        description: "Not ve klasör önerilerini gör",
+        group: "Navigation",
+        title: "Open suggestions feed",
+        description: "See note and folder suggestions",
         icon: encodeMaterialSymbol("auto_awesome"),
         onSelect: async () => {
           router.push("/suggestions");
@@ -796,9 +796,9 @@ export function Sidebar({
       },
       {
         id: "action-settings",
-        group: "Geçişler",
-        title: "Ayarlar",
-        description: "Tema, yerel kuyruk ve tercihleri aç",
+        group: "Navigation",
+        title: "Settings",
+        description: "Open theme, local queue, and preferences",
         icon: encodeMaterialSymbol("settings"),
         onSelect: async () => {
           router.push("/settings");
@@ -806,9 +806,9 @@ export function Sidebar({
       },
       {
         id: "action-account",
-        group: "Geçişler",
-        title: "Hesap",
-        description: "Profil ve şifre işlemleri",
+        group: "Navigation",
+        title: "Account",
+        description: "Profile and password settings",
         icon: encodeMaterialSymbol("account_circle"),
         onSelect: async () => {
           router.push("/account");
@@ -825,9 +825,9 @@ export function Sidebar({
       .slice(0, normalizedPaletteQuery ? 8 : 5)
       .map<CommandPaletteItem>((n) => ({
         id: `note-${n.id}`,
-        group: "Notlar",
+        group: "Notes",
         title: n.title,
-        description: "Notu düzenleyicide aç",
+        description: "Open the note in the editor",
         icon: n.icon ?? encodeMaterialSymbol("description"),
         onSelect: async () => {
           navigateToNote(n.id);
@@ -843,9 +843,9 @@ export function Sidebar({
       .slice(0, normalizedPaletteQuery ? 8 : 5)
       .map<CommandPaletteItem>((f) => ({
         id: `folder-${f.id}`,
-        group: "Klasörler",
+        group: "Folders",
         title: f.name,
-        description: "Klasör görünümünü aç",
+        description: "Open folder view",
         icon: f.icon ?? encodeMaterialSymbol("folder"),
         onSelect: async () => {
           router.push(`/folders/${f.id}`);
@@ -861,9 +861,9 @@ export function Sidebar({
       .slice(0, normalizedPaletteQuery ? 8 : 5)
       .map<CommandPaletteItem>((t) => ({
         id: `tag-${t.id}`,
-        group: "Etiketler",
+        group: "Tags",
         title: `#${t.name}`,
-        description: `${t.noteCount} not içeren etiket`,
+        description: `${t.noteCount} tag containing notes`,
         icon: "#",
         onSelect: async () => {
           router.push(`/tags/${t.name}`);
@@ -881,10 +881,10 @@ export function Sidebar({
       .slice(0, normalizedPaletteQuery ? 6 : 4)
       .map<CommandPaletteItem>((t) => ({
         id: `template-${t.id}`,
-        group: "Şablonlar",
+        group: "Templates",
         title: t.name,
         description:
-          t.description ?? `${getTemplateCategoryLabel(t.category)} şablonu`,
+          t.description ?? `${getTemplateCategoryLabel(t.category)} template`,
         icon: t.icon ?? encodeMaterialSymbol("tooltip"),
         onSelect: async () => {
           router.push(`/templates?selected=${t.id}`);
@@ -902,7 +902,7 @@ export function Sidebar({
         id: `spotter-session-${session.id}`,
         group: "Spotter",
         title: session.title,
-        description: "Sohbet oturumunu aç",
+        description: "Open chat session",
         icon: encodeMaterialSymbol("forum"),
         onSelect: async () => {
           navigateToSpotterSession(session.id);
@@ -955,7 +955,7 @@ export function Sidebar({
       },
       {
         icon: <FolderNewIcon />,
-        label: "Yeni klasör",
+        label: "New folder",
         onClick: handleStartCreateFolder,
       },
     ],
@@ -991,7 +991,7 @@ export function Sidebar({
               type="button"
               className="sidebar-compact-button sidebar-compact-brand"
               onClick={toggleSidebarCompact}
-              aria-label="Sidebarı genişlet"
+              aria-label="Expand sidebar"
             >
               <Image
                 src="/apple-icon.png"
@@ -1004,7 +1004,7 @@ export function Sidebar({
               type="button"
               className="sidebar-compact-button"
               onClick={() => openPalette()}
-              aria-label="Komut paletini aç"
+              aria-label="Open command palette"
             >
               <span className="material-symbols-outlined sm" aria-hidden="true">
                 &#xE8B6;
@@ -1014,7 +1014,7 @@ export function Sidebar({
               type="button"
               className="sidebar-compact-button"
               onClick={handleCreateNote}
-              aria-label="Yeni not oluştur"
+              aria-label="Create new note"
             >
               <PlusIcon />
             </button>
@@ -1048,8 +1048,8 @@ export function Sidebar({
                   onClick={toggleMobileSidebar}
                   aria-label={
                     isMobileSidebarOpen
-                      ? "Kenar menüsünü kapat"
-                      : "Kenar menüsünü aç"
+                      ? "Close side menu"
+                      : "Open side menu"
                   }
                 >
                   <span
@@ -1106,7 +1106,7 @@ export function Sidebar({
                 variant="text"
                 icon
                 onClick={handleCreateNote}
-                aria-label="Yeni not oluştur"
+                aria-label="Create new note"
               >
                 <PlusIcon />
               </Button>
@@ -1115,7 +1115,7 @@ export function Sidebar({
                   variant="text"
                   icon
                   onClick={toggleSidebarCompact}
-                  aria-label="Sidebarı daralt"
+                  aria-label="Collapse sidebar"
                 >
                   <ChevronLeftIcon />
                 </Button>
@@ -1131,7 +1131,7 @@ export function Sidebar({
                   type="button"
                   className="sidebar-search-trigger"
                   onClick={() => openPalette()}
-                  aria-label="Arama veya komut paleti"
+                  aria-label="Search or command palette"
                 >
                   <span
                     className="material-symbols-outlined sm"
@@ -1152,7 +1152,7 @@ export function Sidebar({
                 <div className="sidebar-primary-nav">
                   {(
                     [
-                      { path: "/dashboard", icon: "\uE88A", label: "Pano" },
+                      { path: "/dashboard", icon: "\uE88A", label: "Dashboard" },
                       {
                         path: "/savanna",
                         icon: "landscape",
@@ -1161,13 +1161,13 @@ export function Sidebar({
                       {
                         path: "/inbox",
                         icon: "\uE156",
-                        label: "Gelen kutusu",
+                        label: "Inbox",
                         badge: inboxCount > 0 ? inboxCount : undefined,
                       },
                       {
                         path: "/library",
                         icon: "library_books",
-                        label: "Kütüphane",
+                        label: "Library",
                       },
                       {
                         path: "/tower-matrix",
@@ -1182,7 +1182,7 @@ export function Sidebar({
                       {
                         path: "/discover",
                         icon: "newspaper",
-                        label: "Keşfet",
+                        label: "Discover",
                       },
                     ] as Array<{
                       path: string;
@@ -1235,8 +1235,8 @@ export function Sidebar({
                         type="button"
                         className="sidebar-nav-menu sidebar-spotter-new-chat"
                         onClick={() => router.push("/spotter")}
-                        aria-label="Yeni Spotter sohbeti"
-                        title="Yeni sohbet"
+                        aria-label="New Spotter chat"
+                        title="New chat"
                       >
                         <PlusIcon />
                       </button>
@@ -1245,7 +1245,7 @@ export function Sidebar({
                     <div className="sidebar-nested-items sidebar-spotter-sessions">
                       {spotterSessions.length === 0 ? (
                         <div className="sidebar-session-empty">
-                          Henüz sohbet yok.
+                          No chats yet.
                         </div>
                       ) : (
                         spotterSessions.map((session) => (
@@ -1277,7 +1277,7 @@ export function Sidebar({
 
                 {/* Folders */}
                 <SidebarGroup
-                  label="Klasörler"
+                  label="Folders"
                   icon={
                     <span
                       className="material-symbols-outlined sm"
@@ -1294,7 +1294,7 @@ export function Sidebar({
                   <div ref={folderTreeRef} className="sidebar-folder-tree">
                     {isCreatingFolder && (
                       <div className="sidebar-inline-creator">
-                        {/* İkon alanı — .sidebar-folder-icon-btn ile aynı genişlik */}
+                        {/* Icon area — same width as .sidebar-folder-icon-btn */}
                         <span
                           className="sidebar-folder-icon-btn sidebar-folder-icon-btn--static"
                           aria-hidden="true"
@@ -1307,8 +1307,8 @@ export function Sidebar({
                           autoFocus
                           type="text"
                           className="sidebar-inline-creator-input"
-                          defaultValue="Yeni Klasör"
-                          placeholder="Klasör adı"
+                          defaultValue="New Folder"
+                          placeholder="Folder name"
                           onFocus={(e) => {
                             folderCreationHandledRef.current = false;
                             e.currentTarget.select();
@@ -1340,7 +1340,7 @@ export function Sidebar({
                     )}
                     {filteredFolders.length === 0 ? (
                       <div className="sidebar-empty">
-                        {hasQuery ? "Eşleşen klasör yok." : "Henüz klasör yok."}
+                        {hasQuery ? "No matching folders." : "No folders yet."}
                       </div>
                     ) : (
                       filteredFolders.map((folder) => (
@@ -1372,7 +1372,7 @@ export function Sidebar({
 
                 {/* Tags */}
                 <SidebarGroup
-                  label="Etiketler"
+                  label="Tags"
                   icon={
                     <span
                       className="material-symbols-outlined sm"
@@ -1389,8 +1389,8 @@ export function Sidebar({
                     {filteredTags.length === 0 ? (
                       <div className="sidebar-empty">
                         {hasQuery
-                          ? "Eşleşen etiket yok."
-                          : "Henüz indekslenmiş etiket yok."}
+                          ? "No matching tags."
+                          : "No indexed tags yet."}
                       </div>
                     ) : (
                       filteredTags.map((tag) => (
@@ -1415,7 +1415,7 @@ export function Sidebar({
 
                 {/* Recent notes */}
                 <SidebarGroup
-                  label={hasQuery ? "Not eşleşmeleri" : "Son notlar"}
+                  label={hasQuery ? "Matching notes" : "Recent notes"}
                   icon={
                     <span
                       className="material-symbols-outlined sm"
@@ -1432,8 +1432,8 @@ export function Sidebar({
                     {filteredNotes.length === 0 ? (
                       <div className="sidebar-empty">
                         {hasQuery
-                          ? "Eşleşen not yok."
-                          : "Henüz not yok. İlk notunu oluştur."}
+                          ? "No matching notes."
+                          : "No notes yet. Create your first note."}
                       </div>
                     ) : (
                       filteredNotes.map((note) => (
@@ -1465,7 +1465,7 @@ export function Sidebar({
       <div className="sidebar-template-host" aria-hidden="true">
         <TemplatePicker
           templates={templates}
-          buttonLabel="Şablon"
+          buttonLabel="Template"
           buttonClassName="sidebar-template-host-button"
           openSignal={templatePickerOpenSignal}
         />
@@ -1477,7 +1477,7 @@ export function Sidebar({
           onMouseDown={handleSidebarResizeStart}
           role="separator"
           aria-orientation="vertical"
-          aria-label="Sidebar genişliğini değiştir"
+          aria-label="Resize sidebar"
         />
       ) : null}
 
@@ -1485,7 +1485,7 @@ export function Sidebar({
         <button
           type="button"
           className="sidebar-mobile-backdrop"
-          aria-label="Kenar menüsünü kapat"
+          aria-label="Close side menu"
           onClick={() => setIsMobileSidebarOpen(false)}
         />
       ) : null}

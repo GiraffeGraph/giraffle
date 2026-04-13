@@ -240,10 +240,10 @@ export function LibraryWorkspace({
 
   const topbarActions = (
     <>
-      <button type="button" className={`${styles.iconButton} ${filterPanelVisible ? styles.iconButtonActive : ""}`} onClick={() => setFilterPanelVisible((current) => !current)} title="Filtreler"><span className="material-symbols-outlined">filter_alt</span></button>
-      <button type="button" className={`${styles.iconButton} ${searchVisible ? styles.iconButtonActive : ""}`} onClick={() => setSearchVisible((current) => !current)} title="Arama"><span className="material-symbols-outlined">search</span></button>
-      <button type="button" className={`${styles.iconButton} ${compactMode ? styles.iconButtonActive : ""}`} onClick={() => setCompactMode((current) => !current)} title="Sıkılık"><span className="material-symbols-outlined">density_small</span></button>
-      <Button variant="filled" leadingIcon="add" onClick={handleCreatePage} disabled={isCreatingPage}>{isCreatingPage ? "Oluşturuluyor..." : "Yeni"}</Button>
+      <button type="button" className={`${styles.iconButton} ${filterPanelVisible ? styles.iconButtonActive : ""}`} onClick={() => setFilterPanelVisible((current) => !current)} title="Filters"><span className="material-symbols-outlined">filter_alt</span></button>
+      <button type="button" className={`${styles.iconButton} ${searchVisible ? styles.iconButtonActive : ""}`} onClick={() => setSearchVisible((current) => !current)} title="Search"><span className="material-symbols-outlined">search</span></button>
+      <button type="button" className={`${styles.iconButton} ${compactMode ? styles.iconButtonActive : ""}`} onClick={() => setCompactMode((current) => !current)} title="Density"><span className="material-symbols-outlined">density_small</span></button>
+      <Button variant="filled" leadingIcon="add" onClick={handleCreatePage} disabled={isCreatingPage}>{isCreatingPage ? "Creating..." : "New"}</Button>
     </>
   );
 
@@ -251,19 +251,19 @@ export function LibraryWorkspace({
     <div className={styles.root}>
       <PageTopbar
         icon="library_books"
-        label="Kütüphane"
+        label="Library"
         meta={topbarMeta}
         actions={topbarActions}
       />
       <section className={styles.surface}>
         <div className={styles.metaCompact}>
-          <span>{visibleRows.length} kayıt</span>
+          <span>{visibleRows.length} records</span>
           <span className={styles.metaDot} />
-          <span>{activeRow?.title ?? "Seçim yok"}</span>
+          <span>{activeRow?.title ?? "No selection"}</span>
           <span className={styles.metaDot} />
           <span>{totalCanvases} canvas</span>
           <span className={styles.metaDot} />
-          <span>{totalAssets} dosya</span>
+          <span>{totalAssets} files</span>
         </div>
 
         {selectedNoteEntries.length > 0 ? (
@@ -282,22 +282,22 @@ export function LibraryWorkspace({
 
         {(searchVisible || filterPanelVisible) ? (
           <div className={styles.controls}>
-            {searchVisible ? <div className={styles.searchRow}><input className={styles.searchField} value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Klasör, not, etiket..." /></div> : null}
+            {searchVisible ? <div className={styles.searchRow}><input className={styles.searchField} value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Folder, note, tag..." /></div> : null}
             {filterPanelVisible ? (
               <div className={styles.facetPanel}>
                 <div className={styles.facetSection}>
                   <div className={styles.facetSectionHeader}>
-                    <span className={styles.facetTitle}>Hızlı filtreler</span>
-                    <button type="button" className={styles.clearFiltersButton} onClick={() => { setActiveContentTypes([]); setActiveFlags([]); setActiveCategoryIds([]); setActiveTagIds([]); }}>Temizle</button>
+                    <span className={styles.facetTitle}>Quick filters</span>
+                    <button type="button" className={styles.clearFiltersButton} onClick={() => { setActiveContentTypes([]); setActiveFlags([]); setActiveCategoryIds([]); setActiveTagIds([]); }}>Clear</button>
                   </div>
                   <div className={styles.filterRow}>{LIBRARY_FLAG_FILTERS.map((filter) => <button key={filter.id} type="button" className={`${styles.filterChip} ${activeFlags.includes(filter.id) ? styles.filterChipActive : ""}`} onClick={() => toggleFlag(filter.id)}>{filter.label}</button>)}</div>
                 </div>
                 <div className={styles.facetSection}>
-                  <span className={styles.facetTitle}>İçerik türleri</span>
+                  <span className={styles.facetTitle}>Content types</span>
                   <div className={styles.filterRow}>{LIBRARY_CONTENT_FILTERS.map((filter) => <button key={filter.id} type="button" className={`${styles.filterChip} ${activeContentTypes.includes(filter.id) ? styles.filterChipActive : ""}`} onClick={() => toggleContentType(filter.id)}>{filter.label}</button>)}</div>
                 </div>
-                {categories.length > 0 ? <div className={styles.facetSection}><span className={styles.facetTitle}>Kategoriler</span><div className={styles.filterRow}>{categories.map((category) => <button key={category.id} type="button" className={`${styles.filterChip} ${activeCategoryIds.includes(category.id) ? styles.filterChipActive : ""}`} onClick={() => toggleCategory(category.id)} style={activeCategoryIds.includes(category.id) ? getNoteCategoryColorTokens(category.color) : undefined}>{category.icon ? <span className="material-symbols-outlined sm">{category.icon}</span> : null}{category.name}<span className={styles.facetCount}>{category.noteCount}</span></button>)}</div></div> : null}
-                {tags.length > 0 ? <div className={styles.facetSection}><span className={styles.facetTitle}>Etiketler</span><div className={styles.filterRow}>{tags.slice(0, 16).map((tag) => <button key={tag.id} type="button" className={`${styles.filterChip} ${activeTagIds.includes(tag.id) ? styles.filterChipActive : ""}`} onClick={() => toggleTag(tag.id)}>#{tag.name}<span className={styles.facetCount}>{tag.noteCount}</span></button>)}</div></div> : null}
+                {categories.length > 0 ? <div className={styles.facetSection}><span className={styles.facetTitle}>Categories</span><div className={styles.filterRow}>{categories.map((category) => <button key={category.id} type="button" className={`${styles.filterChip} ${activeCategoryIds.includes(category.id) ? styles.filterChipActive : ""}`} onClick={() => toggleCategory(category.id)} style={activeCategoryIds.includes(category.id) ? getNoteCategoryColorTokens(category.color) : undefined}>{category.icon ? <span className="material-symbols-outlined sm">{category.icon}</span> : null}{category.name}<span className={styles.facetCount}>{category.noteCount}</span></button>)}</div></div> : null}
+                {tags.length > 0 ? <div className={styles.facetSection}><span className={styles.facetTitle}>Tags</span><div className={styles.filterRow}>{tags.slice(0, 16).map((tag) => <button key={tag.id} type="button" className={`${styles.filterChip} ${activeTagIds.includes(tag.id) ? styles.filterChipActive : ""}`} onClick={() => toggleTag(tag.id)}>#{tag.name}<span className={styles.facetCount}>{tag.noteCount}</span></button>)}</div></div> : null}
               </div>
             ) : null}
           </div>
@@ -362,7 +362,7 @@ export function LibraryWorkspace({
                       </div>
                     </div>
                   );
-                }) : <div className={styles.empty}><div className={styles.emptyTitle}>Bu görünüm boş</div><div className={styles.emptyBody}>Sekmeyi değiştir veya filtreleri azalt.</div></div>}
+                }) : <div className={styles.empty}><div className={styles.emptyTitle}>This view is empty</div><div className={styles.emptyBody}>Switch tabs or reduce the filters.</div></div>}
               </div>
             </div>
           </div>
@@ -440,18 +440,18 @@ function formatRelativeTime(input: string) {
 }
 
 function formatType(type: LibraryEntry["type"]) {
-  if (type === "folder") return "Klasör";
-  if (type === "template") return "Şablon";
+  if (type === "folder") return "Folder";
+  if (type === "template") return "Template";
   if (type === "canvas") return "Canvas";
-  if (type === "asset") return "Dosya";
-  if (type === "smart_group") return "Grup";
-  return "Not";
+  if (type === "asset") return "File";
+  if (type === "smart_group") return "Group";
+  return "Note";
 }
 
 function formatVisibility(visibility: LibraryEntry["visibility"]) {
-  if (visibility === "published") return "Yayında";
-  if (visibility === "private") return "Özel";
-  return "İç";
+  if (visibility === "published") return "Published";
+  if (visibility === "private") return "Private";
+  return "Internal";
 }
 
 function getDropFolderId(entry: LibraryEntry) {

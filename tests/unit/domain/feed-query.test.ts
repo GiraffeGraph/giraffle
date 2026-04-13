@@ -7,19 +7,19 @@ import {
 } from "@/domain/feed/feed.query";
 
 describe("feed query helpers", () => {
-  it("normalizes Turkish text for matching", () => {
-    expect(normalizeFeedText("  Yapay Zekâ & Üretken AI!!  ")).toBe(
-      "yapay zeka uretken ai"
+  it("normalizes text for matching", () => {
+    expect(normalizeFeedText("  Artificial Intelligence & Generative AI!!  ")).toBe(
+      "artificial intelligence generative ai"
     );
   });
 
   it("drops stop words and short tokens", () => {
-    expect(tokenizeFeedText("En güncel yapay zeka ve veri mühendisliği notları")).toEqual([
-      "yapay",
-      "zeka",
-      "veri",
-      "muhendisligi",
-      "notlari",
+    expect(tokenizeFeedText("The latest artificial intelligence and data engineering notes")).toEqual([
+      "artificial",
+      "intelligence",
+      "data",
+      "engineering",
+      "notes",
     ]);
   });
 
@@ -36,34 +36,34 @@ describe("feed query helpers", () => {
 
   it("scores exact phrase and keyword matches higher", () => {
     const profile = buildFeedQueryProfile({
-      titles: ["Yapay zeka ajanları"],
+      titles: ["AI agents"],
       tags: ["observability", "llm"],
       folderNames: ["AI Research"],
     });
 
     const strongMatch = scoreFeedTextMatch(
       profile,
-      "AI Research içinde LLM observability ve yapay zeka ajanları"
+      "LLM observability and AI agents inside AI Research"
     );
-    const weakMatch = scoreFeedTextMatch(profile, "Frontend tasarım trendleri");
+    const weakMatch = scoreFeedTextMatch(profile, "Frontend design trends");
 
     expect(strongMatch.score).toBeGreaterThan(weakMatch.score);
     expect(strongMatch.matchedKeywords.length).toBeGreaterThan(0);
-    expect(strongMatch.matchedPhrases).toContain("Yapay zeka ajanları");
+    expect(strongMatch.matchedPhrases).toContain("AI agents");
   });
 
   it("supports regex-like and fuzzy keyword matching", () => {
     const profile = buildFeedQueryProfile({
-      tags: ["observability", "analiz"],
+      tags: ["observability", "analysis"],
     });
 
     const match = scoreFeedTextMatch(
       profile,
-      "Sistemde observabilitynin etkisini analizleriyle inceledik",
+      "We examined the impact of observability in the system with analysis",
     );
 
     expect(match.matchedKeywords).toContain("observability");
-    expect(match.matchedKeywords).toContain("analiz");
+    expect(match.matchedKeywords).toContain("analysis");
     expect(match.score).toBeGreaterThan(0);
   });
 });

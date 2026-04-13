@@ -31,7 +31,7 @@ describe("POST /api/feeds/refresh", () => {
 
     expect(response.status).toBe(503);
     expect(await response.json()).toEqual({
-      error: "FEED_REFRESH_SECRET tanımlı değil.",
+      error: "FEED_REFRESH_SECRET is not configured.",
     });
   });
 
@@ -44,7 +44,7 @@ describe("POST /api/feeds/refresh", () => {
     );
 
     expect(response.status).toBe(401);
-    expect(await response.json()).toEqual({ error: "Yetkisiz istek." });
+    expect(await response.json()).toEqual({ error: "Unauthorized request." });
     expect(refreshDueFeedsGlobally).not.toHaveBeenCalled();
   });
 

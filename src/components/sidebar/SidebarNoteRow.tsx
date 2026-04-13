@@ -106,9 +106,9 @@ export function SidebarNoteRow({
             fallback: <span className="material-symbols-outlined sm" aria-hidden="true">description</span>,
           })}
         </span>
-        <span className="sidebar-item-label">{note.title || "Adsız"}</span>
+        <span className="sidebar-item-label">{note.title || "Untitled"}</span>
         {note.isPinned ? (
-          <span className="sidebar-pin-indicator" aria-label="Sabitlenmiş" title="Sabitlenmiş">
+          <span className="sidebar-pin-indicator" aria-label="Pinned" title="Pinned">
             <PinIcon />
           </span>
         ) : null}
@@ -118,8 +118,8 @@ export function SidebarNoteRow({
           type="button"
           className="context-trigger sidebar-row-action"
           onClick={(event) => onTriggerMenuOpen(event, note)}
-          aria-label={`${note.title} menüsünü aç`}
-          title="Seçenekler"
+          aria-label={`${note.title} open menu`}
+          title="Options"
         >
           <MoreHorizontalIcon />
         </button>

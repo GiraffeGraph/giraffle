@@ -20,8 +20,8 @@
 
 /* =============================================================
    SIDEBAR — UNIFIED FINAL
-   Bu blok tüm üstteki sidebar stillerini geçersiz kılar.
-   Tek bir görsel dil: sidebar-item temelli, her şey tutarlı.
+   This block overrides all sidebar styles above.
+   One visual language: sidebar-item based, everything consistent.
    ============================================================= */
 
 /* --- Ortak item temeli ---------------------------------------- */
@@ -46,7 +46,7 @@
   position: relative;
 }
 
-/* Pseudo-element sıfırla */
+/* Reset pseudo-element */
 .sidebar-item::before,
 .sidebar-tag-item::before,
 .sidebar-rail-item::before { display: none; }
@@ -218,7 +218,7 @@
   padding: 0;
 }
 
-/* Pano / Gelen Kutusu ile aynı görünüm */
+/* Same appearance as Dashboard / Inbox */
 .sidebar-group-toggle,
 .sidebar-group-title {
   flex: 1;
@@ -258,7 +258,7 @@
   padding-right: 4px;
 }
 
-/* VS Code tarzı grup aksiyon ikonları */
+/* VS Code-style group action icons */
 .sidebar-group-action {
   display: inline-flex;
   align-items: center;
@@ -388,7 +388,7 @@
   font-size: 13px;
   font-family: inherit;
   outline: none;
-  padding: 3px 6px 3px 2px;  /* .sidebar-folder-name ile aynı */
+  padding: 3px 6px 3px 2px;  /* same as .sidebar-folder-name */
 }
 
 .sidebar-inline-creator-input::placeholder {
@@ -445,7 +445,7 @@
   height: 18px;
 }
 
-/* Inline creator — istatik ikon alanı */
+/* Inline creator — static icon area */
 .sidebar-folder-icon-btn--static {
   cursor: default;
   pointer-events: none;
@@ -513,7 +513,7 @@
   gap: 1px;
 }
 
-/* İçerideki not satırlarının sidebar-folder-children etkisini sıfırla */
+/* Reset sidebar-folder-children effect for nested note rows */
 .sidebar-folder-contents .sidebar-folder-children {
   margin-left: 0;
   padding-left: 20px;

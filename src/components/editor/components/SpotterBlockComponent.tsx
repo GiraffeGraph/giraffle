@@ -90,7 +90,7 @@ export function SpotterBlockComponent(props: NodeViewProps) {
                 type="text"
                 value={prompt}
                 onChange={handlePromptChange}
-                placeholder="Spotter'a bir istek yaz..."
+                placeholder="Write a prompt for Spotter..."
                 className="GiraffleSpotter_Input"
                 onKeyDown={(event) => {
                   if (event.key === "Enter") {
@@ -103,7 +103,7 @@ export function SpotterBlockComponent(props: NodeViewProps) {
                 className="GiraffleSpotter_BtnRun"
                 disabled={!prompt.trim()}
               >
-                Çalıştır
+                Run
               </button>
             </div>
           ) : null}
@@ -111,7 +111,7 @@ export function SpotterBlockComponent(props: NodeViewProps) {
           {status === "thinking" ? (
             <div className="GiraffleSpotter_StatusRow">
               <span className="GiraffleSpotter_Spinner animate-spin inline-block">⏳</span>
-              Spotter düşünüyor...
+              Spotter is thinking...
             </div>
           ) : null}
 
@@ -125,13 +125,13 @@ export function SpotterBlockComponent(props: NodeViewProps) {
           {status === "done" ? (
             <div className="GiraffleSpotter_ActionsRow">
               <button onClick={handleApply} className="GiraffleSpotter_BtnAction">
-                Uygula
+                Apply
               </button>
               <button
                 onClick={deleteNode}
                 className="GiraffleSpotter_BtnAction ghost"
               >
-                Vazgeç
+                Cancel
               </button>
             </div>
           ) : null}

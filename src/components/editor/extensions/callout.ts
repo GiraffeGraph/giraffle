@@ -24,7 +24,7 @@ export const CalloutNode = Node.create({
         default: "info",
       },
       title: {
-        default: "Vurgu",
+        default: "Callout",
       },
     };
   },
@@ -43,7 +43,7 @@ export const CalloutNode = Node.create({
     const title =
       typeof HTMLAttributes.title === "string"
         ? HTMLAttributes.title
-        : "Vurgu";
+        : "Callout";
 
     return [
       "div",
@@ -66,7 +66,7 @@ export const CalloutNode = Node.create({
             type: this.name,
             attrs: {
               tone: attributes.tone ?? "info",
-              title: attributes.title ?? "Vurgu",
+              title: attributes.title ?? "Callout",
             },
             content: [
               {

@@ -9,12 +9,12 @@ export default async function InboxPage() {
 
   return (
     <>
-      <PageTopbar icon="inbox" label="Gelen kutusu" />
+      <PageTopbar icon="inbox" label="Inbox" />
       <div className="dashboard search-page app-page">
 
       <section className="search-section">
         <div className="dashboard-section-head search-section-head">
-          <span className="dashboard-section-kicker">Notlar</span>
+          <span className="dashboard-section-kicker">Notes</span>
           <span className="search-section-count">{inboxNotes.length}</span>
         </div>
 
@@ -22,7 +22,7 @@ export default async function InboxPage() {
           {inboxNotes.length === 0 ? (
             <div className="dashboard-empty">
               <p className="dashboard-empty-text">
-                Gelen kutusu şu an boş. Klasörsüz oluşturduğun notlar burada görünecek.
+                Your inbox is empty right now. Notes you create without a folder will appear here.
               </p>
             </div>
           ) : (
@@ -30,8 +30,8 @@ export default async function InboxPage() {
               <Link key={note.id} href={`/notes/${note.id}`} className="search-result-card">
                 <span className="search-result-title">{note.title}</span>
                 <span className="search-result-meta">
-                  {note.isPinned ? "Pinli · " : ""}
-                  Son güncelleme {formatDate(note.updatedAt)}
+                  {note.isPinned ? "Pinned · " : ""}
+                  Last updated {formatDate(note.updatedAt)}
                 </span>
               </Link>
             ))

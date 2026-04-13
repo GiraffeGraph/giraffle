@@ -434,8 +434,8 @@ export function markdownToBlocks(markdown: string): TiptapDocument {
 function toTableRows(value: unknown): string[][] {
   if (!Array.isArray(value)) {
     return [
-      ["Sütun 1", "Sütun 2"],
-      ["Değer", "Değer"],
+      ["Column 1", "Column 2"],
+      ["Value", "Value"],
     ];
   }
 
@@ -533,7 +533,7 @@ function kanbanToMarkdown(node: BlockNodeContent): string {
       const heading =
         typeof column.title === "string" && column.title.trim()
           ? column.title
-          : "Kolon";
+          : "Column";
       const cards = Array.isArray(column.cards) ? column.cards : [];
       const lines = cards
         .filter((card): card is Record<string, unknown> => isRecord(card))

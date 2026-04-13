@@ -80,7 +80,7 @@ function TopbarColorPicker({
       <button
         className={`cc-color-dot cc-color-dot--none${value === null ? " cc-color-dot--active" : ""}`}
         type="button"
-        title="Renksiz"
+        title="No color"
         onClick={() => onChange(null)}
       />
       {COAT_CELL_COLORS.map((c) => (
@@ -136,7 +136,7 @@ function CanvasCell({
       <input
         className="cc-cell-title"
         value={title}
-        placeholder="Başlık…"
+        placeholder="Title…"
         onChange={(e) => setTitle(e.target.value)}
         onBlur={() => onTitleChange(cell.id, title)}
         onClick={(e) => e.stopPropagation()}
@@ -226,7 +226,7 @@ export function CoatCanvasEditor({ canvas }: { canvas: CoatCanvas }) {
     const newCell: CoatCell = {
       id: cellId,
       canvasId: canvas.id,
-      title: "Yeni Kutu",
+      title: "New Box",
       content: "",
       colSpan,
       rowSpan,
@@ -347,7 +347,7 @@ export function CoatCanvasEditor({ canvas }: { canvas: CoatCanvas }) {
                 onClick={() => setShowAddPopover((v) => !v)}
               >
                 <span className="material-symbols-outlined" style={{ fontSize: 15 }}>add</span>
-                Kutu ekle
+                Add box
               </button>
               <button
                 className="cc-btn cc-btn--danger cc-btn--sm"
@@ -355,7 +355,7 @@ export function CoatCanvasEditor({ canvas }: { canvas: CoatCanvas }) {
                 onClick={handleRemoveSelected}
               >
                 <span className="material-symbols-outlined" style={{ fontSize: 15 }}>delete</span>
-                Sil
+                Delete
               </button>
             </>
           ) : (
@@ -366,7 +366,7 @@ export function CoatCanvasEditor({ canvas }: { canvas: CoatCanvas }) {
                 onClick={() => setShowAddPopover((v) => !v)}
               >
                 <span className="material-symbols-outlined" style={{ fontSize: 15 }}>add</span>
-                Kutu ekle
+                Add box
               </button>
               <button
                 className="cc-btn cc-btn--danger cc-btn--sm"
@@ -375,7 +375,7 @@ export function CoatCanvasEditor({ canvas }: { canvas: CoatCanvas }) {
                 disabled={isDeleting}
               >
                 <span className="material-symbols-outlined" style={{ fontSize: 15 }}>delete_forever</span>
-                {isDeleting ? "Siliniyor…" : "Canvas sil"}
+                {isDeleting ? "Deleting…" : "Delete canvas"}
               </button>
             </>
           )}
@@ -398,15 +398,15 @@ export function CoatCanvasEditor({ canvas }: { canvas: CoatCanvas }) {
         {cells.length === 0 ? (
           <div className="cc-editor-empty">
             <span className="material-symbols-outlined cc-editor-empty-icon">texture</span>
-            <p className="cc-editor-empty-title">Canvas boş</p>
-            <p className="cc-editor-empty-sub">İlk kutunu eklemek için &quot;Kutu ekle&quot; butonuna tıkla</p>
+            <p className="cc-editor-empty-title">Canvas is empty</p>
+            <p className="cc-editor-empty-sub">Click the "Add box" button to add your first box</p>
             <button
               className="cc-btn cc-btn--primary"
               type="button"
               onClick={(e) => { e.stopPropagation(); setShowAddPopover(true); }}
             >
               <span className="material-symbols-outlined" style={{ fontSize: 16 }}>add</span>
-              Kutu ekle
+              Add box
             </button>
           </div>
         ) : (
@@ -432,12 +432,12 @@ export function CoatCanvasEditor({ canvas }: { canvas: CoatCanvas }) {
 // ─── Add cell popover ─────────────────────────────────────────
 
 const SPAN_PRESETS = [
-  { label: "Dar (3 kolon)", colSpan: 3, rowSpan: 1 },
-  { label: "Orta (4 kolon)", colSpan: 4, rowSpan: 1 },
-  { label: "Geniş (6 kolon)", colSpan: 6, rowSpan: 1 },
-  { label: "Tam genişlik", colSpan: 12, rowSpan: 1 },
-  { label: "Uzun (4×2)", colSpan: 4, rowSpan: 2 },
-  { label: "Kare (6×2)", colSpan: 6, rowSpan: 2 },
+  { label: "Narrow (3 columns)", colSpan: 3, rowSpan: 1 },
+  { label: "Medium (4 columns)", colSpan: 4, rowSpan: 1 },
+  { label: "Wide (6 columns)", colSpan: 6, rowSpan: 1 },
+  { label: "Full width", colSpan: 12, rowSpan: 1 },
+  { label: "Tall (4×2)", colSpan: 4, rowSpan: 2 },
+  { label: "Square (6×2)", colSpan: 6, rowSpan: 2 },
 ];
 
 function AddCellPopover({
@@ -450,7 +450,7 @@ function AddCellPopover({
   return (
     <div className="cc-add-popover-backdrop" onClick={onClose}>
       <div className="cc-add-popover" onClick={(e) => e.stopPropagation()}>
-        <p className="cc-add-popover-label">Boyut seç</p>
+        <p className="cc-add-popover-label">Choose size</p>
         {SPAN_PRESETS.map((p) => (
           <button
             key={p.label}

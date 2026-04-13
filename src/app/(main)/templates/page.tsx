@@ -41,7 +41,7 @@ export default async function TemplatesPage({ searchParams }: TemplatesPageProps
   async function handleCreateTemplate(formData: FormData) {
     "use server";
     await createTemplateAction({
-      name: String(formData.get("name") ?? "").trim() || "Yeni Şablon",
+      name: String(formData.get("name") ?? "").trim() || "New Template",
       description: String(formData.get("description") ?? "").trim() || undefined,
       category: String(formData.get("category") ?? "custom"),
       icon: String(formData.get("icon") ?? "").trim() || undefined,
@@ -85,14 +85,14 @@ export default async function TemplatesPage({ searchParams }: TemplatesPageProps
 
   return (
     <>
-      <PageTopbar icon="tooltip" label="Şablonlar" />
+      <PageTopbar icon="tooltip" label="Templates" />
       <div className="dashboard templates-page app-page">
       <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "24px", padding: "24px 32px 32px", maxWidth: "1200px", margin: "0 auto" }}>
         
         {/* Left Column: Library */}
         <section style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           <div>
-            <span style={{ fontSize: "var(--md-sys-typescale-title-medium-size)", color: "var(--md-sys-color-on-background)", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "1px" }}>Şablon Kütüphanesi</span>
+            <span style={{ fontSize: "var(--md-sys-typescale-title-medium-size)", color: "var(--md-sys-color-on-background)", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "1px" }}>Template Library</span>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
             {templates.map((template) => {
@@ -124,7 +124,7 @@ export default async function TemplatesPage({ searchParams }: TemplatesPageProps
           {/* Create New Template */}
           <Card variant="elevated">
             <CardHeader>
-              <CardTitle>Yeni Şablon</CardTitle>
+              <CardTitle>New Template</CardTitle>
             </CardHeader>
             <CardContent>
               <form action={handleCreateTemplate} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
@@ -132,13 +132,13 @@ export default async function TemplatesPage({ searchParams }: TemplatesPageProps
                   <div className="md-text-field md-text-field--outlined" style={{ flex: 2 }}>
                     <div className="md-text-field-container">
                       <input className="md-text-field-input" name="name" placeholder=" " />
-                      <span className="md-text-field-label">Ad (Örn: Haftalık Rapor)</span>
+                      <span className="md-text-field-label">Name (e.g. Weekly Report)</span>
                     </div>
                   </div>
                   <div className="md-text-field md-text-field--outlined" style={{ flex: 1 }}>
                     <div className="md-text-field-container">
                       <input className="md-text-field-input" name="icon" placeholder=" " />
-                      <span className="md-text-field-label">İkon (Emoji)</span>
+                      <span className="md-text-field-label">Icon (Emoji)</span>
                     </div>
                   </div>
                 </div>
@@ -146,12 +146,12 @@ export default async function TemplatesPage({ searchParams }: TemplatesPageProps
                 <div className="md-text-field md-text-field--outlined">
                   <div className="md-text-field-container" style={{ height: "auto", minHeight: "80px", padding: "12px 16px" }}>
                     <textarea className="md-text-field-input" name="description" placeholder=" " rows={3} style={{ resize: "vertical", paddingTop: "0" }} />
-                    <span className="md-text-field-label">Açıklama</span>
+                    <span className="md-text-field-label">Description</span>
                   </div>
                 </div>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                  <label style={{ fontSize: "var(--md-sys-typescale-label-medium-size)", color: "var(--md-sys-color-on-surface-variant)", marginLeft: "4px" }}>Kategori</label>
+                  <label style={{ fontSize: "var(--md-sys-typescale-label-medium-size)", color: "var(--md-sys-color-on-surface-variant)", marginLeft: "4px" }}>Category</label>
                   <select name="category" defaultValue="custom" style={{ padding: "12px 16px", borderRadius: "var(--md-sys-shape-medium)", border: "1px solid var(--md-sys-color-outline)", background: "transparent", color: "var(--md-sys-color-on-surface)", fontSize: "var(--md-sys-typescale-body-large-size)" }}>
                     {templateCategoryOptions.map((category) => (
                       <option key={category.value} value={category.value} style={{ background: "var(--md-sys-color-surface-container)", color: "var(--md-sys-color-on-surface)" }}>
@@ -164,19 +164,19 @@ export default async function TemplatesPage({ searchParams }: TemplatesPageProps
                 <div className="md-text-field md-text-field--outlined">
                   <div className="md-text-field-container" style={{ height: "auto", minHeight: "120px", padding: "12px 16px" }}>
                     <textarea className="md-text-field-input" name="variablesJson" rows={4} defaultValue="[]" placeholder=" " style={{ resize: "vertical", paddingTop: "0", fontFamily: "monospace" }} />
-                    <span className="md-text-field-label">Değişkenler (JSON dizisi)</span>
+                    <span className="md-text-field-label">Variables (JSON array)</span>
                   </div>
                 </div>
 
                 <div className="md-text-field md-text-field--outlined">
                   <div className="md-text-field-container" style={{ height: "auto", minHeight: "150px", padding: "12px 16px" }}>
                     <textarea className="md-text-field-input" name="markdown" rows={6} placeholder=" " style={{ resize: "vertical", paddingTop: "0", fontFamily: "monospace" }} />
-                    <span className="md-text-field-label">Başlangıç Markdown</span>
+                    <span className="md-text-field-label">Initial Markdown</span>
                   </div>
                 </div>
 
                 <Button type="submit" variant="filled" style={{ alignSelf: "flex-start", marginTop: "8px" }}>
-                  Şablon oluştur
+                  Create Template
                 </Button>
               </form>
             </CardContent>
@@ -186,7 +186,7 @@ export default async function TemplatesPage({ searchParams }: TemplatesPageProps
           {selectedTemplate ? (
             <Card variant="elevated" style={{ border: "2px solid var(--md-sys-color-primary)" }}>
               <CardHeader>
-                <CardTitle>Seçili Şablon: {selectedTemplate.name}</CardTitle>
+                <CardTitle>Selected Template: {selectedTemplate.name}</CardTitle>
               </CardHeader>
               <CardContent>
                 <form action={handleUpdateTemplate} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
@@ -196,13 +196,13 @@ export default async function TemplatesPage({ searchParams }: TemplatesPageProps
                     <div className="md-text-field md-text-field--outlined md-text-field--has-value" style={{ flex: 2 }}>
                       <div className="md-text-field-container">
                         <input className="md-text-field-input" name="name" defaultValue={selectedTemplate.name} placeholder=" " />
-                        <span className="md-text-field-label">Ad</span>
+                        <span className="md-text-field-label">Name</span>
                       </div>
                     </div>
                     <div className="md-text-field md-text-field--outlined md-text-field--has-value" style={{ flex: 1 }}>
                       <div className="md-text-field-container">
                         <input className="md-text-field-input" name="icon" defaultValue={selectedTemplate.icon ?? ""} placeholder=" " />
-                        <span className="md-text-field-label">İkon</span>
+                        <span className="md-text-field-label">Icon</span>
                       </div>
                     </div>
                   </div>
@@ -210,12 +210,12 @@ export default async function TemplatesPage({ searchParams }: TemplatesPageProps
                   <div className="md-text-field md-text-field--outlined md-text-field--has-value">
                     <div className="md-text-field-container" style={{ height: "auto", minHeight: "80px", padding: "12px 16px" }}>
                       <textarea className="md-text-field-input" name="description" defaultValue={selectedTemplate.description ?? ""} rows={3} placeholder=" " style={{ resize: "vertical", paddingTop: "0" }} />
-                      <span className="md-text-field-label">Açıklama</span>
+                      <span className="md-text-field-label">Description</span>
                     </div>
                   </div>
 
                   <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                    <label style={{ fontSize: "var(--md-sys-typescale-label-medium-size)", color: "var(--md-sys-color-on-surface-variant)", marginLeft: "4px" }}>Kategori</label>
+                    <label style={{ fontSize: "var(--md-sys-typescale-label-medium-size)", color: "var(--md-sys-color-on-surface-variant)", marginLeft: "4px" }}>Category</label>
                     <select name="category" defaultValue={selectedTemplate.category} style={{ padding: "12px 16px", borderRadius: "var(--md-sys-shape-medium)", border: "1px solid var(--md-sys-color-outline)", background: "transparent", color: "var(--md-sys-color-on-surface)", fontSize: "var(--md-sys-typescale-body-large-size)" }}>
                       {templateCategoryOptions.map((category) => (
                         <option key={category.value} value={category.value} style={{ background: "var(--md-sys-color-surface-container)", color: "var(--md-sys-color-on-surface)" }}>
@@ -228,20 +228,20 @@ export default async function TemplatesPage({ searchParams }: TemplatesPageProps
                   <div className="md-text-field md-text-field--outlined md-text-field--has-value">
                     <div className="md-text-field-container" style={{ height: "auto", minHeight: "120px", padding: "12px 16px" }}>
                       <textarea className="md-text-field-input" name="variablesJson" rows={4} defaultValue={JSON.stringify(selectedTemplate.variables ?? [], null, 2)} placeholder=" " style={{ resize: "vertical", paddingTop: "0", fontFamily: "monospace" }} />
-                      <span className="md-text-field-label">Değişkenler (JSON)</span>
+                      <span className="md-text-field-label">Variables (JSON)</span>
                     </div>
                   </div>
 
                   <div className="md-text-field md-text-field--outlined md-text-field--has-value">
                     <div className="md-text-field-container" style={{ height: "auto", minHeight: "200px", padding: "12px 16px" }}>
                       <textarea className="md-text-field-input" name="markdown" rows={10} defaultValue={blocksToMarkdown(templateBlocksToDocument(selectedTemplate.blocks))} placeholder=" " style={{ resize: "vertical", paddingTop: "0", fontFamily: "monospace" }} />
-                      <span className="md-text-field-label">Başlangıç Markdown</span>
+                      <span className="md-text-field-label">Initial Markdown</span>
                     </div>
                   </div>
 
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "8px" }}>
                     <Button type="submit" variant="filled">
-                      Şablonu Güncelle
+                      Update Template
                     </Button>
                     <Button
                       type="submit"
@@ -249,7 +249,7 @@ export default async function TemplatesPage({ searchParams }: TemplatesPageProps
                       formAction={handleDeleteTemplate}
                       style={{ color: "var(--md-sys-color-error)" }}
                     >
-                      Sil
+                      Delete
                     </Button>
                   </div>
                 </form>
