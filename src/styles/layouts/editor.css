@@ -115,6 +115,12 @@
 }
 
 .note-topbar.topbar-shell {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: nowrap;
+  gap: 12px;
+  min-height: 36px;
   background: var(--shell-main-bg, var(--md-sys-color-surface));
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
