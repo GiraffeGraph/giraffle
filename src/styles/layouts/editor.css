@@ -111,13 +111,24 @@
 }
 
 .note-topbar {
+  gap: 12px;
   margin-bottom: 24px;
 }
 
-.note-topbar-left {
+.note-topbar-main {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  min-width: 0;
+  overflow: hidden;
+  flex: 1;
+}
+
+.note-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .note-title-row {
@@ -210,6 +221,15 @@
 
   .note-breadcrumb-row {
     margin-bottom: 14px;
+  }
+
+  .note-topbar {
+    gap: 8px;
+    margin-bottom: 18px;
+  }
+
+  .note-topbar-actions {
+    gap: 4px;
   }
 }
 
