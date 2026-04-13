@@ -282,14 +282,6 @@
   backdrop-filter: none;
 }
 
-.note-topbar {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
 .note-breadcrumb-row {
   flex: 1;
   min-width: 0;

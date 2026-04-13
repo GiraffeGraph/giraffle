@@ -8,10 +8,6 @@
     max-width: 100%;
   }
 
-  .note-topbar {
-    flex-wrap: wrap;
-  }
-
   .note-toolbar.note-toolbar-minimal {
     width: 100%;
     justify-content: flex-end;

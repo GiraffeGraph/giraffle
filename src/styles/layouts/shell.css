@@ -903,15 +903,6 @@ body::before {
   padding: 0 0 18px;
 }
 
-.note-topbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 14px;
-}
-
 .note-status-row {
   gap: 8px;
   margin-bottom: 10px;
@@ -1149,10 +1140,6 @@ body::before {
 
   .dashboard-grid {
     grid-template-columns: 1fr;
-  }
-
-  .note-topbar {
-    align-items: stretch;
   }
 
   .note-folder-select {
