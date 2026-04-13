@@ -155,7 +155,7 @@ body::before {
 
 .main-content {
   min-width: 0;
-  overflow-y: auto;
+  overflow: visible;
   background: var(--bg-page);
 }
 
