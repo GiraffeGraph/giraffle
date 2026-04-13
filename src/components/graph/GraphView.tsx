@@ -45,19 +45,14 @@ export function GraphView({ graph, unresolvedLinks }: GraphViewProps) {
 
   return (
     <div className="graph-page app-page">
-      <header className="app-page-header graph-page-header">
-        <div className="app-page-header-main">
-          <div className="app-page-eyebrow">İlişki görünümü</div>
-          <div className="app-page-header-copy">
-            <h1 className="app-page-title">Bağlantı ağı</h1>
-            <p className="app-page-subtitle">
-              Notlar arasındaki ilişkileri gör, yoğun düğümleri yakala ve
-              çözülmemiş bağlantıları incele.
-            </p>
-          </div>
+      <header className="graph-header">
+        <div>
+          <h1 className="graph-title">Bağlantı ağı</h1>
+          <p className="graph-subtitle">Not ilişkileri ve eksik bağlantılar.</p>
         </div>
-        <div className="app-page-header-side">
-          <span className="app-page-badge">{graph.nodes.length} düğüm</span>
+        <div className="graph-stat-row">
+          <span className="graph-stat-chip"><strong className="graph-stat-number">{graph.nodes.length}</strong><span className="graph-stat-label">düğüm</span></span>
+          <span className="graph-stat-chip"><strong className="graph-stat-number">{unresolvedLinks.length}</strong><span className="graph-stat-label">eksik</span></span>
         </div>
       </header>
 

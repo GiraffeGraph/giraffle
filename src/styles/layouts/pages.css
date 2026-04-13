@@ -20,7 +20,7 @@
 .library-page {
   width: min(100%, 1100px);
   margin: 0 auto;
-  padding: 34px 34px 54px;
+  padding: 18px 20px 28px;
 }
 
 .dashboard-hero,
@@ -39,7 +39,7 @@
 
 .dashboard-hero {
   position: relative;
-  padding: 34px;
+  padding: 18px 20px;
   overflow: hidden;
 }
 
@@ -152,9 +152,9 @@
 }
 
 .dashboard-title {
-  font-size: clamp(2.2rem, 4vw, 3.4rem);
-  line-height: 0.98;
-  letter-spacing: -0.06em;
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  line-height: 1;
+  letter-spacing: -0.04em;
 }
 
 .dashboard-subtitle,
@@ -167,9 +167,9 @@
 }
 
 .dashboard-subtitle {
-  margin-top: 12px;
-  font-size: 16px;
-  max-width: 540px;
+  margin-top: 6px;
+  font-size: 13px;
+  max-width: 420px;
 }
 
 .dashboard-stat-row,
@@ -214,8 +214,8 @@
 .dashboard-quick-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 24px;
+  gap: 8px;
+  margin-top: 12px;
 }
 
 .dashboard-empty-btn,
@@ -225,8 +225,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  padding: 14px 20px;
+  gap: 8px;
+  padding: 10px 14px;
   border-radius: var(--radius-md);
 }
 
@@ -1281,29 +1281,35 @@
 }
 
 .graph-header {
-  padding: 26px 28px;
-  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
 }
 
 .graph-title {
-  font-size: clamp(2rem, 4vw, 3rem);
+  font-size: clamp(1.35rem, 2.6vw, 1.8rem);
   line-height: 1;
-  letter-spacing: -0.06em;
+  letter-spacing: -0.04em;
 }
 
 .graph-subtitle {
-  margin-top: 10px;
-  max-width: 560px;
+  margin-top: 4px;
+  max-width: 420px;
+  font-size: 13px;
 }
 
 .graph-stat-row {
-  margin-top: 18px;
+  margin-top: 0;
+  justify-content: flex-end;
 }
 
 .graph-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 300px;
-  gap: 18px;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 12px;
 }
 
 .graph-canvas,
@@ -1315,7 +1321,7 @@
 }
 
 .graph-canvas {
-  padding: 18px;
+  padding: 12px;
 }
 
 .graph-svg {
@@ -1353,7 +1359,7 @@
 }
 
 .graph-panel {
-  padding: 22px;
+  padding: 16px;
 }
 
 .graph-panel-title {
@@ -1367,8 +1373,8 @@
 }
 
 .graph-panel-section-title {
-  margin-top: 22px;
-  margin-bottom: 12px;
+  margin-top: 16px;
+  margin-bottom: 8px;
 }
 
 .graph-panel-list {
@@ -1378,7 +1384,7 @@
 }
 
 .graph-panel-link {
-  padding: 11px 12px;
+  padding: 9px 10px;
 }
 
 .graph-panel-empty {

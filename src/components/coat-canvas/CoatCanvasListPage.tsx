@@ -137,9 +137,6 @@ export function CoatCanvasListPage({
       <div className="cc-list-header">
         <div className="cc-list-header-text">
           <h1 className="cc-list-title">Coat Canvas</h1>
-          <p className="cc-list-subtitle">
-            Farklı boyutlarda kutularla esnek çalışma alanları
-          </p>
         </div>
         <button
           className="cc-btn cc-btn--primary"
@@ -156,7 +153,7 @@ export function CoatCanvasListPage({
         <div className="cc-empty">
           <span className="material-symbols-outlined cc-empty-icon">texture</span>
           <p className="cc-empty-title">Henüz canvas yok</p>
-          <p className="cc-empty-sub">İlk canvas&apos;ını oluşturmak için yukarıdaki butona tıkla</p>
+          <p className="cc-empty-sub">İlk canvas&apos;ını oluştur.</p>
           <button
             className="cc-btn cc-btn--primary"
             type="button"

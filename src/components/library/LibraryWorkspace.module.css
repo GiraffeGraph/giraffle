@@ -17,14 +17,14 @@
   position: relative;
   width: min(100%, 1280px);
   margin: 0 auto;
-  padding: 28px 28px 40px;
+  padding: 16px 18px 24px;
   color: var(--library-text);
 }
 
 .surface {
   position: relative;
   display: grid;
-  gap: 18px;
+  gap: 12px;
   min-width: 0;
 }
 
@@ -32,50 +32,23 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 24px;
-  padding: 8px 4px 0;
-}
-
-.headerCopy {
-  display: grid;
-  gap: 18px;
-  min-width: 0;
-}
-
-.eyebrow {
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--library-text-soft);
-}
-
-.titleRow {
-  display: flex;
-  align-items: flex-end;
   gap: 16px;
-  flex-wrap: wrap;
+  padding: 2px 2px 0;
 }
 
-.title {
-  font-family: var(--font-display);
-  font-size: clamp(2.3rem, 4vw, 3.6rem);
-  line-height: 0.94;
-  letter-spacing: -0.06em;
-}
-
-.subtitle {
-  max-width: 760px;
-  color: var(--library-text-muted);
-  line-height: 1.65;
+.headerMain {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
 }
 
 .meta {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   color: var(--library-text-soft);
-  font-size: 13px;
+  font-size: 12px;
+  flex-wrap: wrap;
 }
 
 .metaDot {
@@ -88,7 +61,7 @@
 .tabs {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
 }
 
 .tab {
@@ -96,8 +69,8 @@
   border-radius: 999px;
   background: var(--surface-glass-soft);
   color: var(--library-text-muted);
-  padding: 9px 14px;
-  font-size: 13px;
+  padding: 7px 11px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   transition:
@@ -122,22 +95,22 @@
 .headerActions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   flex-shrink: 0;
 }
 
 .toolbar {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .iconButton {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 34px;
+  height: 34px;
   border: 1px solid var(--library-border);
   border-radius: var(--radius-card);
   background: var(--surface-glass);
@@ -158,20 +131,20 @@
 
 .controls {
   display: grid;
-  gap: 14px;
-  padding: 0 4px 6px;
+  gap: 10px;
+  padding: 0 2px 2px;
 }
 
 .searchRow,
 .filterRow {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
 }
 
 .searchField {
-  width: min(420px, 100%);
-  min-height: 46px;
+  width: min(360px, 100%);
+  min-height: 38px;
   border: 1px solid var(--library-border);
   border-radius: var(--radius-panel);
   background: var(--surface-glass);
@@ -193,13 +166,13 @@
 .filterChip {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   border: 1px solid var(--library-border);
   border-radius: 999px;
   background: var(--surface-glass-soft);
   color: var(--library-text-muted);
-  padding: 8px 12px;
-  font-size: 12px;
+  padding: 6px 10px;
+  font-size: 11px;
   font-weight: 700;
   cursor: pointer;
 }
@@ -233,12 +206,12 @@
 
 .facetPanel {
   display: grid;
-  gap: 16px;
+  gap: 12px;
 }
 
 .facetSection {
   display: grid;
-  gap: 10px;
+  gap: 8px;
 }
 
 .facetSectionHeader {
@@ -291,7 +264,7 @@
   position: sticky;
   top: 0;
   z-index: 2;
-  padding: 14px 18px;
+  padding: 10px 14px;
   border-bottom: 1px solid var(--library-border);
   background: color-mix(in srgb, var(--surface-overlay) 92%, transparent);
   backdrop-filter: blur(12px);
@@ -321,7 +294,7 @@
 
 .row {
   min-height: var(--library-row-height);
-  padding: 0 18px;
+  padding: 0 14px;
   border-bottom: 1px solid var(--library-border);
   background: transparent;
   transition: background 160ms ease, border-color 160ms ease;
@@ -353,7 +326,7 @@
 .pageCell {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   min-width: 0;
 }
 
@@ -455,8 +428,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  width: 30px;
+  height: 30px;
   border-radius: var(--radius-sm);
   background: var(--surface-glass-muted);
   color: var(--library-text);
@@ -466,7 +439,7 @@
 
 .pageCopy {
   display: grid;
-  gap: 4px;
+  gap: 2px;
   min-width: 0;
 }
 
@@ -540,8 +513,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 24px;
-  padding: 0 10px;
+  min-height: 20px;
+  padding: 0 8px;
   border-radius: 999px;
   border: 1px solid var(--library-border);
   font-size: 11px;
@@ -668,21 +641,21 @@
 
 @media (max-width: 1080px) {
   .root {
-    padding: 22px 22px 32px;
+    padding: 14px 14px 24px;
   }
 
   .header {
-    padding: 8px 2px 0;
+    padding: 2px 0 0;
   }
 
   .controls {
-    padding: 0 2px 6px;
+    padding: 0;
   }
 }
 
 @media (max-width: 760px) {
   .root {
-    padding: 16px 16px 28px;
+    padding: 12px 12px 20px;
   }
 
   .header {

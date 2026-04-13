@@ -16,13 +16,13 @@ export function DashboardFeedSections({
   return (
     <div
       className="dashboard app-page"
-      style={{ paddingTop: "24px", paddingBottom: "40px", display: "grid", gap: "28px" }}
+      style={{ paddingTop: "16px", paddingBottom: "24px", display: "grid", gap: "20px" }}
     >
       <section className="dashboard-hero">
         <div className="dashboard-kicker">Pano</div>
-        <h1 className="dashboard-title">Akışların</h1>
+        <h1 className="dashboard-title">Akışlar</h1>
         <p className="dashboard-subtitle">
-          Seçtiğin not ve klasörler için öneri ve haber akışları burada görünür. Her akışın detayını kendi ekranından açabilir, kaynaklarını ayarlardan yönetebilirsin.
+          Öneri ve haber akışların burada.
         </p>
         <div className="dashboard-quick-actions">
           <Link href="/suggestions" className="dashboard-empty-btn">
@@ -52,7 +52,7 @@ export function DashboardFeedSections({
         <FeedCollection
           feeds={suggestionFeeds}
           emptyTitle="Henüz öneri akışı görünmüyor"
-          emptyBody="Bir not veya klasör sayfasından yeni öneri akışı başlatabilir ya da ayarlardan kaynak ekleyebilirsin."
+          emptyBody="Bir not ya da klasörden yeni öneri akışı başlatabilirsin."
         />
       </section>
 
@@ -69,7 +69,7 @@ export function DashboardFeedSections({
         <FeedCollection
           feeds={newsFeeds}
           emptyTitle="Henüz haber akışı görünmüyor"
-          emptyBody="Bir not veya klasör sayfasından haber akışı başlatabilir, hangi kaynakları izleyeceğini ayarlardan belirleyebilirsin."
+          emptyBody="Bir not ya da klasörden haber akışı başlatabilirsin."
         />
       </section>
     </div>

@@ -7,7 +7,11 @@ export default async function LibraryPage() {
 
   return (
     <>
-      <PageTopbar icon="library_books" label="Kütüphane" />
+      <PageTopbar
+        icon="library_books"
+        label="Kütüphane"
+        meta={<span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{seed.totalFolders} klasör · {seed.totalNotes} not · {seed.totalTemplates} şablon</span>}
+      />
       <LibraryWorkspace {...seed} />
     </>
   );
