@@ -477,8 +477,11 @@ function InnerPanel({
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!note) { setTodos([]); return; }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setTodos([]);
     getNoteTodosAction(note.id)
       .then(setTodos)

@@ -156,7 +156,7 @@ export function CoatCanvasListPage({
         <div className="cc-empty">
           <span className="material-symbols-outlined cc-empty-icon">texture</span>
           <p className="cc-empty-title">Henüz canvas yok</p>
-          <p className="cc-empty-sub">İlk canvas'ını oluşturmak için yukarıdaki butona tıkla</p>
+          <p className="cc-empty-sub">İlk canvas&apos;ını oluşturmak için yukarıdaki butona tıkla</p>
           <button
             className="cc-btn cc-btn--primary"
             type="button"

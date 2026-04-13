@@ -18,6 +18,7 @@ export function CanvasTextNode({
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setValue(data.text ?? "");
   }, [data.text]);
 
@@ -31,6 +32,7 @@ export function CanvasTextNode({
 
   useEffect(() => {
     if (!data.focusToken) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setEditing(true);
   }, [data.focusToken]);
 

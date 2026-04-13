@@ -499,7 +499,7 @@ export async function createSavannaFromNoteAction(noteId: string) {
       userId,
       title: `${note.title} — Savanna`,
       nodes: {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
         create: nodeRows.map(({ canvasId: _c, ...n }) => ({ ...n, data: n.data as any })),
       },
     },

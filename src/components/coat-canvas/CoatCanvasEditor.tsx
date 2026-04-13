@@ -121,6 +121,7 @@ function CanvasCell({
   useEffect(() => {
     if (cell.id !== prevIdRef.current) {
       prevIdRef.current = cell.id;
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTitle(cell.title);
     }
   }, [cell.id, cell.title]);
@@ -398,7 +399,7 @@ export function CoatCanvasEditor({ canvas }: { canvas: CoatCanvas }) {
           <div className="cc-editor-empty">
             <span className="material-symbols-outlined cc-editor-empty-icon">texture</span>
             <p className="cc-editor-empty-title">Canvas boş</p>
-            <p className="cc-editor-empty-sub">İlk kutunu eklemek için "Kutu ekle" butonuna tıkla</p>
+            <p className="cc-editor-empty-sub">İlk kutunu eklemek için &quot;Kutu ekle&quot; butonuna tıkla</p>
             <button
               className="cc-btn cc-btn--primary"
               type="button"

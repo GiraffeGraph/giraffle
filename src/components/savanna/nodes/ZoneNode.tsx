@@ -18,6 +18,7 @@ export function ZoneNode({
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setValue(data.label);
   }, [data.label]);
 

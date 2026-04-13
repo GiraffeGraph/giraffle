@@ -17,6 +17,7 @@ export function LabelNode({
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setValue(data.text);
   }, [data.text]);
 
