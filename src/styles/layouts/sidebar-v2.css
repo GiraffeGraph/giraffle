@@ -768,6 +768,20 @@
 .sidebar-nav-modal-input::placeholder { color: var(--text-muted); }
 .sidebar-nav-modal-input:focus { border-color: var(--accent); }
 
+/* Sidebar panel scroll/flex fix */
+.sidebar-mobile-panel {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.sidebar-mobile-panel > .md-nav-drawer-content {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
 /* Search trigger */
 .sidebar-search-trigger {
   display: flex;
