@@ -380,7 +380,9 @@
   cursor: pointer;
   transition:
     border-color 140ms ease,
-    box-shadow 140ms ease;
+    box-shadow 140ms ease,
+    transform 140ms ease,
+    opacity 140ms ease;
   animation: md-rise-in 300ms var(--md-sys-motion-easing-emphasized-decelerate) both;
   user-select: none;
 }
@@ -393,6 +395,16 @@
 .cc-cell--selected .cc-cell-title,
 .cc-cell--selected .cc-cell-content-area {
   user-select: text;
+}
+
+.cc-cell--dragging {
+  opacity: 0.45;
+  transform: scale(0.985);
+}
+
+.cc-cell--drop-target {
+  border-color: var(--md-sys-color-primary);
+  box-shadow: 0 0 0 3px rgba(225, 166, 62, 0.28), 0 10px 24px rgba(0, 0, 0, 0.1);
 }
 
 /* Giraffe spot pattern — same SVG tile used across the app, tinted per color */
@@ -428,10 +440,73 @@
   z-index: 2;
 }
 
-/* ─── Cell title ─────────────────────────────────────────────── */
+/* ─── Cell title / header ────────────────────────────────────── */
+
+.cc-cell-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 10px 4px 10px;
+}
+
+.cc-cell-drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--md-sys-color-on-surface-variant);
+  cursor: grab;
+  flex-shrink: 0;
+}
+
+.cc-cell-drag-handle:hover {
+  background: var(--md-sys-color-surface-variant);
+  color: var(--md-sys-color-on-surface);
+}
+
+.cc-cell-drag-handle:active {
+  cursor: grabbing;
+}
+
+.cc-cell-drag-handle .material-symbols-outlined {
+  font-size: 18px;
+}
+
+.cc-cell-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.cc-cell-control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 7px;
+  background: var(--md-sys-color-surface-variant);
+  color: var(--md-sys-color-on-surface-variant);
+  cursor: pointer;
+}
+
+.cc-cell-control:hover {
+  background: var(--md-sys-color-surface-container-high);
+  color: var(--md-sys-color-on-surface);
+}
+
+.cc-cell-control .material-symbols-outlined {
+  font-size: 16px;
+}
 
 .cc-cell-title {
-  padding: 12px 14px 6px;
+  padding: 0;
   font-size: 13px;
   font-weight: 700;
   color: var(--md-sys-color-on-surface);
@@ -441,6 +516,7 @@
   width: 100%;
   font-family: inherit;
   cursor: text;
+  min-width: 0;
 }
 .cc-cell-title::placeholder { color: var(--md-sys-color-outline); font-weight: 400; }
 
@@ -526,34 +602,46 @@
 .cc-resize-handle {
   position: absolute;
   z-index: 10;
-  background: var(--md-sys-color-primary);
+  background: color-mix(in srgb, var(--md-sys-color-primary) 72%, white);
   border-radius: 99px;
-  opacity: 0.7;
-  transition: opacity 120ms ease;
+  opacity: 0.82;
+  transition: opacity 120ms ease, transform 120ms ease, background 120ms ease;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.7);
 }
-.cc-resize-handle:hover { opacity: 1; }
+.cc-resize-handle:hover {
+  opacity: 1;
+  background: var(--md-sys-color-primary);
+}
 
 /* Right edge — controls colSpan */
 .cc-resize-handle--right {
-  right: -1px; top: 50%; transform: translateY(-50%);
-  width: 6px; height: 48px;
+  right: -4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 12px;
+  height: 72px;
   cursor: ew-resize;
 }
 
 /* Bottom edge — controls rowSpan */
 .cc-resize-handle--bottom {
-  bottom: -1px; left: 50%; transform: translateX(-50%);
-  width: 48px; height: 6px;
+  bottom: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 72px;
+  height: 12px;
   cursor: ns-resize;
 }
 
 /* Corner hint (visual only, triggers col resize) */
 .cc-resize-handle--corner {
-  right: 4px; bottom: 4px;
-  width: 8px; height: 8px;
+  right: 8px;
+  bottom: 8px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
-  cursor: ew-resize;
-  opacity: 0.5;
+  cursor: nwse-resize;
+  opacity: 0.75;
 }
 
 /* ─── Add cell popover ───────────────────────────────────────── */
