@@ -4,9 +4,13 @@ import { getAllFoldersAction } from "@/server/api/folders";
 import { getNotesAction } from "@/server/api/notes";
 import { getSpotterSessionAction } from "@/server/api/spotter";
 
+interface SpotterPageProps {
+  searchParams: Promise<{ session?: string }>;
+}
+
 export default async function SpotterPage({
   searchParams,
-}: PageProps<"/spotter">) {
+}: SpotterPageProps) {
   const { session } = await searchParams;
   const activeSessionId = typeof session === "string" ? session : null;
   const [notes, folders, activeSession] = await Promise.all([
