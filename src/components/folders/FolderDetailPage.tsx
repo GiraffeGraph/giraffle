@@ -5,6 +5,7 @@ import type { MouseEvent as ReactMouseEvent } from "react";
 import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FeedAssignmentsCard } from "@/components/feeds/FeedAssignmentsCard";
+import { FolderTopbar } from "@/components/folders/FolderTopbar";
 import { SidebarIconPicker } from "@/components/sidebar/SidebarIconPicker";
 import { renderStoredIcon } from "@/components/sidebar/sidebar-icon-utils";
 import { useIsMobileViewport } from "@/components/ui/useIsMobileViewport";
@@ -97,178 +98,18 @@ export function FolderDetailPage({
 
   return (
     <>
-      <div className="topbar-shell">
-        <div className="topbar-shell-main">
-          <button
-            type="button"
-            title="Klasör ikonunu değiştir"
-            aria-label="Klasör ikonunu değiştir"
-            onClick={handleOpenIconPicker}
-            style={{
-              background: iconPickerPosition
-                ? "var(--md-sys-color-secondary-container)"
-                : "var(--md-sys-color-surface-container-highest)",
-              border: "1px solid var(--md-sys-color-outline-variant)",
-              color: iconPickerPosition
-                ? "var(--md-sys-color-on-secondary-container)"
-                : "var(--md-sys-color-on-surface-variant)",
-              cursor: "pointer",
-              padding: isMobileViewport ? "4px" : "4px 8px",
-              borderRadius: "999px",
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "6px",
-              minHeight: "26px",
-              minWidth: "26px",
-              lineHeight: 1,
-              flexShrink: 0,
-              whiteSpace: "nowrap",
-            }}
-          >
-            {renderStoredIcon(folderIcon, {
-              fallback: (
-                <span
-                  className="material-symbols-outlined"
-                  style={{ fontSize: "16px" }}
-                  aria-hidden="true"
-                >
-                  folder
-                </span>
-              ),
-              materialClassName: "material-symbols-outlined",
-              emojiStyle: { fontSize: "16px", lineHeight: 1 },
-            })}
-            {isMobileViewport ? null : <span>İkon</span>}
-          </button>
-
-          {isMobileViewport ? (
-            <div style={{ display: "grid", gap: "2px", minWidth: 0, flex: 1 }}>
-              <span
-                style={{
-                  fontSize: "11px",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                Çalışma alanı / Klasör
-              </span>
-              <span
-                style={{
-                  color: "var(--md-sys-color-on-surface)",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                  fontWeight: 600,
-                }}
-              >
-                {folder.name}
-              </span>
-            </div>
-          ) : (
-            <>
-              <button
-                type="button"
-                style={{
-                  background: "none",
-                  border: "none",
-                  color: "inherit",
-                  cursor: "pointer",
-                  padding: "2px 4px",
-                  borderRadius: "4px",
-                  fontSize: "12px",
-                  whiteSpace: "nowrap",
-                }}
-                onClick={() => router.push("/dashboard")}
-              >
-                Çalışma alanı
-              </button>
-              {breadcrumbs.map((crumb, index) => {
-                const isLast = index === breadcrumbs.length - 1;
-
-                return (
-                  <div
-                    key={crumb.id}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "4px",
-                      minWidth: 0,
-                    }}
-                  >
-                    <span style={{ opacity: 0.4 }}>/</span>
-                    {isLast ? (
-                      <span
-                        style={{
-                          color: "var(--md-sys-color-on-surface)",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                          maxWidth: "260px",
-                        }}
-                      >
-                        {crumb.name}
-                      </span>
-                    ) : (
-                      <button
-                        type="button"
-                        style={{
-                          background: "none",
-                          border: "none",
-                          color: "inherit",
-                          cursor: "pointer",
-                          padding: "2px 4px",
-                          borderRadius: "4px",
-                          fontSize: "12px",
-                          whiteSpace: "nowrap",
-                        }}
-                        onClick={() => router.push(`/folders/${crumb.id}`)}
-                      >
-                        {crumb.name}
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-            </>
-          )}
-        </div>
-
-        <div className="topbar-shell-actions">
-          <button
-            type="button"
-            title="Klasör bağlantısını kopyala"
-            aria-label="Klasör bağlantısını kopyala"
-            onClick={() => void handleCopyFolderLink()}
-            style={{
-              width: "28px",
-              height: "28px",
-              borderRadius: "999px",
-              border: "1px solid var(--md-sys-color-outline-variant)",
-              background: isCopyingLink
-                ? "var(--md-sys-color-secondary-container)"
-                : "var(--md-sys-color-surface-container-highest)",
-              color: isCopyingLink
-                ? "var(--md-sys-color-on-secondary-container)"
-                : "var(--md-sys-color-on-surface-variant)",
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: "pointer",
-              flexShrink: 0,
-            }}
-          >
-            <span
-              className="material-symbols-outlined"
-              style={{ fontSize: "16px" }}
-              aria-hidden="true"
-            >
-              {isCopyingLink ? "check" : "link"}
-            </span>
-          </button>
-        </div>
-      </div>
+      <FolderTopbar
+        isMobileViewport={isMobileViewport}
+        iconPickerPosition={iconPickerPosition}
+        folderIcon={folderIcon}
+        folderName={folder.name}
+        breadcrumbs={breadcrumbs}
+        isCopyingLink={isCopyingLink}
+        onOpenIconPicker={handleOpenIconPicker}
+        onGoDashboard={() => router.push("/dashboard")}
+        onSelectBreadcrumb={(folderId) => router.push(`/folders/${folderId}`)}
+        onCopyFolderLink={handleCopyFolderLink}
+      />
 
       <div
         className="dashboard"
