@@ -41,6 +41,7 @@ import { NoteCardNode, type NoteCardNodeData } from "./nodes/NoteCardNode";
 import { LabelNode, type LabelNodeData } from "./nodes/LabelNode";
 import { ZoneNode, type ZoneNodeData } from "./nodes/ZoneNode";
 import { PageTopbar } from "@/components/ui/PageTopbar";
+import { generateId as createId } from "@/lib/utils";
 
 type SavannaNote = {
   id: string;
@@ -237,7 +238,7 @@ function flowEdgesToPayload(edges: Edge[]) {
 }
 
 function generateId() {
-  return crypto.randomUUID();
+  return createId();
 }
 
 function extractTextFromDocumentNode(node: unknown): string {
