@@ -51,7 +51,7 @@
     "ai": "^6.0.158",
     "bcryptjs": "^3.0.3",
     "clsx": "^2.1.1",
-    "dotenv": "^17.4.1",
+    "dotenv": "^17.4.2",
     "emoji-picker-react": "^4.18.0",
     "next": "^16.2.3",
     "next-auth": "^5.0.0-beta.30",
