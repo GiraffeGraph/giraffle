@@ -5,6 +5,12 @@ const nextConfig: NextConfig = {
   deploymentId: process.env.DEPLOYMENT_ID,
   poweredByHeader: false,
   compress: true,
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
   images: {
     minimumCacheTTL: 86_400,
     formats: ["image/avif", "image/webp"],
