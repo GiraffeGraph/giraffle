@@ -3,11 +3,10 @@
 import {
   useCallback,
   useEffect,
+  useId,
   useRef,
   useState,
   useTransition,
-  useOptimistic,
-  useId,
 } from "react";
 import {
   draggable,
@@ -19,6 +18,7 @@ import {
   addTodoToNoteAction,
   assignNoteToQuadrantAction,
   assignTodoToQuadrantAction,
+  createNoteAction,
   getNoteTodosAction,
   toggleTodoAction,
 } from "@/server/api/notes";
@@ -44,6 +44,11 @@ type TodoBlock = {
   position: number;
 };
 
+type TodoSummary = Pick<
+  NoteWithTodoSummary,
+  "todoTotal" | "todoCompleted" | "todoByQuadrant"
+>;
+
 // ─── Quadrant configs ─────────────────────────────────────────
 
 type QuadrantConfig = {
@@ -55,11 +60,36 @@ type QuadrantConfig = {
 };
 
 const QUADRANTS: QuadrantConfig[] = [
-  { key: "DO",       label: "Urgent + Important",      sublabel: "Do now",      colorClass: "tm-q--do",       icon: "bolt" },
-  { key: "SCHEDULE", label: "Important + Not urgent",  sublabel: "Schedule",    colorClass: "tm-q--schedule", icon: "event" },
-  { key: "DELEGATE", label: "Urgent + Not important",  sublabel: "Delegate",    colorClass: "tm-q--delegate", icon: "group" },
-  { key: "ELIMINATE",label: "Not urgent + Not important", sublabel: "Eliminate", colorClass: "tm-q--eliminate",icon: "delete_sweep" },
+  { key: "DO", label: "Urgent + Important", sublabel: "Do now", colorClass: "tm-q--do", icon: "bolt" },
+  { key: "SCHEDULE", label: "Important + Not urgent", sublabel: "Schedule", colorClass: "tm-q--schedule", icon: "event" },
+  { key: "DELEGATE", label: "Urgent + Not important", sublabel: "Delegate", colorClass: "tm-q--delegate", icon: "group" },
+  { key: "ELIMINATE", label: "Not urgent + Not important", sublabel: "Eliminate", colorClass: "tm-q--eliminate", icon: "delete_sweep" },
 ];
+
+function createEmptyTodoByQuadrant(): Record<EisenhowerQuadrant, number> {
+  return {
+    DO: 0,
+    SCHEDULE: 0,
+    DELEGATE: 0,
+    ELIMINATE: 0,
+  };
+}
+
+function summarizeTodos(todos: TodoBlock[]): TodoSummary {
+  const todoByQuadrant = createEmptyTodoByQuadrant();
+
+  for (const todo of todos) {
+    if (todo.quadrant) {
+      todoByQuadrant[todo.quadrant] += 1;
+    }
+  }
+
+  return {
+    todoTotal: todos.length,
+    todoCompleted: todos.filter((todo) => todo.checked).length,
+    todoByQuadrant,
+  };
+}
 
 // ─── Drag protocols ───────────────────────────────────────────
 
@@ -164,6 +194,84 @@ function NoteCard({
   );
 }
 
+function QuickAddNote({
+  quadrant,
+  onCreated,
+}: {
+  quadrant: EisenhowerQuadrant | null;
+  onCreated: (note: NoteWithTodoSummary) => void;
+}) {
+  const inputId = useId();
+  const [value, setValue] = useState("");
+  const [isAdding, setIsAdding] = useState(false);
+
+  const submit = useCallback(async () => {
+    const title = value.trim();
+    if (!title || isAdding) return;
+
+    setIsAdding(true);
+    try {
+      const noteId = await createNoteAction({ title });
+      if (quadrant) {
+        await assignNoteToQuadrantAction(noteId, quadrant);
+      }
+      onCreated({
+        id: noteId,
+        title,
+        icon: null,
+        quadrant,
+        todoTotal: 0,
+        todoCompleted: 0,
+        todoByQuadrant: createEmptyTodoByQuadrant(),
+      });
+      setValue("");
+    } finally {
+      setIsAdding(false);
+    }
+  }, [isAdding, onCreated, quadrant, value]);
+
+  return (
+    <div className="tm-quick-add">
+      <label className="tm-quick-add-label" htmlFor={inputId}>
+        <span className="material-symbols-outlined" style={{ fontSize: 15 }}>
+          note_add
+        </span>
+        Add note
+      </label>
+      <div className="tm-quick-add-row">
+        <input
+          id={inputId}
+          className="tm-quick-add-input"
+          placeholder="Write a note title..."
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") { e.preventDefault(); submit(); }
+          }}
+          disabled={isAdding}
+        />
+        <button
+          className="tm-quick-add-btn"
+          type="button"
+          onClick={submit}
+          disabled={!value.trim() || isAdding}
+        >
+          {isAdding ? (
+            <span className="tm-quick-add-spinner" />
+          ) : (
+            <span className="material-symbols-outlined" style={{ fontSize: 16 }}>
+              add
+            </span>
+          )}
+        </button>
+      </div>
+      <p className="tm-quick-add-hint">
+        Press Enter to create directly in this area
+      </p>
+    </div>
+  );
+}
+
 function OuterQuadrant({
   config,
   notes,
@@ -171,6 +279,7 @@ function OuterQuadrant({
   onDrop,
   onSelect,
   onRemove,
+  onCreate,
 }: {
   config: QuadrantConfig;
   notes: NoteWithTodoSummary[];
@@ -178,6 +287,7 @@ function OuterQuadrant({
   onDrop: (id: string, q: EisenhowerQuadrant) => void;
   onSelect: (n: NoteWithTodoSummary) => void;
   onRemove: (id: string) => void;
+  onCreate: (note: NoteWithTodoSummary) => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [isOver, setIsOver] = useState(false);
@@ -211,6 +321,7 @@ function OuterQuadrant({
         {notes.length > 0 && <span className="tm-outer-q-count">{notes.length}</span>}
       </div>
       <div className="tm-outer-q-body">
+        <QuickAddNote quadrant={config.key} onCreated={onCreate} />
         {notes.map((n) => (
           <NoteCard key={n.id} note={n} isSelected={n.id === selectedNoteId} onSelect={onSelect} onRemove={onRemove} />
         ))}
@@ -225,11 +336,13 @@ function NotePool({
   selectedNoteId,
   onDrop,
   onSelect,
+  onCreate,
 }: {
   notes: NoteWithTodoSummary[];
   selectedNoteId: string | null;
   onDrop: (id: string, q: null) => void;
   onSelect: (n: NoteWithTodoSummary) => void;
+  onCreate: (note: NoteWithTodoSummary) => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [isOver, setIsOver] = useState(false);
@@ -274,6 +387,7 @@ function NotePool({
         )}
       </div>
       <div className="tm-pool-body">
+        <QuickAddNote quadrant={null} onCreated={onCreate} />
         {filtered.map((n) => (
           <NoteCard key={n.id} note={n} isSelected={n.id === selectedNoteId} onSelect={onSelect} onRemove={() => {}} />
         ))}
@@ -405,7 +519,6 @@ function QuickAddTodo({
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    // Focus the input when it mounts
     inputRef.current?.focus();
   }, []);
 
@@ -468,54 +581,69 @@ function QuickAddTodo({
 function InnerPanel({
   note,
   onClear,
+  onSummaryChange,
 }: {
   note: NoteWithTodoSummary | null;
   onClear: () => void;
+  onSummaryChange: (noteId: string, summary: TodoSummary) => void;
 }) {
   const router = useRouter();
   const [todos, setTodos] = useState<TodoBlock[]>([]);
   const [loading, setLoading] = useState(false);
 
+  const applyTodos = useCallback((nextTodos: TodoBlock[]) => {
+    setTodos(nextTodos);
+    if (note) {
+      onSummaryChange(note.id, summarizeTodos(nextTodos));
+    }
+  }, [note, onSummaryChange]);
+
+  const refreshTodos = useCallback(async () => {
+    if (!note) return;
+    const nextTodos = await getNoteTodosAction(note.id);
+    applyTodos(nextTodos);
+  }, [applyTodos, note]);
+
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (!note) { setTodos([]); return; }
+    if (!note) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setTodos([]);
+      return;
+    }
+
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setTodos([]);
     getNoteTodosAction(note.id)
-      .then(setTodos)
+      .then((nextTodos) => applyTodos(nextTodos))
       .finally(() => setLoading(false));
-  }, [note?.id]);
+  }, [applyTodos, note]);
 
   const handleQuadrantDrop = useCallback(
     (todoId: string, quadrant: EisenhowerQuadrant | null) => {
-      setTodos((prev) =>
-        prev.map((t) => (t.id === todoId ? { ...t, quadrant } : t))
-      );
+      const nextTodos = todos.map((t) => (t.id === todoId ? { ...t, quadrant } : t));
+      applyTodos(nextTodos);
       assignTodoToQuadrantAction(todoId, quadrant).catch(() => {
-        // revert on error
-        if (note) getNoteTodosAction(note.id).then(setTodos);
+        refreshTodos();
       });
     },
-    [note]
+    [applyTodos, refreshTodos, todos]
   );
 
   const handleToggle = useCallback(
     (todoId: string, checked: boolean) => {
-      setTodos((prev) =>
-        prev.map((t) => (t.id === todoId ? { ...t, checked } : t))
-      );
+      const nextTodos = todos.map((t) => (t.id === todoId ? { ...t, checked } : t));
+      applyTodos(nextTodos);
       toggleTodoAction(todoId, checked).catch(() => {
-        if (note) getNoteTodosAction(note.id).then(setTodos);
+        refreshTodos();
       });
     },
-    [note]
+    [applyTodos, refreshTodos, todos]
   );
 
   const unassigned = todos.filter((t) => t.quadrant === null);
 
-  // ── Empty state ─────────────────────────────
   if (!note) {
     return (
       <div className="tm-inner-panel tm-inner-panel--empty">
@@ -530,7 +658,6 @@ function InnerPanel({
 
   return (
     <div className="tm-inner-panel">
-      {/* Header */}
       <div className="tm-inner-header-bar">
         <div className="tm-inner-note-info">
           {note.icon && <span className="tm-inner-note-icon">{note.icon}</span>}
@@ -559,7 +686,6 @@ function InnerPanel({
         </div>
       </div>
 
-      {/* Body */}
       <div className="tm-inner-body">
         {loading ? (
           <div className="tm-skeleton-grid">
@@ -575,12 +701,7 @@ function InnerPanel({
               </span>
               <p>This note has no tasks yet</p>
             </div>
-            <QuickAddTodo
-              noteId={note.id}
-              onAdded={() => {
-                getNoteTodosAction(note.id).then(setTodos);
-              }}
-            />
+            <QuickAddTodo noteId={note.id} onAdded={refreshTodos} />
           </div>
         ) : (
           <>
@@ -597,7 +718,6 @@ function InnerPanel({
               ))}
             </div>
 
-            {/* Unassigned pool */}
             {unassigned.length > 0 && (
               <UnassignedTodoPool
                 todos={unassigned}
@@ -605,6 +725,8 @@ function InnerPanel({
                 onToggle={handleToggle}
               />
             )}
+
+            <QuickAddTodo noteId={note.id} onAdded={refreshTodos} />
           </>
         )}
       </div>
@@ -660,44 +782,67 @@ function UnassignedTodoPool({
 
 export function TowerMatrix({ notes }: { notes: NoteWithTodoSummary[] }) {
   const [, startTransition] = useTransition();
+  const [noteItems, setNoteItems] = useState(notes);
   const [selectedNote, setSelectedNote] = useState<NoteWithTodoSummary | null>(null);
 
-  const [optimisticNotes, updateOptimistic] = useOptimistic(
-    notes,
-    (state: NoteWithTodoSummary[], { id, quadrant }: { id: string; quadrant: EisenhowerQuadrant | null }) =>
-      state.map((n) => (n.id === id ? { ...n, quadrant } : n))
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setNoteItems(notes);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSelectedNote((prev) => (prev ? notes.find((note) => note.id === prev.id) ?? prev : null));
+  }, [notes]);
+
+  const updateNoteItem = useCallback(
+    (noteId: string, updater: (note: NoteWithTodoSummary) => NoteWithTodoSummary) => {
+      setNoteItems((prev) => prev.map((note) => (note.id === noteId ? updater(note) : note)));
+      setSelectedNote((prev) => (prev?.id === noteId ? updater(prev) : prev));
+    },
+    []
   );
 
   const handleNoteDrop = useCallback(
     (id: string, quadrant: EisenhowerQuadrant | null) => {
+      updateNoteItem(id, (note) => ({ ...note, quadrant }));
       startTransition(async () => {
-        updateOptimistic({ id, quadrant });
-        await assignNoteToQuadrantAction(id, quadrant);
+        try {
+          await assignNoteToQuadrantAction(id, quadrant);
+        } catch {
+          // Server will stay source of truth on next refresh.
+        }
       });
     },
-    [updateOptimistic]
+    [startTransition, updateNoteItem]
   );
 
   const handleNoteSelect = useCallback((note: NoteWithTodoSummary) => {
     setSelectedNote((prev) => (prev?.id === note.id ? null : note));
   }, []);
 
-  const unassigned = optimisticNotes.filter((n) => n.quadrant === null);
+  const handleNoteCreate = useCallback((note: NoteWithTodoSummary) => {
+    setNoteItems((prev) => [note, ...prev]);
+    setSelectedNote(note);
+  }, []);
+
+  const handleSummaryChange = useCallback((noteId: string, summary: TodoSummary) => {
+    updateNoteItem(noteId, (note) => ({ ...note, ...summary }));
+  }, [updateNoteItem]);
+
+  const unassigned = noteItems.filter((n) => n.quadrant === null);
 
   return (
     <div className="tm-page">
-      {/* Left: outer matrix — 2/3 */}
       <div className="tm-left">
         <div className="tm-outer-grid">
           {QUADRANTS.map((config) => (
             <OuterQuadrant
               key={config.key}
               config={config}
-              notes={optimisticNotes.filter((n) => n.quadrant === config.key)}
+              notes={noteItems.filter((n) => n.quadrant === config.key)}
               selectedNoteId={selectedNote?.id ?? null}
               onDrop={handleNoteDrop}
               onSelect={handleNoteSelect}
               onRemove={(id) => handleNoteDrop(id, null)}
+              onCreate={handleNoteCreate}
             />
           ))}
         </div>
@@ -706,14 +851,15 @@ export function TowerMatrix({ notes }: { notes: NoteWithTodoSummary[] }) {
           selectedNoteId={selectedNote?.id ?? null}
           onDrop={handleNoteDrop}
           onSelect={handleNoteSelect}
+          onCreate={handleNoteCreate}
         />
       </div>
 
-      {/* Right: inner matrix — 1/3 */}
       <div className="tm-right">
         <InnerPanel
           note={selectedNote}
           onClear={() => setSelectedNote(null)}
+          onSummaryChange={handleSummaryChange}
         />
       </div>
     </div>
