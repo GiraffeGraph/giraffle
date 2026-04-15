@@ -640,7 +640,7 @@
   right: 3px;
   border-radius: 6px;
   border-left: 3px solid var(--stride-event-accent, var(--md-sys-color-primary));
-  background: color-mix(in srgb, var(--stride-event-accent, var(--accent)) 12%, var(--surface-glass-strong));
+  background: color-mix(in srgb, var(--stride-event-accent, var(--accent)) 11%, var(--surface-glass-strong));
   backdrop-filter: blur(6px);
   cursor: grab;
   user-select: none;
@@ -650,27 +650,33 @@
   gap: 4px;
   padding: 3px 6px 8px 4px;
   transition:
-    box-shadow var(--transition-fast),
-    transform var(--transition-fast),
-    opacity var(--transition-fast);
-  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    box-shadow 120ms ease,
+    opacity 120ms ease;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.3);
   z-index: 4;
   min-height: 15px;
 }
 
-.stride-event-block:active {
-  cursor: grabbing;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.18);
-  z-index: 99;
-  transform: scale(1.01);
+.stride-event-block:hover {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.14), inset 0 1px 0 rgba(255,255,255,0.3);
+  z-index: 5;
 }
 
-.stride-event-block--checked {
-  opacity: 0.45;
+.stride-event-block--checked { opacity: 0.4; }
+.stride-event-block--compact { padding: 2px 4px; }
+
+/* While being dragged — ghost effect */
+.stride-event-block--dragging {
+  opacity: 0.35;
+  box-shadow: none;
+  pointer-events: none;
 }
 
-.stride-event-block--compact {
-  padding: 2px 4px;
+/* While resize handle is held */
+.stride-event-block--resizing {
+  cursor: ns-resize;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+  z-index: 10;
 }
 
 .stride-event-check {
@@ -695,7 +701,9 @@
   border-radius: 50%;
   border: 1.5px solid var(--stride-event-accent, var(--accent));
   opacity: 0.7;
+  transition: opacity 120ms ease;
 }
+.stride-event-check:hover .stride-event-check-ring { opacity: 1; }
 
 .stride-event-body {
   flex: 1;
@@ -736,17 +744,14 @@
 }
 
 /* Duration badge + picker */
-.stride-event-duration-wrap {
-  position: relative;
-  flex-shrink: 0;
-}
+.stride-event-duration-wrap { position: relative; flex-shrink: 0; }
 
 .stride-event-duration-btn {
   display: inline-flex;
   align-items: center;
   height: 16px;
   padding: 0 5px;
-  border: 1px solid color-mix(in srgb, var(--stride-event-accent, var(--accent)) 40%, transparent);
+  border: 1px solid color-mix(in srgb, var(--stride-event-accent, var(--accent)) 35%, transparent);
   border-radius: 4px;
   background: color-mix(in srgb, var(--stride-event-accent, var(--accent)) 10%, transparent);
   color: var(--stride-event-accent, var(--accent));
@@ -754,50 +759,70 @@
   font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
-  transition: background var(--transition-fast);
+  transition: background 100ms ease;
 }
-
 .stride-event-duration-btn:hover {
-  background: color-mix(in srgb, var(--stride-event-accent, var(--accent)) 20%, transparent);
+  background: color-mix(in srgb, var(--stride-event-accent, var(--accent)) 22%, transparent);
 }
 
-/* Resize handle at bottom of event block */
+/* Resize handle */
 .stride-event-resize-handle {
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
-  height: 8px;
+  height: 10px;
   cursor: ns-resize;
   display: flex;
   align-items: center;
   justify-content: center;
+  z-index: 2;
 }
-
 .stride-event-resize-handle::after {
   content: "";
   display: block;
-  width: 24px;
+  width: 20px;
   height: 2px;
   border-radius: 2px;
-  background: color-mix(in srgb, var(--stride-event-accent, var(--accent)) 50%, transparent);
+  background: color-mix(in srgb, var(--stride-event-accent, var(--accent)) 45%, transparent);
+  transition: width 120ms ease, opacity 120ms ease;
+  opacity: 0;
+}
+.stride-event-block:hover .stride-event-resize-handle::after,
+.stride-event-block--resizing .stride-event-resize-handle::after {
+  opacity: 1;
+  width: 28px;
+}
+
+/* Resize time label */
+.stride-resize-label {
+  position: absolute;
+  bottom: 12px;
+  right: 6px;
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--stride-event-accent, var(--accent));
+  background: color-mix(in srgb, var(--stride-event-accent, var(--accent)) 12%, var(--surface-overlay));
+  padding: 1px 5px;
+  border-radius: 4px;
+  pointer-events: none;
+  white-space: nowrap;
 }
 
 /* Duration picker dropdown */
 .stride-duration-picker {
   position: absolute;
-  top: calc(100% + 4px);
+  top: calc(100% + 6px);
   right: 0;
-  z-index: 100;
+  z-index: 200;
   background: var(--surface-overlay);
   border: 1px solid var(--border-soft);
   border-radius: 10px;
   box-shadow: var(--shadow-lift);
   padding: 8px;
   min-width: 160px;
-  animation: md-rise-in 160ms var(--md-sys-motion-easing-emphasized-decelerate) both;
+  animation: md-rise-in 140ms var(--md-sys-motion-easing-emphasized-decelerate) both;
 }
-
 .stride-duration-picker-label {
   font-size: 10px;
   font-weight: 700;
@@ -806,13 +831,11 @@
   letter-spacing: 0.05em;
   margin-bottom: 6px;
 }
-
 .stride-duration-picker-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 4px;
 }
-
 .stride-duration-preset {
   height: 26px;
   border: 1px solid var(--border-soft);
@@ -822,19 +845,86 @@
   font-size: 11px;
   font-weight: 500;
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: all 100ms ease;
 }
-
 .stride-duration-preset:hover {
   background: var(--surface-highlight);
   color: var(--text-primary);
 }
-
 .stride-duration-preset.active {
   background: var(--accent-subtle);
   color: var(--accent);
   border-color: color-mix(in srgb, var(--accent) 40%, transparent);
   font-weight: 700;
+}
+
+/* ─── Drop ghost ─────────────────────────────────────────────── */
+
+.stride-drop-ghost {
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  border-radius: 6px;
+  border: 2px dashed var(--stride-event-accent, var(--accent));
+  background: color-mix(in srgb, var(--stride-event-accent, var(--accent)) 10%, transparent);
+  pointer-events: none;
+  z-index: 20;
+  display: flex;
+  align-items: flex-start;
+  padding: 4px 6px;
+  animation: stride-ghost-in 80ms ease both;
+}
+
+@keyframes stride-ghost-in {
+  from { opacity: 0; transform: scaleY(0.92); }
+  to   { opacity: 1; transform: scaleY(1); }
+}
+
+.stride-drop-ghost-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--stride-event-accent, var(--accent));
+  background: color-mix(in srgb, var(--stride-event-accent, var(--accent)) 12%, var(--surface-overlay));
+  padding: 1px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+/* ─── Column hover highlight ─────────────────────────────────── */
+
+.stride-day-column--hovered {
+  background: color-mix(in srgb, var(--accent) 5%, transparent);
+}
+
+/* ─── Current time indicator ─────────────────────────────────── */
+
+.stride-now-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 8;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+}
+
+.stride-now-dot {
+  display: block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #e53935;
+  flex-shrink: 0;
+  margin-left: -4px;
+}
+
+.stride-now-line::after {
+  content: "";
+  display: block;
+  flex: 1;
+  height: 2px;
+  background: #e53935;
+  opacity: 0.75;
 }
 
 /* ─── Unscheduled panel ──────────────────────────────────────── */
