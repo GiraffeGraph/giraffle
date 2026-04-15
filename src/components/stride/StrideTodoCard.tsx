@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { draggable } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import type { CalendarTodo } from "./stride.types";
 
@@ -15,6 +15,8 @@ interface StrideTodoCardProps {
   todo: CalendarTodo;
   variant?: "calendar" | "unscheduled";
   onToggle?: (id: string, checked: boolean) => void;
+  onUpdateText?: (id: string, text: string) => void;
+  onDelete?: (id: string) => void;
   showTime?: boolean;
 }
 
@@ -22,9 +24,14 @@ export function StrideTodoCard({
   todo,
   variant = "calendar",
   onToggle,
+  onUpdateText,
+  onDelete,
   showTime = false,
 }: StrideTodoCardProps) {
   const dragRef = useRef<HTMLDivElement>(null);
+  const titleInputRef = useRef<HTMLInputElement>(null);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState(todo.text);
 
   useEffect(() => {
     const el = dragRef.current;
@@ -37,6 +44,10 @@ export function StrideTodoCard({
       }),
     });
   }, [todo.id, variant]);
+
+  useEffect(() => {
+    if (editingTitle) titleInputRef.current?.select();
+  }, [editingTitle]);
 
   const accentColor = todo.quadrant
     ? QUADRANT_COLORS[todo.quadrant]
@@ -77,12 +88,28 @@ export function StrideTodoCard({
       </button>
 
       <div className="stride-todo-body">
-        {timeStr && (
-          <span className="stride-todo-time">{timeStr}</span>
+        {timeStr && <span className="stride-todo-time">{timeStr}</span>}
+        {editingTitle ? (
+          <input
+            ref={titleInputRef}
+            className="stride-todo-title-input"
+            value={titleDraft}
+            onChange={(e) => setTitleDraft(e.target.value)}
+            onMouseDown={(e) => e.stopPropagation()}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") { e.preventDefault(); onUpdateText?.(todo.id, titleDraft); setEditingTitle(false); }
+              if (e.key === "Escape") { setTitleDraft(todo.text); setEditingTitle(false); }
+            }}
+            onBlur={() => { onUpdateText?.(todo.id, titleDraft); setEditingTitle(false); }}
+          />
+        ) : (
+          <span
+            className="stride-todo-text"
+            onDoubleClick={(e) => { e.stopPropagation(); setTitleDraft(todo.text); setEditingTitle(true); }}
+          >
+            {todo.text || "Untitled task"}
+          </span>
         )}
-        <span className="stride-todo-text">
-          {todo.text || "Untitled task"}
-        </span>
         <span className="stride-todo-note">
           {todo.note.icon ? `${todo.note.icon} ` : ""}
           {todo.note.title}
@@ -95,6 +122,18 @@ export function StrideTodoCard({
           title={todo.quadrant}
           style={{ background: accentColor }}
         />
+      )}
+
+      {onDelete && (
+        <button
+          type="button"
+          className="stride-todo-delete-btn"
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={(e) => { e.stopPropagation(); onDelete(todo.id); }}
+          title="Delete task"
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: 13 }}>close</span>
+        </button>
       )}
     </div>
   );

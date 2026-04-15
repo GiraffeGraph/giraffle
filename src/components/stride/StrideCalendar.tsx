@@ -11,11 +11,13 @@ import {
 import { monitorForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import {
   createCalendarTodoAction,
+  deleteCalendarTodoAction,
   getCalendarTodosAction,
   getUnscheduledTodosAction,
   setTodoDueDateAction,
   setTodoDurationAction,
   toggleCalendarTodoAction,
+  updateCalendarTodoTextAction,
 } from "@/server/api/notes";
 import type { CalendarTodo, CalendarView } from "./stride.types";
 import { StrideHeader } from "./StrideHeader";
@@ -208,6 +210,24 @@ export function StrideCalendar({
     startTransition(() => toggleCalendarTodoAction(todoId, checked));
   }, []);
 
+  // Update todo text — optimistic + persist
+  const handleUpdateText = useCallback((todoId: string, text: string) => {
+    setTodos((prev) =>
+      prev.map((t) => (t.id === todoId ? { ...t, text } : t))
+    );
+    setUnscheduled((prev) =>
+      prev.map((t) => (t.id === todoId ? { ...t, text } : t))
+    );
+    startTransition(() => updateCalendarTodoTextAction(todoId, text));
+  }, []);
+
+  // Delete todo — optimistic remove + persist
+  const handleDeleteTodo = useCallback((todoId: string) => {
+    setTodos((prev) => prev.filter((t) => t.id !== todoId));
+    setUnscheduled((prev) => prev.filter((t) => t.id !== todoId));
+    startTransition(() => deleteCalendarTodoAction(todoId));
+  }, []);
+
   // Create a new todo directly on the calendar (long-press on empty slot)
   const handleCreateTodo = useCallback(
     (text: string, dueDate: Date, durationMinutes: number) => {
@@ -300,6 +320,8 @@ export function StrideCalendar({
               onToggle={handleToggle}
               onDurationChange={handleDurationChange}
               onCreateTodo={handleCreateTodo}
+              onUpdateText={handleUpdateText}
+              onDelete={handleDeleteTodo}
             />
           )}
           {view === "week" && (
@@ -309,6 +331,8 @@ export function StrideCalendar({
               onToggle={handleToggle}
               onDurationChange={handleDurationChange}
               onCreateTodo={handleCreateTodo}
+              onUpdateText={handleUpdateText}
+              onDelete={handleDeleteTodo}
             />
           )}
           {view === "month" && (
@@ -325,6 +349,8 @@ export function StrideCalendar({
               onToggle={handleToggle}
               onDurationChange={handleDurationChange}
               onCreateTodo={handleCreateTodo}
+              onUpdateText={handleUpdateText}
+              onDelete={handleDeleteTodo}
               customDays={customDays}
             />
           )}
@@ -333,6 +359,8 @@ export function StrideCalendar({
           <StrideUnscheduled
             todos={unscheduled}
             onToggle={handleToggle}
+            onUpdateText={handleUpdateText}
+            onDelete={handleDeleteTodo}
           />
         )}
       </div>

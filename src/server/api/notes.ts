@@ -7,6 +7,7 @@ import {
   archiveNote,
   createCalendarTodo,
   createNote,
+  deleteCalendarTodo,
   deleteBlock,
   deleteNote,
   findNoteByTitle,
@@ -33,6 +34,7 @@ import {
   toggleCalendarTodo,
   toggleTodoBlock,
   updateBlock,
+  updateCalendarTodoText,
   updateNote,
 } from "@/domain/note/note.service";
 import { buildNoteExportArtifact } from "@/domain/note/note.export";
@@ -347,6 +349,19 @@ export async function setTodoDurationAction(
 ) {
   const { userId } = await requireAuthenticatedUser();
   await setTodoDuration(userId, blockId, durationMinutes);
+}
+
+export async function updateCalendarTodoTextAction(
+  blockId: string,
+  text: string
+) {
+  const { userId } = await requireAuthenticatedUser();
+  await updateCalendarTodoText(userId, blockId, text);
+}
+
+export async function deleteCalendarTodoAction(blockId: string) {
+  const { userId } = await requireAuthenticatedUser();
+  await deleteCalendarTodo(userId, blockId);
 }
 
 export async function createCalendarTodoAction(

@@ -1686,6 +1686,53 @@ export async function createCalendarTodo(
 }
 
 /**
+ * Update the text of a calendar taskItem block.
+ * The text lives in the first child paragraph block (or the block's own content).
+ */
+export async function updateCalendarTodoText(
+  userId: string,
+  blockId: string,
+  text: string
+): Promise<void> {
+  const newContent = {
+    type: "paragraph",
+    content: text.trim() ? [{ type: "text", text: text.trim() }] : [],
+  };
+
+  // The text is stored in the child paragraph block
+  const child = await db.block.findFirst({
+    where: { parentId: blockId, type: "paragraph", note: { userId } },
+    orderBy: { position: "asc" },
+    select: { id: true },
+  });
+
+  if (child) {
+    await db.block.update({
+      where: { id: child.id },
+      data: { content: newContent },
+    });
+  } else {
+    // Fallback: inline content
+    await db.block.updateMany({
+      where: { id: blockId, note: { userId } },
+      data: { content: newContent },
+    });
+  }
+}
+
+/**
+ * Delete a calendar taskItem block (children cascade automatically).
+ */
+export async function deleteCalendarTodo(
+  userId: string,
+  blockId: string
+): Promise<void> {
+  await db.block.deleteMany({
+    where: { id: blockId, note: { userId } },
+  });
+}
+
+/**
  * Set the duration (in minutes) of a taskItem block.
  */
 export async function setTodoDuration(

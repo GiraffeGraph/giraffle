@@ -143,16 +143,21 @@ function NewTodoInput({ minute, onConfirm, onCancel }: NewTodoInputProps) {
 
 interface EventBlockProps {
   todo: CalendarTodo;
-  isDraggedOver: boolean;  // this specific todo is being dragged
+  isDraggedOver: boolean;
   onToggle: (id: string, checked: boolean) => void;
   onDurationChange: (id: string, minutes: number) => void;
+  onUpdateText?: (id: string, text: string) => void;
+  onDelete?: (id: string) => void;
 }
 
-function EventBlock({ todo, isDraggedOver, onToggle, onDurationChange }: EventBlockProps) {
+function EventBlock({ todo, isDraggedOver, onToggle, onDurationChange, onUpdateText, onDelete }: EventBlockProps) {
   const blockRef = useRef<HTMLDivElement>(null);
   const resizeRef = useRef<HTMLDivElement>(null);
+  const titleInputRef = useRef<HTMLInputElement>(null);
   const [showPicker, setShowPicker] = useState(false);
   const [resizeDraft, setResizeDraft] = useState<number | null>(null);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState(todo.text);
   const isResizingRef = useRef(false);
   const startYRef = useRef(0);
   const startDurationRef = useRef(todo.durationMinutes);
@@ -175,6 +180,13 @@ function EventBlock({ todo, isDraggedOver, onToggle, onDurationChange }: EventBl
       x.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
     return `${fmt(d)} – ${fmt(endD)}`;
   }, [todo.dueDate, duration]);
+
+  // Focus title input when editing starts
+  useEffect(() => {
+    if (editingTitle) {
+      titleInputRef.current?.select();
+    }
+  }, [editingTitle]);
 
   // ── Draggable ──
   useEffect(() => {
@@ -260,7 +272,41 @@ function EventBlock({ todo, isDraggedOver, onToggle, onDurationChange }: EventBl
       </button>
 
       <div className="stride-event-body">
-        <span className="stride-event-title">{todo.text || "Untitled task"}</span>
+        {editingTitle ? (
+          <input
+            ref={titleInputRef}
+            className="stride-event-title-input"
+            value={titleDraft}
+            onChange={(e) => setTitleDraft(e.target.value)}
+            onMouseDown={(e) => e.stopPropagation()}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                onUpdateText?.(todo.id, titleDraft);
+                setEditingTitle(false);
+              }
+              if (e.key === "Escape") {
+                setTitleDraft(todo.text);
+                setEditingTitle(false);
+              }
+            }}
+            onBlur={() => {
+              onUpdateText?.(todo.id, titleDraft);
+              setEditingTitle(false);
+            }}
+          />
+        ) : (
+          <span
+            className="stride-event-title"
+            onDoubleClick={(e) => {
+              e.stopPropagation();
+              setTitleDraft(todo.text);
+              setEditingTitle(true);
+            }}
+          >
+            {todo.text || "Untitled task"}
+          </span>
+        )}
         {!compact && <span className="stride-event-time">{timeStr}</span>}
         {!compact && (
           <span className="stride-event-note">
@@ -268,6 +314,18 @@ function EventBlock({ todo, isDraggedOver, onToggle, onDurationChange }: EventBl
           </span>
         )}
       </div>
+
+      {onDelete && (
+        <button
+          type="button"
+          className="stride-event-delete-btn"
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={(e) => { e.stopPropagation(); onDelete(todo.id); }}
+          title="Delete task"
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: 13 }}>close</span>
+        </button>
+      )}
 
       {!compact && (
         <div className="stride-event-duration-wrap">
@@ -334,6 +392,8 @@ interface DayColumnProps {
   onToggle: (id: string, checked: boolean) => void;
   onDurationChange: (id: string, minutes: number) => void;
   onCreateTodo?: (text: string, dueDate: Date, durationMinutes: number) => void;
+  onUpdateText?: (id: string, text: string) => void;
+  onDelete?: (id: string) => void;
 }
 
 function DayColumn({
@@ -344,6 +404,8 @@ function DayColumn({
   onToggle,
   onDurationChange,
   onCreateTodo,
+  onUpdateText,
+  onDelete,
 }: DayColumnProps) {
   const colRef = useRef<HTMLDivElement>(null);
   const dayIso = startOfDay(date).toISOString();
@@ -436,6 +498,8 @@ function DayColumn({
           isDraggedOver={t.id === activeTodoId}
           onToggle={onToggle}
           onDurationChange={onDurationChange}
+          onUpdateText={onUpdateText}
+          onDelete={onDelete}
         />
       ))}
 
@@ -548,6 +612,8 @@ interface StrideWeekViewProps {
   onToggle: (id: string, checked: boolean) => void;
   onDurationChange?: (id: string, minutes: number) => void;
   onCreateTodo?: (text: string, dueDate: Date, durationMinutes: number) => void;
+  onUpdateText?: (id: string, text: string) => void;
+  onDelete?: (id: string) => void;
   customDays?: number;
 }
 
@@ -557,6 +623,8 @@ export function StrideWeekView({
   onToggle,
   onDurationChange,
   onCreateTodo,
+  onUpdateText,
+  onDelete,
   customDays,
 }: StrideWeekViewProps) {
   const days = useMemo(() => {
@@ -717,6 +785,8 @@ export function StrideWeekView({
                     onToggle={onToggle}
                     onDurationChange={handleDuration}
                     onCreateTodo={onCreateTodo}
+                    onUpdateText={onUpdateText}
+                    onDelete={onDelete}
                   />
                 </div>
               );

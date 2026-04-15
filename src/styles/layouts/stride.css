@@ -927,6 +927,84 @@
   opacity: 0.75;
 }
 
+/* ─── Event block — edit & delete ───────────────────────────── */
+
+.stride-event-title-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--stride-event-accent, var(--accent));
+  outline: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--md-sys-color-on-surface);
+  caret-color: var(--stride-event-accent, var(--accent));
+  padding: 0;
+  line-height: 1.3;
+}
+
+.stride-event-delete-btn {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: none;
+  background: color-mix(in srgb, var(--md-sys-color-error) 15%, transparent);
+  color: var(--md-sys-color-error);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 120ms ease;
+  flex-shrink: 0;
+}
+
+.stride-event-block:hover .stride-event-delete-btn {
+  opacity: 1;
+}
+
+/* ─── Todo card — edit & delete ──────────────────────────────── */
+
+.stride-todo-title-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--md-sys-color-primary);
+  outline: none;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--md-sys-color-on-surface);
+  caret-color: var(--md-sys-color-primary);
+  padding: 0;
+}
+
+.stride-todo-delete-btn {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--md-sys-color-on-surface-variant);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 120ms ease, color 120ms ease;
+  flex-shrink: 0;
+}
+
+.stride-todo-card:hover .stride-todo-delete-btn {
+  opacity: 1;
+}
+
+.stride-todo-delete-btn:hover {
+  color: var(--md-sys-color-error);
+}
+
 /* ─── Inline new-todo creator ────────────────────────────────── */
 
 .stride-new-todo-input {

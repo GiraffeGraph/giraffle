@@ -8,6 +8,8 @@ import { StrideTodoCard } from "./StrideTodoCard";
 interface StrideUnscheduledProps {
   todos: CalendarTodo[];
   onToggle: (id: string, checked: boolean) => void;
+  onUpdateText?: (id: string, text: string) => void;
+  onDelete?: (id: string) => void;
 }
 
 function UnscheduledDropZone({ children }: { children: React.ReactNode }) {
@@ -40,7 +42,7 @@ function UnscheduledDropZone({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function StrideUnscheduled({ todos, onToggle }: StrideUnscheduledProps) {
+export function StrideUnscheduled({ todos, onToggle, onUpdateText, onDelete }: StrideUnscheduledProps) {
   const [filter, setFilter] = useState<"all" | "active" | "done">("active");
   const [search, setSearch] = useState("");
 
@@ -124,6 +126,8 @@ export function StrideUnscheduled({ todos, onToggle }: StrideUnscheduledProps) {
                     todo={t}
                     variant="unscheduled"
                     onToggle={onToggle}
+                    onUpdateText={onUpdateText}
+                    onDelete={onDelete}
                   />
                 ))}
               </div>
