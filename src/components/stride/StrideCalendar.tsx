@@ -10,6 +10,7 @@ import {
 } from "react";
 import { monitorForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import {
+  createCalendarTodoAction,
   getCalendarTodosAction,
   getUnscheduledTodosAction,
   setTodoDueDateAction,
@@ -207,6 +208,20 @@ export function StrideCalendar({
     startTransition(() => toggleCalendarTodoAction(todoId, checked));
   }, []);
 
+  // Create a new todo directly on the calendar (long-press on empty slot)
+  const handleCreateTodo = useCallback(
+    (text: string, dueDate: Date, durationMinutes: number) => {
+      startTransition(async () => {
+        const newTodo = await createCalendarTodoAction(text, dueDate, durationMinutes);
+        setTodos((prev) => [
+          ...prev,
+          { ...newTodo, dueDate: new Date(newTodo.dueDate!) },
+        ]);
+      });
+    },
+    []
+  );
+
   // Duration change — optimistic + persist
   const handleDurationChange = useCallback(
     (todoId: string, minutes: number) => {
@@ -284,6 +299,7 @@ export function StrideCalendar({
               todos={todos}
               onToggle={handleToggle}
               onDurationChange={handleDurationChange}
+              onCreateTodo={handleCreateTodo}
             />
           )}
           {view === "week" && (
@@ -292,6 +308,7 @@ export function StrideCalendar({
               todos={todos}
               onToggle={handleToggle}
               onDurationChange={handleDurationChange}
+              onCreateTodo={handleCreateTodo}
             />
           )}
           {view === "month" && (
@@ -307,6 +324,7 @@ export function StrideCalendar({
               todos={todos}
               onToggle={handleToggle}
               onDurationChange={handleDurationChange}
+              onCreateTodo={handleCreateTodo}
               customDays={customDays}
             />
           )}

@@ -8,7 +8,7 @@ import { getAllFolders } from "@/domain/folder/folder.service";
 import { normalizeNoteCategoryColor } from "@/domain/category/category.types";
 import { recordOperation } from "@/domain/sync/operation-log.service";
 import { syncNoteTags } from "@/domain/tag/tag.service";
-import { slugify } from "@/lib/utils";
+import { generateId, slugify } from "@/lib/utils";
 import {
   DEFAULT_NOTE_TITLE,
   EISENHOWER_QUADRANTS,
@@ -1615,6 +1615,74 @@ export async function toggleCalendarTodo(
     where: { id: blockId },
     data: { attributes: { ...attrs, checked } },
   });
+}
+
+/**
+ * Create a new taskItem on the Stride calendar, placing it in the "Daily" note
+ * (which is created on demand). Returns the new CalendarTodo shape.
+ */
+export async function createCalendarTodo(
+  userId: string,
+  text: string,
+  dueDate: Date,
+  durationMinutes: number
+) {
+  // 1. Find or create "Daily" note
+  let note = await db.note.findFirst({
+    where: { userId, title: "Daily", isArchived: false },
+    select: { id: true, title: true, icon: true },
+  });
+  if (!note) {
+    const noteId = await createNote(userId, { title: "Daily" });
+    note = { id: noteId, title: "Daily", icon: null };
+  }
+
+  // 2. Pre-assign a blockId so we can set dueDate after insertBlock
+  const blockId = generateId();
+
+  const taskItemNode: BlockNodeContent = {
+    type: "taskItem",
+    attrs: { blockId, checked: false, durationMinutes },
+    content: [
+      {
+        type: "paragraph",
+        content: text.trim()
+          ? [{ type: "text", text: text.trim() } as { type: "text"; text: string }]
+          : [],
+      },
+    ],
+  };
+
+  // 3. Append to existing taskList or wrap in a new one
+  const existingTaskList = await db.block.findFirst({
+    where: { noteId: note.id, type: "taskList", note: { userId } },
+    select: { id: true },
+  });
+
+  if (existingTaskList) {
+    await insertBlock(userId, note.id, {
+      block: taskItemNode,
+      parentBlockId: existingTaskList.id,
+    });
+  } else {
+    await insertBlock(userId, note.id, {
+      block: { type: "taskList", content: [taskItemNode] },
+    });
+  }
+
+  // 4. Persist dueDate on the newly created block
+  await setTodoDueDate(userId, blockId, dueDate);
+
+  return {
+    id: blockId,
+    text: text.trim() || "New task",
+    checked: false,
+    quadrant: null as EisenhowerQuadrant | null,
+    dueDate,
+    durationMinutes,
+    position: 0,
+    note: { id: note.id, title: note.title, icon: note.icon },
+  };
 }
 
 /**

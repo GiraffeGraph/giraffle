@@ -5,6 +5,7 @@ import { getBacklinks } from "@/domain/link/link.service";
 import {
   addTodoToNote,
   archiveNote,
+  createCalendarTodo,
   createNote,
   deleteBlock,
   deleteNote,
@@ -346,4 +347,13 @@ export async function setTodoDurationAction(
 ) {
   const { userId } = await requireAuthenticatedUser();
   await setTodoDuration(userId, blockId, durationMinutes);
+}
+
+export async function createCalendarTodoAction(
+  text: string,
+  dueDate: Date,
+  durationMinutes: number
+) {
+  const { userId } = await requireAuthenticatedUser();
+  return createCalendarTodo(userId, text, dueDate, durationMinutes);
 }

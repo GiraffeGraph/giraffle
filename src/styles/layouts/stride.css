@@ -927,6 +927,38 @@
   opacity: 0.75;
 }
 
+/* ─── Inline new-todo creator ────────────────────────────────── */
+
+.stride-new-todo-input {
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--md-sys-color-primary) 12%, transparent);
+  border: 2px dashed var(--md-sys-color-primary);
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  z-index: 12;
+  animation: stride-ghost-in 120ms ease both;
+}
+
+.stride-new-todo-text {
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--md-sys-color-on-surface);
+  caret-color: var(--md-sys-color-primary);
+}
+
+.stride-new-todo-text::placeholder {
+  color: var(--md-sys-color-on-surface-variant);
+  opacity: 0.6;
+}
+
 /* ─── Unscheduled panel ──────────────────────────────────────── */
 
 .stride-unscheduled-panel {

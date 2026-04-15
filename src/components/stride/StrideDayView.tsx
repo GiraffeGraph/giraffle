@@ -24,6 +24,7 @@ interface StrideDayViewProps {
   todos: CalendarTodo[];
   onToggle: (id: string, checked: boolean) => void;
   onDurationChange?: (id: string, minutes: number) => void;
+  onCreateTodo?: (text: string, dueDate: Date, durationMinutes: number) => void;
 }
 
 // Day view reuses WeekView with customDays=1
@@ -32,6 +33,7 @@ export function StrideDayView({
   todos,
   onToggle,
   onDurationChange,
+  onCreateTodo,
 }: StrideDayViewProps) {
   return (
     <StrideWeekView
@@ -39,6 +41,7 @@ export function StrideDayView({
       todos={todos}
       onToggle={onToggle}
       onDurationChange={onDurationChange}
+      onCreateTodo={onCreateTodo}
       customDays={1}
     />
   );

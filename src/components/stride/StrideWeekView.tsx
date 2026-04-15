@@ -84,6 +84,61 @@ interface DragOverlay {
   accentColor: string;
 }
 
+// ─── New-todo inline creator ──────────────────────────────────
+
+interface NewTodoInputProps {
+  minute: number;
+  onConfirm: (text: string) => void;
+  onCancel: () => void;
+}
+
+function NewTodoInput({ minute, onConfirm, onCancel }: NewTodoInputProps) {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [text, setText] = useState("");
+
+  // Focus after mount, but delay slightly so the mouseup that ended
+  // the hold doesn't steal focus away before we get it
+  useEffect(() => {
+    const id = setTimeout(() => inputRef.current?.focus(), 50);
+    return () => clearTimeout(id);
+  }, []);
+
+  // Dismiss on outside mousedown (same pattern as StrideDurationPicker)
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
+        onCancel();
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [onCancel]);
+
+  const commit = () => onConfirm(text.trim() || "New task");
+
+  return (
+    <div
+      ref={wrapRef}
+      className="stride-new-todo-input"
+      style={{ top: minute, height: HOUR_PX }}
+      onMouseDown={(e) => e.stopPropagation()}
+    >
+      <input
+        ref={inputRef}
+        className="stride-new-todo-text"
+        placeholder="New task…"
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") { e.preventDefault(); commit(); }
+          if (e.key === "Escape") { e.preventDefault(); onCancel(); }
+        }}
+      />
+    </div>
+  );
+}
+
 // ─── Event block ──────────────────────────────────────────────
 
 interface EventBlockProps {
@@ -191,6 +246,7 @@ function EventBlock({ todo, isDraggedOver, onToggle, onDurationChange }: EventBl
         resizeDraft !== null ? "stride-event-block--resizing" : "",
       ].filter(Boolean).join(" ")}
       style={{ top, height, "--stride-event-accent": accentColor } as React.CSSProperties}
+      onMouseDown={(e) => e.stopPropagation()}
     >
       <button
         type="button"
@@ -277,6 +333,7 @@ interface DayColumnProps {
   activeTodoId: string | null;
   onToggle: (id: string, checked: boolean) => void;
   onDurationChange: (id: string, minutes: number) => void;
+  onCreateTodo?: (text: string, dueDate: Date, durationMinutes: number) => void;
 }
 
 function DayColumn({
@@ -286,10 +343,14 @@ function DayColumn({
   activeTodoId,
   onToggle,
   onDurationChange,
+  onCreateTodo,
 }: DayColumnProps) {
   const colRef = useRef<HTMLDivElement>(null);
   const dayIso = startOfDay(date).toISOString();
   const isHovered = dragOverlay?.dayIso === dayIso;
+  const [createMinute, setCreateMinute] = useState<number | null>(null);
+  const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const holdStartYRef = useRef(0);
 
   useEffect(() => {
     const el = colRef.current;
@@ -311,6 +372,51 @@ function DayColumn({
     });
   }, [dayIso]);
 
+  const handleMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.button !== 0) return;
+    const el = colRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const relY = Math.max(0, e.clientY - rect.top);
+    const snapped = Math.min(snap(Math.floor(relY)), 23 * 60 + 45);
+    holdStartYRef.current = e.clientY;
+    document.body.style.userSelect = "none";
+
+    holdTimerRef.current = setTimeout(() => {
+      document.body.style.userSelect = "";
+      setCreateMinute(snapped);
+    }, 300);
+  }, []);
+
+  const handleMouseMoveCancel = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (holdTimerRef.current && Math.abs(e.clientY - holdStartYRef.current) > 6) {
+      clearTimeout(holdTimerRef.current);
+      holdTimerRef.current = null;
+    }
+  }, []);
+
+  const handleMouseUpCancel = useCallback(() => {
+    document.body.style.userSelect = "";
+    if (holdTimerRef.current) {
+      clearTimeout(holdTimerRef.current);
+      holdTimerRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
+    };
+  }, []);
+
+  const handleConfirm = useCallback((text: string) => {
+    if (createMinute === null) return;
+    const dueDate = new Date(date);
+    dueDate.setHours(Math.floor(createMinute / 60), createMinute % 60, 0, 0);
+    onCreateTodo?.(text, dueDate, 60);
+    setCreateMinute(null);
+  }, [createMinute, date, onCreateTodo]);
+
   return (
     <div
       ref={colRef}
@@ -319,6 +425,9 @@ function DayColumn({
         isHovered ? "stride-day-column--hovered" : "",
       ].filter(Boolean).join(" ")}
       style={{ height: HOUR_PX * 24 }}
+      onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMoveCancel}
+      onMouseUp={handleMouseUpCancel}
     >
       {todos.map((t) => (
         <EventBlock
@@ -337,6 +446,15 @@ function DayColumn({
           duration={dragOverlay.duration}
           accentColor={dragOverlay.accentColor}
           label={formatMinutes(dragOverlay.startMinute)}
+        />
+      )}
+
+      {/* Inline creation input — shown after long-press */}
+      {createMinute !== null && (
+        <NewTodoInput
+          minute={createMinute}
+          onConfirm={handleConfirm}
+          onCancel={() => setCreateMinute(null)}
         />
       )}
     </div>
@@ -429,6 +547,7 @@ interface StrideWeekViewProps {
   todos: CalendarTodo[];
   onToggle: (id: string, checked: boolean) => void;
   onDurationChange?: (id: string, minutes: number) => void;
+  onCreateTodo?: (text: string, dueDate: Date, durationMinutes: number) => void;
   customDays?: number;
 }
 
@@ -437,6 +556,7 @@ export function StrideWeekView({
   todos,
   onToggle,
   onDurationChange,
+  onCreateTodo,
   customDays,
 }: StrideWeekViewProps) {
   const days = useMemo(() => {
@@ -596,6 +716,7 @@ export function StrideWeekView({
                     activeTodoId={activeTodoId}
                     onToggle={onToggle}
                     onDurationChange={handleDuration}
+                    onCreateTodo={onCreateTodo}
                   />
                 </div>
               );
