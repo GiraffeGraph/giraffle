@@ -143,24 +143,26 @@ model NoteCategory {
 }
 
 model Block {
-  id         String   @id @default(uuid())
+  id         String    @id @default(uuid())
   noteId     String
-  note       Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
-  type       String   @default("paragraph")
-  content    Json     @default("{}")
-  attributes Json     @default("{}")
+  note       Note      @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  type       String    @default("paragraph")
+  content    Json      @default("{}")
+  attributes Json      @default("{}")
   parentId   String?
-  parent     Block?   @relation("BlockTree", fields: [parentId], references: [id], onDelete: Cascade)
-  children   Block[]  @relation("BlockTree")
-  position   Int      @default(0)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  parent     Block?    @relation("BlockTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children   Block[]   @relation("BlockTree")
+  position   Int       @default(0)
+  dueDate    DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 
   links Link[] @relation("BlockLinks")
 
   @@index([noteId])
   @@index([parentId])
   @@index([noteId, position])
+  @@index([dueDate])
 }
 
 model Link {

@@ -745,6 +745,16 @@ export function Sidebar({
         },
       },
       {
+        id: "action-stride",
+        group: "Navigation",
+        title: "Stride — Calendar",
+        description: "Open the Stride todo calendar view",
+        icon: encodeMaterialSymbol("calendar_month"),
+        onSelect: async () => {
+          router.push("/stride");
+        },
+      },
+      {
         id: "action-search",
         group: "Navigation",
         title: "Open search workspace",
@@ -1173,6 +1183,11 @@ export function Sidebar({
                         path: "/tower-matrix",
                         icon: "grid_4x4",
                         label: "Tower Matrix",
+                      },
+                      {
+                        path: "/stride",
+                        icon: "calendar_month",
+                        label: "Stride",
                       },
                       {
                         path: "/coat-canvas",

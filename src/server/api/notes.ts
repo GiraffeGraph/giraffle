@@ -17,6 +17,8 @@ import {
   getNoteTodoBlocks,
   getPublicNoteBySlug,
   getPublishedNotesForExport,
+  getTodosForCalendar,
+  getUnscheduledTodos,
   insertBlock,
   moveBlock,
   moveNote,
@@ -25,6 +27,8 @@ import {
   saveNoteContent,
   searchNotesByTitle,
   setTodoBlockQuadrant,
+  setTodoDueDate,
+  toggleCalendarTodo,
   toggleTodoBlock,
   updateBlock,
   updateNote,
@@ -304,4 +308,33 @@ export async function addTodoToNoteAction(noteId: string, text: string) {
   const { userId } = await requireAuthenticatedUser();
   await addTodoToNote(userId, noteId, text);
   revalidatePath("/tower-matrix");
+}
+
+// ─── Stride Calendar Actions ──────────────────────────────────
+
+export async function getCalendarTodosAction(start: Date, end: Date) {
+  const { userId } = await requireAuthenticatedUser();
+  return getTodosForCalendar(userId, start, end);
+}
+
+export async function getUnscheduledTodosAction() {
+  const { userId } = await requireAuthenticatedUser();
+  return getUnscheduledTodos(userId);
+}
+
+export async function setTodoDueDateAction(
+  blockId: string,
+  dueDate: Date | null
+) {
+  const { userId } = await requireAuthenticatedUser();
+  await setTodoDueDate(userId, blockId, dueDate);
+  revalidatePath("/stride");
+}
+
+export async function toggleCalendarTodoAction(
+  blockId: string,
+  checked: boolean
+) {
+  const { userId } = await requireAuthenticatedUser();
+  await toggleCalendarTodo(userId, blockId, checked);
 }

@@ -1472,3 +1472,141 @@ function buildFolderPath(
 
   return path;
 }
+
+// ─── Stride Calendar ─────────────────────────────────────────
+
+/**
+ * Get all taskItem blocks that have a dueDate within [start, end) for the Stride calendar.
+ */
+export async function getTodosForCalendar(
+  userId: string,
+  start: Date,
+  end: Date
+) {
+  const rows = await db.block.findMany({
+    where: {
+      type: "taskItem",
+      dueDate: { gte: start, lt: end },
+      note: { userId, isArchived: false },
+    },
+    select: {
+      id: true,
+      content: true,
+      attributes: true,
+      dueDate: true,
+      position: true,
+      children: {
+        select: { content: true },
+        orderBy: { position: "asc" },
+      },
+      note: {
+        select: { id: true, title: true, icon: true },
+      },
+    },
+    orderBy: { dueDate: "asc" },
+  });
+
+  return rows.map((b) => {
+    const attrs = (b.attributes ?? {}) as Record<string, unknown>;
+    const text =
+      b.children.length > 0
+        ? b.children.map((c) => extractBlockText(c.content)).join("")
+        : extractBlockText(b.content);
+    return {
+      id: b.id,
+      text,
+      checked: attrs.checked === true,
+      quadrant: (EISENHOWER_QUADRANTS as readonly string[]).includes(
+        String(attrs.quadrant ?? "")
+      )
+        ? (attrs.quadrant as EisenhowerQuadrant)
+        : null,
+      dueDate: b.dueDate!,
+      position: b.position,
+      note: b.note,
+    };
+  });
+}
+
+/**
+ * Get all unscheduled taskItem blocks (no dueDate) for the Stride sidebar.
+ */
+export async function getUnscheduledTodos(userId: string) {
+  const rows = await db.block.findMany({
+    where: {
+      type: "taskItem",
+      dueDate: null,
+      note: { userId, isArchived: false },
+    },
+    select: {
+      id: true,
+      content: true,
+      attributes: true,
+      position: true,
+      children: {
+        select: { content: true },
+        orderBy: { position: "asc" },
+      },
+      note: {
+        select: { id: true, title: true, icon: true },
+      },
+    },
+    orderBy: [{ note: { updatedAt: "desc" } }, { position: "asc" }],
+    take: 200,
+  });
+
+  return rows.map((b) => {
+    const attrs = (b.attributes ?? {}) as Record<string, unknown>;
+    const text =
+      b.children.length > 0
+        ? b.children.map((c) => extractBlockText(c.content)).join("")
+        : extractBlockText(b.content);
+    return {
+      id: b.id,
+      text,
+      checked: attrs.checked === true,
+      quadrant: (EISENHOWER_QUADRANTS as readonly string[]).includes(
+        String(attrs.quadrant ?? "")
+      )
+        ? (attrs.quadrant as EisenhowerQuadrant)
+        : null,
+      dueDate: null as Date | null,
+      position: b.position,
+      note: b.note,
+    };
+  });
+}
+
+/**
+ * Set (or clear) the dueDate of a taskItem block.
+ */
+export async function setTodoDueDate(
+  userId: string,
+  blockId: string,
+  dueDate: Date | null
+): Promise<void> {
+  await db.block.updateMany({
+    where: { id: blockId, note: { userId } },
+    data: { dueDate },
+  });
+}
+
+/**
+ * Toggle checked state of a taskItem and return updated state (used in calendar).
+ */
+export async function toggleCalendarTodo(
+  userId: string,
+  blockId: string,
+  checked: boolean
+): Promise<void> {
+  const block = await db.block.findFirst({
+    where: { id: blockId, note: { userId } },
+    select: { attributes: true },
+  });
+  if (!block) throw new Error("Block not found");
+  const attrs = (block.attributes ?? {}) as Record<string, unknown>;
+  await db.block.update({
+    where: { id: blockId },
+    data: { attributes: { ...attrs, checked } },
+  });
+}
