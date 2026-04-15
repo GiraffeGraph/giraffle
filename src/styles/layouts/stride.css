@@ -335,113 +335,101 @@
   min-height: 28px;
 }
 
-/* Time grid */
+/* ─── Positioned time grid (absolute layout, 1px = 1min) ─────── */
+
 .stride-time-grid-scroll {
   flex: 1;
   overflow-y: auto;
   overscroll-behavior: contain;
 }
 
+/* The grid container holds the gutter, gridlines, and day columns */
 .stride-time-grid {
-  display: flex;
-  flex-direction: column;
-}
-
-.stride-hour-row {
+  position: relative;
   display: grid;
-  grid-template-columns: 52px repeat(var(--stride-col-count, 7), 1fr);
-  min-height: 56px;
+  grid-template-columns: 52px 1fr;
+  /* height is set inline: HOUR_PX * 24 */
 }
 
-.stride-hour-row + .stride-hour-row {
-  border-top: 1px solid var(--border-soft);
+/* Gutter column */
+.stride-gutter-col {
+  position: relative;
+  grid-column: 1;
+  grid-row: 1;
+  pointer-events: none;
+  z-index: 2;
 }
 
-.stride-time-slot {
-  border-left: 1px solid var(--border-soft);
-  padding: 2px 4px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  cursor: pointer;
-  transition: background var(--transition-fast);
-  min-height: 56px;
-}
-
-.stride-time-slot:hover {
-  background: color-mix(in srgb, var(--accent) 4%, transparent);
-}
-
-/* ─── Day view ───────────────────────────────────────────────── */
-
-.stride-day-view {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
-}
-
-.stride-day-view-header {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 20px;
-  border-bottom: 1px solid var(--border-soft);
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.stride-day-view-header--today {
-  color: var(--accent);
-}
-
-.stride-today-badge {
-  font-size: 11px;
-  font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 10px;
-  background: var(--accent-subtle);
-  color: var(--accent);
-}
-
-.stride-day-grid-scroll {
-  flex: 1;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-}
-
-.stride-day-hour-row {
-  display: grid;
-  grid-template-columns: 64px 1fr;
-  min-height: 56px;
-  border-top: 1px solid var(--border-soft);
-}
-
-.stride-day-time-label {
+.stride-gutter-hour {
+  position: absolute;
+  left: 0;
+  right: 0;
   display: flex;
   align-items: flex-start;
   justify-content: flex-end;
-  padding: 4px 10px 0 0;
-  font-size: 11px;
+  padding-right: 8px;
+}
+
+.stride-gutter-hour span {
+  font-size: 10px;
   color: var(--text-muted);
   white-space: nowrap;
   margin-top: -7px;
-  flex-shrink: 0;
+  line-height: 1;
 }
 
-.stride-day-hour-content {
-  padding: 2px 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  cursor: pointer;
-  transition: background var(--transition-fast);
+/* Grid lines layer */
+.stride-grid-lines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  grid-column: 2;
+  grid-row: 1;
 }
 
-.stride-day-hour-content:hover {
-  background: color-mix(in srgb, var(--accent) 4%, transparent);
+.stride-grid-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--border-soft);
+}
+
+.stride-grid-line--half {
+  background: color-mix(in srgb, var(--border-soft) 50%, transparent);
+}
+
+/* Day columns layer */
+.stride-day-columns {
+  position: absolute;
+  top: 0;
+  left: 52px; /* gutter width */
+  right: 0;
+  bottom: 0;
+  display: grid;
+  grid-template-columns: repeat(var(--stride-col-count, 7), 1fr);
+  z-index: 3;
+}
+
+/* Each day column */
+.stride-day-column {
+  position: relative;
+  border-left: 1px solid var(--border-soft);
+  overflow: visible; /* events can overlap borders */
+}
+
+/* All-day chip in allday row */
+.stride-allday-chip {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--accent-subtle);
+  color: var(--accent);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
 }
 
 /* ─── Month view ─────────────────────────────────────────────── */
@@ -642,6 +630,211 @@
   border-radius: 50%;
   flex-shrink: 0;
   margin-top: 3px;
+}
+
+/* ─── Positioned event block (day/week/custom views) ─────────── */
+
+.stride-event-block {
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  border-radius: 6px;
+  border-left: 3px solid var(--stride-event-accent, var(--md-sys-color-primary));
+  background: color-mix(in srgb, var(--stride-event-accent, var(--accent)) 12%, var(--surface-glass-strong));
+  backdrop-filter: blur(6px);
+  cursor: grab;
+  user-select: none;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 3px 6px 8px 4px;
+  transition:
+    box-shadow var(--transition-fast),
+    transform var(--transition-fast),
+    opacity var(--transition-fast);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+  z-index: 4;
+  min-height: 15px;
+}
+
+.stride-event-block:active {
+  cursor: grabbing;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.18);
+  z-index: 99;
+  transform: scale(1.01);
+}
+
+.stride-event-block--checked {
+  opacity: 0.45;
+}
+
+.stride-event-block--compact {
+  padding: 2px 4px;
+}
+
+.stride-event-check {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--stride-event-accent, var(--accent));
+  padding: 0;
+  margin-top: 1px;
+}
+
+.stride-event-check-ring {
+  display: block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1.5px solid var(--stride-event-accent, var(--accent));
+  opacity: 0.7;
+}
+
+.stride-event-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  overflow: hidden;
+}
+
+.stride-event-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stride-event-time {
+  font-size: 10px;
+  color: var(--stride-event-accent, var(--accent));
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stride-event-note {
+  font-size: 9px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+/* Duration badge + picker */
+.stride-event-duration-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.stride-event-duration-btn {
+  display: inline-flex;
+  align-items: center;
+  height: 16px;
+  padding: 0 5px;
+  border: 1px solid color-mix(in srgb, var(--stride-event-accent, var(--accent)) 40%, transparent);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--stride-event-accent, var(--accent)) 10%, transparent);
+  color: var(--stride-event-accent, var(--accent));
+  font-size: 9px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--transition-fast);
+}
+
+.stride-event-duration-btn:hover {
+  background: color-mix(in srgb, var(--stride-event-accent, var(--accent)) 20%, transparent);
+}
+
+/* Resize handle at bottom of event block */
+.stride-event-resize-handle {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 8px;
+  cursor: ns-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stride-event-resize-handle::after {
+  content: "";
+  display: block;
+  width: 24px;
+  height: 2px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--stride-event-accent, var(--accent)) 50%, transparent);
+}
+
+/* Duration picker dropdown */
+.stride-duration-picker {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 100;
+  background: var(--surface-overlay);
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  box-shadow: var(--shadow-lift);
+  padding: 8px;
+  min-width: 160px;
+  animation: md-rise-in 160ms var(--md-sys-motion-easing-emphasized-decelerate) both;
+}
+
+.stride-duration-picker-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+}
+
+.stride-duration-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+}
+
+.stride-duration-preset {
+  height: 26px;
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+  background: var(--surface-glass);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.stride-duration-preset:hover {
+  background: var(--surface-highlight);
+  color: var(--text-primary);
+}
+
+.stride-duration-preset.active {
+  background: var(--accent-subtle);
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+  font-weight: 700;
 }
 
 /* ─── Unscheduled panel ──────────────────────────────────────── */

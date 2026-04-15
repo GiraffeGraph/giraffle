@@ -13,6 +13,7 @@ import {
   getCalendarTodosAction,
   getUnscheduledTodosAction,
   setTodoDueDateAction,
+  setTodoDurationAction,
   toggleCalendarTodoAction,
 } from "@/server/api/notes";
 import type { CalendarTodo, CalendarView } from "./stride.types";
@@ -206,6 +207,19 @@ export function StrideCalendar({
     startTransition(() => toggleCalendarTodoAction(todoId, checked));
   }, []);
 
+  // Duration change — optimistic + persist
+  const handleDurationChange = useCallback(
+    (todoId: string, minutes: number) => {
+      setTodos((prev) =>
+        prev.map((t) =>
+          t.id === todoId ? { ...t, durationMinutes: minutes } : t
+        )
+      );
+      startTransition(() => setTodoDurationAction(todoId, minutes));
+    },
+    []
+  );
+
   // Global DnD monitor
   const monitorCleanupRef = useRef<(() => void) | null>(null);
   useEffect(() => {
@@ -225,8 +239,9 @@ export function StrideCalendar({
           const todoId = srcData.todoId as string;
           const slotDate = new Date(dstData.date as string);
           const hour = dstData.hour as number;
+          const minute = typeof dstData.minute === "number" ? dstData.minute : 0;
           if (hour >= 0) {
-            slotDate.setHours(hour, 0, 0, 0);
+            slotDate.setHours(hour, minute, 0, 0);
           } else {
             slotDate.setHours(8, 0, 0, 0);
           }
@@ -268,6 +283,7 @@ export function StrideCalendar({
               anchor={anchor}
               todos={todos}
               onToggle={handleToggle}
+              onDurationChange={handleDurationChange}
             />
           )}
           {view === "week" && (
@@ -275,6 +291,7 @@ export function StrideCalendar({
               anchor={anchor}
               todos={todos}
               onToggle={handleToggle}
+              onDurationChange={handleDurationChange}
             />
           )}
           {view === "month" && (
@@ -289,6 +306,7 @@ export function StrideCalendar({
               anchor={anchor}
               todos={todos}
               onToggle={handleToggle}
+              onDurationChange={handleDurationChange}
               customDays={customDays}
             />
           )}

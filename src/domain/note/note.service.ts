@@ -1512,6 +1512,7 @@ export async function getTodosForCalendar(
       b.children.length > 0
         ? b.children.map((c) => extractBlockText(c.content)).join("")
         : extractBlockText(b.content);
+    const rawDuration = attrs.durationMinutes;
     return {
       id: b.id,
       text,
@@ -1522,6 +1523,8 @@ export async function getTodosForCalendar(
         ? (attrs.quadrant as EisenhowerQuadrant)
         : null,
       dueDate: b.dueDate!,
+      durationMinutes:
+        typeof rawDuration === "number" && rawDuration > 0 ? rawDuration : 60,
       position: b.position,
       note: b.note,
     };
@@ -1561,6 +1564,7 @@ export async function getUnscheduledTodos(userId: string) {
       b.children.length > 0
         ? b.children.map((c) => extractBlockText(c.content)).join("")
         : extractBlockText(b.content);
+    const rawDuration = attrs.durationMinutes;
     return {
       id: b.id,
       text,
@@ -1571,6 +1575,8 @@ export async function getUnscheduledTodos(userId: string) {
         ? (attrs.quadrant as EisenhowerQuadrant)
         : null,
       dueDate: null as Date | null,
+      durationMinutes:
+        typeof rawDuration === "number" && rawDuration > 0 ? rawDuration : 60,
       position: b.position,
       note: b.note,
     };
@@ -1608,5 +1614,25 @@ export async function toggleCalendarTodo(
   await db.block.update({
     where: { id: blockId },
     data: { attributes: { ...attrs, checked } },
+  });
+}
+
+/**
+ * Set the duration (in minutes) of a taskItem block.
+ */
+export async function setTodoDuration(
+  userId: string,
+  blockId: string,
+  durationMinutes: number
+): Promise<void> {
+  const block = await db.block.findFirst({
+    where: { id: blockId, note: { userId } },
+    select: { attributes: true },
+  });
+  if (!block) throw new Error("Block not found");
+  const attrs = (block.attributes ?? {}) as Record<string, unknown>;
+  await db.block.update({
+    where: { id: blockId },
+    data: { attributes: { ...attrs, durationMinutes } },
   });
 }

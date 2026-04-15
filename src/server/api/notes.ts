@@ -28,6 +28,7 @@ import {
   searchNotesByTitle,
   setTodoBlockQuadrant,
   setTodoDueDate,
+  setTodoDuration,
   toggleCalendarTodo,
   toggleTodoBlock,
   updateBlock,
@@ -337,4 +338,12 @@ export async function toggleCalendarTodoAction(
 ) {
   const { userId } = await requireAuthenticatedUser();
   await toggleCalendarTodo(userId, blockId, checked);
+}
+
+export async function setTodoDurationAction(
+  blockId: string,
+  durationMinutes: number
+) {
+  const { userId } = await requireAuthenticatedUser();
+  await setTodoDuration(userId, blockId, durationMinutes);
 }

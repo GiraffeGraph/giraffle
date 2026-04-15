@@ -6,6 +6,7 @@ export interface CalendarTodo {
   checked: boolean;
   quadrant: "DO" | "SCHEDULE" | "DELEGATE" | "ELIMINATE" | null;
   dueDate: Date | null;
+  durationMinutes: number; // default 60
   position: number;
   note: {
     id: string;
