@@ -91,6 +91,17 @@ function summarizeTodos(todos: TodoBlock[]): TodoSummary {
   };
 }
 
+function areTodoSummariesEqual(left: TodoSummary, right: TodoSummary) {
+  return (
+    left.todoTotal === right.todoTotal &&
+    left.todoCompleted === right.todoCompleted &&
+    left.todoByQuadrant.DO === right.todoByQuadrant.DO &&
+    left.todoByQuadrant.SCHEDULE === right.todoByQuadrant.SCHEDULE &&
+    left.todoByQuadrant.DELEGATE === right.todoByQuadrant.DELEGATE &&
+    left.todoByQuadrant.ELIMINATE === right.todoByQuadrant.ELIMINATE
+  );
+}
+
 // ─── Drag protocols ───────────────────────────────────────────
 
 const NOTE_DRAG = "tm:note" as const;
@@ -825,8 +836,40 @@ export function TowerMatrix({ notes }: { notes: NoteWithTodoSummary[] }) {
   }, []);
 
   const handleSummaryChange = useCallback((noteId: string, summary: TodoSummary) => {
-    updateNoteItem(noteId, (note) => ({ ...note, ...summary }));
-  }, [updateNoteItem]);
+    setNoteItems((prev) =>
+      prev.map((note) => {
+        if (note.id !== noteId) {
+          return note;
+        }
+
+        const currentSummary: TodoSummary = {
+          todoTotal: note.todoTotal,
+          todoCompleted: note.todoCompleted,
+          todoByQuadrant: note.todoByQuadrant,
+        };
+
+        return areTodoSummariesEqual(currentSummary, summary)
+          ? note
+          : { ...note, ...summary };
+      })
+    );
+
+    setSelectedNote((prev) => {
+      if (!prev || prev.id !== noteId) {
+        return prev;
+      }
+
+      const currentSummary: TodoSummary = {
+        todoTotal: prev.todoTotal,
+        todoCompleted: prev.todoCompleted,
+        todoByQuadrant: prev.todoByQuadrant,
+      };
+
+      return areTodoSummariesEqual(currentSummary, summary)
+        ? prev
+        : { ...prev, ...summary };
+    });
+  }, []);
 
   const unassigned = noteItems.filter((n) => n.quadrant === null);
 
