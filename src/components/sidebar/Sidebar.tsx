@@ -74,6 +74,20 @@ import { SidebarNoteRow } from "./SidebarNoteRow";
 import { SidebarFolderItem } from "./SidebarFolderItem";
 import { encodeMaterialSymbol } from "./sidebar-icon-utils";
 
+type SpotterDialogState =
+  | {
+      type: "rename";
+      session: { id: string; title: string };
+    }
+  | {
+      type: "delete";
+      session: { id: string; title: string };
+    }
+  | {
+      type: "deleteAll";
+      count: number;
+    };
+
 const sidebarSessionDateFormatter = new Intl.DateTimeFormat("tr", {
   day: "2-digit",
   month: "short",
@@ -214,6 +228,9 @@ export function Sidebar({
   const [hasLoadedPreferences, setHasLoadedPreferences] = useState(false);
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [spotterDialog, setSpotterDialog] = useState<SpotterDialogState | null>(null);
+  const [spotterTitleDraft, setSpotterTitleDraft] = useState("");
+  const [isSpotterDialogSubmitting, setIsSpotterDialogSubmitting] = useState(false);
   const folderCreationHandledRef = useRef(false);
   const folderTreeRef = useRef<HTMLDivElement | null>(null);
 
@@ -226,6 +243,14 @@ export function Sidebar({
   const shouldShowSidebarPanel = !isMobileViewport || isMobileSidebarOpen;
 
   const closeContextMenu = useCallback(() => setContextMenu(null), []);
+  const closeSpotterDialog = useCallback(() => {
+    if (isSpotterDialogSubmitting) {
+      return;
+    }
+
+    setSpotterDialog(null);
+    setSpotterTitleDraft("");
+  }, [isSpotterDialogSubmitting]);
   const navigateToNote = useCallback(
     (noteId: string) => {
       const href = `/notes/${noteId}`;
@@ -369,6 +394,12 @@ export function Sidebar({
   // Global keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (spotterDialog && event.key === "Escape") {
+        event.preventDefault();
+        closeSpotterDialog();
+        return;
+      }
+
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
         openPalette();
@@ -376,7 +407,7 @@ export function Sidebar({
     };
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [openPalette]);
+  }, [closeSpotterDialog, openPalette, spotterDialog]);
 
   const handleSidebarResizeStart = useCallback(
     (event: ReactMouseEvent<HTMLDivElement>) => {
@@ -523,37 +554,21 @@ export function Sidebar({
       {
         label: "Rename chat",
         hint: "Change the title of this Spotter session",
-        onSelect: async () => {
-          const nextTitle = window.prompt("Rename chat", session.title);
-          if (nextTitle == null) {
-            return;
-          }
-
-          await renameSpotterSessionAction(session.id, nextTitle);
-          router.refresh();
+        onSelect: () => {
+          setSpotterTitleDraft(session.title);
+          setSpotterDialog({ type: "rename", session });
         },
       },
       {
         label: "Delete chat",
         hint: "Permanently delete this Spotter session",
         tone: "danger",
-        onSelect: async () => {
-          const confirmed = window.confirm(
-            `Delete \"${session.title}\" permanently?`,
-          );
-          if (!confirmed) {
-            return;
-          }
-
-          await deleteSpotterSessionAction(session.id);
-          if (activeSpotterSessionId === session.id && pathname === "/spotter") {
-            router.push("/spotter");
-          }
-          router.refresh();
+        onSelect: () => {
+          setSpotterDialog({ type: "delete", session });
         },
       },
     ],
-    [activeSpotterSessionId, navigateToSpotterSession, pathname, router],
+    [navigateToSpotterSession],
   );
 
   const buildSpotterMenu = useCallback((): ContextMenuItem[] => {
@@ -570,25 +585,17 @@ export function Sidebar({
         label: "Delete all chats",
         hint: `Permanently delete all ${spotterSessions.length} Spotter sessions`,
         tone: "danger",
-        onSelect: async () => {
-          const confirmed = window.confirm(
-            `Delete all ${spotterSessions.length} Spotter chats permanently?`,
-          );
-          if (!confirmed) {
-            return;
-          }
-
-          await deleteAllSpotterSessionsAction();
-          if (pathname === "/spotter") {
-            router.push("/spotter");
-          }
-          router.refresh();
+        onSelect: () => {
+          setSpotterDialog({
+            type: "deleteAll",
+            count: spotterSessions.length,
+          });
         },
       });
     }
 
     return items;
-  }, [pathname, router, spotterSessions.length]);
+  }, [router, spotterSessions.length]);
 
   useEffect(() => {
     if (!folderTreeRef.current) {
@@ -1646,6 +1653,145 @@ export function Sidebar({
           aria-label="Close side menu"
           onClick={() => setIsMobileSidebarOpen(false)}
         />
+      ) : null}
+
+      {spotterDialog ? (
+        <div
+          className="sidebar-modal-backdrop"
+          onClick={closeSpotterDialog}
+          role="presentation"
+        >
+          <div
+            className="sidebar-modal"
+            onClick={(event) => event.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-label={
+              spotterDialog.type === "rename"
+                ? "Rename Spotter chat"
+                : spotterDialog.type === "delete"
+                  ? "Delete Spotter chat"
+                  : "Delete all Spotter chats"
+            }
+          >
+            <div className="sidebar-modal-header">
+              <h2 className="sidebar-modal-title">
+                {spotterDialog.type === "rename"
+                  ? "Rename chat"
+                  : spotterDialog.type === "delete"
+                    ? "Delete chat"
+                    : "Delete all chats"}
+              </h2>
+              <button
+                type="button"
+                className="sidebar-modal-close"
+                onClick={closeSpotterDialog}
+                disabled={isSpotterDialogSubmitting}
+                aria-label="Close dialog"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            {spotterDialog.type === "rename" ? (
+              <form
+                className="sidebar-modal-body"
+                onSubmit={async (event) => {
+                  event.preventDefault();
+                  setIsSpotterDialogSubmitting(true);
+                  try {
+                    await renameSpotterSessionAction(
+                      spotterDialog.session.id,
+                      spotterTitleDraft,
+                    );
+                    setSpotterDialog(null);
+                    setSpotterTitleDraft("");
+                    router.refresh();
+                  } finally {
+                    setIsSpotterDialogSubmitting(false);
+                  }
+                }}
+              >
+                <label className="sidebar-modal-label" htmlFor="spotter-title">
+                  Chat title
+                </label>
+                <input
+                  id="spotter-title"
+                  autoFocus
+                  className="sidebar-modal-input"
+                  value={spotterTitleDraft}
+                  onChange={(event) => setSpotterTitleDraft(event.target.value)}
+                  placeholder="New chat"
+                  disabled={isSpotterDialogSubmitting}
+                />
+                <div className="sidebar-modal-actions">
+                  <Button
+                    type="button"
+                    variant="text"
+                    onClick={closeSpotterDialog}
+                    disabled={isSpotterDialogSubmitting}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={isSpotterDialogSubmitting}>
+                    Save
+                  </Button>
+                </div>
+              </form>
+            ) : (
+              <div className="sidebar-modal-body">
+                <p className="sidebar-modal-copy">
+                  {spotterDialog.type === "delete"
+                    ? `\"${spotterDialog.session.title}\" kalıcı olarak silinecek.`
+                    : `Tüm ${spotterDialog.count} Spotter sohbeti kalıcı olarak silinecek.`}
+                </p>
+                <p className="sidebar-modal-copy sidebar-modal-copy--muted">
+                  Bu işlem geri alınamaz.
+                </p>
+                <div className="sidebar-modal-actions">
+                  <Button
+                    type="button"
+                    variant="text"
+                    onClick={closeSpotterDialog}
+                    disabled={isSpotterDialogSubmitting}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={async () => {
+                      setIsSpotterDialogSubmitting(true);
+                      try {
+                        if (spotterDialog.type === "delete") {
+                          await deleteSpotterSessionAction(spotterDialog.session.id);
+                          if (
+                            activeSpotterSessionId === spotterDialog.session.id &&
+                            pathname === "/spotter"
+                          ) {
+                            router.push("/spotter");
+                          }
+                        } else {
+                          await deleteAllSpotterSessionsAction();
+                          if (pathname === "/spotter") {
+                            router.push("/spotter");
+                          }
+                        }
+                        setSpotterDialog(null);
+                        setSpotterTitleDraft("");
+                        router.refresh();
+                      } finally {
+                        setIsSpotterDialogSubmitting(false);
+                      }
+                    }}
+                    disabled={isSpotterDialogSubmitting}
+                  >
+                    Delete
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       ) : null}
 
       <ContextMenu
