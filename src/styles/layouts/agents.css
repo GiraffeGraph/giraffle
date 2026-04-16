@@ -648,6 +648,53 @@
 }
 
 /* ── Responsive ───────────────────────────────────────────────────────── */
+/* ==========================================================================
+   Inline terminal panel (AgentsManager)
+   ========================================================================== */
+
+.agents-table-row-active td {
+  background: rgba(225, 166, 62, 0.06);
+}
+
+.agents-terminal-row td {
+  border-top: none !important;
+}
+
+.agents-inline-terminal {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid rgba(225, 166, 62, 0.2);
+  border-bottom: 1px solid var(--border-color);
+  background: #111214;
+}
+
+.agents-inline-terminal-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  background: #18191c;
+  color: #8d8d89;
+  font-size: 0.78rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  flex-shrink: 0;
+}
+
+.agents-inline-xterm {
+  min-height: 300px;
+}
+
+.xterm-loading {
+  padding: 24px;
+  color: #8d8d89;
+  font-size: 0.8rem;
+  text-align: center;
+  background: #111214;
+}
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
 @media (max-width: 640px) {
   .agents-page-inner {
     padding: 16px 14px 32px;

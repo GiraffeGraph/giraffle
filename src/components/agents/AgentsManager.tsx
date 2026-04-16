@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import {
   createAgentAction,
   deleteAgentAction,
@@ -9,6 +10,12 @@ import {
   stopAgentAction,
   updateAgentAction,
 } from "@/server/api/agents";
+
+// Lazy-load the terminal so it doesn't bloat the initial bundle
+const XTerminal = dynamic(
+  () => import("@/components/agents/XTerminal").then((m) => ({ default: m.XTerminal })),
+  { ssr: false, loading: () => <div className="xterm-loading">Loading terminal…</div> },
+);
 
 type Machine = { id: string; label: string; host: string; status: string };
 
@@ -80,6 +87,9 @@ export function AgentsManager({ agents, machines }: AgentsManagerProps) {
   const [submitting, setSubmitting] = useState(false);
   const [toggling, setToggling] = useState<string | null>(null);
 
+  // Inline terminal panel — which agent is expanded
+  const [terminalAgentId, setTerminalAgentId] = useState<string | null>(null);
+
   function openAdd() {
     setForm({ ...DEFAULT_FORM, machineId: machines[0]?.id ?? "" });
     setModal({ mode: "add" });
@@ -106,6 +116,10 @@ export function AgentsManager({ agents, machines }: AgentsManagerProps) {
   function closeModal() {
     if (submitting) return;
     setModal(null);
+  }
+
+  function toggleTerminal(agentId: string) {
+    setTerminalAgentId((prev) => (prev === agentId ? null : agentId));
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -145,6 +159,8 @@ export function AgentsManager({ agents, machines }: AgentsManagerProps) {
         await stopAgentAction(agent.id);
       } else {
         await startAgentAction(agent.id);
+        // Auto-open terminal when starting
+        setTerminalAgentId(agent.id);
       }
       router.refresh();
     } finally {
@@ -154,6 +170,7 @@ export function AgentsManager({ agents, machines }: AgentsManagerProps) {
 
   async function handleDelete(id: string) {
     if (!confirm("Delete this agent?")) return;
+    if (terminalAgentId === id) setTerminalAgentId(null);
     await deleteAgentAction(id);
     router.refresh();
   }
@@ -200,64 +217,117 @@ export function AgentsManager({ agents, machines }: AgentsManagerProps) {
             </thead>
             <tbody>
               {agents.map((a) => (
-                <tr key={a.id}>
-                  <td className="agents-table-label">{a.label}</td>
-                  <td>
-                    <span className="agents-chip">{a.machine.label}</span>
-                  </td>
-                  <td>
-                    <span className="agents-chip agents-chip-accent">
-                      {AGENT_TYPE_LABELS[a.agentType] ?? a.agentType}
-                    </span>
-                  </td>
-                  <td className="agents-table-mono agents-table-truncate">{a.agentCommand}</td>
-                  <td><AgentStatusBadge status={a.status} /></td>
-                  <td>
-                    <div className="agents-row-actions">
-                      <button
-                        className={`agents-icon-btn ${a.status === "running" ? "agents-icon-btn-active" : ""}`}
-                        title={a.status === "running" ? "Stop agent" : "Start agent"}
-                        disabled={toggling === a.id}
-                        onClick={() => handleToggle(a)}
-                      >
-                        <span className="material-symbols-outlined" style={{ fontSize: 16 }}>
-                          {toggling === a.id
-                            ? "hourglass_empty"
-                            : a.status === "running"
-                            ? "stop"
-                            : "play_arrow"}
-                        </span>
-                      </button>
-                      <button
-                        className="agents-icon-btn"
-                        title="Edit system prompt"
-                        onClick={() => openPrompt(a)}
-                      >
-                        <span className="material-symbols-outlined" style={{ fontSize: 16 }}>psychology</span>
-                      </button>
-                      <button
-                        className="agents-icon-btn"
-                        title="Edit"
-                        onClick={() => openEdit(a)}
-                      >
-                        <span className="material-symbols-outlined" style={{ fontSize: 16 }}>edit</span>
-                      </button>
-                      <button
-                        className="agents-icon-btn agents-icon-btn-danger"
-                        title="Delete"
-                        onClick={() => handleDelete(a.id)}
-                      >
-                        <span className="material-symbols-outlined" style={{ fontSize: 16 }}>delete</span>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                <>
+                  <tr key={a.id} className={terminalAgentId === a.id ? "agents-table-row-active" : ""}>
+                    <td className="agents-table-label">{a.label}</td>
+                    <td>
+                      <span className="agents-chip">{a.machine.label}</span>
+                    </td>
+                    <td>
+                      <span className="agents-chip agents-chip-accent">
+                        {AGENT_TYPE_LABELS[a.agentType] ?? a.agentType}
+                      </span>
+                    </td>
+                    <td className="agents-table-mono agents-table-truncate">{a.agentCommand}</td>
+                    <td><AgentStatusBadge status={a.status} /></td>
+                    <td>
+                      <div className="agents-row-actions">
+                        {/* ── Start / Stop ─────────────────── */}
+                        <button
+                          className={`agents-icon-btn ${a.status === "running" ? "agents-icon-btn-active" : ""}`}
+                          title={a.status === "running" ? "Stop agent" : "Start agent"}
+                          disabled={toggling === a.id}
+                          onClick={() => handleToggle(a)}
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: 16 }}>
+                            {toggling === a.id
+                              ? "hourglass_empty"
+                              : a.status === "running"
+                              ? "stop"
+                              : "play_arrow"}
+                          </span>
+                        </button>
+
+                        {/* ── Terminal toggle ───────────────── */}
+                        <button
+                          className={`agents-icon-btn ${terminalAgentId === a.id ? "agents-icon-btn-active" : ""}`}
+                          title={terminalAgentId === a.id ? "Close terminal" : "Open terminal"}
+                          onClick={() => toggleTerminal(a.id)}
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: 16 }}>
+                            terminal
+                          </span>
+                        </button>
+
+                        {/* ── System Prompt ─────────────────── */}
+                        <button
+                          className="agents-icon-btn"
+                          title="Edit system prompt"
+                          onClick={() => openPrompt(a)}
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: 16 }}>psychology</span>
+                        </button>
+
+                        {/* ── Edit ─────────────────────────── */}
+                        <button
+                          className="agents-icon-btn"
+                          title="Edit"
+                          onClick={() => openEdit(a)}
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: 16 }}>edit</span>
+                        </button>
+
+                        {/* ── Delete ───────────────────────── */}
+                        <button
+                          className="agents-icon-btn agents-icon-btn-danger"
+                          title="Delete"
+                          onClick={() => handleDelete(a.id)}
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: 16 }}>delete</span>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+
+                  {/* ── Inline terminal panel ─────────────────────────── */}
+                  {terminalAgentId === a.id && (
+                    <tr key={`terminal-${a.id}`} className="agents-terminal-row">
+                      <td colSpan={6} style={{ padding: 0 }}>
+                        <div className="agents-inline-terminal">
+                          <div className="agents-inline-terminal-bar">
+                            <span className="material-symbols-outlined" style={{ fontSize: 14 }}>dns</span>
+                            <span>
+                              <strong>{a.label}</strong> — {a.machine.host}
+                            </span>
+                            <span className="agents-chip agents-chip-accent" style={{ fontSize: "0.68rem" }}>
+                              {a.agentCommand}
+                            </span>
+                            <span style={{ flex: 1 }} />
+                            <AgentStatusBadge status={a.status} />
+                            <button
+                              className="agents-icon-btn"
+                              title="Close terminal"
+                              onClick={() => setTerminalAgentId(null)}
+                            >
+                              <span className="material-symbols-outlined" style={{ fontSize: 16 }}>close</span>
+                            </button>
+                          </div>
+                          <XTerminal
+                            agentId={a.id}
+                            className="agents-inline-xterm"
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </>
               ))}
             </tbody>
           </table>
         </div>
       )}
 
+      {/* ── Add / Edit Modal ──────────────────────────────────────────── */}
       {modal && modal.mode !== "prompt" && (
         <div className="agents-modal-backdrop" onClick={closeModal} role="presentation">
           <div
@@ -361,6 +431,7 @@ export function AgentsManager({ agents, machines }: AgentsManagerProps) {
         </div>
       )}
 
+      {/* ── System Prompt Modal ───────────────────────────────────────── */}
       {modal?.mode === "prompt" && modal.agent && (
         <div className="agents-modal-backdrop" onClick={closeModal} role="presentation">
           <div
