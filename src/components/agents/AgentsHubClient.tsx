@@ -4,6 +4,7 @@ import { useState } from "react";
 import { MachinesManager } from "./MachinesManager";
 import { AgentsManager } from "./AgentsManager";
 import { SessionsManager } from "./SessionsManager";
+import { GettingStarted } from "./GettingStarted";
 
 type Tab = "machines" | "agents" | "sessions";
 
@@ -71,6 +72,7 @@ export function AgentsHubClient({
   availableAgents,
 }: AgentsHubClientProps) {
   const [activeTab, setActiveTab] = useState<Tab>("machines");
+  const needsOnboarding = machines.length === 0 || agents.length === 0;
 
   // Convert string dates back to Date objects for child components
   const machinesWithDates = machines.map((m) => ({
@@ -99,6 +101,13 @@ export function AgentsHubClient({
 
   return (
     <div className="agents-hub">
+      {needsOnboarding && (
+        <GettingStarted
+          onNavigate={(tab) => setActiveTab(tab)}
+          machineCount={machines.length}
+          agentCount={agents.length}
+        />
+      )}
       <div className="agents-tabs" role="tablist">
         {TABS.map((tab) => (
           <button
