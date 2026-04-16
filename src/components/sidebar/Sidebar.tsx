@@ -73,6 +73,7 @@ import { encodeMaterialSymbol } from "./sidebar-icon-utils";
 const sidebarSessionDateFormatter = new Intl.DateTimeFormat("tr", {
   day: "2-digit",
   month: "short",
+  timeZone: "UTC",
 });
 
 function formatSidebarSessionDate(value: Date) {
