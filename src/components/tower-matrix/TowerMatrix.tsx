@@ -693,18 +693,19 @@ function InnerPanel({
               <div key={i} className="tm-skeleton-q" style={{ animationDelay: `${i * 80}ms` }} />
             ))}
           </div>
-        ) : todos.length === 0 ? (
-          <div className="tm-inner-no-todos">
-            <div className="tm-inner-no-todos-top">
-              <span className="material-symbols-outlined" style={{ fontSize: 26, opacity: 0.25 }}>
-                check_box_outline_blank
-              </span>
-              <p>This note has no tasks yet</p>
-            </div>
-            <QuickAddTodo noteId={note.id} onAdded={refreshTodos} />
-          </div>
         ) : (
           <>
+            {todos.length === 0 && (
+              <div className="tm-inner-no-todos">
+                <div className="tm-inner-no-todos-top">
+                  <span className="material-symbols-outlined" style={{ fontSize: 26, opacity: 0.25 }}>
+                    check_box_outline_blank
+                  </span>
+                  <p>This note has no tasks yet</p>
+                </div>
+              </div>
+            )}
+
             <div className="tm-inner-grid">
               {QUADRANTS.map((config, i) => (
                 <InnerQuadrant

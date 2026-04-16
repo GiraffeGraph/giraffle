@@ -156,3 +156,14 @@ export async function getRecentSpotterMessages(
     content: message.content,
   }));
 }
+
+export async function deleteSpotterSession(userId: string, sessionId: string) {
+  const result = await db.spotterSession.deleteMany({
+    where: {
+      id: sessionId,
+      userId,
+    },
+  });
+
+  return result.count > 0;
+}

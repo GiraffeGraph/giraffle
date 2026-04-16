@@ -33,6 +33,7 @@ import {
   relocateNoteAction,
   updateNoteAction,
 } from "@/server/api/notes";
+import { deleteSpotterSessionAction } from "@/server/api/spotter";
 import {
   DEFAULT_COLLAPSED_SECTIONS,
   DEFAULT_EXPANDED_SIDEBAR_WIDTH,
@@ -112,6 +113,25 @@ function FileNewIcon() {
       <polyline points="14 2 14 8 20 8" />
       <line x1="12" y1="18" x2="12" y2="12" />
       <line x1="9" y1="15" x2="15" y2="15" />
+    </svg>
+  );
+}
+
+function MoreHorizontalIcon() {
+  return (
+    <svg
+      width="13"
+      height="13"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="5" cy="12" r="1" />
+      <circle cx="12" cy="12" r="1" />
+      <circle cx="19" cy="12" r="1" />
     </svg>
   );
 }
@@ -486,6 +506,29 @@ export function Sidebar({
       },
     ],
     [copyInternalLink, currentNoteId, navigateToNote, router],
+  );
+
+  const buildSpotterSessionMenu = useCallback(
+    (session: { id: string; title: string }): ContextMenuItem[] => [
+      {
+        label: "Open chat",
+        hint: "Open this Spotter session",
+        onSelect: () => navigateToSpotterSession(session.id),
+      },
+      {
+        label: "Delete chat",
+        hint: "Permanently delete this Spotter session",
+        tone: "danger",
+        onSelect: async () => {
+          await deleteSpotterSessionAction(session.id);
+          if (activeSpotterSessionId === session.id && pathname === "/spotter") {
+            router.push("/spotter");
+          }
+          router.refresh();
+        },
+      },
+    ],
+    [activeSpotterSessionId, navigateToSpotterSession, pathname, router],
   );
 
   useEffect(() => {
@@ -1264,24 +1307,54 @@ export function Sidebar({
                         </div>
                       ) : (
                         spotterSessions.map((session) => (
-                          <button
+                          <div
                             key={session.id}
-                            type="button"
-                            className={`sidebar-item sidebar-nested-item${
+                            className={`sidebar-entity-row sidebar-spotter-session-row${
                               activeSpotterSessionId === session.id
                                 ? " active"
                                 : ""
                             }`}
-                            onClick={() => navigateToSpotterSession(session.id)}
-                            title={session.title}
+                            onContextMenu={(event) =>
+                              openContextMenuAtPointer(
+                                event,
+                                buildSpotterSessionMenu(session),
+                              )
+                            }
                           >
-                            <span className="sidebar-item-label">
-                              {session.title}
-                            </span>
-                            <span className="sidebar-nested-item-date">
-                              {formatSidebarSessionDate(session.lastMessageAt)}
-                            </span>
-                          </button>
+                            <button
+                              type="button"
+                              className={`sidebar-item sidebar-row-main sidebar-nested-item${
+                                activeSpotterSessionId === session.id
+                                  ? " active"
+                                  : ""
+                              }`}
+                              onClick={() => navigateToSpotterSession(session.id)}
+                              title={session.title}
+                            >
+                              <span className="sidebar-item-label">
+                                {session.title}
+                              </span>
+                              <span className="sidebar-nested-item-date">
+                                {formatSidebarSessionDate(session.lastMessageAt)}
+                              </span>
+                            </button>
+                            <div className="sidebar-row-actions sidebar-spotter-session-actions">
+                              <button
+                                type="button"
+                                className="context-trigger sidebar-row-action"
+                                onClick={(event) =>
+                                  openContextMenuFromTrigger(
+                                    event,
+                                    buildSpotterSessionMenu(session),
+                                  )
+                                }
+                                aria-label={`${session.title} open menu`}
+                                title="Options"
+                              >
+                                <MoreHorizontalIcon />
+                              </button>
+                            </div>
+                          </div>
                         ))
                       )}
                     </div>

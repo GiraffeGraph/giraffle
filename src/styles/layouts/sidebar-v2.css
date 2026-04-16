@@ -443,6 +443,18 @@
   padding-bottom: 2px;
 }
 
+.sidebar-spotter-session-row {
+  margin-left: 22px;
+}
+
+.sidebar-spotter-session-row .sidebar-row-main {
+  min-width: 0;
+}
+
+.sidebar-spotter-session-actions {
+  padding-right: 4px;
+}
+
 .sidebar-session-empty {
   padding: 4px 6px 4px 28px;
   color: var(--text-muted);
