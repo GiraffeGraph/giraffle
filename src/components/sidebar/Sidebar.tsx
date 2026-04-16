@@ -33,7 +33,11 @@ import {
   relocateNoteAction,
   updateNoteAction,
 } from "@/server/api/notes";
-import { deleteSpotterSessionAction } from "@/server/api/spotter";
+import {
+  deleteAllSpotterSessionsAction,
+  deleteSpotterSessionAction,
+  renameSpotterSessionAction,
+} from "@/server/api/spotter";
 import {
   DEFAULT_COLLAPSED_SECTIONS,
   DEFAULT_EXPANDED_SIDEBAR_WIDTH,
@@ -517,10 +521,30 @@ export function Sidebar({
         onSelect: () => navigateToSpotterSession(session.id),
       },
       {
+        label: "Rename chat",
+        hint: "Change the title of this Spotter session",
+        onSelect: async () => {
+          const nextTitle = window.prompt("Rename chat", session.title);
+          if (nextTitle == null) {
+            return;
+          }
+
+          await renameSpotterSessionAction(session.id, nextTitle);
+          router.refresh();
+        },
+      },
+      {
         label: "Delete chat",
         hint: "Permanently delete this Spotter session",
         tone: "danger",
         onSelect: async () => {
+          const confirmed = window.confirm(
+            `Delete \"${session.title}\" permanently?`,
+          );
+          if (!confirmed) {
+            return;
+          }
+
           await deleteSpotterSessionAction(session.id);
           if (activeSpotterSessionId === session.id && pathname === "/spotter") {
             router.push("/spotter");
@@ -531,6 +555,40 @@ export function Sidebar({
     ],
     [activeSpotterSessionId, navigateToSpotterSession, pathname, router],
   );
+
+  const buildSpotterMenu = useCallback((): ContextMenuItem[] => {
+    const items: ContextMenuItem[] = [
+      {
+        label: "New chat",
+        hint: "Start a fresh Spotter conversation",
+        onSelect: () => router.push("/spotter"),
+      },
+    ];
+
+    if (spotterSessions.length > 0) {
+      items.push({
+        label: "Delete all chats",
+        hint: `Permanently delete all ${spotterSessions.length} Spotter sessions`,
+        tone: "danger",
+        onSelect: async () => {
+          const confirmed = window.confirm(
+            `Delete all ${spotterSessions.length} Spotter chats permanently?`,
+          );
+          if (!confirmed) {
+            return;
+          }
+
+          await deleteAllSpotterSessionsAction();
+          if (pathname === "/spotter") {
+            router.push("/spotter");
+          }
+          router.refresh();
+        },
+      });
+    }
+
+    return items;
+  }, [pathname, router, spotterSessions.length]);
 
   useEffect(() => {
     if (!folderTreeRef.current) {
@@ -1289,6 +1347,17 @@ export function Sidebar({
                           </span>
                         </span>
                         <span className="sidebar-item-label">Spotter</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="sidebar-nav-menu"
+                        onClick={(event) =>
+                          openContextMenuFromTrigger(event, buildSpotterMenu())
+                        }
+                        aria-label="Spotter menu"
+                        title="Spotter options"
+                      >
+                        <MoreHorizontalIcon />
                       </button>
                       <button
                         type="button"

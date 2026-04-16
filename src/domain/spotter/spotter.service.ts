@@ -7,8 +7,8 @@ import type {
 
 const SESSION_TITLE_MAX_LENGTH = 56;
 
-export function buildSpotterSessionTitle(prompt: string) {
-  const normalized = prompt.replace(/\s+/g, " ").trim();
+function normalizeSpotterSessionTitle(value: string) {
+  const normalized = value.replace(/\s+/g, " ").trim();
 
   if (!normalized) {
     return "New chat";
@@ -19,6 +19,10 @@ export function buildSpotterSessionTitle(prompt: string) {
   }
 
   return `${normalized.slice(0, SESSION_TITLE_MAX_LENGTH - 1).trim()}…`;
+}
+
+export function buildSpotterSessionTitle(prompt: string) {
+  return normalizeSpotterSessionTitle(prompt);
 }
 
 function normalizeRole(role: string): SpotterStoredMessage["role"] {
@@ -157,6 +161,24 @@ export async function getRecentSpotterMessages(
   }));
 }
 
+export async function renameSpotterSession(
+  userId: string,
+  sessionId: string,
+  title: string,
+) {
+  const result = await db.spotterSession.updateMany({
+    where: {
+      id: sessionId,
+      userId,
+    },
+    data: {
+      title: normalizeSpotterSessionTitle(title),
+    },
+  });
+
+  return result.count > 0;
+}
+
 export async function deleteSpotterSession(userId: string, sessionId: string) {
   const result = await db.spotterSession.deleteMany({
     where: {
@@ -166,4 +188,12 @@ export async function deleteSpotterSession(userId: string, sessionId: string) {
   });
 
   return result.count > 0;
+}
+
+export async function deleteAllSpotterSessions(userId: string) {
+  const result = await db.spotterSession.deleteMany({
+    where: { userId },
+  });
+
+  return result.count;
 }
