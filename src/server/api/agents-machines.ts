@@ -56,9 +56,18 @@ export async function deleteMachineAction(id: string) {
 }
 
 export async function pingMachineAction(id: string) {
-  // Real implementation: SSH connect → exec `echo ok` → measure latency
-  // For now we mark as online to demonstrate UI
-  const updated = await setMachineStatus(id, "online");
+  let status: "online" | "offline" = "offline";
+  let latencyMs: number | null = null;
+
+  try {
+    const { sshPing } = await import("@/lib/ssh-manager");
+    latencyMs = await sshPing(id);
+    status = "online";
+  } catch {
+    // Connection failed — mark offline
+  }
+
+  const updated = await setMachineStatus(id, status);
   revalidatePath("/agents/machines");
-  return updated;
+  return { ...updated, latencyMs };
 }

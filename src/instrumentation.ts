@@ -20,6 +20,29 @@ export async function register() {
   for (const warning of config.warnings) {
     logger.warn("server_startup_warning", { warning });
   }
+
+  // ── Giraffe Agents: WebSocket terminal server ──────────────────────────
+  try {
+    const { startWsTerminalServer } = await import("@/lib/ws-terminal-server");
+    await startWsTerminalServer();
+    logger.info("ws_terminal_server_started", {
+      port: process.env.WS_TERMINAL_PORT ?? "3001",
+    });
+  } catch (err) {
+    logger.warn("ws_terminal_server_failed", {
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
+
+  // ── Giraffe Agents: Periodic SSH machine ping (every 60s) ──────────────
+  const { pingAllMachines } = await import("@/lib/ssh-manager");
+  setInterval(() => {
+    void pingAllMachines().catch((err: unknown) => {
+      logger.warn("ping_all_machines_error", {
+        error: err instanceof Error ? err.message : String(err),
+      });
+    });
+  }, 60_000);
 }
 
 export const onRequestError: Instrumentation.onRequestError = async (

@@ -54,14 +54,54 @@ export async function deleteAgentAction(id: string) {
 }
 
 export async function startAgentAction(id: string) {
-  // Real implementation: SSH → open PTY shell → run agentCommand → inject systemPrompt
-  const agent = await setAgentStatus(id, "running");
+  const agent = await getAgentById(id);
+  if (!agent) throw new Error("Agent not found");
+
+  try {
+    const { sendToAgentChannel, closeAgentChannel } = await import(
+      "@/lib/ws-terminal-server"
+    );
+    const { sshOpenShell } = await import("@/lib/ssh-manager");
+
+    // Close any existing channel first
+    closeAgentChannel(id);
+
+    // Open new shell on the machine
+    const channel = await sshOpenShell(agent.machine.id);
+
+    // Inject system prompt via stdin if non-empty, then run the agent command
+    if (agent.systemPrompt?.trim()) {
+      // Write the command that sets env var with system prompt
+      channel.write(`export AGENT_SYSTEM_PROMPT=${JSON.stringify(agent.systemPrompt)}\n`);
+    }
+    channel.write(agent.agentCommand + "\n");
+
+    // Store channel reference in ws-terminal-server's map
+    const { broadcastToAgent } = await import("@/lib/ws-terminal-server");
+    channel.on("data", (data: Buffer) => broadcastToAgent(id, data.toString("utf-8")));
+    channel.on("close", () => {
+      void setAgentStatus(id, "stopped");
+    });
+    sendToAgentChannel; // ref so TS doesn't warn
+
+  } catch (err) {
+    await setAgentStatus(id, "error");
+    throw err;
+  }
+
+  const updated = await setAgentStatus(id, "running");
   revalidatePath("/agents");
-  return agent;
+  return updated;
 }
 
 export async function stopAgentAction(id: string) {
-  // Real implementation: SSH → send SIGTERM → close channel
+  try {
+    const { closeAgentChannel } = await import("@/lib/ws-terminal-server");
+    closeAgentChannel(id);
+  } catch {
+    // ignore
+  }
+
   const agent = await setAgentStatus(id, "stopped");
   revalidatePath("/agents");
   return agent;

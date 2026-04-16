@@ -47,6 +47,10 @@
     "@tiptap/react": "^3.22.3",
     "@tiptap/starter-kit": "^3.22.3",
     "@tiptap/suggestion": "^3.22.3",
+    "@types/ssh2": "^1.15.5",
+    "@xterm/addon-fit": "^0.11.0",
+    "@xterm/addon-web-links": "^0.12.0",
+    "@xterm/xterm": "^6.0.0",
     "@xyflow/react": "^12.10.2",
     "ai": "^6.0.158",
     "bcryptjs": "^3.0.3",
@@ -59,7 +63,12 @@
     "prisma": "^7.7.0",
     "react": "19.2.5",
     "react-dom": "19.2.5",
-    "uuid": "^13.0.0"
+    "ssh2": "^1.17.0",
+    "uuid": "^13.0.0",
+    "ws": "^8.20.0",
+    "xterm": "^5.3.0",
+    "xterm-addon-fit": "^0.8.0",
+    "xterm-addon-web-links": "^0.9.0"
   },
   "devDependencies": {
     "@testing-library/dom": "^10.4.1",
