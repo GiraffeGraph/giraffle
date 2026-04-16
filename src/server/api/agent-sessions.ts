@@ -29,15 +29,55 @@ export async function createAgentSessionAction(input: {
 }
 
 export async function startAgentSessionAction(id: string) {
-  // Real implementation: call LangGraph FastAPI sidecar POST /sessions/:id/start
+  // 1. Start all agents in the session on their machines
+  const sessionWithAgents = await getAgentSessionById(id);
+  if (!sessionWithAgents) throw new Error("Session not found");
+
+  // Start each agent's SSH shell with their command
+  await Promise.allSettled(
+    sessionWithAgents.agents.map(async ({ agent }) => {
+      try {
+        const { sshOpenShell } = await import("@/lib/ssh-manager");
+        const { broadcastToAgent } = await import("@/lib/ws-terminal-server");
+        const channel = await sshOpenShell(agent.machine.id);
+        // Pipe SSH output → WebSocket clients
+        channel.on("data", (data: Buffer) =>
+          broadcastToAgent(agent.id, data.toString("utf-8")),
+        );
+        if (agent.systemPrompt?.trim()) {
+          channel.write(
+            `export AGENT_SYSTEM_PROMPT=${JSON.stringify(agent.systemPrompt)}\n`,
+          );
+        }
+        channel.write(agent.agentCommand + "\n");
+      } catch {
+        // Agent start failure is non-fatal — supervisor will handle errors
+      }
+    }),
+  );
+
+  // 2. Mark running in DB
   const session = await updateAgentSessionStatus(id, "running");
+
+  // 3. Start the supervisor loop via API route (fire-and-forget, runs in background)
+  const baseUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
+  void fetch(`${baseUrl}/api/agents/sessions/${id}/start`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+  }).catch(() => undefined); // non-blocking
+
   revalidatePath("/agents/sessions");
   revalidatePath(`/agents/sessions/${id}`);
   return session;
 }
 
 export async function pauseAgentSessionAction(id: string) {
-  // Real implementation: set paused flag in LangGraph state
+  // Abort the running supervisor loop
+  const baseUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
+  void fetch(`${baseUrl}/api/agents/sessions/${id}/start`, {
+    method: "DELETE",
+  }).catch(() => undefined);
+
   const session = await updateAgentSessionStatus(id, "pending");
   revalidatePath(`/agents/sessions/${id}`);
   return session;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { XTerminal } from "@/components/agents/XTerminal";
 import {
@@ -73,6 +73,13 @@ export function SessionDetailClient({ session }: SessionDetailClientProps) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<PanelTab>("messages");
   const [actionInProgress, setActionInProgress] = useState(false);
+
+  // Auto-refresh while session is running
+  useEffect(() => {
+    if (session.status !== "running") return;
+    const interval = setInterval(() => router.refresh(), 3000);
+    return () => clearInterval(interval);
+  }, [session.status, router]);
 
   const sessionStatus = STATUS_CONFIG[session.status] ?? STATUS_CONFIG.pending;
 
