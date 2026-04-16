@@ -81,9 +81,7 @@ export async function startWsTerminalServer(): Promise<void> {
 
         channel.on("close", () => {
           agentChannels.delete(agentId);
-          for (const client of agentSessions.get(agentId) ?? []) {
-            client.send(JSON.stringify({ type: "status", status: "closed" }));
-          }
+          broadcastToAgent(agentId, JSON.stringify({ type: "status", status: "closed" }));
         });
       } catch (err) {
         const message = err instanceof Error ? err.message : "SSH connection failed";
@@ -133,6 +131,39 @@ export function broadcastToAgent(agentId: string, data: string): void {
 /** Write text to an agent's SSH channel (orchestrator → agent input). */
 export function sendToAgentChannel(agentId: string, text: string): void {
   agentChannels.get(agentId)?.write(text + "\n");
+}
+
+/** 
+ * Ensure the agent has an active shell and run its command.
+ * Called from Server Actions when Start Agent is clicked.
+ */
+export async function runAgentShell(
+  agentId: string,
+  machineId: string,
+  command: string,
+  systemPrompt?: string,
+) {
+  const { sshOpenShell } = await import("@/lib/ssh-manager");
+
+  // Close existing channel if any
+  closeAgentChannel(agentId);
+
+  const channel = await sshOpenShell(machineId);
+  agentChannels.set(agentId, channel);
+
+  // Set up broadcast to WS
+  channel.on("data", (data: Buffer) => broadcastToAgent(agentId, data.toString("utf-8")));
+  channel.stderr?.on("data", (data: Buffer) => broadcastToAgent(agentId, data.toString("utf-8")));
+  
+  channel.on("close", () => {
+    agentChannels.delete(agentId);
+    broadcastToAgent(agentId, JSON.stringify({ type: "status", status: "closed" }));
+  });
+
+  if (systemPrompt?.trim()) {
+    channel.write(`export AGENT_SYSTEM_PROMPT=${JSON.stringify(systemPrompt)}\n`);
+  }
+  channel.write(command + "\n");
 }
 
 /** Close an agent's SSH channel. */

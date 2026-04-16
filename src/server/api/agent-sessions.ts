@@ -37,19 +37,13 @@ export async function startAgentSessionAction(id: string) {
   await Promise.allSettled(
     sessionWithAgents.agents.map(async ({ agent }) => {
       try {
-        const { sshOpenShell } = await import("@/lib/ssh-manager");
-        const { broadcastToAgent } = await import("@/lib/ws-terminal-server");
-        const channel = await sshOpenShell(agent.machine.id);
-        // Pipe SSH output → WebSocket clients
-        channel.on("data", (data: Buffer) =>
-          broadcastToAgent(agent.id, data.toString("utf-8")),
+        const { runAgentShell } = await import("@/lib/ws-terminal-server");
+        await runAgentShell(
+          agent.id,
+          agent.machine.id,
+          agent.agentCommand,
+          agent.systemPrompt ?? undefined,
         );
-        if (agent.systemPrompt?.trim()) {
-          channel.write(
-            `export AGENT_SYSTEM_PROMPT=${JSON.stringify(agent.systemPrompt)}\n`,
-          );
-        }
-        channel.write(agent.agentCommand + "\n");
       } catch {
         // Agent start failure is non-fatal — supervisor will handle errors
       }

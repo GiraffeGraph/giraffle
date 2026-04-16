@@ -58,32 +58,14 @@ export async function startAgentAction(id: string) {
   if (!agent) throw new Error("Agent not found");
 
   try {
-    const { sendToAgentChannel, closeAgentChannel } = await import(
-      "@/lib/ws-terminal-server"
+    const { runAgentShell } = await import("@/lib/ws-terminal-server");
+
+    await runAgentShell(
+      id,
+      agent.machine.id,
+      agent.agentCommand,
+      agent.systemPrompt ?? undefined,
     );
-    const { sshOpenShell } = await import("@/lib/ssh-manager");
-
-    // Close any existing channel first
-    closeAgentChannel(id);
-
-    // Open new shell on the machine
-    const channel = await sshOpenShell(agent.machine.id);
-
-    // Inject system prompt via stdin if non-empty, then run the agent command
-    if (agent.systemPrompt?.trim()) {
-      // Write the command that sets env var with system prompt
-      channel.write(`export AGENT_SYSTEM_PROMPT=${JSON.stringify(agent.systemPrompt)}\n`);
-    }
-    channel.write(agent.agentCommand + "\n");
-
-    // Store channel reference in ws-terminal-server's map
-    const { broadcastToAgent } = await import("@/lib/ws-terminal-server");
-    channel.on("data", (data: Buffer) => broadcastToAgent(id, data.toString("utf-8")));
-    channel.on("close", () => {
-      void setAgentStatus(id, "stopped");
-    });
-    sendToAgentChannel; // ref so TS doesn't warn
-
   } catch (err) {
     await setAgentStatus(id, "error");
     throw err;

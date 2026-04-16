@@ -1,5 +1,7 @@
 "use client";
 
+import React from "react";
+
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import dynamic from "next/dynamic";
@@ -38,22 +40,56 @@ interface AgentsManagerProps {
 
 type ModalMode = "add" | "edit" | "prompt";
 
+type AgentType = "pi" | "claude_code" | "aider" | "opencode" | "codex" | "custom";
+
 interface FormState {
   label: string;
   machineId: string;
-  agentType: "pi" | "claude_code" | "custom";
+  agentType: AgentType;
   agentCommand: string;
-  modelProvider: string;
   modelName: string;
 }
+
+/** Preset configs for known CLI coding agents. */
+const AGENT_PRESETS: Record<AgentType, { command: string; model: string; hint: string }> = {
+  claude_code: {
+    command: "claude",
+    model: "claude-sonnet-4-5",
+    hint: "Uses ANTHROPIC_API_KEY env var. Model set via Claude Code's own config.",
+  },
+  pi: {
+    command: "pi",
+    model: "gpt-4o",
+    hint: "Uses OPENAI_API_KEY. Model passed via pi's own config or flags.",
+  },
+  aider: {
+    command: "aider --no-auto-commits",
+    model: "gpt-4o",
+    hint: "Model can be set via --model flag. Uses OPENAI_API_KEY or ANTHROPIC_API_KEY.",
+  },
+  opencode: {
+    command: "opencode",
+    model: "claude-sonnet-4-5",
+    hint: "OpenCode CLI agent. Uses its own API key config.",
+  },
+  codex: {
+    command: "codex",
+    model: "o4-mini",
+    hint: "OpenAI Codex CLI. Uses OPENAI_API_KEY.",
+  },
+  custom: {
+    command: "",
+    model: "",
+    hint: "Enter any CLI command that starts an interactive AI coding agent.",
+  },
+};
 
 const DEFAULT_FORM: FormState = {
   label: "",
   machineId: "",
-  agentType: "custom",
-  agentCommand: "",
-  modelProvider: "anthropic",
-  modelName: "claude-3-5-sonnet-20241022",
+  agentType: "claude_code",
+  agentCommand: AGENT_PRESETS.claude_code.command,
+  modelName: AGENT_PRESETS.claude_code.model,
 };
 
 const STATUS_MAP: Record<string, { label: string; icon: string; color: string }> = {
@@ -73,9 +109,12 @@ function AgentStatusBadge({ status }: { status: string }) {
   );
 }
 
-const AGENT_TYPE_LABELS: Record<string, string> = {
+const AGENT_TYPE_LABELS: Record<AgentType, string> = {
   pi: "pi",
   claude_code: "Claude Code",
+  aider: "Aider",
+  opencode: "OpenCode",
+  codex: "Codex CLI",
   custom: "Custom",
 };
 
@@ -91,21 +130,36 @@ export function AgentsManager({ agents, machines }: AgentsManagerProps) {
   const [terminalAgentId, setTerminalAgentId] = useState<string | null>(null);
 
   function openAdd() {
-    setForm({ ...DEFAULT_FORM, machineId: machines[0]?.id ?? "" });
+    const preset = AGENT_PRESETS.claude_code;
+    setForm({
+      ...DEFAULT_FORM,
+      machineId: machines[0]?.id ?? "",
+      agentCommand: preset.command,
+      modelName: preset.model,
+    });
     setModal({ mode: "add" });
   }
 
   function openEdit(agent: Agent) {
-    const cfg = agent.modelConfig as Record<string, string> | null;
     setForm({
       label: agent.label,
       machineId: agent.machine.id,
-      agentType: agent.agentType as FormState["agentType"],
+      agentType: agent.agentType as AgentType,
       agentCommand: agent.agentCommand,
-      modelProvider: cfg?.provider ?? "anthropic",
-      modelName: cfg?.model ?? "claude-3-5-sonnet-20241022",
+      modelName: (agent.modelConfig as Record<string, string> | null)?.model ?? "",
     });
     setModal({ mode: "edit", agent });
+  }
+
+  function handleAgentTypeChange(type: AgentType) {
+    const preset = AGENT_PRESETS[type];
+    setForm((f) => ({
+      ...f,
+      agentType: type,
+      // Only auto-fill command/model if user hasn't already customized them
+      agentCommand: preset.command,
+      modelName: preset.model,
+    }));
   }
 
   function openPrompt(agent: Agent) {
@@ -132,7 +186,7 @@ export function AgentsManager({ agents, machines }: AgentsManagerProps) {
           machineId: form.machineId,
           agentType: form.agentType,
           agentCommand: form.agentCommand,
-          modelConfig: { provider: form.modelProvider, model: form.modelName },
+          modelConfig: { model: form.modelName },
         });
       } else if (modal?.mode === "edit" && modal.agent) {
         await updateAgentAction(modal.agent.id, {
@@ -140,7 +194,7 @@ export function AgentsManager({ agents, machines }: AgentsManagerProps) {
           machineId: form.machineId,
           agentType: form.agentType,
           agentCommand: form.agentCommand,
-          modelConfig: { provider: form.modelProvider, model: form.modelName },
+          modelConfig: { model: form.modelName },
         });
       } else if (modal?.mode === "prompt" && modal.agent) {
         await updateAgentAction(modal.agent.id, { systemPrompt: promptDraft });
@@ -217,8 +271,8 @@ export function AgentsManager({ agents, machines }: AgentsManagerProps) {
             </thead>
             <tbody>
               {agents.map((a) => (
-                <>
-                  <tr key={a.id} className={terminalAgentId === a.id ? "agents-table-row-active" : ""}>
+                <React.Fragment key={a.id}>
+                  <tr className={terminalAgentId === a.id ? "agents-table-row-active" : ""}>
                     <td className="agents-table-label">{a.label}</td>
                     <td>
                       <span className="agents-chip">{a.machine.label}</span>
@@ -320,7 +374,7 @@ export function AgentsManager({ agents, machines }: AgentsManagerProps) {
                       </td>
                     </tr>
                   )}
-                </>
+                </React.Fragment>
               ))}
             </tbody>
           </table>
@@ -374,45 +428,46 @@ export function AgentsManager({ agents, machines }: AgentsManagerProps) {
                 <select
                   className="agents-input"
                   value={form.agentType}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, agentType: e.target.value as FormState["agentType"] }))
-                  }
+                  onChange={(e) => handleAgentTypeChange(e.target.value as AgentType)}
                 >
+                  <option value="claude_code">Claude Code — claude</option>
                   <option value="pi">pi</option>
-                  <option value="claude_code">Claude Code</option>
-                  <option value="custom">Custom</option>
+                  <option value="aider">Aider</option>
+                  <option value="opencode">OpenCode</option>
+                  <option value="codex">Codex CLI</option>
+                  <option value="custom">Custom…</option>
                 </select>
+                <span className="agents-label-hint">
+                  {AGENT_PRESETS[form.agentType].hint}
+                </span>
               </label>
               <label className="agents-label">
                 Agent Command
                 <input
                   className="agents-input agents-input-mono"
                   required
-                  placeholder="pi --mode json"
+                  placeholder="claude"
                   value={form.agentCommand}
                   onChange={(e) => setForm((f) => ({ ...f, agentCommand: e.target.value }))}
                 />
+                <span className="agents-label-hint">
+                  The CLI command that launches the agent on the remote machine.
+                  You can add extra flags here (e.g. <code>claude --model claude-opus-4-5</code>).
+                </span>
               </label>
-              <div className="agents-form-row">
-                <label className="agents-label" style={{ flex: 1 }}>
-                  Model Provider
-                  <input
-                    className="agents-input"
-                    placeholder="anthropic"
-                    value={form.modelProvider}
-                    onChange={(e) => setForm((f) => ({ ...f, modelProvider: e.target.value }))}
-                  />
-                </label>
-                <label className="agents-label" style={{ flex: 2 }}>
-                  Model
-                  <input
-                    className="agents-input"
-                    placeholder="claude-3-5-sonnet-20241022"
-                    value={form.modelName}
-                    onChange={(e) => setForm((f) => ({ ...f, modelName: e.target.value }))}
-                  />
-                </label>
-              </div>
+              <label className="agents-label">
+                Model (metadata)
+                <input
+                  className="agents-input"
+                  placeholder="claude-sonnet-4-5"
+                  value={form.modelName}
+                  onChange={(e) => setForm((f) => ({ ...f, modelName: e.target.value }))}
+                />
+                <span className="agents-label-hint">
+                  For reference only — the actual model is configured by the CLI tool via its own env vars / flags.
+                  This value is stored and shown in the supervisor context.
+                </span>
+              </label>
               <div className="agents-modal-actions">
                 <button
                   type="button"
