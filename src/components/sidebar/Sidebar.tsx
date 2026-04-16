@@ -1308,6 +1308,11 @@ export function Sidebar({
                         icon: "newspaper",
                         label: "Discover",
                       },
+                      {
+                        path: "/agents",
+                        icon: "hub",
+                        label: "Agents",
+                      },
                     ] as Array<{
                       path: string;
                       icon: string;
