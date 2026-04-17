@@ -8,8 +8,30 @@
  */
 import type { ClientChannel } from "ssh2";
 
-const WS_PORT = Number(process.env.WS_TERMINAL_PORT ?? 3001);
+function resolveWsPort(): number {
+  const configured = Number(process.env.WS_TERMINAL_PORT);
+  if (Number.isFinite(configured) && configured > 0) {
+    return configured;
+  }
+
+  const appPort = Number(process.env.PORT ?? 3000);
+  if (Number.isFinite(appPort) && appPort === 3001) {
+    return 3002;
+  }
+
+  return 3001;
+}
+
+const WS_PORT = resolveWsPort();
 const MAX_OUTPUT_CHUNKS = 600;
+
+const globalForWsTerminal = globalThis as unknown as {
+  __wsTerminalStarted?: boolean;
+};
+
+export function getWsTerminalPort(): number {
+  return WS_PORT;
+}
 
 type WsSocketLike = {
   readyState: number;
@@ -20,6 +42,7 @@ type WsSocketLike = {
 
 type WsServerLike = {
   on: (event: "connection", listener: (ws: WsSocketLike, req: { url?: string }) => void) => void;
+  once: (event: "listening" | "error", listener: (...args: unknown[]) => void) => void;
 };
 
 interface AgentOutputChunk {
@@ -73,6 +96,24 @@ function preview(text: string): string {
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(label));
+    }, timeoutMs);
+
+    promise
+      .then((value) => {
+        clearTimeout(timer);
+        resolve(value);
+      })
+      .catch((err) => {
+        clearTimeout(timer);
+        reject(err);
+      });
+  });
 }
 
 async function tmuxHasSession(machineId: string, sessionName: string): Promise<boolean> {
@@ -238,6 +279,8 @@ export async function waitForAgentOutput(
 }
 
 export async function startWsTerminalServer(): Promise<void> {
+  if (globalForWsTerminal.__wsTerminalStarted) return;
+
   const wsModule = (await import("ws")) as {
     WebSocketServer: new (opts: object) => WsServerLike;
   };
@@ -245,7 +288,15 @@ export async function startWsTerminalServer(): Promise<void> {
   const { db } = await import("@/lib/db");
   const { sshResizeShell } = await import("@/lib/ssh-manager");
 
-  const wss = new wsModule.WebSocketServer({ port: WS_PORT });
+  const wss = await new Promise<WsServerLike>((resolve, reject) => {
+    const server = new wsModule.WebSocketServer({ port: WS_PORT });
+    server.once("listening", () => resolve(server));
+    server.once("error", (err) => {
+      reject(err instanceof Error ? err : new Error(String(err)));
+    });
+  });
+
+  globalForWsTerminal.__wsTerminalStarted = true;
   console.log(`[ws-terminal] Listening on ws://localhost:${WS_PORT}`);
 
   wss.on("connection", async (ws: WsSocketLike, req: { url?: string }) => {
@@ -273,16 +324,24 @@ export async function startWsTerminalServer(): Promise<void> {
     agentSessions.get(agentId)!.add(ws);
 
     try {
-      const runtime = await ensureTmuxRuntime({
-        agentId,
-        machineId: agent.machine.id,
-        command: agent.agentCommand,
-        systemPrompt: agent.systemPrompt ?? undefined,
-        forceRestart: false,
-      });
+      const runtime = await withTimeout(
+        ensureTmuxRuntime({
+          agentId,
+          machineId: agent.machine.id,
+          command: agent.agentCommand,
+          systemPrompt: agent.systemPrompt ?? undefined,
+          forceRestart: false,
+        }),
+        15_000,
+        "Timed out while preparing tmux runtime",
+      );
 
       if (!runtime.channel) {
-        await attachChannelToTmux(agentId, runtime.machineId, runtime.tmuxSession);
+        await withTimeout(
+          attachChannelToTmux(agentId, runtime.machineId, runtime.tmuxSession),
+          15_000,
+          "Timed out while attaching terminal shell",
+        );
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : "SSH/tmux attach failed";

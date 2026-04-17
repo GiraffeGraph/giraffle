@@ -200,7 +200,9 @@ export function SessionsManager({ sessions, availableAgents }: SessionsManagerPr
                 </span>
                 <span className="agents-session-meta-item">
                   <span className="material-symbols-outlined" style={{ fontSize: 13 }}>schedule</span>
-                  {new Date(s.createdAt).toLocaleDateString()}
+                  <time suppressHydrationWarning dateTime={s.createdAt.toISOString()}>
+                    {s.createdAt.toLocaleDateString()}
+                  </time>
                 </span>
               </div>
             </div>

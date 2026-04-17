@@ -87,12 +87,34 @@ export function XTerminal({
       const base =
         wsBaseUrl ??
         (typeof window !== "undefined"
-          ? `ws://${window.location.hostname}:${process.env.NEXT_PUBLIC_WS_PORT ?? "3001"}`
+          ? (() => {
+              const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+              const configuredPort = process.env.NEXT_PUBLIC_WS_PORT?.trim();
+              const fallbackPort = window.location.port === "3001" ? "3002" : "3001";
+              const port =
+                configuredPort && configuredPort.length > 0 ? configuredPort : fallbackPort;
+
+              return `${protocol}://${window.location.hostname}:${port}`;
+            })()
           : "ws://localhost:3001");
 
       const ws = new WebSocket(`${base}/ws/terminal/${agentId}`);
       wsRef.current = ws;
       updateStatus("connecting");
+
+      let handshakeResolved = false;
+      const handshakeTimeout = window.setTimeout(() => {
+        if (handshakeResolved) return;
+        updateStatus("error");
+        term.writeln("\r\x1b[31m✖ Terminal bağlantısı zaman aşımına uğradı\x1b[0m");
+        ws.close();
+      }, 20_000);
+
+      const resolveHandshake = () => {
+        if (handshakeResolved) return;
+        handshakeResolved = true;
+        window.clearTimeout(handshakeTimeout);
+      };
 
       ws.onopen = () => {
         // Initial resize
@@ -109,12 +131,15 @@ export function XTerminal({
           };
           if (msg.type === "status") {
             if (msg.status === "connected") {
+              resolveHandshake();
               updateStatus("connected");
               term.writeln("\r\x1b[32m◆ Terminal connected\x1b[0m");
             } else if (msg.status === "error") {
+              resolveHandshake();
               updateStatus("error");
               term.writeln(`\r\x1b[31m✖ ${msg.message ?? "Connection error"}\x1b[0m`);
             } else if (msg.status === "closed") {
+              resolveHandshake();
               updateStatus("closed");
               term.writeln("\r\x1b[33m● Session closed\x1b[0m");
             }
@@ -125,8 +150,14 @@ export function XTerminal({
         }
       };
 
-      ws.onclose = () => updateStatus("closed");
-      ws.onerror = () => updateStatus("error");
+      ws.onclose = () => {
+        resolveHandshake();
+        updateStatus("closed");
+      };
+      ws.onerror = () => {
+        resolveHandshake();
+        updateStatus("error");
+      };
 
       // Browser → SSH
       term.onData((data) => {
@@ -146,6 +177,7 @@ export function XTerminal({
 
       // Cleanup
       return () => {
+        resolveHandshake();
         resizeObserver.disconnect();
       };
     }

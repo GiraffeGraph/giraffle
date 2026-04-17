@@ -23,10 +23,10 @@ export async function register() {
 
   // ── Giraffe Agents: WebSocket terminal server ──────────────────────────
   try {
-    const { startWsTerminalServer } = await import("@/lib/ws-terminal-server");
+    const { getWsTerminalPort, startWsTerminalServer } = await import("@/lib/ws-terminal-server");
     await startWsTerminalServer();
     logger.info("ws_terminal_server_started", {
-      port: process.env.WS_TERMINAL_PORT ?? "3001",
+      port: String(getWsTerminalPort()),
     });
   } catch (err) {
     logger.warn("ws_terminal_server_failed", {

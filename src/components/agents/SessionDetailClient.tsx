@@ -215,14 +215,19 @@ export function SessionDetailClient({ session }: SessionDetailClientProps) {
             <span className="material-symbols-outlined" style={{ fontSize: 13 }}>
               schedule
             </span>
-            {new Date(liveSession.createdAt).toLocaleString()}
+            <time suppressHydrationWarning dateTime={liveSession.createdAt}>
+              {new Date(liveSession.createdAt).toLocaleString()}
+            </time>
           </span>
           {liveSession.endedAt && (
             <span className="agents-chip">
               <span className="material-symbols-outlined" style={{ fontSize: 13 }}>
                 flag
               </span>
-              Ended {new Date(liveSession.endedAt).toLocaleString()}
+              Ended{" "}
+              <time suppressHydrationWarning dateTime={liveSession.endedAt}>
+                {new Date(liveSession.endedAt).toLocaleString()}
+              </time>
             </span>
           )}
         </div>
@@ -332,9 +337,13 @@ export function SessionDetailClient({ session }: SessionDetailClientProps) {
                           <span className="session-message-to">{msg.toAgent.label}</span>
                         </>
                       )}
-                      <span className="session-message-time">
+                      <time
+                        className="session-message-time"
+                        suppressHydrationWarning
+                        dateTime={msg.createdAt}
+                      >
                         {new Date(msg.createdAt).toLocaleTimeString()}
-                      </span>
+                      </time>
                     </div>
                     <pre className="session-message-content">{msg.content}</pre>
                   </div>

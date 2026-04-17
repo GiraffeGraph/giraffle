@@ -186,9 +186,11 @@ export function MachinesManager({ machines }: MachinesManagerProps) {
                   <td>{m._count.agents}</td>
                   <td><StatusBadge status={m.status} /></td>
                   <td className="agents-table-muted">
-                    {m.lastPingAt
-                      ? new Date(m.lastPingAt).toLocaleTimeString()
-                      : "—"}
+                    {m.lastPingAt ? (
+                      <time suppressHydrationWarning dateTime={m.lastPingAt.toISOString()}>
+                        {m.lastPingAt.toLocaleTimeString()}
+                      </time>
+                    ) : "—"}
                   </td>
                   <td>
                     <div className="agents-row-actions">
