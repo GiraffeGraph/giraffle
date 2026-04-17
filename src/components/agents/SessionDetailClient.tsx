@@ -302,29 +302,31 @@ export function SessionDetailClient({ session }: SessionDetailClientProps) {
           </div>
         )}
 
-        {/* Terminal panels — one per agent */}
-        {session.agents.map(({ agent }) =>
-          activeTab === agent.id ? (
-            <div key={agent.id} className="session-terminal-panel">
-              <div className="session-terminal-toolbar">
-                <span className="material-symbols-outlined" style={{ fontSize: 14 }}>
-                  dns
-                </span>
-                <span>
-                  {agent.label} — {agent.machine.host}
-                </span>
-                <span className="session-terminal-toolbar-spacer" />
-                <span className="agents-chip" style={{ fontSize: "0.68rem" }}>
-                  {agent.agentType}
-                </span>
-              </div>
-              <XTerminal
-                agentId={agent.id}
-                className="session-xterm"
-              />
+        {/* Terminal panels — keep mounted so tab switches don't reset history */}
+        {session.agents.map(({ agent }) => (
+          <div
+            key={agent.id}
+            className={`session-terminal-panel ${activeTab === agent.id ? "" : "session-terminal-panel-hidden"}`}
+            aria-hidden={activeTab !== agent.id}
+          >
+            <div className="session-terminal-toolbar">
+              <span className="material-symbols-outlined" style={{ fontSize: 14 }}>
+                dns
+              </span>
+              <span>
+                {agent.label} — {agent.machine.host}
+              </span>
+              <span className="session-terminal-toolbar-spacer" />
+              <span className="agents-chip" style={{ fontSize: "0.68rem" }}>
+                {agent.agentType}
+              </span>
             </div>
-          ) : null,
-        )}
+            <XTerminal
+              agentId={agent.id}
+              className="session-xterm"
+            />
+          </div>
+        ))}
       </div>
     </div>
   );

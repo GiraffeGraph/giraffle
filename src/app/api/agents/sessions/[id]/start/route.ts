@@ -42,7 +42,7 @@ export async function POST(
     return new Response("Session not found", { status: 404 });
   }
 
-  if (agentSession.status === "running") {
+  if (agentSession.status === "running" && supervisorAbortControllers.has(sessionId)) {
     return new Response("Session is already running", { status: 409 });
   }
 

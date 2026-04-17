@@ -18,7 +18,7 @@
  */
 
 import { openai } from "@ai-sdk/openai";
-import { generateText, tool } from "ai";
+import { generateText, stepCountIs, tool, type ModelMessage } from "ai";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import {
@@ -141,7 +141,7 @@ export async function runSupervisor({ sessionId, signal }: RunSupervisorOptions)
     description:
       "Delegate a specific coding task to one of the registered agents. " +
       "The agent will execute the task in its SSH terminal and return the output.",
-    parameters: z.object({
+    inputSchema: z.object({
       agentId: z
         .string()
         .describe("The ID of the agent to delegate the task to"),
@@ -196,7 +196,7 @@ export async function runSupervisor({ sessionId, signal }: RunSupervisorOptions)
     description:
       "Mark the session as complete when the overall goal has been achieved. " +
       "Provide a comprehensive summary of what was accomplished.",
-    parameters: z.object({
+    inputSchema: z.object({
       summary: z.string().describe("Summary of what was accomplished"),
       deliverables: z
         .array(z.string())
@@ -221,7 +221,7 @@ export async function runSupervisor({ sessionId, signal }: RunSupervisorOptions)
     description:
       "Record a supervisor reasoning step or observation without delegating to an agent. " +
       "Use this to explain your planning process.",
-    parameters: z.object({
+    inputSchema: z.object({
       thought: z.string().describe("The supervisor's reasoning or observation"),
     }),
     execute: async ({ thought }) => {
@@ -236,7 +236,7 @@ export async function runSupervisor({ sessionId, signal }: RunSupervisorOptions)
   });
 
   // Build initial conversation
-  const messages: Parameters<typeof generateText>[0]["messages"] = [
+  const messages: ModelMessage[] = [
     {
       role: "user",
       content: `Your goal: ${session.goal}\n\nBegin orchestrating the agents to achieve this goal.`,
@@ -265,12 +265,12 @@ export async function runSupervisor({ sessionId, signal }: RunSupervisorOptions)
           complete_session: completeSessionTool,
           log_thought: logThoughtTool,
         },
-        maxSteps: 1, // one tool call per iteration for full observability
+        stopWhen: stepCountIs(1), // one step per outer loop iteration for observability
         temperature: 0.2,
       });
 
-      // Append assistant message to conversation history
-      messages.push({ role: "assistant", content: result.text || "" });
+      // Append model/tool messages returned by this generation step.
+      messages.push(...result.response.messages);
 
       // Check if session was completed via tool
       const completeCalled = result.toolCalls?.some(
@@ -280,22 +280,6 @@ export async function runSupervisor({ sessionId, signal }: RunSupervisorOptions)
       if (completeCalled) {
         sessionDone = true;
         break;
-      }
-
-      // Append tool results to messages for next iteration
-      if (result.toolResults && result.toolResults.length > 0) {
-        const toolResultMessages = result.toolResults.map((tr) => ({
-          role: "tool" as const,
-          content: [
-            {
-              type: "tool-result" as const,
-              toolCallId: tr.toolCallId,
-              toolName: tr.toolName,
-              result: tr.result,
-            },
-          ],
-        }));
-        messages.push(...toolResultMessages);
       }
 
       // If no tool calls were made, the supervisor finished without completing

@@ -24,7 +24,7 @@ type Machine = { id: string; label: string; host: string; status: string };
 type Agent = {
   id: string;
   label: string;
-  agentType: string;
+  agentType: AgentType | string;
   agentCommand: string;
   systemPrompt: string;
   modelConfig: unknown;
@@ -141,10 +141,13 @@ export function AgentsManager({ agents, machines }: AgentsManagerProps) {
   }
 
   function openEdit(agent: Agent) {
+    const mappedType: AgentType =
+      agent.agentType in AGENT_PRESETS ? (agent.agentType as AgentType) : "custom";
+
     setForm({
       label: agent.label,
       machineId: agent.machine.id,
-      agentType: agent.agentType as AgentType,
+      agentType: mappedType,
       agentCommand: agent.agentCommand,
       modelName: (agent.modelConfig as Record<string, string> | null)?.model ?? "",
     });
@@ -279,7 +282,7 @@ export function AgentsManager({ agents, machines }: AgentsManagerProps) {
                     </td>
                     <td>
                       <span className="agents-chip agents-chip-accent">
-                        {AGENT_TYPE_LABELS[a.agentType] ?? a.agentType}
+                        {AGENT_TYPE_LABELS[a.agentType as AgentType] ?? a.agentType}
                       </span>
                     </td>
                     <td className="agents-table-mono agents-table-truncate">{a.agentCommand}</td>

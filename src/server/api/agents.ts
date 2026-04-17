@@ -21,7 +21,7 @@ export async function getAgentByIdAction(id: string) {
 export async function createAgentAction(input: {
   label: string;
   machineId: string;
-  agentType: "pi" | "claude_code" | "custom";
+  agentType: "pi" | "claude_code" | "aider" | "opencode" | "codex" | "custom";
   agentCommand: string;
   systemPrompt?: string;
   modelConfig?: Record<string, unknown>;
@@ -36,7 +36,7 @@ export async function updateAgentAction(
   input: {
     label?: string;
     machineId?: string;
-    agentType?: "pi" | "claude_code" | "custom";
+    agentType?: "pi" | "claude_code" | "aider" | "opencode" | "codex" | "custom";
     agentCommand?: string;
     systemPrompt?: string;
     modelConfig?: Record<string, unknown>;

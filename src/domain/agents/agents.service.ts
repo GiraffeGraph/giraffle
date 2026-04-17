@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 export interface CreateAgentInput {
   label: string;
   machineId: string;
-  agentType: "pi" | "claude_code" | "custom";
+  agentType: "pi" | "claude_code" | "aider" | "opencode" | "codex" | "custom";
   agentCommand: string;
   systemPrompt?: string;
   modelConfig?: Record<string, unknown>;
@@ -12,7 +12,7 @@ export interface CreateAgentInput {
 export interface UpdateAgentInput {
   label?: string;
   machineId?: string;
-  agentType?: "pi" | "claude_code" | "custom";
+  agentType?: "pi" | "claude_code" | "aider" | "opencode" | "codex" | "custom";
   agentCommand?: string;
   systemPrompt?: string;
   modelConfig?: Record<string, unknown>;

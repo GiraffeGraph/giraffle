@@ -10,6 +10,203 @@
   --agents-status-unknown: var(--text-muted, #ad9b84);
 }
 
+/* ==========================================================================
+   Getting Started onboarding panel
+   ========================================================================== */
+
+.agents-gs-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: var(--md-sys-shape-full, 9999px);
+  border: 1px dashed var(--border-color);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+  align-self: flex-start;
+  margin-bottom: -8px;
+}
+
+.agents-gs-toggle:hover {
+  background: var(--surface-glass-muted);
+  color: var(--text-primary);
+}
+
+.agents-gs-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border: 1px solid var(--accent-line, rgba(225,166,62,0.25));
+  border-radius: var(--radius-card, 20px);
+  background: var(--surface-accent-blend, rgba(225,166,62,0.04));
+  overflow: hidden;
+  animation: agents-modal-in 0.2s ease;
+}
+
+.agents-gs-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 16px 12px;
+  border-bottom: 1px solid var(--accent-line, rgba(225,166,62,0.15));
+}
+
+.agents-gs-header-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--heading-ink);
+}
+
+.agents-gs-step-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 8px;
+  border-radius: var(--md-sys-shape-full, 9999px);
+  background: var(--accent-subtle);
+  border: 1px solid var(--accent-line);
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.agents-gs-steps {
+  display: flex;
+  flex-direction: column;
+}
+
+.agents-gs-step {
+  border-bottom: 1px solid var(--border-color);
+}
+
+.agents-gs-step:last-child {
+  border-bottom: none;
+}
+
+.agents-gs-step-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  color: var(--text-secondary);
+  transition: background var(--transition-fast);
+}
+
+.agents-gs-step-header:hover {
+  background: var(--surface-glass-muted);
+}
+
+.agents-gs-step.active .agents-gs-step-header {
+  color: var(--text-primary);
+}
+
+.agents-gs-step.done .agents-gs-step-header {
+  opacity: 0.6;
+}
+
+.agents-gs-step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid currentColor;
+  font-size: 0.72rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.agents-gs-step-num.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.agents-gs-step-num.done {
+  background: var(--agents-status-online);
+  border-color: var(--agents-status-online);
+  color: #fff;
+}
+
+.agents-gs-step-icon {
+  font-size: 18px !important;
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
+.agents-gs-step-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+
+.agents-gs-step-title {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--heading-ink);
+}
+
+.agents-gs-step-desc {
+  font-size: 0.74rem;
+  color: var(--text-secondary);
+}
+
+.agents-gs-chevron {
+  opacity: 0.5;
+  flex-shrink: 0;
+}
+
+.agents-gs-step-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 16px 16px 52px;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+
+.agents-gs-step-body p {
+  margin: 0;
+}
+
+.agents-gs-example {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  line-height: 1.7;
+  padding: 10px 12px;
+  border-radius: var(--md-sys-shape-small, 8px);
+  background: var(--surface-glass);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  margin: 0;
+}
+
+.agents-gs-footer {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 10px 16px;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  background: var(--surface-glass-muted);
+  border-top: 1px solid var(--border-color);
+  line-height: 1.5;
+}
+
 /* ── Page shell ───────────────────────────────────────────────────────── */
 .agents-page {
   display: flex;
@@ -889,6 +1086,10 @@
   flex-direction: column;
   flex: 1;
   min-height: 0;
+}
+
+.session-terminal-panel-hidden {
+  display: none;
 }
 
 .session-terminal-toolbar {
