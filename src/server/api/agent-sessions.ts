@@ -53,11 +53,29 @@ export async function startAgentSessionAction(id: string) {
     throw new Error("Session has no participating agents");
   }
 
-  // Start each agent's SSH shell with their command
+  const { hasAgentChannel, runAgentShell } = await import("@/lib/ws-terminal-server");
+
+  const manualLoginAgentTypes = new Set(["pi", "codex", "claude_code", "opencode"]);
+  const missingLoginAgents = sessionWithAgents.agents
+    .map(({ agent }) => agent)
+    .filter((agent) => manualLoginAgentTypes.has(agent.agentType) && !hasAgentChannel(agent.id));
+
+  if (missingLoginAgents.length > 0) {
+    const labels = missingLoginAgents.map((a) => a.label).join(", ");
+    throw new Error(
+      `Login required before session start. Open each agent terminal and sign in first: ${labels}`,
+    );
+  }
+
+  // Ensure each agent has a live shell; do NOT restart running shells
+  // because CLI tools like codex/pi lose login state when restarted.
   await Promise.allSettled(
     sessionWithAgents.agents.map(async ({ agent }) => {
       try {
-        const { runAgentShell } = await import("@/lib/ws-terminal-server");
+        if (hasAgentChannel(agent.id)) {
+          return; // keep existing logged-in shell
+        }
+
         await runAgentShell(
           agent.id,
           agent.machine.id,

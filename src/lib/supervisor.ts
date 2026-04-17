@@ -27,38 +27,23 @@ import {
 } from "@/domain/agents/agent-sessions.service";
 
 const MAX_ITERATIONS = 32;
-const AGENT_RESPONSE_TIMEOUT_MS = 60_000;
+const AGENT_RESPONSE_TIMEOUT_MS = 180_000;
 
-/** Capture SSH channel output for up to `timeoutMs` after sending a command. */
+/** Capture real terminal output for up to `timeoutMs` after sending a task. */
 async function captureAgentResponse(
   agentId: string,
+  sinceCursor: number,
   timeoutMs = AGENT_RESPONSE_TIMEOUT_MS,
 ): Promise<string> {
-  // Import lazily to avoid circular deps
-  const { sshExec } = await import("@/lib/ssh-manager");
+  const { waitForAgentOutput } = await import("@/lib/ws-terminal-server");
 
-  // Load agent to get machineId and last command context
-  const agent = await db.agent.findUnique({
-    where: { id: agentId },
-    select: { machineId: true },
-  });
+  const delta = await waitForAgentOutput(agentId, sinceCursor, timeoutMs);
 
-  if (!agent) return "[Agent not found]";
-
-  // We read from a temp output file that the agent writes to.
-  // Agents should be started with: `pi --mode json > /tmp/giraffe_agent_<agentId>.out 2>&1`
-  // Or we use a simpler approach: read /tmp/agent_out file
-  const outFile = `/tmp/giraffe_agent_${agentId.replace(/-/g, "_")}.out`;
-
-  // Wait briefly for agent to process, then read output
-  await new Promise((r) => setTimeout(r, Math.min(timeoutMs, 5000)));
-
-  try {
-    const { stdout } = await sshExec(agent.machineId, `cat ${outFile} 2>/dev/null && > ${outFile}`);
-    return stdout.trim() || "[No output yet]";
-  } catch {
-    return "[Could not read agent output]";
+  if (!delta || !delta.text.trim()) {
+    return "[No output yet]";
   }
+
+  return delta.text.trim();
 }
 
 /** Send a task string to an agent's running SSH shell. */
@@ -69,13 +54,16 @@ async function sendTaskToAgent(
 ): Promise<void> {
   const { sendToAgentChannel } = await import("@/lib/ws-terminal-server");
 
-  // If there's a live WebSocket channel, use it
-  sendToAgentChannel(agentId, task);
+  // If there's a live agent shell, send directly to its stdin
+  const wroteToLiveShell = sendToAgentChannel(agentId, task);
 
-  // Also try direct SSH exec as fallback
+  if (wroteToLiveShell) {
+    return;
+  }
+
+  // Fallback: persist task in temp file for manual/agent-side polling.
   try {
     const { sshExec } = await import("@/lib/ssh-manager");
-    // Write task to the agent's stdin file for the agent process
     const taskFile = `/tmp/giraffe_task_${agentId.replace(/-/g, "_")}.in`;
     await sshExec(machineId, `echo ${JSON.stringify(task)} > ${taskFile}`);
   } catch {
@@ -172,11 +160,14 @@ export async function runSupervisor({ sessionId, signal }: RunSupervisorOptions)
         metadata: { expectedOutput },
       });
 
+      const { getAgentOutputCursor } = await import("@/lib/ws-terminal-server");
+      const cursorBeforeTask = getAgentOutputCursor(agentId);
+
       // Send task to agent
       await sendTaskToAgent(agentId, agentInfo.machineId, task);
 
       // Capture response
-      const response = await captureAgentResponse(agentId);
+      const response = await captureAgentResponse(agentId, cursorBeforeTask);
 
       // Log the response
       await addAgentMessage({
