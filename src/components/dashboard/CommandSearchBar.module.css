@@ -23,50 +23,8 @@
   position: relative;
   z-index: 1;
   display: grid;
-  gap: 20px;
-  padding: 26px;
-}
-
-.header {
-  display: grid;
-  gap: 8px;
-}
-
-.eyebrow {
-  width: fit-content;
-  padding: 4px 10px;
-  border: 1px solid rgb(var(--accent-rgb) / 0.25);
-  border-radius: 999px;
-  background: rgb(var(--accent-rgb) / 0.08);
-  color: var(--accent-strong);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.title {
-  margin: 0;
-  font-size: clamp(1.7rem, 3.2vw, 2.35rem);
-  line-height: 0.98;
-  letter-spacing: -0.04em;
-  font-family: var(--font-display);
-  color: var(--text-primary);
-}
-
-.subtitle {
-  margin: 0;
-  max-width: 68ch;
-  color: var(--text-secondary);
-  font-size: 14px;
-  line-height: 1.55;
-}
-
-.subtitle code {
-  padding: 2px 6px;
-  border-radius: 8px;
-  background: var(--surface-chip);
-  color: var(--text-primary);
+  gap: 14px;
+  padding: 24px;
 }
 
 .form {
@@ -250,38 +208,33 @@
 }
 
 .commandLegend {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 10px;
-}
-
-.commandCard {
   display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.commandChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 11px;
   border: 1px solid var(--border-soft);
-  border-radius: var(--radius-card);
+  border-radius: 999px;
   background: color-mix(in srgb, var(--surface-glass) 86%, transparent);
-}
-
-.commandCard > span {
-  color: var(--accent);
-  font-size: 18px;
-}
-
-.commandCardTitle {
-  margin: 0;
-  color: var(--text-primary);
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.commandCardBody {
-  margin: 4px 0 0;
   color: var(--text-secondary);
   font-size: 12px;
-  line-height: 1.4;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.commandChip:hover {
+  color: var(--text-primary);
+  background: var(--surface-glass-hover);
+}
+
+.commandChip .material-symbols-outlined {
+  color: var(--accent);
+  font-size: 16px;
 }
 
 @media (max-width: 760px) {

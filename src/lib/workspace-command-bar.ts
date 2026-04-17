@@ -61,7 +61,7 @@ export const WORKSPACE_COMMANDS: WorkspaceCommandDefinition[] = [
     id: "search",
     title: "Search Notes",
     description:
-      "Notlarında regex + anlam benzerliği tabanlı arama yapar.",
+      "Not, klasör yolu, tag, regex ve fuzzy sinyallerini puanlayarak arar.",
     icon: "search",
     primaryTrigger: "/search",
     aliases: ["/find"],

@@ -45,15 +45,6 @@ export function CommandSearchBar() {
     <section className={styles.shell}>
       <div className={styles.backgroundGradient} aria-hidden="true" />
       <div className={styles.content}>
-        <header className={styles.header}>
-          <span className={styles.eyebrow}>Generic Command Bar</span>
-          <h1 className={styles.title}>Tek bar: Spotter + Search</h1>
-          <p className={styles.subtitle}>
-            Düz metin yazarsan Spotter&apos;a gider. <code>/search</code> ile notlarını
-            regex + semantik benzerlik algoritmasıyla bulursun.
-          </p>
-        </header>
-
         <form
           className={styles.form}
           onSubmit={(event) => {
@@ -158,12 +149,12 @@ export function CommandSearchBar() {
               route
             </span>
             {resolution.kind === "command"
-              ? `Komut: ${resolution.commandId}`
+              ? `/${resolution.commandId}`
               : resolution.kind === "prompt"
-                ? "Düz metin → Spotter"
-                : "Komut bekleniyor"}
+                ? "spotter"
+                : "ready"}
           </span>
-          <span className={styles.routeHint}>Enter: çalıştır · Tab: autocomplete</span>
+          <span className={styles.routeHint}>Enter · Tab</span>
         </div>
 
         <div className={styles.examples}>
@@ -184,15 +175,17 @@ export function CommandSearchBar() {
 
         <div className={styles.commandLegend}>
           {WORKSPACE_COMMANDS.map((command) => (
-            <article key={command.id} className={styles.commandCard}>
+            <button
+              key={command.id}
+              type="button"
+              className={styles.commandChip}
+              onClick={() => setValue(`${command.primaryTrigger} `)}
+            >
               <span className="material-symbols-outlined" aria-hidden="true">
                 {command.icon}
               </span>
-              <div>
-                <p className={styles.commandCardTitle}>{command.primaryTrigger}</p>
-                <p className={styles.commandCardBody}>{command.description}</p>
-              </div>
-            </article>
+              {command.primaryTrigger}
+            </button>
           ))}
         </div>
       </div>

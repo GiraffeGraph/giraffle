@@ -35,7 +35,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         label="Search"
         meta={
           <span style={{ whiteSpace: "nowrap" }}>
-            {searchResult.hits.length} results · {getSearchModeLabel(searchResult.mode)}
+            {searchResult.hits.length} ranked · {getSearchModeLabel(searchResult.mode)}
           </span>
         }
       />
@@ -67,10 +67,21 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                   <span className="search-result-title">{note.title}</span>
                   <span className="search-result-meta">
                     {note.mode === "regex" ? "Regex" : note.mode === "hybrid" ? "Hybrid" : "Recent"}
-                    {" · "}
-                    score {note.score}
+                    {" · score "}
+                    {note.score}
                     {note.isPinned ? " · pinned" : ""}
+                    {note.folderPath ? ` · ${note.folderPath}` : ""}
                   </span>
+                  {note.tags.length > 0 ? (
+                    <span className="search-result-meta">
+                      tags: {note.tags.slice(0, 5).join(", ")}
+                    </span>
+                  ) : null}
+                  {note.reasons.length > 0 ? (
+                    <span className="search-result-meta">
+                      {note.reasons.map((reason) => reason.label).join(" · ")}
+                    </span>
+                  ) : null}
                   <span className="search-result-meta" style={{ lineHeight: 1.5 }}>
                     {note.snippet}
                   </span>
