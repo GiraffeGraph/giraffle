@@ -1475,7 +1475,7 @@ export function Sidebar({
                     </span>
                   }
                   collapsed={isFoldersCollapsed}
-                  showChevron={false}
+                  showChevron
                   onToggle={() => toggleSection("folders")}
                   actions={folderGroupActions}
                 >
