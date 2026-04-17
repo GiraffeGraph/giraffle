@@ -230,6 +230,7 @@ export function Sidebar({
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [spotterDialog, setSpotterDialog] = useState<SpotterDialogState | null>(null);
   const [spotterTitleDraft, setSpotterTitleDraft] = useState("");
+  const [spotterSearchQuery, setSpotterSearchQuery] = useState("");
   const [isSpotterDialogSubmitting, setIsSpotterDialogSubmitting] = useState(false);
   const folderCreationHandledRef = useRef(false);
   const folderTreeRef = useRef<HTMLDivElement | null>(null);
@@ -241,6 +242,7 @@ export function Sidebar({
     pathname === "/spotter" ? searchParams.get("session") : null;
   const effectiveIsSidebarCompact = !isMobileViewport && isSidebarCompact;
   const shouldShowSidebarPanel = !isMobileViewport || isMobileSidebarOpen;
+  const normalizedSpotterSearchQuery = spotterSearchQuery.trim().toLowerCase();
 
   const closeContextMenu = useCallback(() => setContextMenu(null), []);
   const closeSpotterDialog = useCallback(() => {
@@ -350,6 +352,12 @@ export function Sidebar({
 
     return () => window.cancelAnimationFrame(frameId);
   }, [pathname]);
+
+  useEffect(() => {
+    if (collapsedSections.spotter && spotterSearchQuery.length > 0) {
+      setSpotterSearchQuery("");
+    }
+  }, [collapsedSections.spotter, spotterSearchQuery]);
 
   // Persist collapsed sections
   useEffect(() => {
@@ -757,6 +765,16 @@ export function Sidebar({
     return source.slice(0, hasQuery ? 12 : 8);
   }, [hasQuery, normalizedQuery, notes]);
 
+  const filteredSpotterSessions = useMemo(() => {
+    if (!normalizedSpotterSearchQuery) {
+      return spotterSessions;
+    }
+
+    return spotterSessions.filter((session) =>
+      session.title.toLowerCase().includes(normalizedSpotterSearchQuery),
+    );
+  }, [normalizedSpotterSearchQuery, spotterSessions]);
+
   // Palette items
   const paletteItems = useMemo<CommandPaletteItem[]>(() => {
     const actionItems: CommandPaletteItem[] = [
@@ -1088,6 +1106,9 @@ export function Sidebar({
     ? false
     : collapsedSections.recentNotes;
   const inboxCount = notes.filter((n) => !n.folderId).length;
+  const foldersCountLabel = flattenedFolders.length > 0 ? String(flattenedFolders.length) : undefined;
+  const tagsCountLabel = tags.length > 0 ? String(tags.length) : undefined;
+  const recentNotesCountLabel = notes.length > 0 ? String(notes.length) : undefined;
 
   return (
     <aside
@@ -1360,11 +1381,15 @@ export function Sidebar({
                           </span>
                         </span>
                         <span className="sidebar-item-label">Spotter</span>
+                        {spotterSessions.length > 0 ? (
+                          <span className="sidebar-nav-badge">{spotterSessions.length}</span>
+                        ) : null}
                       </button>
                       <button
                         type="button"
                         className="sidebar-nav-menu"
                         onClick={() => toggleSection("spotter")}
+                        aria-expanded={!isSpotterCollapsed}
                         aria-label={
                           isSpotterCollapsed
                             ? "Expand Spotter chats"
@@ -1390,7 +1415,10 @@ export function Sidebar({
                       <button
                         type="button"
                         className="sidebar-nav-menu sidebar-spotter-new-chat"
-                        onClick={() => router.push("/spotter")}
+                        onClick={() => {
+                          setSpotterSearchQuery("");
+                          router.push("/spotter");
+                        }}
                         aria-label="New Spotter chat"
                         title="New chat"
                       >
@@ -1399,63 +1427,93 @@ export function Sidebar({
                     </div>
 
                     {!isSpotterCollapsed ? (
-                      <div className="sidebar-nested-items sidebar-spotter-sessions">
-                        {spotterSessions.length === 0 ? (
-                          <div className="sidebar-session-empty">
-                            No chats yet.
-                          </div>
-                        ) : (
-                          spotterSessions.map((session) => (
-                            <div
-                              key={session.id}
-                              className={`sidebar-entity-row sidebar-spotter-session-row${
-                                activeSpotterSessionId === session.id
-                                  ? " active"
-                                  : ""
-                              }`}
-                              onContextMenu={(event) =>
-                                openContextMenuAtPointer(
-                                  event,
-                                  buildSpotterSessionMenu(session),
-                                )
-                              }
-                            >
+                      <div className="sidebar-nested-items sidebar-spotter-sessions-shell">
+                        {spotterSessions.length > 5 || normalizedSpotterSearchQuery ? (
+                          <label className="sidebar-spotter-search" htmlFor="spotter-session-search">
+                            <span className="material-symbols-outlined" aria-hidden="true">search</span>
+                            <input
+                              id="spotter-session-search"
+                              type="search"
+                              value={spotterSearchQuery}
+                              onChange={(event) => setSpotterSearchQuery(event.target.value)}
+                              placeholder="Search chats"
+                              spellCheck={false}
+                            />
+                            {normalizedSpotterSearchQuery ? (
                               <button
                                 type="button"
-                                className={`sidebar-item sidebar-row-main sidebar-nested-item${
+                                className="sidebar-spotter-search-clear"
+                                onClick={() => setSpotterSearchQuery("")}
+                                aria-label="Clear Spotter chat search"
+                              >
+                                <span className="material-symbols-outlined" aria-hidden="true">close</span>
+                              </button>
+                            ) : null}
+                          </label>
+                        ) : null}
+
+                        <div className="sidebar-spotter-sessions">
+                          {spotterSessions.length === 0 ? (
+                            <div className="sidebar-session-empty">
+                              No chats yet.
+                            </div>
+                          ) : filteredSpotterSessions.length === 0 ? (
+                            <div className="sidebar-session-empty">
+                              No chats match your search.
+                            </div>
+                          ) : (
+                            filteredSpotterSessions.map((session) => (
+                              <div
+                                key={session.id}
+                                className={`sidebar-entity-row sidebar-spotter-session-row${
                                   activeSpotterSessionId === session.id
                                     ? " active"
                                     : ""
                                 }`}
-                                onClick={() => navigateToSpotterSession(session.id)}
-                                title={session.title}
+                                onContextMenu={(event) =>
+                                  openContextMenuAtPointer(
+                                    event,
+                                    buildSpotterSessionMenu(session),
+                                  )
+                                }
                               >
-                                <span className="sidebar-item-label">
-                                  {session.title}
-                                </span>
-                                <span className="sidebar-nested-item-date">
-                                  {formatSidebarSessionDate(session.lastMessageAt)}
-                                </span>
-                              </button>
-                              <div className="sidebar-row-actions sidebar-spotter-session-actions">
                                 <button
                                   type="button"
-                                  className="context-trigger sidebar-row-action"
-                                  onClick={(event) =>
-                                    openContextMenuFromTrigger(
-                                      event,
-                                      buildSpotterSessionMenu(session),
-                                    )
-                                  }
-                                  aria-label={`${session.title} open menu`}
-                                  title="Options"
+                                  className={`sidebar-item sidebar-row-main sidebar-nested-item${
+                                    activeSpotterSessionId === session.id
+                                      ? " active"
+                                      : ""
+                                  }`}
+                                  onClick={() => navigateToSpotterSession(session.id)}
+                                  title={session.title}
                                 >
-                                  <MoreHorizontalIcon />
+                                  <span className="sidebar-item-label">
+                                    {session.title}
+                                  </span>
+                                  <span className="sidebar-nested-item-date">
+                                    {formatSidebarSessionDate(session.lastMessageAt)}
+                                  </span>
                                 </button>
+                                <div className="sidebar-row-actions sidebar-spotter-session-actions">
+                                  <button
+                                    type="button"
+                                    className="context-trigger sidebar-row-action"
+                                    onClick={(event) =>
+                                      openContextMenuFromTrigger(
+                                        event,
+                                        buildSpotterSessionMenu(session),
+                                      )
+                                    }
+                                    aria-label={`${session.title} open menu`}
+                                    title="Options"
+                                  >
+                                    <MoreHorizontalIcon />
+                                  </button>
+                                </div>
                               </div>
-                            </div>
-                          ))
-                        )}
+                            ))
+                          )}
+                        </div>
                       </div>
                     ) : null}
                   </div>
@@ -1474,6 +1532,7 @@ export function Sidebar({
                       folder
                     </span>
                   }
+                  meta={foldersCountLabel}
                   collapsed={isFoldersCollapsed}
                   showChevron
                   onToggle={() => toggleSection("folders")}
@@ -1569,8 +1628,9 @@ export function Sidebar({
                       sell
                     </span>
                   }
+                  meta={tagsCountLabel}
                   collapsed={isTagsCollapsed}
-                  showChevron={false}
+                  showChevron
                   onToggle={() => toggleSection("tags")}
                 >
                   <div className="sidebar-tag-list">
@@ -1612,8 +1672,9 @@ export function Sidebar({
                       {hasQuery ? "search" : "history"}
                     </span>
                   }
+                  meta={recentNotesCountLabel}
                   collapsed={isRecentNotesCollapsed}
-                  showChevron={false}
+                  showChevron
                   onToggle={() => toggleSection("recentNotes")}
                 >
                   <nav className="sidebar-nav">
@@ -1746,7 +1807,13 @@ export function Sidebar({
                   onChange={(event) => setSpotterTitleDraft(event.target.value)}
                   placeholder="New chat"
                   disabled={isSpotterDialogSubmitting}
+                  aria-invalid={!spotterTitleDraft.trim()}
                 />
+                {!spotterTitleDraft.trim() ? (
+                  <p className="sidebar-modal-copy sidebar-modal-copy--muted">
+                    Title cannot be empty.
+                  </p>
+                ) : null}
                 <div className="sidebar-modal-actions">
                   <Button
                     type="button"
@@ -1756,7 +1823,10 @@ export function Sidebar({
                   >
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={isSpotterDialogSubmitting}>
+                  <Button
+                    type="submit"
+                    disabled={isSpotterDialogSubmitting || !spotterTitleDraft.trim()}
+                  >
                     Save
                   </Button>
                 </div>

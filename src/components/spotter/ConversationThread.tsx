@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import styles from "./SpotterWorkspace.module.css";
 import type { ChatMessage } from "./spotter.types";
 
@@ -10,6 +11,15 @@ export function ConversationThread({
   messages,
   isStreaming,
 }: ConversationThreadProps) {
+  const threadTailRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    threadTailRef.current?.scrollIntoView({
+      behavior: isStreaming ? "auto" : "smooth",
+      block: "end",
+    });
+  }, [isStreaming, messages]);
+
   if (messages.length === 0 && !isStreaming) {
     return null;
   }
@@ -53,6 +63,7 @@ export function ConversationThread({
             </div>
           </article>
         ))}
+        <div ref={threadTailRef} aria-hidden="true" />
       </div>
     </section>
   );

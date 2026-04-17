@@ -30,7 +30,7 @@ export function PromptComposer({
             value={draft}
             onChange={(event) => onDraftChange(event.target.value)}
             onKeyDown={(event) => {
-              if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+              if (event.key === "Enter" && !event.shiftKey) {
                 event.preventDefault();
                 onSend();
               }
@@ -54,7 +54,7 @@ export function PromptComposer({
               </span>
               {foldersCount} folders
             </span>
-            <span className={styles.composerHintInline}>Ctrl/Cmd + Enter</span>
+            <span className={styles.composerHintInline}>Enter to send · Shift+Enter newline</span>
           </div>
 
           <Button
@@ -65,7 +65,7 @@ export function PromptComposer({
             disabled={!draft.trim() || isStreaming}
             aria-label={isStreaming ? "Responding" : "Send message"}
           >
-            <span className={styles.sendText}>{isStreaming ? "Streaming" : "Send"}</span>
+            <span className={styles.sendText}>{isStreaming ? "Thinking…" : "Send"}</span>
           </Button>
         </div>
       </div>

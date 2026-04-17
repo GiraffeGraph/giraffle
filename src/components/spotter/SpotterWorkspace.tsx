@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useMemo, useRef, useState } from "react";
+import { useCallback, useId, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ConversationThread } from "./ConversationThread";
 import { PromptComposer } from "./PromptComposer";
@@ -28,6 +28,8 @@ export function SpotterWorkspace({
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [draft, setDraft] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
+  const [lastError, setLastError] = useState<string | null>(null);
+  const [lastSubmittedPrompt, setLastSubmittedPrompt] = useState("");
   const isEmpty = messages.length === 0 && !isStreaming;
 
   const folderMeta = useMemo(() => {
@@ -89,108 +91,126 @@ export function SpotterWorkspace({
     ].join("\n");
   }, [folderMeta, folders, notes]);
 
-  const handleSend = async () => {
-    const trimmed = draft.trim();
+  const sendPrompt = useCallback(
+    async (prompt: string) => {
+      const trimmed = prompt.trim();
 
-    if (!trimmed || isStreaming) {
+      if (!trimmed || isStreaming) {
+        return;
+      }
+
+      const userMessage: ChatMessage = {
+        id: `user-${Date.now()}`,
+        role: "user",
+        content: trimmed,
+      };
+      const assistantMessageId = `assistant-${Date.now()}`;
+      let nextSessionId = activeSessionId;
+
+      setLastError(null);
+      setLastSubmittedPrompt(trimmed);
+      setDraft("");
+      setIsStreaming(true);
+      setMessages((current) => [
+        ...current,
+        userMessage,
+        {
+          id: assistantMessageId,
+          role: "assistant",
+          content: "",
+        },
+      ]);
+
+      try {
+        const response = await fetch("/api/spotter/chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            sessionId: activeSessionId,
+            prompt: trimmed,
+            context: workspaceContext,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorText = (await response.text().catch(() => "")).trim();
+          throw new Error(errorText || "Spotter request failed");
+        }
+
+        const reader = response.body?.getReader();
+        const decoder = new TextDecoder("utf-8");
+        let streamed = "";
+        const responseSessionId = response.headers.get("X-Spotter-Session-Id");
+
+        if (responseSessionId) {
+          nextSessionId = responseSessionId;
+          setActiveSessionId(responseSessionId);
+        }
+
+        if (reader) {
+          while (true) {
+            const { done, value } = await reader.read();
+
+            if (done) {
+              break;
+            }
+
+            streamed += decoder.decode(value, { stream: true });
+            setMessages((current) =>
+              current.map((message) =>
+                message.id === assistantMessageId
+                  ? {
+                      ...message,
+                      content: streamed,
+                    }
+                  : message,
+              ),
+            );
+          }
+        }
+
+        if (nextSessionId && !embedded) {
+          router.replace(`/spotter?session=${nextSessionId}`, { scroll: false });
+          router.refresh();
+        }
+      } catch (error) {
+        console.error("Spotter error", error);
+        const fallbackMessage =
+          error instanceof Error && error.message === "AI service is not configured"
+            ? "Spotter is not configured right now. Try again after an administrator sets OPENAI_API_KEY."
+            : "There was an error generating the response. Try again or narrow the context a bit more.";
+
+        setLastError(fallbackMessage);
+        setMessages((current) =>
+          current.map((message) =>
+            message.id === assistantMessageId
+              ? {
+                  ...message,
+                  content: fallbackMessage,
+                }
+              : message,
+          ),
+        );
+      } finally {
+        setIsStreaming(false);
+      }
+    },
+    [activeSessionId, embedded, isStreaming, router, workspaceContext],
+  );
+
+  const handleSend = useCallback(() => {
+    void sendPrompt(draft);
+  }, [draft, sendPrompt]);
+
+  const handleRetry = useCallback(() => {
+    if (!lastSubmittedPrompt || isStreaming) {
       return;
     }
 
-    const userMessage: ChatMessage = {
-      id: `user-${Date.now()}`,
-      role: "user",
-      content: trimmed,
-    };
-    const assistantMessageId = `assistant-${Date.now()}`;
-    let nextSessionId = activeSessionId;
-
-    setDraft("");
-    setIsStreaming(true);
-    setMessages((current) => [
-      ...current,
-      userMessage,
-      {
-        id: assistantMessageId,
-        role: "assistant",
-        content: "",
-      },
-    ]);
-
-    try {
-      const response = await fetch("/api/spotter/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          sessionId: activeSessionId,
-          prompt: trimmed,
-          context: workspaceContext,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorText = (await response.text().catch(() => "")).trim();
-        throw new Error(errorText || "Spotter request failed");
-      }
-
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder("utf-8");
-      let streamed = "";
-      const responseSessionId = response.headers.get("X-Spotter-Session-Id");
-
-      if (responseSessionId) {
-        nextSessionId = responseSessionId;
-        setActiveSessionId(responseSessionId);
-      }
-
-      if (reader) {
-        while (true) {
-          const { done, value } = await reader.read();
-
-          if (done) {
-            break;
-          }
-
-          streamed += decoder.decode(value, { stream: true });
-          setMessages((current) =>
-            current.map((message) =>
-              message.id === assistantMessageId
-                ? {
-                    ...message,
-                    content: streamed,
-                  }
-                : message
-            )
-          );
-        }
-      }
-
-      if (nextSessionId && !embedded) {
-        router.replace(`/spotter?session=${nextSessionId}`, { scroll: false });
-        router.refresh();
-      }
-    } catch (error) {
-      console.error("Spotter error", error);
-      const fallbackMessage =
-        error instanceof Error && error.message === "AI service is not configured"
-          ? "Spotter is not configured right now. Try again after an administrator sets OPENAI_API_KEY."
-          : "There was an error generating the response. Try again or narrow the context a bit more.";
-
-      setMessages((current) =>
-        current.map((message) =>
-          message.id === assistantMessageId
-            ? {
-                ...message,
-                content: fallbackMessage,
-              }
-            : message
-        )
-      );
-    } finally {
-      setIsStreaming(false);
-    }
-  };
+    void sendPrompt(lastSubmittedPrompt);
+  }, [isStreaming, lastSubmittedPrompt, sendPrompt]);
 
   return (
     <div className={`${styles.page} ${embedded ? styles.pageEmbedded : ""}`}>
@@ -264,6 +284,32 @@ export function SpotterWorkspace({
           className={`${styles.chatShell} ${isEmpty ? styles.chatShellEmpty : ""}`}
           aria-label="Spotter chat"
         >
+          {lastError ? (
+            <section className={styles.errorBanner} role="status" aria-live="polite">
+              <div className={styles.errorBannerMain}>
+                <span className="material-symbols-outlined" aria-hidden="true">error</span>
+                <p>{lastError}</p>
+              </div>
+              <div className={styles.errorBannerActions}>
+                <button
+                  type="button"
+                  className={styles.errorBannerButton}
+                  onClick={handleRetry}
+                  disabled={!lastSubmittedPrompt || isStreaming}
+                >
+                  Retry
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.errorBannerButton} ${styles.errorBannerButtonGhost}`}
+                  onClick={() => setLastError(null)}
+                >
+                  Dismiss
+                </button>
+              </div>
+            </section>
+          ) : null}
+
           <div className={styles.threadViewport}>
             {isEmpty ? (
               <section className={styles.emptyState}>
@@ -290,7 +336,7 @@ export function SpotterWorkspace({
               notesCount={notes.length}
               foldersCount={folders.length}
               onDraftChange={setDraft}
-              onSend={() => void handleSend()}
+              onSend={handleSend}
             />
           </div>
         </main>

@@ -56,6 +56,79 @@
   gap: 24px;
 }
 
+.errorBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 auto 10px;
+  width: min(100%, 780px);
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, #e06969 42%, var(--ng-border));
+  border-radius: 8px;
+  background: color-mix(in srgb, #d05555 10%, var(--ng-panel));
+  color: var(--ng-text-secondary);
+}
+
+.errorBannerMain {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.errorBannerMain p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.errorBannerMain :global(.material-symbols-outlined) {
+  font-size: 16px;
+  color: color-mix(in srgb, #e16f6f 86%, var(--ng-accent));
+}
+
+.errorBannerActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.errorBannerButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border: 1px solid color-mix(in srgb, var(--ng-accent) 24%, var(--ng-border));
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--ng-accent) 18%, transparent);
+  color: var(--ng-text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+
+.errorBannerButton:hover {
+  border-color: color-mix(in srgb, var(--ng-accent) 40%, var(--ng-border));
+  background: color-mix(in srgb, var(--ng-accent) 24%, transparent);
+}
+
+.errorBannerButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.errorBannerButtonGhost {
+  background: transparent;
+}
+
+.errorBannerButtonGhost:hover {
+  background: var(--ng-panel-muted);
+}
+
 .threadViewport {
   display: grid;
   align-content: start;
@@ -366,6 +439,22 @@
 
   .chatShellEmpty {
     gap: 18px;
+  }
+
+  .errorBanner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .errorBannerActions {
+    width: 100%;
+  }
+
+  .errorBannerButton {
+    flex: 1;
+    justify-content: center;
   }
 
   .threadViewport {
