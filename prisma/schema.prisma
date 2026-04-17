@@ -27,8 +27,9 @@ model User {
   operationLogs       OperationLog[]
   canvases            Canvas[]
   noteCategories      NoteCategory[]
-  spotterSessions     SpotterSession[]
-  coatCanvases        CoatCanvas[]
+  spotterSessions         SpotterSession[]
+  coatCanvases            CoatCanvas[]
+  integrationSettings     UserIntegrationSetting[]
 }
 
 model Account {
@@ -343,6 +344,21 @@ model SpotterSession {
   updatedAt     DateTime         @updatedAt
 
   @@index([userId, lastMessageAt])
+}
+
+model UserIntegrationSetting {
+  id             String   @id @default(uuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider       String
+  settingKey     String
+  encryptedValue String
+  valuePreview   String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([userId, provider, settingKey])
+  @@index([userId, provider])
 }
 
 model SpotterMessage {

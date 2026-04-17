@@ -6,17 +6,25 @@ import {
   type LocalSyncQueueItem,
 } from "@/lib/workspace-preferences";
 import { FeedSettingsPanel } from "@/components/feeds/FeedSettingsPanel";
+import { IntegrationSettingsCard } from "@/components/settings/IntegrationSettingsCard";
+import { SelfHostedGuideCard } from "@/components/settings/SelfHostedGuideCard";
 import { UpdateCenterCard } from "@/components/update/UpdateCenterCard";
 import { Button } from "@/components/ui/Button";
 import { Card, CardHeader, CardTitle, CardContent, CardActions } from "@/components/ui/Card";
+import type { OpenAiIntegrationSummary } from "@/domain/integration/integration.types";
 import type { WorkspaceFeedSummary } from "@/domain/feed/feed.types";
 import type { AppUpdateStatus } from "@/domain/update/update.types";
 
 export interface SettingsWorkspaceProps {
+  appVersion: string;
   updateStatus?: AppUpdateStatus;
   feeds?: WorkspaceFeedSummary[];
   notes?: Array<{ id: string; title: string }>;
   folders?: Array<{ id: string; name: string }>;
+  openaiIntegration: Omit<OpenAiIntegrationSummary, "updatedAt"> & {
+    updatedAt: string | null;
+  };
+  encryptionAvailable: boolean;
   operationLogs: Array<{
     id: string;
     entityType: string;
@@ -32,10 +40,13 @@ export interface SettingsWorkspaceProps {
 }
 
 export function SettingsWorkspace({
+  appVersion,
   updateStatus,
   feeds = [],
   notes = [],
   folders = [],
+  openaiIntegration,
+  encryptionAvailable,
   operationLogs,
   embedded = false,
   showHeading = true,
@@ -86,9 +97,16 @@ export function SettingsWorkspace({
             color: "var(--md-sys-color-on-background)",
           }}
         >
-          System Settings
+          Self-hosted Settings
         </h1>
       ) : null}
+
+      <SelfHostedGuideCard currentVersion={appVersion} />
+
+      <IntegrationSettingsCard
+        openai={openaiIntegration}
+        encryptionAvailable={encryptionAvailable}
+      />
 
       {updateStatus ? <UpdateCenterCard status={updateStatus} /> : null}
 

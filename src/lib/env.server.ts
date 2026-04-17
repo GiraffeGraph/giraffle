@@ -177,7 +177,9 @@ export function validateStartupEnv(rawEnv: RawEnv = process.env) {
   }
 
   if (!ai.enabled) {
-    warnings.push("OPENAI_API_KEY is not configured. AI routes will return 503.");
+    warnings.push(
+      "OPENAI_API_KEY is not configured. AI routes will rely on app-managed provider settings or return 503.",
+    );
   }
 
   if (!feed.enabled) {

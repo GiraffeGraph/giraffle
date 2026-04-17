@@ -1,8 +1,7 @@
-import { openai } from "@ai-sdk/openai";
+import { createOpenAI } from "@ai-sdk/openai";
 import { streamText } from "ai";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
-import { getAiRuntimeEnv } from "@/lib/env.server";
 import { getRequestId, logger } from "@/lib/logger";
 import { consumeRateLimit } from "@/lib/rate-limit";
 
@@ -73,12 +72,6 @@ export async function handleSpotterChatRequest(
       });
     }
 
-    const ai = getAiRuntimeEnv();
-
-    if (!ai.apiKey) {
-      return new Response("AI service is not configured", { status: 503 });
-    }
-
     const payload = (await req.json().catch(() => ({}))) as SpotterChatPayload;
     const prompt = typeof payload.prompt === "string" ? payload.prompt.trim() : "";
     const context = typeof payload.context === "string" ? payload.context : "";
@@ -137,8 +130,29 @@ export async function handleSpotterChatRequest(
         .join("\n\n");
     }
 
+    let openAiConfig = {
+      apiKey: process.env.OPENAI_API_KEY?.trim() || null,
+      baseUrl: process.env.OPENAI_BASE_URL?.trim() || null,
+    } as const;
+
+    if (!openAiConfig.apiKey && process.env.DATABASE_URL) {
+      const { resolveOpenAiConfigForUser } = await import(
+        "@/domain/integration/integration.service"
+      );
+      openAiConfig = await resolveOpenAiConfigForUser(userId);
+    }
+
+    if (!openAiConfig.apiKey) {
+      return new Response("AI service is not configured", { status: 503 });
+    }
+
+    const provider = createOpenAI({
+      apiKey: openAiConfig.apiKey,
+      baseURL: openAiConfig.baseUrl ?? undefined,
+    });
+
     const result = streamText({
-      model: openai("gpt-4o-mini"),
+      model: provider("gpt-4o-mini"),
       system: buildSpotterSystemPrompt({ mode, context }),
       prompt: modelPrompt,
       ...(activeSessionId && spotterPersistence

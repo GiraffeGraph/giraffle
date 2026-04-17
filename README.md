@@ -190,7 +190,7 @@ git push origin v0.1.0
 
 ## Production Deployment
 
-For a simpler step-by-step server guide, see [`docs/deploy.md`](./docs/deploy.md).
+For a simpler step-by-step server guide, see [`docs/deploy.md`](./docs/deploy.md). For image-first platforms such as Coolify, Dokploy, CasaOS, and Portainer, see [`docs/self-hosting.md`](./docs/self-hosting.md).
 
 Giraffle ships with a production Docker Compose stack that runs:
 
@@ -205,6 +205,13 @@ cp .env.production.example .env.production
 $EDITOR .env.production
 ./scripts/prod-up.sh
 ```
+
+If you prefer an image-first deployment without cloning the whole repo on the target machine, use:
+
+- `deploy/selfhost/docker-compose.image.yml`
+- `deploy/selfhost/.env.image.example`
+
+These are intended for self-hosted control planes such as Coolify, Dokploy, CasaOS, and Portainer.
 
 Set `APP_IMAGE` to the published Docker Hub image, for example `docker.io/efekurucay/giraffle:latest`.
 
@@ -230,7 +237,9 @@ Then open `http://localhost:3000` for a production smoke test, or point your dom
 - `NEXTAUTH_URL`
 - `LOG_LEVEL`
 - `APP_PORT`
+- optional: `APP_ENCRYPTION_KEY` to encrypt app-managed provider settings stored from inside the UI
 - optional: `OPENAI_API_KEY` to enable AI-assisted routes
+- optional: `OPENAI_BASE_URL` for OpenAI-compatible gateways or self-hosted inference
 - optional: `FEED_REFRESH_SECRET` to enable authenticated feed refresh jobs
 - optional: `DEPLOYMENT_ID` for version-skew protection during rolling deploys
 - `POSTGRES_USER`
@@ -296,6 +305,7 @@ That adds nginx on port `80` in front of the app. The default stack intentionall
 - Uploads are written to `/app/public/uploads` and persisted through the `giraffle_uploads` Docker volume.
 - By default the app is public on `APP_PORT` and reachable directly, usually `http://localhost:3000`.
 - nginx is optional and only starts when `docker-compose.proxy.yml` is included.
+- Users can save their own OpenAI API key and base URL from `Settings → Self-host & Integrations`; when no app key is saved, Giraffle falls back to server env values.
 
 ## Auth Baseline
 

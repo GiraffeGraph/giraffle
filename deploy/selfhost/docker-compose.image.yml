@@ -1,0 +1,53 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-giraffle}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${POSTGRES_DB:-giraffle}
+    volumes:
+      - giraffle_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-giraffle} -d ${POSTGRES_DB:-giraffle}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  app:
+    image: ${APP_IMAGE:-docker.io/efekurucay/giraffle:latest}
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      HOSTNAME: "0.0.0.0"
+      DATABASE_URL: ${DATABASE_URL}
+      AUTH_SECRET: ${AUTH_SECRET}
+      NEXTAUTH_URL: ${NEXTAUTH_URL}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      APP_ENCRYPTION_KEY: ${APP_ENCRYPTION_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
+      FEED_REFRESH_SECRET: ${FEED_REFRESH_SECRET:-}
+      DEPLOYMENT_ID: ${DEPLOYMENT_ID:-}
+      APP_UPDATE_REPOSITORY: ${APP_UPDATE_REPOSITORY:-}
+      NODE_OPTIONS: "--max-old-space-size=512"
+    command: ["sh", "./scripts/container-start.sh"]
+    volumes:
+      - giraffle_uploads:/app/public/uploads
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/api/health/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  giraffle_pgdata:
+  giraffle_uploads:

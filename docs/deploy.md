@@ -47,8 +47,12 @@ DATABASE_URL=postgresql://giraffle:change-this-to-a-strong-password@postgres:543
 AUTH_SECRET=replace-this-with-a-long-random-secret
 NEXTAUTH_URL=http://YOUR_SERVER_IP_OR_DOMAIN
 LOG_LEVEL=info
+# Optional but recommended if you want encrypted app-managed provider keys in Settings.
+# APP_ENCRYPTION_KEY=YOUR_LONG_RANDOM_SECRET
 # Optional: enable AI-assisted routes
 # OPENAI_API_KEY=YOUR_OPENAI_API_KEY
+# Optional: OpenAI-compatible gateway or self-hosted inference endpoint
+# OPENAI_BASE_URL=https://api.openai.com/v1
 NODE_ENV=production
 ```
 
@@ -72,6 +76,7 @@ Important:
 - `POSTGRES_PASSWORD` and the password inside `DATABASE_URL` must be the same.
 - Use either `AUTH_SECRET` or `AUTH_SECRET_FILE`.
 - If `AUTH_SECRET_FILE` is set, the prod scripts automatically include `docker-compose.prod.secrets.yml`.
+- `APP_ENCRYPTION_KEY` is recommended if you want encrypted app-managed provider settings stored from inside the UI.
 
 ## 3. Start the app
 
@@ -195,7 +200,17 @@ docker compose --env-file .env.production -f docker-compose.prod.yml pull
 ./scripts/prod-up.sh
 ```
 
-## 9. Recommended simple production flow
+## 9. In-app provider settings
+
+Users can configure OpenAI integration from **Settings → Self-host & Integrations**.
+
+Behavior:
+
+- app-managed OpenAI keys are encrypted before storage
+- if no app key exists, Giraffle falls back to `OPENAI_API_KEY`
+- `OPENAI_BASE_URL` can still be configured via env, or overridden from inside the UI
+
+## 10. Recommended simple production flow
 
 The simplest repeatable flow for users is:
 

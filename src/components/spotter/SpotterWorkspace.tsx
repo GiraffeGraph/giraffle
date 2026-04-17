@@ -181,7 +181,7 @@ export function SpotterWorkspace({
         console.error("Spotter error", error);
         const fallbackMessage =
           error instanceof Error && error.message === "AI service is not configured"
-            ? "Spotter is not configured right now. Try again after an administrator sets OPENAI_API_KEY."
+            ? "Spotter is not configured right now. Add an OpenAI API key from Settings → Self-host & Integrations, or ask the administrator to set OPENAI_API_KEY."
             : "There was an error generating the response. Try again or narrow the context a bit more.";
 
         setLastError(fallbackMessage);
