@@ -1,29 +1,26 @@
 /**
  * WebSocket Terminal Server — spawned inside Next.js instrumentation hook.
  *
- * Listens on port WS_TERMINAL_PORT (default 3001) for WebSocket connections.
- * Path: /ws/terminal/:agentId
- *
- * Protocol:
- *   Client → Server:  { type: "input", data: string }
- *                     { type: "resize", cols: number, rows: number }
- *   Server → Client:  raw terminal bytes (string)
- *                     { type: "status", status: "connected"|"error", message?: string }
+ * Root fix: agent runtimes are backed by tmux sessions on remote machines.
+ * - Session start/reconnect no longer loses CLI login state.
+ * - Terminal tabs can reconnect/reattach without restarting agent process.
+ * - Supervisor can inject tasks even when no browser terminal is attached.
  */
 import type { ClientChannel } from "ssh2";
-import type { WebSocket as WsSocket, WebSocketServer as WssType } from "ws";
 
 const WS_PORT = Number(process.env.WS_TERMINAL_PORT ?? 3001);
 const MAX_OUTPUT_CHUNKS = 600;
 
-// Map<agentId, Set<WsSocket>>
-const agentSessions = new Map<string, Set<WsSocket>>();
-// Map<agentId, ClientChannel>
-const agentChannels = new Map<string, ClientChannel>();
+type WsSocketLike = {
+  readyState: number;
+  send: (data: string) => void;
+  close: (code?: number, reason?: string) => void;
+  on: (event: string, listener: (...args: unknown[]) => void) => void;
+};
 
-export function hasAgentChannel(agentId: string): boolean {
-  return agentChannels.has(agentId);
-}
+type WsServerLike = {
+  on: (event: "connection", listener: (ws: WsSocketLike, req: { url?: string }) => void) => void;
+};
 
 interface AgentOutputChunk {
   cursor: number;
@@ -35,8 +32,24 @@ interface AgentOutputState {
   chunks: AgentOutputChunk[];
 }
 
-// In-memory per-agent output history so supervisor can read real terminal output.
+interface AgentRuntime {
+  machineId: string;
+  tmuxSession: string;
+  channel: ClientChannel | null;
+}
+
+// Map<agentId, Set<WsSocket>>
+const agentSessions = new Map<string, Set<WsSocketLike>>();
 const agentOutputs = new Map<string, AgentOutputState>();
+const agentRuntimes = new Map<string, AgentRuntime>();
+
+function tmuxSessionName(agentId: string): string {
+  return `giraffe_agent_${agentId.replace(/[^a-zA-Z0-9_]/g, "_")}`;
+}
+
+function shellQuote(value: string): string {
+  return `'${value.replace(/'/g, `'"'"'`)}'`;
+}
 
 function appendAgentOutput(agentId: string, text: string): void {
   if (!text) return;
@@ -52,6 +65,140 @@ function appendAgentOutput(agentId: string, text: string): void {
 function fanOutAgentOutput(agentId: string, text: string): void {
   appendAgentOutput(agentId, text);
   broadcastToAgent(agentId, text);
+}
+
+function preview(text: string): string {
+  return text.replace(/\s+/g, " ").trim();
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function tmuxHasSession(machineId: string, sessionName: string): Promise<boolean> {
+  const { sshExec } = await import("@/lib/ssh-manager");
+  const result = await sshExec(
+    machineId,
+    `tmux has-session -t ${shellQuote(sessionName)} 2>/dev/null`,
+  ).catch(() => null);
+
+  return result?.exitCode === 0;
+}
+
+async function tmuxEnsureInstalled(machineId: string): Promise<void> {
+  const { sshExec } = await import("@/lib/ssh-manager");
+  const check = await sshExec(machineId, "command -v tmux >/dev/null 2>&1").catch(() => null);
+  if (!check || check.exitCode !== 0) {
+    throw new Error("tmux is required on remote machine but not installed");
+  }
+}
+
+async function tmuxSendLine(machineId: string, sessionName: string, line: string): Promise<void> {
+  const { sshExec } = await import("@/lib/ssh-manager");
+  await sshExec(
+    machineId,
+    `tmux send-keys -t ${shellQuote(sessionName)} ${shellQuote(line)} Enter`,
+  );
+}
+
+async function ensureTmuxRuntime(params: {
+  agentId: string;
+  machineId: string;
+  command?: string;
+  systemPrompt?: string;
+  forceRestart?: boolean;
+}): Promise<AgentRuntime> {
+  const { agentId, machineId, command, systemPrompt, forceRestart = false } = params;
+  const sessionName = tmuxSessionName(agentId);
+
+  await tmuxEnsureInstalled(machineId);
+
+  const exists = await tmuxHasSession(machineId, sessionName);
+
+  if (forceRestart && exists) {
+    const { sshExec } = await import("@/lib/ssh-manager");
+    await sshExec(machineId, `tmux kill-session -t ${shellQuote(sessionName)} 2>/dev/null || true`);
+  }
+
+  const existsAfterRestart = forceRestart ? false : exists;
+
+  if (!existsAfterRestart) {
+    const { sshExec } = await import("@/lib/ssh-manager");
+
+    await sshExec(machineId, `tmux new-session -d -s ${shellQuote(sessionName)}`);
+    await sshExec(machineId, `tmux set-option -t ${shellQuote(sessionName)} history-limit 200000`);
+
+    fanOutAgentOutput(
+      agentId,
+      `\r\n\u001b[90m[agent-start] tmux session: ${sessionName}\u001b[0m\r\n`,
+    );
+
+    if (systemPrompt?.trim()) {
+      await tmuxSendLine(
+        machineId,
+        sessionName,
+        `export AGENT_SYSTEM_PROMPT=${JSON.stringify(systemPrompt)}`,
+      );
+    }
+
+    if (command?.trim()) {
+      fanOutAgentOutput(
+        agentId,
+        `\r\n\u001b[90m[agent-start] running command: ${command}\u001b[0m\r\n`,
+      );
+      await tmuxSendLine(machineId, sessionName, command);
+    }
+  }
+
+  const runtime: AgentRuntime = {
+    machineId,
+    tmuxSession: sessionName,
+    channel: agentRuntimes.get(agentId)?.channel ?? null,
+  };
+
+  agentRuntimes.set(agentId, runtime);
+  return runtime;
+}
+
+function bindChannelOutput(agentId: string, channel: ClientChannel): void {
+  channel.on("data", (data: Buffer) => fanOutAgentOutput(agentId, data.toString("utf-8")));
+  channel.stderr?.on("data", (data: Buffer) => fanOutAgentOutput(agentId, data.toString("utf-8")));
+
+  channel.on("close", () => {
+    const runtime = agentRuntimes.get(agentId);
+    if (runtime) {
+      runtime.channel = null;
+      agentRuntimes.set(agentId, runtime);
+    }
+    broadcastToAgent(agentId, JSON.stringify({ type: "status", status: "closed" }));
+  });
+}
+
+async function attachChannelToTmux(agentId: string, machineId: string, sessionName: string): Promise<ClientChannel> {
+  const { sshOpenShell } = await import("@/lib/ssh-manager");
+
+  // close previous attached channel only; tmux runtime remains alive.
+  closeAgentChannel(agentId);
+
+  const channel = await sshOpenShell(machineId);
+  bindChannelOutput(agentId, channel);
+
+  const runtime = agentRuntimes.get(agentId) ?? {
+    machineId,
+    tmuxSession: sessionName,
+    channel: null,
+  };
+  runtime.machineId = machineId;
+  runtime.tmuxSession = sessionName;
+  runtime.channel = channel;
+  agentRuntimes.set(agentId, runtime);
+
+  channel.write(`tmux attach-session -t ${sessionName}\n`);
+  return channel;
+}
+
+export function hasAgentChannel(agentId: string): boolean {
+  return Boolean(agentRuntimes.get(agentId)?.channel);
 }
 
 export function clearAgentOutputBuffer(agentId: string): void {
@@ -74,10 +221,6 @@ export function getAgentOutputSince(agentId: string, sinceCursor: number): { cur
   return { cursor: state.cursor, text };
 }
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 export async function waitForAgentOutput(
   agentId: string,
   sinceCursor: number,
@@ -95,16 +238,17 @@ export async function waitForAgentOutput(
 }
 
 export async function startWsTerminalServer(): Promise<void> {
-  // Lazy import — only runs in Node.js (instrumentation context)
-  const { WebSocketServer } = await import("ws") as { WebSocketServer: new (opts: object) => WssType };
+  const wsModule = (await import("ws")) as {
+    WebSocketServer: new (opts: object) => WsServerLike;
+  };
+
   const { db } = await import("@/lib/db");
-  const { sshOpenShell, sshResizeShell } = await import("@/lib/ssh-manager");
+  const { sshResizeShell } = await import("@/lib/ssh-manager");
 
-  const wss = new WebSocketServer({ port: WS_PORT });
-
+  const wss = new wsModule.WebSocketServer({ port: WS_PORT });
   console.log(`[ws-terminal] Listening on ws://localhost:${WS_PORT}`);
 
-  wss.on("connection", async (ws: WsSocket, req) => {
+  wss.on("connection", async (ws: WsSocketLike, req: { url?: string }) => {
     const url = req.url ?? "";
     const match = url.match(/\/ws\/terminal\/([^/?]+)/);
     if (!match) {
@@ -114,7 +258,6 @@ export async function startWsTerminalServer(): Promise<void> {
 
     const agentId = match[1];
 
-    // Load agent → machine info
     const agent = await db.agent.findUnique({
       where: { id: agentId },
       include: { machine: true },
@@ -126,64 +269,54 @@ export async function startWsTerminalServer(): Promise<void> {
       return;
     }
 
-    // Register client
     if (!agentSessions.has(agentId)) agentSessions.set(agentId, new Set());
     agentSessions.get(agentId)!.add(ws);
 
-    let channel: ClientChannel | null = agentChannels.get(agentId) ?? null;
+    try {
+      const runtime = await ensureTmuxRuntime({
+        agentId,
+        machineId: agent.machine.id,
+        command: agent.agentCommand,
+        systemPrompt: agent.systemPrompt ?? undefined,
+        forceRestart: false,
+      });
 
-    // Reuse existing SSH channel or open a new shell
-    if (!channel) {
-      try {
-        channel = await sshOpenShell(agent.machine.id);
-        agentChannels.set(agentId, channel);
-
-        // Pipe SSH stdout/stderr → in-memory output buffer + connected WebSocket clients
-        channel.on("data", (data: Buffer) => {
-          fanOutAgentOutput(agentId, data.toString("utf-8"));
-        });
-
-        channel.stderr?.on("data", (data: Buffer) => {
-          fanOutAgentOutput(agentId, data.toString("utf-8"));
-        });
-
-        channel.on("close", () => {
-          agentChannels.delete(agentId);
-          broadcastToAgent(agentId, JSON.stringify({ type: "status", status: "closed" }));
-        });
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "SSH connection failed";
-        ws.send(JSON.stringify({ type: "status", status: "error", message }));
-        ws.close();
-        agentSessions.get(agentId)?.delete(ws);
-        return;
+      if (!runtime.channel) {
+        await attachChannelToTmux(agentId, runtime.machineId, runtime.tmuxSession);
       }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "SSH/tmux attach failed";
+      ws.send(JSON.stringify({ type: "status", status: "error", message }));
+      ws.close();
+      agentSessions.get(agentId)?.delete(ws);
+      return;
     }
 
     ws.send(JSON.stringify({ type: "status", status: "connected" }));
 
-    // Replay recent output for late/reconnected clients
     const backlog = getAgentOutputSince(agentId, 0).text;
     if (backlog) ws.send(backlog);
 
-    // Forward browser → SSH
-    ws.on("message", (rawMsg) => {
+    ws.on("message", (rawMsg: unknown) => {
+      const runtime = agentRuntimes.get(agentId);
+      const channel = runtime?.channel ?? null;
+      if (!channel) return;
+
       try {
-        const msg = JSON.parse(rawMsg.toString()) as {
+        const msg = JSON.parse(String(rawMsg)) as {
           type: string;
           data?: string;
           cols?: number;
           rows?: number;
         };
 
-        if (msg.type === "input" && msg.data && channel) {
+        if (msg.type === "input" && msg.data) {
           channel.write(msg.data);
-        } else if (msg.type === "resize" && msg.cols && msg.rows && channel) {
+        } else if (msg.type === "resize" && msg.cols && msg.rows) {
           sshResizeShell(channel, msg.cols, msg.rows);
         }
       } catch {
-        // raw string input fallback
-        if (channel) channel.write(rawMsg.toString());
+        channel.write(String(rawMsg));
       }
     });
 
@@ -200,16 +333,19 @@ export function broadcastToAgent(agentId: string, data: string): void {
   }
 }
 
-/** Write text to an agent's SSH channel (orchestrator → agent input). */
+/**
+ * Write text to the currently attached shell channel (if any).
+ * This is a best-effort path used by manual terminal flows.
+ */
 export function sendToAgentChannel(agentId: string, text: string): boolean {
-  const channel = agentChannels.get(agentId);
+  const channel = agentRuntimes.get(agentId)?.channel;
   if (!channel) return false;
 
-  const preview = text.replace(/\s+/g, " ").trim();
-  if (preview) {
+  const compact = preview(text);
+  if (compact) {
     fanOutAgentOutput(
       agentId,
-      `\r\n\u001b[90m[orchestrator → agent] ${preview}\u001b[0m\r\n`,
+      `\r\n\u001b[90m[orchestrator → agent] ${compact}\u001b[0m\r\n`,
     );
   }
 
@@ -217,9 +353,51 @@ export function sendToAgentChannel(agentId: string, text: string): boolean {
   return true;
 }
 
-/** 
- * Ensure the agent has an active shell and run its command.
- * Called from Server Actions when Start Agent is clicked.
+/**
+ * Reliable task injection path for supervisor.
+ * Works with or without an attached browser terminal.
+ */
+export async function sendToAgentInput(agentId: string, text: string): Promise<boolean> {
+  const compact = preview(text);
+  if (compact) {
+    fanOutAgentOutput(
+      agentId,
+      `\r\n\u001b[90m[orchestrator → agent] ${compact}\u001b[0m\r\n`,
+    );
+  }
+
+  const runtime = agentRuntimes.get(agentId);
+  if (runtime && (await tmuxHasSession(runtime.machineId, runtime.tmuxSession))) {
+    await tmuxSendLine(runtime.machineId, runtime.tmuxSession, text);
+    return true;
+  }
+
+  // fallback: discover runtime from DB and deterministic tmux session name
+  const { db } = await import("@/lib/db");
+  const agent = await db.agent.findUnique({
+    where: { id: agentId },
+    select: { machineId: true },
+  });
+
+  if (!agent) return false;
+
+  const sessionName = tmuxSessionName(agentId);
+  const exists = await tmuxHasSession(agent.machineId, sessionName);
+  if (!exists) return false;
+
+  agentRuntimes.set(agentId, {
+    machineId: agent.machineId,
+    tmuxSession: sessionName,
+    channel: runtime?.channel ?? null,
+  });
+
+  await tmuxSendLine(agent.machineId, sessionName, text);
+  return true;
+}
+
+/**
+ * Start or restart an agent runtime (fresh tmux session + attached channel).
+ * Called from explicit Start/New Shell actions.
  */
 export async function runAgentShell(
   agentId: string,
@@ -227,39 +405,64 @@ export async function runAgentShell(
   command: string,
   systemPrompt?: string,
 ) {
-  const { sshOpenShell } = await import("@/lib/ssh-manager");
-
-  // Close existing channel if any
-  closeAgentChannel(agentId);
-
-  const channel = await sshOpenShell(machineId);
-  agentChannels.set(agentId, channel);
-
-  // Fresh shell should start with fresh visible history.
   clearAgentOutputBuffer(agentId);
 
-  // Set up terminal output piping + buffering for supervisor
-  channel.on("data", (data: Buffer) => fanOutAgentOutput(agentId, data.toString("utf-8")));
-  channel.stderr?.on("data", (data: Buffer) => fanOutAgentOutput(agentId, data.toString("utf-8")));
-  
-  channel.on("close", () => {
-    agentChannels.delete(agentId);
-    broadcastToAgent(agentId, JSON.stringify({ type: "status", status: "closed" }));
+  const runtime = await ensureTmuxRuntime({
+    agentId,
+    machineId,
+    command,
+    systemPrompt,
+    forceRestart: true,
   });
 
-  if (systemPrompt?.trim()) {
-    channel.write(`export AGENT_SYSTEM_PROMPT=${JSON.stringify(systemPrompt)}\n`);
-  }
-
-  fanOutAgentOutput(
-    agentId,
-    `\r\n\u001b[90m[agent-start] running command: ${command}\u001b[0m\r\n`,
-  );
-  channel.write(command + "\n");
+  await attachChannelToTmux(agentId, machineId, runtime.tmuxSession);
 }
 
-/** Close an agent's SSH channel. */
+export async function clearAgentTerminalHistory(agentId: string): Promise<void> {
+  const runtime = agentRuntimes.get(agentId);
+  if (runtime) {
+    const { sshExec } = await import("@/lib/ssh-manager");
+    await sshExec(
+      runtime.machineId,
+      `tmux clear-history -t ${shellQuote(runtime.tmuxSession)} 2>/dev/null || true`,
+    ).catch(() => undefined);
+    await sshExec(
+      runtime.machineId,
+      `tmux send-keys -t ${shellQuote(runtime.tmuxSession)} C-l`,
+    ).catch(() => undefined);
+  }
+
+  clearAgentOutputBuffer(agentId);
+  broadcastToAgent(agentId, "\r\n\u001b[90m[terminal] history cleared\u001b[0m\r\n");
+}
+
+/** Close only the currently attached shell channel (tmux runtime continues). */
 export function closeAgentChannel(agentId: string): void {
-  agentChannels.get(agentId)?.end();
-  agentChannels.delete(agentId);
+  const runtime = agentRuntimes.get(agentId);
+  if (!runtime?.channel) return;
+
+  runtime.channel.end();
+  runtime.channel = null;
+  agentRuntimes.set(agentId, runtime);
+}
+
+/** Fully stop runtime: detach channel + kill tmux session. */
+export async function stopAgentRuntime(agentId: string): Promise<void> {
+  const runtime = agentRuntimes.get(agentId);
+  if (!runtime) {
+    closeAgentChannel(agentId);
+    clearAgentOutputBuffer(agentId);
+    return;
+  }
+
+  closeAgentChannel(agentId);
+
+  const { sshExec } = await import("@/lib/ssh-manager");
+  await sshExec(
+    runtime.machineId,
+    `tmux kill-session -t ${shellQuote(runtime.tmuxSession)} 2>/dev/null || true`,
+  ).catch(() => undefined);
+
+  agentRuntimes.delete(agentId);
+  clearAgentOutputBuffer(agentId);
 }

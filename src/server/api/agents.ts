@@ -78,8 +78,8 @@ export async function startAgentAction(id: string) {
 
 export async function stopAgentAction(id: string) {
   try {
-    const { closeAgentChannel } = await import("@/lib/ws-terminal-server");
-    closeAgentChannel(id);
+    const { stopAgentRuntime } = await import("@/lib/ws-terminal-server");
+    await stopAgentRuntime(id);
   } catch {
     // ignore
   }
@@ -113,7 +113,6 @@ export async function restartAgentShellAction(id: string) {
 }
 
 export async function clearAgentTerminalHistoryAction(id: string) {
-  const { clearAgentOutputBuffer, broadcastToAgent } = await import("@/lib/ws-terminal-server");
-  clearAgentOutputBuffer(id);
-  broadcastToAgent(id, "\r\n\u001b[90m[terminal] history cleared\u001b[0m\r\n");
+  const { clearAgentTerminalHistory } = await import("@/lib/ws-terminal-server");
+  await clearAgentTerminalHistory(id);
 }

@@ -52,12 +52,10 @@ async function sendTaskToAgent(
   machineId: string,
   task: string,
 ): Promise<void> {
-  const { sendToAgentChannel } = await import("@/lib/ws-terminal-server");
+  const { sendToAgentInput } = await import("@/lib/ws-terminal-server");
 
-  // If there's a live agent shell, send directly to its stdin
-  const wroteToLiveShell = sendToAgentChannel(agentId, task);
-
-  if (wroteToLiveShell) {
+  const delivered = await sendToAgentInput(agentId, task);
+  if (delivered) {
     return;
   }
 
