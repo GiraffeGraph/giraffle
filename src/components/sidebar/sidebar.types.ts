@@ -66,7 +66,7 @@ export interface FolderDropTarget {
   mode: "inside" | "after";
 }
 
-export type SidebarSectionKey = "folders" | "tags" | "recentNotes";
+export type SidebarSectionKey = "spotter" | "folders" | "tags" | "recentNotes";
 
 export interface SidebarFolderDragData {
   type: "sidebar-folder";

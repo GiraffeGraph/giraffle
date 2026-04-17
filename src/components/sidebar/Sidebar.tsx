@@ -1081,6 +1081,7 @@ export function Sidebar({
     [handleCreateNote, handleStartCreateFolder],
   );
 
+  const isSpotterCollapsed = hasQuery ? false : collapsedSections.spotter;
   const isFoldersCollapsed = hasQuery ? false : collapsedSections.folders;
   const isTagsCollapsed = hasQuery ? false : collapsedSections.tags;
   const isRecentNotesCollapsed = hasQuery
@@ -1363,6 +1364,21 @@ export function Sidebar({
                       <button
                         type="button"
                         className="sidebar-nav-menu"
+                        onClick={() => toggleSection("spotter")}
+                        aria-label={
+                          isSpotterCollapsed
+                            ? "Expand Spotter chats"
+                            : "Collapse Spotter chats"
+                        }
+                        title={isSpotterCollapsed ? "Expand chats" : "Collapse chats"}
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: 14 }}>
+                          {isSpotterCollapsed ? "chevron_right" : "expand_more"}
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        className="sidebar-nav-menu"
                         onClick={(event) =>
                           openContextMenuFromTrigger(event, buildSpotterMenu())
                         }
@@ -1382,64 +1398,66 @@ export function Sidebar({
                       </button>
                     </div>
 
-                    <div className="sidebar-nested-items sidebar-spotter-sessions">
-                      {spotterSessions.length === 0 ? (
-                        <div className="sidebar-session-empty">
-                          No chats yet.
-                        </div>
-                      ) : (
-                        spotterSessions.map((session) => (
-                          <div
-                            key={session.id}
-                            className={`sidebar-entity-row sidebar-spotter-session-row${
-                              activeSpotterSessionId === session.id
-                                ? " active"
-                                : ""
-                            }`}
-                            onContextMenu={(event) =>
-                              openContextMenuAtPointer(
-                                event,
-                                buildSpotterSessionMenu(session),
-                              )
-                            }
-                          >
-                            <button
-                              type="button"
-                              className={`sidebar-item sidebar-row-main sidebar-nested-item${
+                    {!isSpotterCollapsed ? (
+                      <div className="sidebar-nested-items sidebar-spotter-sessions">
+                        {spotterSessions.length === 0 ? (
+                          <div className="sidebar-session-empty">
+                            No chats yet.
+                          </div>
+                        ) : (
+                          spotterSessions.map((session) => (
+                            <div
+                              key={session.id}
+                              className={`sidebar-entity-row sidebar-spotter-session-row${
                                 activeSpotterSessionId === session.id
                                   ? " active"
                                   : ""
                               }`}
-                              onClick={() => navigateToSpotterSession(session.id)}
-                              title={session.title}
+                              onContextMenu={(event) =>
+                                openContextMenuAtPointer(
+                                  event,
+                                  buildSpotterSessionMenu(session),
+                                )
+                              }
                             >
-                              <span className="sidebar-item-label">
-                                {session.title}
-                              </span>
-                              <span className="sidebar-nested-item-date">
-                                {formatSidebarSessionDate(session.lastMessageAt)}
-                              </span>
-                            </button>
-                            <div className="sidebar-row-actions sidebar-spotter-session-actions">
                               <button
                                 type="button"
-                                className="context-trigger sidebar-row-action"
-                                onClick={(event) =>
-                                  openContextMenuFromTrigger(
-                                    event,
-                                    buildSpotterSessionMenu(session),
-                                  )
-                                }
-                                aria-label={`${session.title} open menu`}
-                                title="Options"
+                                className={`sidebar-item sidebar-row-main sidebar-nested-item${
+                                  activeSpotterSessionId === session.id
+                                    ? " active"
+                                    : ""
+                                }`}
+                                onClick={() => navigateToSpotterSession(session.id)}
+                                title={session.title}
                               >
-                                <MoreHorizontalIcon />
+                                <span className="sidebar-item-label">
+                                  {session.title}
+                                </span>
+                                <span className="sidebar-nested-item-date">
+                                  {formatSidebarSessionDate(session.lastMessageAt)}
+                                </span>
                               </button>
+                              <div className="sidebar-row-actions sidebar-spotter-session-actions">
+                                <button
+                                  type="button"
+                                  className="context-trigger sidebar-row-action"
+                                  onClick={(event) =>
+                                    openContextMenuFromTrigger(
+                                      event,
+                                      buildSpotterSessionMenu(session),
+                                    )
+                                  }
+                                  aria-label={`${session.title} open menu`}
+                                  title="Options"
+                                >
+                                  <MoreHorizontalIcon />
+                                </button>
+                              </div>
                             </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
+                          ))
+                        )}
+                      </div>
+                    ) : null}
                   </div>
                 </div>
 

@@ -9,12 +9,14 @@ export const SIDEBAR_MAX_WIDTH = 420;
 export const SIDEBAR_COMPACT_WIDTH = 60;
 
 export interface SidebarCollapseState {
+  spotter: boolean;
   folders: boolean;
   tags: boolean;
   recentNotes: boolean;
 }
 
 export const DEFAULT_COLLAPSED_SECTIONS: SidebarCollapseState = {
+  spotter: false,
   folders: false,
   tags: false,
   recentNotes: false,
