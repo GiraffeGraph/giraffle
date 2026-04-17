@@ -12,13 +12,13 @@ import {
 import { useRouter } from "next/navigation";
 import { SafeEditor } from "@/components/editor/SafeEditor";
 import { SidebarIconPicker } from "@/components/sidebar/SidebarIconPicker";
-import { renderStoredIcon } from "@/components/sidebar/sidebar-icon-utils";
+
 import { NoteTopbar } from "@/components/notes/NoteTopbar";
 import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 import { Button } from "@/components/ui/Button";
 import { useIsMobileViewport } from "@/components/ui/useIsMobileViewport";
 import { FeedAssignmentsCard } from "@/components/feeds/FeedAssignmentsCard";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
+import { Card, CardContent } from "@/components/ui/Card";
 import {
   NOTE_CATEGORY_COLOR_OPTIONS,
   getNoteCategoryColorTokens,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback, useTransition, useEffect } from "react";
+import { useState, useRef, useCallback, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   updateCanvasTitleAction,
@@ -143,15 +143,7 @@ function CanvasCell({
   onDragOver: (e: React.DragEvent, cellId: string) => void;
   onDrop: (e: React.DragEvent, cellId: string) => void;
 }) {
-  const [title, setTitle] = useState(cell.title);
-  const prevIdRef = useRef(cell.id);
 
-  useEffect(() => {
-    if (cell.id !== prevIdRef.current) {
-      prevIdRef.current = cell.id;
-      setTitle(cell.title);
-    }
-  }, [cell.id, cell.title]);
 
   return (
     <div
@@ -182,10 +174,9 @@ function CanvasCell({
 
         <input
           className="cc-cell-title"
-          value={title}
+          defaultValue={cell.title}
           placeholder="Title…"
-          onChange={(e) => setTitle(e.target.value)}
-          onBlur={() => onTitleChange(cell.id, title)}
+          onBlur={(e) => onTitleChange(cell.id, e.target.value)}
           onClick={(e) => e.stopPropagation()}
         />
 
@@ -230,7 +221,6 @@ function CanvasCell({
       <div className="cc-cell-content-area" onClick={(e) => e.stopPropagation()}>
         <CellEditor
           key={cell.id}
-          cellId={cell.id}
           initialContent={cell.content}
           onSave={(json) => onContentSave(cell.id, json)}
         />
@@ -547,7 +537,7 @@ export function CoatCanvasEditor({ canvas }: { canvas: CoatCanvas }) {
           <div className="cc-editor-empty">
             <span className="material-symbols-outlined cc-editor-empty-icon">texture</span>
             <p className="cc-editor-empty-title">Canvas is empty</p>
-            <p className="cc-editor-empty-sub">Click the "Add box" button to add your first box</p>
+            <p className="cc-editor-empty-sub">Click the Add box button to add your first box</p>
             <button
               className="cc-btn cc-btn--primary"
               type="button"

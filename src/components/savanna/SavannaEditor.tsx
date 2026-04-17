@@ -309,7 +309,7 @@ function getClientPoint(event: unknown): ScreenPoint | null {
 function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
   const router = useRouter();
   const shellRef = useRef<HTMLDivElement | null>(null);
-  const { setViewport, screenToFlowPosition, fitView } = useReactFlow();
+  const { setViewport, screenToFlowPosition } = useReactFlow();
   const [nodes, setNodes, onNodesChange] = useNodesState(dbNodesToFlow(canvas.nodes));
   const [edges, setEdges, onEdgesChange] = useEdgesState(dbEdgesToFlow(canvas.edges));
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
@@ -1162,14 +1162,6 @@ function SavannaCanvas({ canvas, notes }: SavannaEditorProps) {
     ],
   );
 
-  const focusContent = useCallback(() => {
-    if (latestNodesRef.current.length === 0) {
-      void setViewport({ x: 0, y: 0, zoom: canvas.zoom }, { duration: 280 });
-      return;
-    }
-
-    void fitView({ padding: 0.2, duration: 280 });
-  }, [canvas.zoom, fitView, setViewport]);
 
   const filteredNotes = useMemo(() => {
     const query = noteSearch.trim().toLowerCase();

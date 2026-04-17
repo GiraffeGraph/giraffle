@@ -9,12 +9,11 @@ import TaskItem from "@tiptap/extension-task-item";
 import Placeholder from "@tiptap/extension-placeholder";
 
 interface CellEditorProps {
-  cellId: string;
   initialContent: string; // Tiptap JSON string or ""
   onSave: (json: string) => void;
 }
 
-export function CellEditor({ cellId: _cellId, initialContent, onSave }: CellEditorProps) {
+export function CellEditor({ initialContent, onSave }: CellEditorProps) {
   const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
   const onSaveRef = useRef(onSave);
   useEffect(() => { onSaveRef.current = onSave; }, [onSave]);

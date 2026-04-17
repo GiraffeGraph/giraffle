@@ -622,9 +622,7 @@ function InnerPanel({
       return;
     }
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setTodos([]);
     getNoteTodosAction(note.id)
       .then((nextTodos) => applyTodos(nextTodos))
@@ -800,7 +798,6 @@ export function TowerMatrix({ notes }: { notes: NoteWithTodoSummary[] }) {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setNoteItems(notes);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSelectedNote((prev) => (prev ? notes.find((note) => note.id === prev.id) ?? prev : null));
   }, [notes]);
 
