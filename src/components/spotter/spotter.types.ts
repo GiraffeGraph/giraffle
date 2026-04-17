@@ -15,6 +15,7 @@ export interface SpotterWorkspaceProps {
   embedded?: boolean;
   initialSessionId?: string | null;
   initialMessages?: ChatMessage[];
+  initialPrompt?: string | null;
 }
 
 export interface ChatMessage {

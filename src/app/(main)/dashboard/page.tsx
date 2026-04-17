@@ -1,33 +1,17 @@
-import { DashboardFeedSections } from "@/components/feeds/DashboardFeedSections";
+import { CommandSearchBar } from "@/components/dashboard/CommandSearchBar";
 import { PageTopbar } from "@/components/ui/PageTopbar";
-import { getAppUpdateStatus } from "@/domain/update/update.service";
-import { getWorkspaceFeedsAction } from "@/server/api/feeds";
 
-export default async function DashboardPage() {
-  const [suggestionFeeds, newsFeeds, updateStatus] = await Promise.all([
-    getWorkspaceFeedsAction("suggestion", {
-      showOnDashboard: true,
-      itemLimit: 3,
-    }),
-    getWorkspaceFeedsAction("news", {
-      showOnDashboard: true,
-      itemLimit: 3,
-    }),
-    getAppUpdateStatus(),
-  ]);
-
+export default function DashboardPage() {
   return (
     <>
       <PageTopbar
         icon="home"
         label="Dashboard"
-        meta={<span style={{ whiteSpace: "nowrap" }}>{suggestionFeeds.length} suggestions · {newsFeeds.length} news</span>}
+        meta={<span style={{ whiteSpace: "nowrap" }}>Command mode</span>}
       />
-      <DashboardFeedSections
-        suggestionFeeds={suggestionFeeds}
-        newsFeeds={newsFeeds}
-        updateStatus={updateStatus}
-      />
+      <div className="dashboard app-page">
+        <CommandSearchBar />
+      </div>
     </>
   );
 }

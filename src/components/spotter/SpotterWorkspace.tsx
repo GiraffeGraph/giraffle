@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useId, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ConversationThread } from "./ConversationThread";
 import { PromptComposer } from "./PromptComposer";
@@ -16,6 +16,7 @@ export function SpotterWorkspace({
   embedded = false,
   initialSessionId = null,
   initialMessages = [],
+  initialPrompt = null,
 }: SpotterWorkspaceProps) {
   const uid = useId().replace(/:/g, "");
   const filterId = `spotter-organic-${uid}`;
@@ -30,6 +31,7 @@ export function SpotterWorkspace({
   const [isStreaming, setIsStreaming] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
   const [lastSubmittedPrompt, setLastSubmittedPrompt] = useState("");
+  const initialPromptRef = useRef<string | null>(null);
   const isEmpty = messages.length === 0 && !isStreaming;
 
   const folderMeta = useMemo(() => {
@@ -211,6 +213,21 @@ export function SpotterWorkspace({
 
     void sendPrompt(lastSubmittedPrompt);
   }, [isStreaming, lastSubmittedPrompt, sendPrompt]);
+
+  useEffect(() => {
+    const trimmedPrompt = initialPrompt?.trim();
+
+    if (!trimmedPrompt) {
+      return;
+    }
+
+    if (initialPromptRef.current === trimmedPrompt) {
+      return;
+    }
+
+    initialPromptRef.current = trimmedPrompt;
+    void sendPrompt(trimmedPrompt);
+  }, [initialPrompt, sendPrompt]);
 
   return (
     <div className={`${styles.page} ${embedded ? styles.pageEmbedded : ""}`}>

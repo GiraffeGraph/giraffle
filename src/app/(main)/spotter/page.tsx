@@ -5,14 +5,18 @@ import { getNotesAction } from "@/server/api/notes";
 import { getSpotterSessionAction } from "@/server/api/spotter";
 
 interface SpotterPageProps {
-  searchParams: Promise<{ session?: string }>;
+  searchParams: Promise<{ session?: string; prompt?: string }>;
 }
 
 export default async function SpotterPage({
   searchParams,
 }: SpotterPageProps) {
-  const { session } = await searchParams;
+  const { session, prompt } = await searchParams;
   const activeSessionId = typeof session === "string" ? session : null;
+  const initialPrompt =
+    typeof prompt === "string" && prompt.trim().length > 0
+      ? prompt.trim()
+      : null;
   const [notes, folders, activeSession] = await Promise.all([
     getNotesAction(),
     getAllFoldersAction(),
@@ -59,6 +63,7 @@ export default async function SpotterPage({
             content: message.content,
           })) ?? []
         }
+        initialPrompt={activeSession ? null : initialPrompt}
         notes={notes.map((note) => ({
           id: note.id,
           title: note.title,
