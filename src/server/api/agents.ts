@@ -88,3 +88,32 @@ export async function stopAgentAction(id: string) {
   revalidatePath("/agents");
   return agent;
 }
+
+export async function restartAgentShellAction(id: string) {
+  const agent = await getAgentById(id);
+  if (!agent) throw new Error("Agent not found");
+
+  try {
+    const { runAgentShell } = await import("@/lib/ws-terminal-server");
+    await runAgentShell(
+      id,
+      agent.machine.id,
+      agent.agentCommand,
+      agent.systemPrompt ?? undefined,
+    );
+  } catch (err) {
+    await setAgentStatus(id, "error");
+    throw err;
+  }
+
+  const updated = await setAgentStatus(id, "running");
+  revalidatePath("/agents");
+  revalidatePath("/agents/sessions");
+  return updated;
+}
+
+export async function clearAgentTerminalHistoryAction(id: string) {
+  const { clearAgentOutputBuffer, broadcastToAgent } = await import("@/lib/ws-terminal-server");
+  clearAgentOutputBuffer(id);
+  broadcastToAgent(id, "\r\n\u001b[90m[terminal] history cleared\u001b[0m\r\n");
+}

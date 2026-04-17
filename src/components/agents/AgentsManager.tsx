@@ -6,8 +6,10 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import {
+  clearAgentTerminalHistoryAction,
   createAgentAction,
   deleteAgentAction,
+  restartAgentShellAction,
   startAgentAction,
   stopAgentAction,
   updateAgentAction,
@@ -128,6 +130,8 @@ export function AgentsManager({ agents, machines }: AgentsManagerProps) {
 
   // Inline terminal panel — which agent is expanded
   const [terminalAgentId, setTerminalAgentId] = useState<string | null>(null);
+  const [terminalEpoch, setTerminalEpoch] = useState<Record<string, number>>({});
+  const [clearSignals, setClearSignals] = useState<Record<string, number>>({});
 
   function openAdd() {
     const preset = AGENT_PRESETS.claude_code;
@@ -177,6 +181,18 @@ export function AgentsManager({ agents, machines }: AgentsManagerProps) {
 
   function toggleTerminal(agentId: string) {
     setTerminalAgentId((prev) => (prev === agentId ? null : agentId));
+  }
+
+  async function handleClearTerminalHistory(agentId: string) {
+    setClearSignals((prev) => ({ ...prev, [agentId]: (prev[agentId] ?? 0) + 1 }));
+    await clearAgentTerminalHistoryAction(agentId).catch(() => undefined);
+  }
+
+  async function handleNewTerminalShell(agentId: string) {
+    await restartAgentShellAction(agentId);
+    setTerminalEpoch((prev) => ({ ...prev, [agentId]: (prev[agentId] ?? 0) + 1 }));
+    setTerminalAgentId(agentId);
+    router.refresh();
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -363,6 +379,20 @@ export function AgentsManager({ agents, machines }: AgentsManagerProps) {
                             <AgentStatusBadge status={a.status} />
                             <button
                               className="agents-icon-btn"
+                              title="Clear history"
+                              onClick={() => void handleClearTerminalHistory(a.id)}
+                            >
+                              <span className="material-symbols-outlined" style={{ fontSize: 16 }}>mop</span>
+                            </button>
+                            <button
+                              className="agents-icon-btn"
+                              title="New shell"
+                              onClick={() => void handleNewTerminalShell(a.id)}
+                            >
+                              <span className="material-symbols-outlined" style={{ fontSize: 16 }}>add_to_queue</span>
+                            </button>
+                            <button
+                              className="agents-icon-btn"
                               title="Close terminal"
                               onClick={() => setTerminalAgentId(null)}
                             >
@@ -370,8 +400,10 @@ export function AgentsManager({ agents, machines }: AgentsManagerProps) {
                             </button>
                           </div>
                           <XTerminal
+                            key={`${a.id}:${terminalEpoch[a.id] ?? 0}`}
                             agentId={a.id}
                             className="agents-inline-xterm"
+                            clearSignal={clearSignals[a.id]}
                           />
                         </div>
                       </td>

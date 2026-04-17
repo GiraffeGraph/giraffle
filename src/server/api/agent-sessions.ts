@@ -60,20 +60,22 @@ export async function startAgentSessionAction(id: string) {
     .map(({ agent }) => agent)
     .filter((agent) => manualLoginAgentTypes.has(agent.agentType) && !hasAgentChannel(agent.id));
 
+  // In dev/runtime edge cases, channel maps can be empty even when user was logged in.
+  // We warn and attempt to re-bootstrap shells below.
   if (missingLoginAgents.length > 0) {
-    const labels = missingLoginAgents.map((a) => a.label).join(", ");
-    throw new Error(
-      `Login required before session start. Open each agent terminal and sign in first: ${labels}`,
+    console.warn(
+      "[agents] No live shell detected at session start; re-bootstrapping:",
+      missingLoginAgents.map((a) => a.label).join(", "),
     );
   }
 
-  // Ensure each agent has a live shell; do NOT restart running shells
-  // because CLI tools like codex/pi lose login state when restarted.
+  // Ensure each agent has a shell. If a shell is missing, bootstrap it.
+  // Most CLI tools cache login locally, so re-launch is typically safe.
   await Promise.allSettled(
     sessionWithAgents.agents.map(async ({ agent }) => {
       try {
         if (hasAgentChannel(agent.id)) {
-          return; // keep existing logged-in shell
+          return; // keep existing shell
         }
 
         await runAgentShell(

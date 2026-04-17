@@ -54,6 +54,10 @@ function fanOutAgentOutput(agentId: string, text: string): void {
   broadcastToAgent(agentId, text);
 }
 
+export function clearAgentOutputBuffer(agentId: string): void {
+  agentOutputs.delete(agentId);
+}
+
 export function getAgentOutputCursor(agentId: string): number {
   return agentOutputs.get(agentId)?.cursor ?? 0;
 }
@@ -230,6 +234,9 @@ export async function runAgentShell(
 
   const channel = await sshOpenShell(machineId);
   agentChannels.set(agentId, channel);
+
+  // Fresh shell should start with fresh visible history.
+  clearAgentOutputBuffer(agentId);
 
   // Set up terminal output piping + buffering for supervisor
   channel.on("data", (data: Buffer) => fanOutAgentOutput(agentId, data.toString("utf-8")));

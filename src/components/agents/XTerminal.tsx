@@ -6,10 +6,17 @@ interface XTerminalProps {
   agentId: string;
   wsBaseUrl?: string;
   className?: string;
+  clearSignal?: number;
   onStatusChange?: (status: "connecting" | "connected" | "closed" | "error") => void;
 }
 
-export function XTerminal({ agentId, wsBaseUrl, className, onStatusChange }: XTerminalProps) {
+export function XTerminal({
+  agentId,
+  wsBaseUrl,
+  className,
+  clearSignal,
+  onStatusChange,
+}: XTerminalProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const termRef = useRef<import("@xterm/xterm").Terminal | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
@@ -154,6 +161,16 @@ export function XTerminal({ agentId, wsBaseUrl, className, onStatusChange }: XTe
       wsRef.current = null;
     };
   }, [agentId, wsBaseUrl, updateStatus]);
+
+  useEffect(() => {
+    if (clearSignal === undefined) return;
+    const term = termRef.current;
+    if (!term) return;
+
+    term.clear();
+    term.write("\u001bc");
+    term.writeln("\r\x1b[90m[terminal] view cleared\x1b[0m");
+  }, [clearSignal]);
 
   return (
     <div className={`xterm-shell ${className ?? ""}`} style={{ position: "relative" }}>

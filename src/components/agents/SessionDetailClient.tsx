@@ -1,12 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { XTerminal } from "@/components/agents/XTerminal";
 import {
   startAgentSessionAction,
   pauseAgentSessionAction,
 } from "@/server/api/agent-sessions";
+import {
+  clearAgentTerminalHistoryAction,
+  restartAgentShellAction,
+} from "@/server/api/agents";
 
 type Agent = {
   id: string;
@@ -73,21 +77,40 @@ export function SessionDetailClient({ session }: SessionDetailClientProps) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<PanelTab>("messages");
   const [actionInProgress, setActionInProgress] = useState(false);
+  const [liveSession, setLiveSession] = useState<Session>(session);
 
-  // Auto-refresh while session is running
+  // Terminal controls
+  const [terminalEpoch, setTerminalEpoch] = useState<Record<string, number>>({});
+  const [clearSignals, setClearSignals] = useState<Record<string, number>>({});
+
+  const refreshSessionState = useCallback(async () => {
+    const res = await fetch(`/api/agents/sessions/${session.id}/state`, {
+      cache: "no-store",
+    });
+    if (!res.ok) return;
+
+    const data = (await res.json()) as Session;
+    setLiveSession(data);
+  }, [session.id]);
+
+  // Poll session state while running, but do NOT router.refresh (keeps terminal history stable).
   useEffect(() => {
-    if (session.status !== "running") return;
-    const interval = setInterval(() => router.refresh(), 3000);
-    return () => clearInterval(interval);
-  }, [session.status, router]);
+    if (liveSession.status !== "running") return;
 
-  const sessionStatus = STATUS_CONFIG[session.status] ?? STATUS_CONFIG.pending;
+    const interval = setInterval(() => {
+      void refreshSessionState();
+    }, 2500);
+
+    return () => clearInterval(interval);
+  }, [liveSession.status, refreshSessionState]);
+
+  const sessionStatus = STATUS_CONFIG[liveSession.status] ?? STATUS_CONFIG.pending;
 
   async function handleStart() {
     setActionInProgress(true);
     try {
-      await startAgentSessionAction(session.id);
-      router.refresh();
+      await startAgentSessionAction(liveSession.id);
+      await refreshSessionState();
     } finally {
       setActionInProgress(false);
     }
@@ -96,11 +119,27 @@ export function SessionDetailClient({ session }: SessionDetailClientProps) {
   async function handlePause() {
     setActionInProgress(true);
     try {
-      await pauseAgentSessionAction(session.id);
-      router.refresh();
+      await pauseAgentSessionAction(liveSession.id);
+      await refreshSessionState();
     } finally {
       setActionInProgress(false);
     }
+  }
+
+  async function handleNewTerminal(agentId: string) {
+    setActionInProgress(true);
+    try {
+      await restartAgentShellAction(agentId);
+      setTerminalEpoch((prev) => ({ ...prev, [agentId]: (prev[agentId] ?? 0) + 1 }));
+      await refreshSessionState();
+    } finally {
+      setActionInProgress(false);
+    }
+  }
+
+  async function handleClearHistory(agentId: string) {
+    setClearSignals((prev) => ({ ...prev, [agentId]: (prev[agentId] ?? 0) + 1 }));
+    await clearAgentTerminalHistoryAction(agentId).catch(() => undefined);
   }
 
   return (
@@ -109,7 +148,7 @@ export function SessionDetailClient({ session }: SessionDetailClientProps) {
       <div className="session-detail-header">
         <div className="session-detail-title-row">
           <div className="session-detail-title-group">
-            <h1 className="session-detail-title">{session.label}</h1>
+            <h1 className="session-detail-title">{liveSession.label}</h1>
             <span
               className="agents-status-badge"
               style={{ "--badge-color": sessionStatus.color } as React.CSSProperties}
@@ -121,7 +160,7 @@ export function SessionDetailClient({ session }: SessionDetailClientProps) {
             </span>
           </div>
           <div className="agents-row-actions">
-            {(session.status === "pending" || session.status === "failed") && (
+            {(liveSession.status === "pending" || liveSession.status === "failed") && (
               <button
                 className="agents-btn agents-btn-primary"
                 onClick={handleStart}
@@ -133,7 +172,7 @@ export function SessionDetailClient({ session }: SessionDetailClientProps) {
                 Start
               </button>
             )}
-            {session.status === "running" && (
+            {liveSession.status === "running" && (
               <button
                 className="agents-btn agents-btn-ghost"
                 onClick={handlePause}
@@ -157,33 +196,33 @@ export function SessionDetailClient({ session }: SessionDetailClientProps) {
           </div>
         </div>
 
-        <p className="session-detail-goal">{session.goal}</p>
+        <p className="session-detail-goal">{liveSession.goal}</p>
 
         <div className="session-detail-meta">
           <span className="agents-chip">
             <span className="material-symbols-outlined" style={{ fontSize: 13 }}>
               smart_toy
             </span>
-            {session.agents.length} agent{session.agents.length !== 1 ? "s" : ""}
+            {liveSession.agents.length} agent{liveSession.agents.length !== 1 ? "s" : ""}
           </span>
           <span className="agents-chip">
             <span className="material-symbols-outlined" style={{ fontSize: 13 }}>
               psychology
             </span>
-            {session.supervisorModel}
+            {liveSession.supervisorModel}
           </span>
           <span className="agents-chip">
             <span className="material-symbols-outlined" style={{ fontSize: 13 }}>
               schedule
             </span>
-            {new Date(session.createdAt).toLocaleString()}
+            {new Date(liveSession.createdAt).toLocaleString()}
           </span>
-          {session.endedAt && (
+          {liveSession.endedAt && (
             <span className="agents-chip">
               <span className="material-symbols-outlined" style={{ fontSize: 13 }}>
                 flag
               </span>
-              Ended {new Date(session.endedAt).toLocaleString()}
+              Ended {new Date(liveSession.endedAt).toLocaleString()}
             </span>
           )}
         </div>
@@ -191,7 +230,7 @@ export function SessionDetailClient({ session }: SessionDetailClientProps) {
 
       {/* ── Agent status bar ──────────────────────────────────────────── */}
       <div className="session-agent-bar">
-        {session.agents.map(({ agent }) => (
+        {liveSession.agents.map(({ agent }) => (
           <div key={agent.id} className="session-agent-pill">
             <span className="material-symbols-outlined" style={{ fontSize: 14 }}>
               smart_toy
@@ -234,12 +273,12 @@ export function SessionDetailClient({ session }: SessionDetailClientProps) {
               chat
             </span>
             Messages
-            {session.messages.length > 0 && (
-              <span className="agents-tab-count">{session.messages.length}</span>
+            {liveSession.messages.length > 0 && (
+              <span className="agents-tab-count">{liveSession.messages.length}</span>
             )}
           </button>
 
-          {session.agents.map(({ agent }) => (
+          {liveSession.agents.map(({ agent }) => (
             <button
               key={agent.id}
               role="tab"
@@ -258,7 +297,7 @@ export function SessionDetailClient({ session }: SessionDetailClientProps) {
         {/* Messages panel */}
         {activeTab === "messages" && (
           <div className="session-messages-panel">
-            {session.messages.length === 0 ? (
+            {liveSession.messages.length === 0 ? (
               <div className="agents-empty">
                 <span className="material-symbols-outlined agents-empty-icon">
                   chat_bubble_outline
@@ -267,7 +306,7 @@ export function SessionDetailClient({ session }: SessionDetailClientProps) {
               </div>
             ) : (
               <div className="session-messages-list">
-                {session.messages.map((msg) => (
+                {liveSession.messages.map((msg) => (
                   <div key={msg.id} className={`session-message session-message-${msg.role}`}>
                     <div className="session-message-header">
                       <span
@@ -284,7 +323,10 @@ export function SessionDetailClient({ session }: SessionDetailClientProps) {
                       </span>
                       {msg.toAgent && (
                         <>
-                          <span className="material-symbols-outlined" style={{ fontSize: 13, opacity: 0.5 }}>
+                          <span
+                            className="material-symbols-outlined"
+                            style={{ fontSize: 13, opacity: 0.5 }}
+                          >
                             arrow_forward
                           </span>
                           <span className="session-message-to">{msg.toAgent.label}</span>
@@ -303,7 +345,7 @@ export function SessionDetailClient({ session }: SessionDetailClientProps) {
         )}
 
         {/* Terminal panels — keep mounted so tab switches don't reset history */}
-        {session.agents.map(({ agent }) => (
+        {liveSession.agents.map(({ agent }) => (
           <div
             key={agent.id}
             className={`session-terminal-panel ${activeTab === agent.id ? "" : "session-terminal-panel-hidden"}`}
@@ -317,13 +359,34 @@ export function SessionDetailClient({ session }: SessionDetailClientProps) {
                 {agent.label} — {agent.machine.host}
               </span>
               <span className="session-terminal-toolbar-spacer" />
+              <button
+                className="agents-icon-btn"
+                title="Clear terminal history"
+                onClick={() => void handleClearHistory(agent.id)}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: 16 }}>
+                  mop
+                </span>
+              </button>
+              <button
+                className="agents-icon-btn"
+                title="Open new terminal shell"
+                onClick={() => void handleNewTerminal(agent.id)}
+                disabled={actionInProgress}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: 16 }}>
+                  add_to_queue
+                </span>
+              </button>
               <span className="agents-chip" style={{ fontSize: "0.68rem" }}>
                 {agent.agentType}
               </span>
             </div>
             <XTerminal
+              key={`${agent.id}:${terminalEpoch[agent.id] ?? 0}`}
               agentId={agent.id}
               className="session-xterm"
+              clearSignal={clearSignals[agent.id]}
             />
           </div>
         ))}
