@@ -12,7 +12,8 @@ export type WorkspaceSearchReasonType =
   | "tag"
   | "body"
   | "fuzzy"
-  | "regex";
+  | "regex"
+  | "filter";
 
 export interface WorkspaceSearchReason {
   type: WorkspaceSearchReasonType;
@@ -35,8 +36,27 @@ export interface WorkspaceSearchNoteHit {
   mode: Exclude<WorkspaceSearchMode, "recent"> | "recent";
 }
 
+export interface ParsedWorkspaceSearchQuery {
+  raw: string;
+  normalizedText: string;
+  tokens: string[];
+  phrases: string[];
+  negativeTokens: string[];
+  tagFilters: string[];
+  excludedTags: string[];
+  folderFilters: string[];
+  excludedFolders: string[];
+  titleFilters: string[];
+  excludedTitles: string[];
+  isPinned: boolean | null;
+  isRegex: boolean;
+  regex: RegExp | null;
+  regexError: string | null;
+}
+
 export interface WorkspaceNoteSearchResult {
   query: string;
+  parsed: ParsedWorkspaceSearchQuery;
   mode: WorkspaceSearchMode;
   scannedNotes: number;
   regexError: string | null;
@@ -69,6 +89,7 @@ export async function searchWorkspaceNotes(
 ): Promise<WorkspaceNoteSearchResult> {
   const trimmedQuery = query.trim().slice(0, MAX_QUERY_LENGTH);
   const limit = Math.max(1, Math.min(options?.limit ?? DEFAULT_LIMIT, 120));
+  const parsed = parseWorkspaceSearchQuery(trimmedQuery);
 
   const [noteRows, folders] = await Promise.all([
     db.note.findMany({
@@ -148,6 +169,7 @@ export async function searchWorkspaceNotes(
   if (!trimmedQuery) {
     return {
       query: "",
+      parsed,
       mode: "recent",
       scannedNotes: indexedNotes.length,
       regexError: null,
@@ -166,43 +188,37 @@ export async function searchWorkspaceNotes(
           title: note.title,
           folderPath: note.folderPath,
           tags: note.tagNames,
-          query: note.title,
-          tokens: [],
-          regex: null,
+          parsed,
         }),
         highlights: note.tagNames.slice(0, 3),
-        reasons: [
-          {
-            type: "title",
-            label: "Recent",
-          },
-        ],
+        reasons: [{ type: "title", label: "Recent" }],
         mode: "recent",
       })),
     };
   }
 
-  const regexParsing = parseRegexQuery(trimmedQuery);
-
-  if (regexParsing.isRegex) {
-    if (!regexParsing.regex) {
+  if (parsed.isRegex) {
+    if (!parsed.regex) {
       return {
         query: trimmedQuery,
+        parsed,
         mode: "regex",
         scannedNotes: indexedNotes.length,
-        regexError: regexParsing.error,
+        regexError: parsed.regexError,
         hits: [],
       };
     }
 
     const regexHits = indexedNotes
-      .map((note) => scoreRegexHit(note, regexParsing.regex as RegExp))
+      .filter((note) => noteMatchesFilters(note, parsed))
+      .map((note) => scoreRegexHit(note, parsed))
       .filter((hit): hit is WorkspaceSearchNoteHit => hit !== null)
       .sort(sortByScoreThenDate)
       .slice(0, limit);
 
     return {
       query: trimmedQuery,
+      parsed,
       mode: "regex",
       scannedNotes: indexedNotes.length,
       regexError: null,
@@ -210,17 +226,16 @@ export async function searchWorkspaceNotes(
     };
   }
 
-  const normalizedQuery = normalizeForSearch(trimmedQuery);
-  const tokens = tokenize(normalizedQuery);
-
   const hybridHits = indexedNotes
-    .map((note) => scoreHybridHit(note, normalizedQuery, tokens))
+    .filter((note) => noteMatchesFilters(note, parsed))
+    .map((note) => scoreHybridHit(note, parsed))
     .filter((hit): hit is WorkspaceSearchNoteHit => hit !== null)
     .sort(sortByScoreThenDate)
     .slice(0, limit);
 
   return {
     query: trimmedQuery,
+    parsed,
     mode: "hybrid",
     scannedNotes: indexedNotes.length,
     regexError: null,
@@ -228,7 +243,136 @@ export async function searchWorkspaceNotes(
   };
 }
 
-function scoreRegexHit(note: IndexedNote, regex: RegExp): WorkspaceSearchNoteHit | null {
+export function parseWorkspaceSearchQuery(query: string): ParsedWorkspaceSearchQuery {
+  const trimmed = query.trim().slice(0, MAX_QUERY_LENGTH);
+  const regexParsing = parseRegexQuery(trimmed);
+
+  if (regexParsing.isRegex) {
+    return {
+      raw: trimmed,
+      normalizedText: "",
+      tokens: [],
+      phrases: [],
+      negativeTokens: [],
+      tagFilters: [],
+      excludedTags: [],
+      folderFilters: [],
+      excludedFolders: [],
+      titleFilters: [],
+      excludedTitles: [],
+      isPinned: null,
+      isRegex: true,
+      regex: regexParsing.regex,
+      regexError: regexParsing.error,
+    };
+  }
+
+  const tagFilters: string[] = [];
+  const excludedTags: string[] = [];
+  const folderFilters: string[] = [];
+  const excludedFolders: string[] = [];
+  const titleFilters: string[] = [];
+  const excludedTitles: string[] = [];
+  const positiveTokens: string[] = [];
+  const negativeTokens: string[] = [];
+  const phrases: string[] = [];
+  let isPinned: boolean | null = null;
+
+  for (const token of splitSearchTerms(trimmed)) {
+    const isNegated = token.startsWith("-");
+    const rawValue = isNegated ? token.slice(1) : token;
+
+    if (!rawValue) {
+      continue;
+    }
+
+    const cleanedPhrase = normalizeQuotedTerm(rawValue);
+
+    if (!cleanedPhrase) {
+      continue;
+    }
+
+    const [prefixRaw, ...valueParts] = cleanedPhrase.split(":");
+    const hasPrefix = valueParts.length > 0;
+    const prefix = prefixRaw.toLowerCase();
+    const value = hasPrefix ? normalizeQuotedTerm(valueParts.join(":")) : cleanedPhrase;
+    const normalizedValue = normalizeForSearch(value);
+
+    if (!normalizedValue && prefix !== "is") {
+      continue;
+    }
+
+    if (hasPrefix && prefix === "tag") {
+      (isNegated ? excludedTags : tagFilters).push(normalizedValue);
+      continue;
+    }
+
+    if (hasPrefix && prefix === "folder") {
+      (isNegated ? excludedFolders : folderFilters).push(normalizedValue);
+      continue;
+    }
+
+    if (hasPrefix && prefix === "title") {
+      (isNegated ? excludedTitles : titleFilters).push(normalizedValue);
+      continue;
+    }
+
+    if (hasPrefix && prefix === "is") {
+      if (value.toLowerCase() === "pinned") {
+        isPinned = !isNegated;
+      }
+      continue;
+    }
+
+    if (isPhraseToken(rawValue)) {
+      if (isNegated) {
+        negativeTokens.push(normalizedValue);
+      } else {
+        phrases.push(normalizedValue);
+        positiveTokens.push(...tokenize(normalizedValue));
+      }
+      continue;
+    }
+
+    if (isNegated) {
+      negativeTokens.push(normalizedValue);
+      continue;
+    }
+
+    positiveTokens.push(normalizedValue);
+  }
+
+  const normalizedText = Array.from(new Set([...phrases, ...positiveTokens])).join(" ");
+
+  return {
+    raw: trimmed,
+    normalizedText,
+    tokens: tokenize(normalizedText),
+    phrases,
+    negativeTokens: Array.from(new Set(negativeTokens)),
+    tagFilters: Array.from(new Set(tagFilters)),
+    excludedTags: Array.from(new Set(excludedTags)),
+    folderFilters: Array.from(new Set(folderFilters)),
+    excludedFolders: Array.from(new Set(excludedFolders)),
+    titleFilters: Array.from(new Set(titleFilters)),
+    excludedTitles: Array.from(new Set(excludedTitles)),
+    isPinned,
+    isRegex: false,
+    regex: null,
+    regexError: null,
+  };
+}
+
+function scoreRegexHit(
+  note: IndexedNote,
+  parsed: ParsedWorkspaceSearchQuery,
+): WorkspaceSearchNoteHit | null {
+  const regex = parsed.regex;
+
+  if (!regex) {
+    return null;
+  }
+
   const titleMatches = collectRegexMatches(note.title, regex, 6);
   const folderMatches = collectRegexMatches(note.folderPath ?? "", regex, 4);
   const tagMatches = note.tagNames.flatMap((tag) => collectRegexMatches(tag, regex, 2)).slice(0, 6);
@@ -244,6 +388,7 @@ function scoreRegexHit(note: IndexedNote, regex: RegExp): WorkspaceSearchNoteHit
   }
 
   const reasons: WorkspaceSearchReason[] = [];
+  addFilterReasons(reasons, parsed);
 
   if (titleMatches.length > 0) {
     reasons.push({ type: "regex", label: "Regex title" });
@@ -266,6 +411,7 @@ function scoreRegexHit(note: IndexedNote, regex: RegExp): WorkspaceSearchNoteHit
     folderMatches.length * 80 +
     tagMatches.length * 72 +
     bodyMatches.length * 24 +
+    phraseBoost(note, parsed) +
     getRecencyBoost(note.updatedAt) +
     (note.isPinned ? 6 : 0);
 
@@ -284,31 +430,30 @@ function scoreRegexHit(note: IndexedNote, regex: RegExp): WorkspaceSearchNoteHit
       title: note.title,
       folderPath: note.folderPath,
       tags: note.tagNames,
-      query: note.title,
-      tokens: [],
-      regex,
+      parsed,
     }),
     highlights: [...titleMatches, ...folderMatches, ...tagMatches, ...bodyMatches].slice(0, 6),
-    reasons,
+    reasons: dedupeReasons(reasons).slice(0, 5),
     mode: "regex",
   };
 }
 
 function scoreHybridHit(
   note: IndexedNote,
-  normalizedQuery: string,
-  tokens: string[],
+  parsed: ParsedWorkspaceSearchQuery,
 ): WorkspaceSearchNoteHit | null {
   let score = 0;
   const reasons: WorkspaceSearchReason[] = [];
   const highlights = new Set<string>();
 
+  addFilterReasons(reasons, parsed);
+
   score += scoreTextField({
-    label: "Title exact",
+    label: "Title match",
     reasonType: "title",
     valueNormalized: note.titleNormalized,
-    queryNormalized: normalizedQuery,
-    tokens,
+    queryNormalized: parsed.normalizedText,
+    tokens: parsed.tokens,
     exact: 260,
     startsWith: 180,
     contains: 125,
@@ -322,8 +467,8 @@ function scoreHybridHit(
     label: "Folder match",
     reasonType: "folder",
     valueNormalized: note.folderPathNormalized,
-    queryNormalized: normalizedQuery,
-    tokens,
+    queryNormalized: parsed.normalizedText,
+    tokens: parsed.tokens,
     exact: 190,
     startsWith: 92,
     contains: 76,
@@ -335,20 +480,18 @@ function scoreHybridHit(
 
   score += scoreTagField({
     note,
-    queryNormalized: normalizedQuery,
-    tokens,
+    parsed,
     reasons,
     highlights,
   });
 
   score += scoreBodyField({
     note,
-    queryNormalized: normalizedQuery,
-    tokens,
+    parsed,
     reasons,
   });
 
-  const semanticSignals = computeSemanticSignals(note, normalizedQuery, tokens);
+  const semanticSignals = computeSemanticSignals(note, parsed);
   score += semanticSignals.score;
 
   if (semanticSignals.score > 0) {
@@ -357,6 +500,8 @@ function scoreHybridHit(
       label: semanticSignals.label,
     });
   }
+
+  score += phraseBoost(note, parsed);
 
   if (note.isPinned) {
     score += 6;
@@ -370,7 +515,7 @@ function scoreHybridHit(
     return null;
   }
 
-  for (const token of tokens) {
+  for (const token of parsed.tokens) {
     if (
       note.titleNormalized.includes(token) ||
       note.folderPathNormalized.includes(token) ||
@@ -395,14 +540,75 @@ function scoreHybridHit(
       title: note.title,
       folderPath: note.folderPath,
       tags: note.tagNames,
-      query: normalizedQuery,
-      tokens,
-      regex: null,
+      parsed,
     }),
     highlights: Array.from(highlights).slice(0, 6),
-    reasons: dedupeReasons(reasons).slice(0, 4),
+    reasons: dedupeReasons(reasons).slice(0, 5),
     mode: "hybrid",
   };
+}
+
+function noteMatchesFilters(note: IndexedNote, parsed: ParsedWorkspaceSearchQuery) {
+  if (parsed.isPinned !== null && note.isPinned !== parsed.isPinned) {
+    return false;
+  }
+
+  if (
+    parsed.tagFilters.length > 0 &&
+    !parsed.tagFilters.every((filter) => note.tagsJoinedNormalized.includes(filter))
+  ) {
+    return false;
+  }
+
+  if (
+    parsed.excludedTags.length > 0 &&
+    parsed.excludedTags.some((filter) => note.tagsJoinedNormalized.includes(filter))
+  ) {
+    return false;
+  }
+
+  if (
+    parsed.folderFilters.length > 0 &&
+    !parsed.folderFilters.every((filter) => note.folderPathNormalized.includes(filter))
+  ) {
+    return false;
+  }
+
+  if (
+    parsed.excludedFolders.length > 0 &&
+    parsed.excludedFolders.some((filter) => note.folderPathNormalized.includes(filter))
+  ) {
+    return false;
+  }
+
+  if (
+    parsed.titleFilters.length > 0 &&
+    !parsed.titleFilters.every((filter) => note.titleNormalized.includes(filter))
+  ) {
+    return false;
+  }
+
+  if (
+    parsed.excludedTitles.length > 0 &&
+    parsed.excludedTitles.some((filter) => note.titleNormalized.includes(filter))
+  ) {
+    return false;
+  }
+
+  const combined = [
+    note.titleNormalized,
+    note.folderPathNormalized,
+    note.tagsJoinedNormalized,
+    note.bodyNormalized,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  if (parsed.negativeTokens.some((token) => combined.includes(token))) {
+    return false;
+  }
+
+  return true;
 }
 
 function scoreTextField({
@@ -438,15 +644,17 @@ function scoreTextField({
 
   let score = 0;
 
-  if (valueNormalized === queryNormalized) {
-    score += exact;
-    reasons.push({ type: reasonType, label });
-  } else if (valueNormalized.startsWith(queryNormalized)) {
-    score += startsWith;
-    reasons.push({ type: reasonType, label });
-  } else if (valueNormalized.includes(queryNormalized)) {
-    score += contains;
-    reasons.push({ type: reasonType, label });
+  if (queryNormalized) {
+    if (valueNormalized === queryNormalized) {
+      score += exact;
+      reasons.push({ type: reasonType, label });
+    } else if (valueNormalized.startsWith(queryNormalized)) {
+      score += startsWith;
+      reasons.push({ type: reasonType, label });
+    } else if (valueNormalized.includes(queryNormalized)) {
+      score += contains;
+      reasons.push({ type: reasonType, label });
+    }
   }
 
   let tokenMatches = 0;
@@ -463,7 +671,7 @@ function scoreTextField({
   }
 
   const fuzzyScore = Math.max(
-    diceCoefficient(queryNormalized, valueNormalized),
+    queryNormalized ? diceCoefficient(queryNormalized, valueNormalized) : 0,
     tokenSetSimilarity(tokens, tokenize(valueNormalized)),
   );
 
@@ -476,14 +684,12 @@ function scoreTextField({
 
 function scoreTagField({
   note,
-  queryNormalized,
-  tokens,
+  parsed,
   reasons,
   highlights,
 }: {
   note: IndexedNote;
-  queryNormalized: string;
-  tokens: string[];
+  parsed: ParsedWorkspaceSearchQuery;
   reasons: WorkspaceSearchReason[];
   highlights: Set<string>;
 }) {
@@ -498,28 +704,28 @@ function scoreTagField({
       continue;
     }
 
-    if (tagNormalized === queryNormalized) {
+    if (parsed.normalizedText && tagNormalized === parsed.normalizedText) {
       score += 200;
       matchedTagCount += 1;
       highlights.add(rawTag);
       continue;
     }
 
-    if (tagNormalized.startsWith(queryNormalized)) {
+    if (parsed.normalizedText && tagNormalized.startsWith(parsed.normalizedText)) {
       score += 118;
       matchedTagCount += 1;
       highlights.add(rawTag);
       continue;
     }
 
-    if (tagNormalized.includes(queryNormalized)) {
+    if (parsed.normalizedText && tagNormalized.includes(parsed.normalizedText)) {
       score += 88;
       matchedTagCount += 1;
       highlights.add(rawTag);
       continue;
     }
 
-    const tokenOverlap = tokens.filter((token) => tagNormalized.includes(token)).length;
+    const tokenOverlap = parsed.tokens.filter((token) => tagNormalized.includes(token)).length;
 
     if (tokenOverlap > 0) {
       score += tokenOverlap * 34;
@@ -529,8 +735,8 @@ function scoreTagField({
     }
 
     const fuzzyScore = Math.max(
-      diceCoefficient(queryNormalized, tagNormalized),
-      tokenSetSimilarity(tokens, tokenize(tagNormalized)),
+      parsed.normalizedText ? diceCoefficient(parsed.normalizedText, tagNormalized) : 0,
+      tokenSetSimilarity(parsed.tokens, tokenize(tagNormalized)),
     );
 
     if (fuzzyScore >= 0.52) {
@@ -549,13 +755,11 @@ function scoreTagField({
 
 function scoreBodyField({
   note,
-  queryNormalized,
-  tokens,
+  parsed,
   reasons,
 }: {
   note: IndexedNote;
-  queryNormalized: string;
-  tokens: string[];
+  parsed: ParsedWorkspaceSearchQuery;
   reasons: WorkspaceSearchReason[];
 }) {
   if (!note.bodyNormalized) {
@@ -565,28 +769,28 @@ function scoreBodyField({
   let score = 0;
   let bodyMatched = false;
 
-  if (note.bodyNormalized.includes(queryNormalized)) {
+  if (parsed.normalizedText && note.bodyNormalized.includes(parsed.normalizedText)) {
     score += 70;
     bodyMatched = true;
   }
 
   let tokenHits = 0;
 
-  for (const token of tokens) {
+  for (const token of parsed.tokens) {
     if (note.bodyNormalized.includes(token)) {
       tokenHits += 1;
       score += 12;
     }
   }
 
-  if (tokenHits >= Math.max(2, Math.ceil(tokens.length / 2))) {
+  if (tokenHits >= Math.max(2, Math.ceil(parsed.tokens.length / 2))) {
     bodyMatched = true;
   }
 
   const limitedBody = note.bodyNormalized.slice(0, 1200);
   const fuzzyScore = Math.max(
-    diceCoefficient(queryNormalized, limitedBody),
-    tokenSetSimilarity(tokens, tokenize(limitedBody).slice(0, 80)),
+    parsed.normalizedText ? diceCoefficient(parsed.normalizedText, limitedBody) : 0,
+    tokenSetSimilarity(parsed.tokens, tokenize(limitedBody).slice(0, 80)),
   );
 
   if (fuzzyScore >= 0.58) {
@@ -602,21 +806,20 @@ function scoreBodyField({
 
 function computeSemanticSignals(
   note: IndexedNote,
-  normalizedQuery: string,
-  tokens: string[],
+  parsed: ParsedWorkspaceSearchQuery,
 ) {
   const titleTokens = tokenize(note.titleNormalized);
   const folderTokens = tokenize(note.folderPathNormalized);
   const tagTokens = note.tagNamesNormalized.flatMap((tag) => tokenize(tag));
   const topBodyTokens = tokenize(note.bodyNormalized).slice(0, 60);
 
-  const titleSimilarity = tokenSetSimilarity(tokens, titleTokens);
-  const folderSimilarity = tokenSetSimilarity(tokens, folderTokens);
-  const tagSimilarity = tokenSetSimilarity(tokens, tagTokens);
-  const bodySimilarity = tokenSetSimilarity(tokens, topBodyTokens);
+  const titleSimilarity = tokenSetSimilarity(parsed.tokens, titleTokens);
+  const folderSimilarity = tokenSetSimilarity(parsed.tokens, folderTokens);
+  const tagSimilarity = tokenSetSimilarity(parsed.tokens, tagTokens);
+  const bodySimilarity = tokenSetSimilarity(parsed.tokens, topBodyTokens);
   const phraseSimilarity = Math.max(
-    diceCoefficient(normalizedQuery, note.titleNormalized),
-    diceCoefficient(normalizedQuery, note.folderPathNormalized),
+    parsed.normalizedText ? diceCoefficient(parsed.normalizedText, note.titleNormalized) : 0,
+    parsed.normalizedText ? diceCoefficient(parsed.normalizedText, note.folderPathNormalized) : 0,
   );
 
   const score =
@@ -653,6 +856,55 @@ function computeSemanticSignals(
   };
 }
 
+function phraseBoost(note: IndexedNote, parsed: ParsedWorkspaceSearchQuery) {
+  if (parsed.phrases.length === 0) {
+    return 0;
+  }
+
+  let score = 0;
+
+  for (const phrase of parsed.phrases) {
+    if (note.titleNormalized.includes(phrase)) {
+      score += 90;
+    }
+
+    if (note.folderPathNormalized.includes(phrase)) {
+      score += 54;
+    }
+
+    if (note.tagsJoinedNormalized.includes(phrase)) {
+      score += 72;
+    }
+
+    if (note.bodyNormalized.includes(phrase)) {
+      score += 28;
+    }
+  }
+
+  return score;
+}
+
+function addFilterReasons(
+  reasons: WorkspaceSearchReason[],
+  parsed: ParsedWorkspaceSearchQuery,
+) {
+  if (parsed.isPinned === true) {
+    reasons.push({ type: "filter", label: "Pinned only" });
+  }
+
+  if (parsed.tagFilters.length > 0) {
+    reasons.push({ type: "filter", label: `tag:${parsed.tagFilters[0]}` });
+  }
+
+  if (parsed.folderFilters.length > 0) {
+    reasons.push({ type: "filter", label: `folder:${parsed.folderFilters[0]}` });
+  }
+
+  if (parsed.titleFilters.length > 0) {
+    reasons.push({ type: "filter", label: `title:${parsed.titleFilters[0]}` });
+  }
+}
+
 function sortByScoreThenDate(
   left: WorkspaceSearchNoteHit,
   right: WorkspaceSearchNoteHit,
@@ -669,17 +921,13 @@ function buildSnippet({
   title,
   folderPath,
   tags,
-  query,
-  tokens,
-  regex,
+  parsed,
 }: {
   body: string;
   title: string;
   folderPath: string | null;
   tags: string[];
-  query: string;
-  tokens: string[];
-  regex: RegExp | null;
+  parsed: ParsedWorkspaceSearchQuery;
 }) {
   const sourceCandidates = [
     body.trim(),
@@ -695,17 +943,18 @@ function buildSnippet({
 
   let index = 0;
 
-  if (regex) {
-    const regexWithGlobal = cloneRegex(regex, true);
+  if (parsed.regex) {
+    const regexWithGlobal = cloneRegex(parsed.regex, true);
     const match = regexWithGlobal.exec(source);
     index = match?.index ?? 0;
   } else {
-    const directMatch = findCaseInsensitiveIndex(source, query);
+    const phraseNeedle = parsed.phrases[0] ?? parsed.normalizedText;
+    const directMatch = findCaseInsensitiveIndex(source, phraseNeedle);
 
     if (directMatch >= 0) {
       index = directMatch;
     } else {
-      const tokenMatch = tokens
+      const tokenMatch = parsed.tokens
         .map((token) => findCaseInsensitiveIndex(source, token))
         .find((value) => value >= 0);
 
@@ -785,6 +1034,18 @@ function parseRegexQuery(query: string): {
       error: "Regex bayrakları veya deseni geçersiz.",
     };
   }
+}
+
+function splitSearchTerms(query: string) {
+  return query.match(/(?:-?[a-z]+:"[^"]+")|(?:-?[a-z]+:\S+)|(?:-?"[^"]+")|(?:\S+)/gi) ?? [];
+}
+
+function normalizeQuotedTerm(value: string) {
+  return value.replace(/^"|"$/g, "").trim();
+}
+
+function isPhraseToken(value: string) {
+  return value.startsWith('"') && value.endsWith('"') && value.length >= 2;
 }
 
 function collectRegexMatches(value: string, regex: RegExp, cap: number) {
