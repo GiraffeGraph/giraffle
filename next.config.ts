@@ -5,9 +5,7 @@ const nextConfig: NextConfig = {
   deploymentId: process.env.DEPLOYMENT_ID,
   poweredByHeader: false,
   compress: true,
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+  serverExternalPackages: ["ssh2"],
   typescript: {
     ignoreBuildErrors: true,
   },
