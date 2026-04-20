@@ -136,9 +136,11 @@ async function tmuxEnsureInstalled(machineId: string): Promise<void> {
 
 async function tmuxSendLine(machineId: string, sessionName: string, line: string): Promise<void> {
   const { sshExec } = await import("@/lib/ssh-manager");
+  // -l sends the string as literal characters (not key names), then Enter is a
+  // separate key press so it's always registered regardless of content.
   await sshExec(
     machineId,
-    `tmux send-keys -t ${shellQuote(sessionName)} ${shellQuote(line)} Enter`,
+    `tmux send-keys -t ${shellQuote(sessionName)} -l ${shellQuote(line)} && tmux send-keys -t ${shellQuote(sessionName)} Enter`,
   );
 }
 
@@ -532,12 +534,36 @@ export async function waitForIdleMarker(
 ): Promise<boolean> {
   const deadline = Date.now() + timeoutMs;
   const marker = idleMarker.trim();
+  let lastConfirmAt = 0;
 
   while (Date.now() < deadline) {
-    const pane = await captureTmuxPane(agentId, 10);
-    const lastLine = pane.trim().split("\n").at(-1) ?? "";
+    const pane = await captureTmuxPane(agentId, 15);
+    const lines = pane.trim().split("\n");
+    const lastLine = lines.at(-1) ?? "";
 
     if (lastLine.includes(marker)) return true;
+
+    // Auto-accept interactive confirmation dialogs from Claude Code and similar
+    // CLI tools. Pattern: "Esc to cancel" footer or "Do you want to proceed".
+    // 3-second cooldown to avoid spamming Enter.
+    const now = Date.now();
+    if (now - lastConfirmAt > 3000) {
+      const paneText = lines.join("\n");
+      const isDialog =
+        paneText.includes("Esc to cancel") ||
+        paneText.includes("Do you want to proceed");
+      if (isDialog) {
+        const runtime = agentRuntimes.get(agentId);
+        if (runtime) {
+          const { sshExec } = await import("@/lib/ssh-manager");
+          await sshExec(
+            runtime.machineId,
+            `tmux send-keys -t ${shellQuote(runtime.tmuxSession)} Enter`,
+          ).catch(() => undefined);
+          lastConfirmAt = now;
+        }
+      }
+    }
 
     await sleep(1000);
   }
