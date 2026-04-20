@@ -37,6 +37,8 @@ import {
 } from "./library.data";
 import styles from "./LibraryWorkspace.module.css";
 
+type LibraryViewMode = "icons" | "list" | "columns" | "gallery";
+
 interface VisibleLibraryRow {
   id: string;
   depth: number;
@@ -78,6 +80,8 @@ export function LibraryWorkspace({
   const [selectedNoteIds, setSelectedNoteIds] = useState<Set<string>>(() => new Set());
   const [draggedNoteId, setDraggedNoteId] = useState<string | null>(null);
   const [dropTargetEntryId, setDropTargetEntryId] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<LibraryViewMode>("list");
+  const [columnsActiveGroupId, setColumnsActiveGroupId] = useState<string | null>(null);
   const [isCreatingPage, startCreateTransition] = useTransition();
   const [isBulkPending, startBulkTransition] = useTransition();
   const rowRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -132,11 +136,24 @@ export function LibraryWorkspace({
   const selectedHasPrivate = selectedNoteEntries.some((entry) => !entry.isPublished);
   const selectedHasPublished = selectedNoteEntries.some((entry) => entry.isPublished);
 
+  // Columns view: top-level groups and selected group's items
+  const topLevelGroups = filteredEntries;
+  const activeColumnsGroup = columnsActiveGroupId
+    ? filteredEntries.find((e) => e.id === columnsActiveGroupId) ?? filteredEntries[0] ?? null
+    : filteredEntries[0] ?? null;
+  const columnsItems = activeColumnsGroup
+    ? activeColumnsGroup.children.length > 0
+      ? activeColumnsGroup.children
+      : [activeColumnsGroup]
+    : [];
+  const columnsPreviewEntry = visibleRows.find((r) => r.id === effectiveSelectedId)?.entry ?? activeColumnsGroup;
+
   useEffect(() => {
     if (headerCheckboxRef.current) headerCheckboxRef.current.indeterminate = someVisibleNotesSelected;
   }, [someVisibleNotesSelected]);
 
   useEffect(() => {
+    if (viewMode !== "list" && viewMode !== "columns") return;
     const cleanups: Array<() => void> = [];
     for (const row of visibleRows) {
       const element = rowRefs.current[row.id];
@@ -194,7 +211,7 @@ export function LibraryWorkspace({
       })
     );
     return () => cleanups.forEach((cleanup) => cleanup());
-  }, [router, visibleRows]);
+  }, [router, viewMode, visibleRows]);
 
   const toggleContentType = (type: LibraryContentType) =>
     setActiveContentTypes((current) =>
@@ -230,6 +247,13 @@ export function LibraryWorkspace({
     });
   };
 
+  const viewModeButtons: Array<{ id: LibraryViewMode; icon: string; title: string }> = [
+    { id: "icons", icon: "grid_view", title: "Icons" },
+    { id: "list", icon: "format_list_bulleted", title: "List" },
+    { id: "columns", icon: "view_column", title: "Columns" },
+    { id: "gallery", icon: "auto_awesome_mosaic", title: "Gallery" },
+  ];
+
   const topbarMeta = (
     <div className={styles.topbarTabs}>
       {LIBRARY_TABS.map((tab) => (
@@ -240,12 +264,64 @@ export function LibraryWorkspace({
 
   const topbarActions = (
     <>
+      <div className={styles.viewModeGroup}>
+        {viewModeButtons.map((btn) => (
+          <button
+            key={btn.id}
+            type="button"
+            className={`${styles.viewModeBtn} ${viewMode === btn.id ? styles.viewModeBtnActive : ""}`}
+            onClick={() => setViewMode(btn.id)}
+            title={btn.title}
+          >
+            <span className="material-symbols-outlined">{btn.icon}</span>
+          </button>
+        ))}
+      </div>
       <button type="button" className={`${styles.iconButton} ${filterPanelVisible ? styles.iconButtonActive : ""}`} onClick={() => setFilterPanelVisible((current) => !current)} title="Filters"><span className="material-symbols-outlined">filter_alt</span></button>
       <button type="button" className={`${styles.iconButton} ${searchVisible ? styles.iconButtonActive : ""}`} onClick={() => setSearchVisible((current) => !current)} title="Search"><span className="material-symbols-outlined">search</span></button>
-      <button type="button" className={`${styles.iconButton} ${compactMode ? styles.iconButtonActive : ""}`} onClick={() => setCompactMode((current) => !current)} title="Density"><span className="material-symbols-outlined">density_small</span></button>
+      {viewMode === "list" && (
+        <button type="button" className={`${styles.iconButton} ${compactMode ? styles.iconButtonActive : ""}`} onClick={() => setCompactMode((current) => !current)} title="Density"><span className="material-symbols-outlined">density_small</span></button>
+      )}
       <Button variant="filled" leadingIcon="add" onClick={handleCreatePage} disabled={isCreatingPage}>{isCreatingPage ? "Creating..." : "New"}</Button>
     </>
   );
+
+  const controlsNode = (searchVisible || filterPanelVisible) ? (
+    <div className={styles.controls}>
+      {searchVisible ? <div className={styles.searchRow}><input className={styles.searchField} value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Folder, note, tag..." autoFocus /></div> : null}
+      {filterPanelVisible ? (
+        <div className={styles.facetPanel}>
+          <div className={styles.facetSection}>
+            <div className={styles.facetSectionHeader}>
+              <span className={styles.facetTitle}>Quick filters</span>
+              <button type="button" className={styles.clearFiltersButton} onClick={() => { setActiveContentTypes([]); setActiveFlags([]); setActiveCategoryIds([]); setActiveTagIds([]); }}>Clear</button>
+            </div>
+            <div className={styles.filterRow}>{LIBRARY_FLAG_FILTERS.map((filter) => <button key={filter.id} type="button" className={`${styles.filterChip} ${activeFlags.includes(filter.id) ? styles.filterChipActive : ""}`} onClick={() => toggleFlag(filter.id)}>{filter.label}</button>)}</div>
+          </div>
+          <div className={styles.facetSection}>
+            <span className={styles.facetTitle}>Content types</span>
+            <div className={styles.filterRow}>{LIBRARY_CONTENT_FILTERS.map((filter) => <button key={filter.id} type="button" className={`${styles.filterChip} ${activeContentTypes.includes(filter.id) ? styles.filterChipActive : ""}`} onClick={() => toggleContentType(filter.id)}>{filter.label}</button>)}</div>
+          </div>
+          {categories.length > 0 ? <div className={styles.facetSection}><span className={styles.facetTitle}>Categories</span><div className={styles.filterRow}>{categories.map((category) => <button key={category.id} type="button" className={`${styles.filterChip} ${activeCategoryIds.includes(category.id) ? styles.filterChipActive : ""}`} onClick={() => toggleCategory(category.id)} style={activeCategoryIds.includes(category.id) ? getNoteCategoryColorTokens(category.color) : undefined}>{category.icon ? <span className="material-symbols-outlined sm">{category.icon}</span> : null}{category.name}<span className={styles.facetCount}>{category.noteCount}</span></button>)}</div></div> : null}
+          {tags.length > 0 ? <div className={styles.facetSection}><span className={styles.facetTitle}>Tags</span><div className={styles.filterRow}>{tags.slice(0, 16).map((tag) => <button key={tag.id} type="button" className={`${styles.filterChip} ${activeTagIds.includes(tag.id) ? styles.filterChipActive : ""}`} onClick={() => toggleTag(tag.id)}>#{tag.name}<span className={styles.facetCount}>{tag.noteCount}</span></button>)}</div></div> : null}
+        </div>
+      ) : null}
+    </div>
+  ) : null;
+
+  const bulkBarNode = selectedNoteEntries.length > 0 ? (
+    <div className={styles.bulkBar}>
+      <div className={styles.bulkMeta}>
+        <span className={styles.bulkCount}>{selectedNoteEntries.length} notes selected</span>
+        <button type="button" className={styles.bulkClear} onClick={() => setSelectedNoteIds(new Set())}>Clear</button>
+      </div>
+      <div className={styles.bulkActions}>
+        {selectedHasPrivate ? <Button variant="tonal" leadingIcon="publish" onClick={() => runBulkAction(() => setLibraryNotesPublishedAction(selectedNoteIdsArray, true))} disabled={isBulkPending}>Publish selected</Button> : null}
+        {selectedHasPublished ? <Button variant="outlined" leadingIcon="lock" onClick={() => runBulkAction(() => setLibraryNotesPublishedAction(selectedNoteIdsArray, false))} disabled={isBulkPending}>Make private</Button> : null}
+        <Button variant="outlined" leadingIcon="archive" onClick={() => runBulkAction(() => archiveLibraryNotesAction(selectedNoteIdsArray))} disabled={isBulkPending}>Archive selected</Button>
+      </div>
+    </div>
+  ) : null;
 
   return (
     <div className={styles.root}>
@@ -266,111 +342,492 @@ export function LibraryWorkspace({
           <span>{totalAssets} files</span>
         </div>
 
-        {selectedNoteEntries.length > 0 ? (
-          <div className={styles.bulkBar}>
-            <div className={styles.bulkMeta}>
-              <span className={styles.bulkCount}>{selectedNoteEntries.length} notes selected</span>
-              <button type="button" className={styles.bulkClear} onClick={() => setSelectedNoteIds(new Set())}>Clear</button>
-            </div>
-            <div className={styles.bulkActions}>
-              {selectedHasPrivate ? <Button variant="tonal" leadingIcon="publish" onClick={() => runBulkAction(() => setLibraryNotesPublishedAction(selectedNoteIdsArray, true))} disabled={isBulkPending}>Publish selected</Button> : null}
-              {selectedHasPublished ? <Button variant="outlined" leadingIcon="lock" onClick={() => runBulkAction(() => setLibraryNotesPublishedAction(selectedNoteIdsArray, false))} disabled={isBulkPending}>Make private</Button> : null}
-              <Button variant="outlined" leadingIcon="archive" onClick={() => runBulkAction(() => archiveLibraryNotesAction(selectedNoteIdsArray))} disabled={isBulkPending}>Archive selected</Button>
-            </div>
-          </div>
-        ) : null}
+        {bulkBarNode}
+        {controlsNode}
 
-        {(searchVisible || filterPanelVisible) ? (
-          <div className={styles.controls}>
-            {searchVisible ? <div className={styles.searchRow}><input className={styles.searchField} value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Folder, note, tag..." /></div> : null}
-            {filterPanelVisible ? (
-              <div className={styles.facetPanel}>
-                <div className={styles.facetSection}>
-                  <div className={styles.facetSectionHeader}>
-                    <span className={styles.facetTitle}>Quick filters</span>
-                    <button type="button" className={styles.clearFiltersButton} onClick={() => { setActiveContentTypes([]); setActiveFlags([]); setActiveCategoryIds([]); setActiveTagIds([]); }}>Clear</button>
-                  </div>
-                  <div className={styles.filterRow}>{LIBRARY_FLAG_FILTERS.map((filter) => <button key={filter.id} type="button" className={`${styles.filterChip} ${activeFlags.includes(filter.id) ? styles.filterChipActive : ""}`} onClick={() => toggleFlag(filter.id)}>{filter.label}</button>)}</div>
-                </div>
-                <div className={styles.facetSection}>
-                  <span className={styles.facetTitle}>Content types</span>
-                  <div className={styles.filterRow}>{LIBRARY_CONTENT_FILTERS.map((filter) => <button key={filter.id} type="button" className={`${styles.filterChip} ${activeContentTypes.includes(filter.id) ? styles.filterChipActive : ""}`} onClick={() => toggleContentType(filter.id)}>{filter.label}</button>)}</div>
-                </div>
-                {categories.length > 0 ? <div className={styles.facetSection}><span className={styles.facetTitle}>Categories</span><div className={styles.filterRow}>{categories.map((category) => <button key={category.id} type="button" className={`${styles.filterChip} ${activeCategoryIds.includes(category.id) ? styles.filterChipActive : ""}`} onClick={() => toggleCategory(category.id)} style={activeCategoryIds.includes(category.id) ? getNoteCategoryColorTokens(category.color) : undefined}>{category.icon ? <span className="material-symbols-outlined sm">{category.icon}</span> : null}{category.name}<span className={styles.facetCount}>{category.noteCount}</span></button>)}</div></div> : null}
-                {tags.length > 0 ? <div className={styles.facetSection}><span className={styles.facetTitle}>Tags</span><div className={styles.filterRow}>{tags.slice(0, 16).map((tag) => <button key={tag.id} type="button" className={`${styles.filterChip} ${activeTagIds.includes(tag.id) ? styles.filterChipActive : ""}`} onClick={() => toggleTag(tag.id)}>#{tag.name}<span className={styles.facetCount}>{tag.noteCount}</span></button>)}</div></div> : null}
-              </div>
-            ) : null}
-          </div>
-        ) : null}
+        {viewMode === "icons" && (
+          <IconsView
+            visibleRows={visibleRows}
+            effectiveSelectedId={effectiveSelectedId}
+            effectiveSelectedNoteIds={effectiveSelectedNoteIds}
+            draggedNoteId={draggedNoteId}
+            dropTargetEntryId={dropTargetEntryId}
+            expandedIds={expandedIds}
+            onSelect={setSelectedId}
+            onToggleExpand={(id) => setExpandedIds((current) => { const next = new Set(current); if (next.has(id)) { next.delete(id); } else { next.add(id); } return next; })}
+            onToggleNoteSelect={(noteId) => setSelectedNoteIds((current) => { const next = new Set(current); if (next.has(noteId)) { next.delete(noteId); } else { next.add(noteId); } return next; })}
+          />
+        )}
 
-        <div className={styles.tableWrap}>
-          <div className={styles.tableSurface}>
-            <div className={styles.tableScroller}>
-              <div className={styles.table} style={compactMode ? { ["--library-row-height" as string]: "48px" } : undefined}>
-                <div className={styles.headerRow}>
-                  <div className={styles.headerCellPrimary}>
-                    <label className={styles.checkboxWrap}><input ref={headerCheckboxRef} type="checkbox" checked={allVisibleNotesSelected} onChange={() => setSelectedNoteIds((current) => { const next = new Set(current); if (allVisibleNotesSelected) visibleNoteIds.forEach((id) => next.delete(id)); else visibleNoteIds.forEach((id) => next.add(id)); return next; })} /><span className={styles.checkboxVisual} /></label>
-                    <span className={styles.headerCell}>Page name</span>
-                  </div>
-                  <div className={styles.headerCell}>Kind</div>
-                  <div className={styles.headerCell}>Location</div>
-                  <div className={styles.headerCell}>Last edited</div>
-                </div>
+        {viewMode === "list" && (
+          <ListView
+            visibleRows={visibleRows}
+            effectiveSelectedId={effectiveSelectedId}
+            effectiveSelectedNoteIds={effectiveSelectedNoteIds}
+            allVisibleNotesSelected={allVisibleNotesSelected}
+            someVisibleNotesSelected={someVisibleNotesSelected}
+            visibleNoteIds={visibleNoteIds}
+            draggedNoteId={draggedNoteId}
+            dropTargetEntryId={dropTargetEntryId}
+            expandedIds={expandedIds}
+            compactMode={compactMode}
+            headerCheckboxRef={headerCheckboxRef}
+            rowRefs={rowRefs}
+            dragHandleRefs={dragHandleRefs}
+            onSelect={setSelectedId}
+            onToggleExpand={(id) => setExpandedIds((current) => { const next = new Set(current); if (next.has(id)) { next.delete(id); } else { next.add(id); } return next; })}
+            onToggleNoteSelect={(noteId) => setSelectedNoteIds((current) => { const next = new Set(current); if (next.has(noteId)) { next.delete(noteId); } else { next.add(noteId); } return next; })}
+            onToggleAll={() => setSelectedNoteIds((current) => { const next = new Set(current); if (allVisibleNotesSelected) visibleNoteIds.forEach((id) => next.delete(id)); else visibleNoteIds.forEach((id) => next.add(id)); return next; })}
+          />
+        )}
 
-                {visibleRows.length > 0 ? visibleRows.map((row) => {
-                  const noteId = row.entry.type === "note" && row.entry.entityId ? row.entry.entityId : null;
-                  const categoryTokens = row.entry.categoryColor ? getNoteCategoryColorTokens(row.entry.categoryColor) : null;
-                  return (
-                    <div key={row.id} ref={(element) => { rowRefs.current[row.id] = element; }} role="button" tabIndex={0} className={styles.rowInteractive} onClick={() => setSelectedId(row.id)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setSelectedId(row.id); } }}>
-                      <div className={`${styles.row} ${effectiveSelectedId === row.id ? styles.rowSelected : ""} ${draggedNoteId === row.entry.entityId ? styles.rowDragging : ""} ${dropTargetEntryId === row.id ? styles.rowDropTarget : ""}`}>
-                        <div className={styles.pageCell}>
-                          <label className={styles.checkboxWrap} onClick={(event) => event.stopPropagation()}><input type="checkbox" checked={noteId ? effectiveSelectedNoteIds.has(noteId) : false} disabled={!noteId} onChange={() => { if (noteId) { setSelectedNoteIds((current) => { const next = new Set(current); if (next.has(noteId)) { next.delete(noteId); } else { next.add(noteId); } return next; }); } }} /><span className={styles.checkboxVisual} /></label>
-                          {row.entry.isDraggable ? <button ref={(element) => { dragHandleRefs.current[row.id] = element; }} type="button" className={styles.dragHandle} title="Drag note into another folder" onClick={(event) => event.stopPropagation()}><span className="material-symbols-outlined sm">drag_indicator</span></button> : <span className={styles.dragSpacer} />}
-                          <div className={styles.pageIndent} style={{ width: `${row.depth * 18}px` }} />
-                          {row.entry.children.length > 0 ? <button type="button" className={`${styles.expandButton} ${expandedIds.has(row.id) ? styles.expandButtonOpen : ""}`} onClick={(event) => { event.stopPropagation(); setExpandedIds((current) => { const next = new Set(current); if (next.has(row.id)) { next.delete(row.id); } else { next.add(row.id); } return next; }); }}><span className="material-symbols-outlined sm">chevron_right</span></button> : <div className={styles.pageIndent} />}
-                          <span className={styles.iconBadge} aria-hidden="true">
-                            {renderStoredIcon(row.entry.icon, {
-                              fallback: (
-                                <span className="material-symbols-outlined sm" aria-hidden="true">
-                                  description
-                                </span>
-                              ),
-                              materialClassName: "material-symbols-outlined sm",
-                              emojiStyle: { fontSize: "16px", lineHeight: 1 },
-                            })}
-                          </span>
-                          <div className={styles.pageCopy}>
-                            <div className={styles.pageTitleRow}>
-                              {row.entry.href ? <Link href={row.entry.href} className={styles.pageLink} onClick={(event) => event.stopPropagation()}>{row.entry.title}</Link> : <span className={styles.pageTitle}>{row.entry.title}</span>}
-                              {row.entry.isFavorite ? <span className={`${styles.pageMeta} ${styles.favorite}`}><span className="material-symbols-outlined sm">star</span></span> : null}
-                            </div>
-                            <div className={styles.pageMeta}>
-                              <span className={styles.typeChip}>{formatType(row.entry.type)}</span>
-                              {row.entry.type === "note" ? <span className={`${styles.visibilityChip} ${row.entry.visibility === "private" ? styles.visibilityPrivate : styles.visibilityShared}`}>{formatVisibility(row.entry.visibility)}</span> : null}
-                              {row.entry.categoryName ? <span className={styles.categoryChip} style={categoryTokens ?? undefined}>{row.entry.categoryIcon ? renderStoredIcon(row.entry.categoryIcon, {
-                                materialClassName: "material-symbols-outlined sm",
-                                emojiStyle: { fontSize: "14px", lineHeight: 1 },
-                              }) : null}{row.entry.categoryName}</span> : null}
-                              {row.entry.tagNames.slice(0, 2).map((tag) => <span className={styles.tagChip} key={`${row.id}-${tag}`}>#{tag}</span>)}
-                              {row.entry.tagNames.length > 2 ? <span className={styles.tagChip}>+{row.entry.tagNames.length - 2} tags</span> : null}
-                            </div>
-                          </div>
-                        </div>
-                        <div className={styles.columnText}>{row.entry.kindLabel}</div>
-                        <div className={styles.columnText}><span className={styles.sourceChip}>{row.entry.locationLabel}</span></div>
-                        <div className={styles.columnText}>{formatRelativeTime(row.entry.updatedAt)}</div>
-                      </div>
-                    </div>
-                  );
-                }) : <div className={styles.empty}><div className={styles.emptyTitle}>This view is empty</div><div className={styles.emptyBody}>Switch tabs or reduce the filters.</div></div>}
-              </div>
-            </div>
-          </div>
-        </div>
+        {viewMode === "columns" && (
+          <ColumnsView
+            topLevelGroups={topLevelGroups}
+            columnsItems={columnsItems}
+            activeColumnsGroup={activeColumnsGroup}
+            columnsPreviewEntry={columnsPreviewEntry}
+            effectiveSelectedId={effectiveSelectedId}
+            columnsActiveGroupId={columnsActiveGroupId ?? activeColumnsGroup?.id ?? null}
+            onSelectGroup={(id) => { setColumnsActiveGroupId(id); setSelectedId(""); }}
+            onSelectItem={setSelectedId}
+          />
+        )}
+
+        {viewMode === "gallery" && (
+          <GalleryView
+            visibleRows={visibleRows}
+            effectiveSelectedId={effectiveSelectedId}
+            onSelect={setSelectedId}
+          />
+        )}
       </section>
     </div>
   );
 }
+
+// ─── Icons View ───────────────────────────────────────────────────────────────
+
+interface IconsViewProps {
+  visibleRows: VisibleLibraryRow[];
+  effectiveSelectedId: string;
+  effectiveSelectedNoteIds: Set<string>;
+  draggedNoteId: string | null;
+  dropTargetEntryId: string | null;
+  expandedIds: Set<string>;
+  onSelect: (id: string) => void;
+  onToggleExpand: (id: string) => void;
+  onToggleNoteSelect: (noteId: string) => void;
+}
+
+function IconsView({ visibleRows, effectiveSelectedId, draggedNoteId, onSelect }: IconsViewProps) {
+  if (visibleRows.length === 0) {
+    return <EmptyState />;
+  }
+
+  return (
+    <div className={styles.iconsGrid}>
+      {visibleRows.map((row) => {
+        const isSelected = effectiveSelectedId === row.id;
+        const isDragging = draggedNoteId === row.entry.entityId;
+        const categoryTokens = row.entry.categoryColor ? getNoteCategoryColorTokens(row.entry.categoryColor) : null;
+
+        return (
+          <button
+            key={row.id}
+            type="button"
+            className={`${styles.iconTile} ${isSelected ? styles.iconTileSelected : ""} ${isDragging ? styles.iconTileDragging : ""}`}
+            onClick={() => onSelect(row.id)}
+            onDoubleClick={() => { if (row.entry.href) window.location.href = row.entry.href; }}
+            title={row.entry.title}
+          >
+            <div className={styles.iconTileIconWrap}>
+              <span className={`${styles.iconTileIcon} ${row.entry.type === "folder" || row.entry.type === "smart_group" ? styles.iconTileIconFolder : ""}`} aria-hidden="true">
+                {renderStoredIcon(row.entry.icon, {
+                  fallback: <span className="material-symbols-outlined">description</span>,
+                  materialClassName: "material-symbols-outlined",
+                  emojiStyle: { fontSize: "24px", lineHeight: 1 },
+                })}
+              </span>
+              {row.entry.isFavorite && <span className={styles.iconTileFavBadge}><span className="material-symbols-outlined">star</span></span>}
+              {row.entry.type === "note" && (
+                <span className={`${styles.iconTileVisiBadge} ${row.entry.isPublished ? styles.iconTileVisiPublished : styles.iconTileVisiPrivate}`}>
+                  <span className="material-symbols-outlined">{row.entry.isPublished ? "public" : "lock"}</span>
+                </span>
+              )}
+            </div>
+            <span className={styles.iconTileTitle}>{row.entry.title}</span>
+            <span className={styles.iconTileMeta}>
+              {row.entry.categoryName
+                ? <span className={styles.iconTileCategoryDot} style={categoryTokens ?? undefined} />
+                : null}
+              {row.entry.kindLabel}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── List View ────────────────────────────────────────────────────────────────
+
+interface ListViewProps {
+  visibleRows: VisibleLibraryRow[];
+  effectiveSelectedId: string;
+  effectiveSelectedNoteIds: Set<string>;
+  allVisibleNotesSelected: boolean;
+  someVisibleNotesSelected: boolean;
+  visibleNoteIds: string[];
+  draggedNoteId: string | null;
+  dropTargetEntryId: string | null;
+  expandedIds: Set<string>;
+  compactMode: boolean;
+  headerCheckboxRef: React.RefObject<HTMLInputElement | null>;
+  rowRefs: React.MutableRefObject<Record<string, HTMLDivElement | null>>;
+  dragHandleRefs: React.MutableRefObject<Record<string, HTMLButtonElement | null>>;
+  onSelect: (id: string) => void;
+  onToggleExpand: (id: string) => void;
+  onToggleNoteSelect: (noteId: string) => void;
+  onToggleAll: () => void;
+}
+
+function ListView({
+  visibleRows,
+  effectiveSelectedId,
+  effectiveSelectedNoteIds,
+  allVisibleNotesSelected,
+  visibleNoteIds,
+  draggedNoteId,
+  dropTargetEntryId,
+  expandedIds,
+  compactMode,
+  headerCheckboxRef,
+  rowRefs,
+  dragHandleRefs,
+  onSelect,
+  onToggleExpand,
+  onToggleNoteSelect,
+  onToggleAll,
+}: ListViewProps) {
+  return (
+    <div className={styles.tableWrap}>
+      <div className={styles.tableSurface}>
+        <div className={styles.tableScroller}>
+          <div className={styles.table} style={compactMode ? { ["--library-row-height" as string]: "40px" } : undefined}>
+            <div className={styles.headerRow}>
+              <div className={styles.headerCellPrimary}>
+                <label className={styles.checkboxWrap}>
+                  <input ref={headerCheckboxRef} type="checkbox" checked={allVisibleNotesSelected} onChange={onToggleAll} />
+                  <span className={styles.checkboxVisual} />
+                </label>
+                <span className={styles.headerCell}>Page name</span>
+              </div>
+              <div className={styles.headerCell}>Kind</div>
+              <div className={styles.headerCell}>Location</div>
+              <div className={styles.headerCell}>Last edited</div>
+            </div>
+
+            {visibleRows.length > 0 ? visibleRows.map((row) => {
+              const noteId = row.entry.type === "note" && row.entry.entityId ? row.entry.entityId : null;
+              const categoryTokens = row.entry.categoryColor ? getNoteCategoryColorTokens(row.entry.categoryColor) : null;
+              return (
+                <div key={row.id} ref={(element) => { rowRefs.current[row.id] = element; }} role="button" tabIndex={0} className={styles.rowInteractive} onClick={() => onSelect(row.id)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); onSelect(row.id); } }}>
+                  <div className={`${styles.row} ${effectiveSelectedId === row.id ? styles.rowSelected : ""} ${draggedNoteId === row.entry.entityId ? styles.rowDragging : ""} ${dropTargetEntryId === row.id ? styles.rowDropTarget : ""}`}>
+                    <div className={styles.pageCell}>
+                      <label className={styles.checkboxWrap} onClick={(event) => event.stopPropagation()}>
+                        <input type="checkbox" checked={noteId ? effectiveSelectedNoteIds.has(noteId) : false} disabled={!noteId} onChange={() => { if (noteId) onToggleNoteSelect(noteId); }} />
+                        <span className={styles.checkboxVisual} />
+                      </label>
+                      {row.entry.isDraggable ? <button ref={(element) => { dragHandleRefs.current[row.id] = element; }} type="button" className={styles.dragHandle} title="Drag note into another folder" onClick={(event) => event.stopPropagation()}><span className="material-symbols-outlined sm">drag_indicator</span></button> : <span className={styles.dragSpacer} />}
+                      <div className={styles.pageIndent} style={{ width: `${row.depth * 18}px` }} />
+                      {row.entry.children.length > 0 ? <button type="button" className={`${styles.expandButton} ${expandedIds.has(row.id) ? styles.expandButtonOpen : ""}`} onClick={(event) => { event.stopPropagation(); onToggleExpand(row.id); }}><span className="material-symbols-outlined sm">chevron_right</span></button> : <div className={styles.pageIndent} />}
+                      <span className={styles.iconBadge} aria-hidden="true">
+                        {renderStoredIcon(row.entry.icon, {
+                          fallback: <span className="material-symbols-outlined sm">description</span>,
+                          materialClassName: "material-symbols-outlined sm",
+                          emojiStyle: { fontSize: "16px", lineHeight: 1 },
+                        })}
+                      </span>
+                      <div className={styles.pageCopy}>
+                        <div className={styles.pageTitleRow}>
+                          {row.entry.href ? <Link href={row.entry.href} className={styles.pageLink} onClick={(event) => event.stopPropagation()}>{row.entry.title}</Link> : <span className={styles.pageTitle}>{row.entry.title}</span>}
+                          {row.entry.isFavorite ? <span className={`${styles.pageMeta} ${styles.favorite}`}><span className="material-symbols-outlined sm">star</span></span> : null}
+                        </div>
+                        <div className={styles.pageMeta}>
+                          <span className={styles.typeChip}>{formatType(row.entry.type)}</span>
+                          {row.entry.type === "note" ? <span className={`${styles.visibilityChip} ${row.entry.visibility === "private" ? styles.visibilityPrivate : styles.visibilityShared}`}>{formatVisibility(row.entry.visibility)}</span> : null}
+                          {row.entry.categoryName ? <span className={styles.categoryChip} style={categoryTokens ?? undefined}>{row.entry.categoryIcon ? renderStoredIcon(row.entry.categoryIcon, { materialClassName: "material-symbols-outlined sm", emojiStyle: { fontSize: "14px", lineHeight: 1 } }) : null}{row.entry.categoryName}</span> : null}
+                          {row.entry.tagNames.slice(0, 2).map((tag) => <span className={styles.tagChip} key={`${row.id}-${tag}`}>#{tag}</span>)}
+                          {row.entry.tagNames.length > 2 ? <span className={styles.tagChip}>+{row.entry.tagNames.length - 2}</span> : null}
+                        </div>
+                      </div>
+                    </div>
+                    <div className={styles.columnText}>{row.entry.kindLabel}</div>
+                    <div className={styles.columnText}><span className={styles.sourceChip}>{row.entry.locationLabel}</span></div>
+                    <div className={styles.columnText}>{formatRelativeTime(row.entry.updatedAt)}</div>
+                  </div>
+                </div>
+              );
+            }) : <EmptyState />}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Columns View ─────────────────────────────────────────────────────────────
+
+interface ColumnsViewProps {
+  topLevelGroups: LibraryEntry[];
+  columnsItems: LibraryEntry[];
+  activeColumnsGroup: LibraryEntry | null;
+  columnsPreviewEntry: LibraryEntry | null;
+  effectiveSelectedId: string;
+  columnsActiveGroupId: string | null;
+  onSelectGroup: (id: string) => void;
+  onSelectItem: (id: string) => void;
+}
+
+function ColumnsView({
+  topLevelGroups,
+  columnsItems,
+  activeColumnsGroup,
+  columnsPreviewEntry,
+  effectiveSelectedId,
+  columnsActiveGroupId,
+  onSelectGroup,
+  onSelectItem,
+}: ColumnsViewProps) {
+  return (
+    <div className={styles.columnsLayout}>
+      {/* Panel 1: Groups / top-level folders */}
+      <div className={styles.columnsPanel}>
+        <div className={styles.columnsPanelHeader}>Folders</div>
+        <div className={styles.columnsPanelList}>
+          {topLevelGroups.length === 0 ? (
+            <div className={styles.columnsPanelEmpty}>Nothing here</div>
+          ) : topLevelGroups.map((entry) => (
+            <button
+              key={entry.id}
+              type="button"
+              className={`${styles.columnsPanelItem} ${columnsActiveGroupId === entry.id ? styles.columnsPanelItemActive : ""}`}
+              onClick={() => onSelectGroup(entry.id)}
+            >
+              <span className={styles.columnsPanelIcon}>
+                {renderStoredIcon(entry.icon, {
+                  fallback: <span className="material-symbols-outlined sm">folder</span>,
+                  materialClassName: "material-symbols-outlined sm",
+                  emojiStyle: { fontSize: "15px", lineHeight: 1 },
+                })}
+              </span>
+              <span className={styles.columnsPanelLabel}>{entry.title}</span>
+              {entry.children.length > 0 && <span className={styles.columnsPanelChevron}><span className="material-symbols-outlined">chevron_right</span></span>}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Panel 2: Items in active group */}
+      <div className={styles.columnsPanel}>
+        <div className={styles.columnsPanelHeader}>{activeColumnsGroup?.title ?? "Items"}</div>
+        <div className={styles.columnsPanelList}>
+          {columnsItems.length === 0 ? (
+            <div className={styles.columnsPanelEmpty}>Empty folder</div>
+          ) : columnsItems.map((entry) => (
+            <button
+              key={entry.id}
+              type="button"
+              className={`${styles.columnsPanelItem} ${effectiveSelectedId === entry.id ? styles.columnsPanelItemActive : ""}`}
+              onClick={() => onSelectItem(entry.id)}
+            >
+              <span className={styles.columnsPanelIcon}>
+                {renderStoredIcon(entry.icon, {
+                  fallback: <span className="material-symbols-outlined sm">description</span>,
+                  materialClassName: "material-symbols-outlined sm",
+                  emojiStyle: { fontSize: "15px", lineHeight: 1 },
+                })}
+              </span>
+              <span className={styles.columnsPanelLabel}>{entry.title}</span>
+              <span className={styles.columnsPanelMeta}>{formatRelativeTime(entry.updatedAt)}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Panel 3: Preview / detail */}
+      <div className={`${styles.columnsPanel} ${styles.columnsPanelPreview}`}>
+        <div className={styles.columnsPanelHeader}>Preview</div>
+        {columnsPreviewEntry ? (
+          <ColumnsPreview entry={columnsPreviewEntry} />
+        ) : (
+          <div className={styles.columnsPanelEmpty}>Select an item</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ColumnsPreview({ entry }: { entry: LibraryEntry }) {
+  const categoryTokens = entry.categoryColor ? getNoteCategoryColorTokens(entry.categoryColor) : null;
+
+  return (
+    <div className={styles.columnsPreviewContent}>
+      <div className={styles.columnsPreviewIconWrap}>
+        <span className={styles.columnsPreviewIcon}>
+          {renderStoredIcon(entry.icon, {
+            fallback: <span className="material-symbols-outlined">description</span>,
+            materialClassName: "material-symbols-outlined",
+            emojiStyle: { fontSize: "36px", lineHeight: 1 },
+          })}
+        </span>
+      </div>
+      <div className={styles.columnsPreviewTitle}>{entry.title}</div>
+      {entry.type === "note" && (
+        <div className={styles.columnsPreviewBadges}>
+          <span className={`${styles.visibilityChip} ${entry.visibility === "private" ? styles.visibilityPrivate : styles.visibilityShared}`}>
+            <span className="material-symbols-outlined sm">{entry.isPublished ? "public" : "lock"}</span>
+            {formatVisibility(entry.visibility)}
+          </span>
+          {entry.isFavorite && <span className={`${styles.typeChip} ${styles.favorite}`}><span className="material-symbols-outlined sm">star</span>Pinned</span>}
+        </div>
+      )}
+      <div className={styles.columnsPreviewMeta}>
+        <PreviewMetaRow icon="category" label="Type" value={formatType(entry.type)} />
+        <PreviewMetaRow icon="folder" label="Location" value={entry.locationLabel} />
+        <PreviewMetaRow icon="schedule" label="Updated" value={formatRelativeTime(entry.updatedAt)} />
+        {entry.categoryName && (
+          <div className={styles.columnsPreviewMetaRow}>
+            <span className={styles.columnsPreviewMetaIcon}><span className="material-symbols-outlined sm">label</span></span>
+            <span className={styles.columnsPreviewMetaLabel}>Category</span>
+            <span className={styles.categoryChip} style={categoryTokens ?? undefined}>{entry.categoryName}</span>
+          </div>
+        )}
+        {entry.tagNames.length > 0 && (
+          <div className={styles.columnsPreviewMetaRow}>
+            <span className={styles.columnsPreviewMetaIcon}><span className="material-symbols-outlined sm">tag</span></span>
+            <span className={styles.columnsPreviewMetaLabel}>Tags</span>
+            <div className={styles.columnsPreviewTags}>
+              {entry.tagNames.map((tag) => <span className={styles.tagChip} key={tag}>#{tag}</span>)}
+            </div>
+          </div>
+        )}
+      </div>
+      {entry.href && (
+        <Link href={entry.href} className={styles.columnsPreviewOpenBtn}>
+          <span className="material-symbols-outlined sm">open_in_new</span>
+          Open
+        </Link>
+      )}
+    </div>
+  );
+}
+
+function PreviewMetaRow({ icon, label, value }: { icon: string; label: string; value: string }) {
+  return (
+    <div className={styles.columnsPreviewMetaRow}>
+      <span className={styles.columnsPreviewMetaIcon}><span className="material-symbols-outlined sm">{icon}</span></span>
+      <span className={styles.columnsPreviewMetaLabel}>{label}</span>
+      <span className={styles.columnsPreviewMetaValue}>{value}</span>
+    </div>
+  );
+}
+
+// ─── Gallery View ─────────────────────────────────────────────────────────────
+
+interface GalleryViewProps {
+  visibleRows: VisibleLibraryRow[];
+  effectiveSelectedId: string;
+  onSelect: (id: string) => void;
+}
+
+function GalleryView({ visibleRows, effectiveSelectedId, onSelect }: GalleryViewProps) {
+  if (visibleRows.length === 0) {
+    return <EmptyState />;
+  }
+
+  return (
+    <div className={styles.galleryGrid}>
+      {visibleRows.map((row) => {
+        const isSelected = effectiveSelectedId === row.id;
+        const categoryTokens = row.entry.categoryColor ? getNoteCategoryColorTokens(row.entry.categoryColor) : null;
+        const isFolder = row.entry.type === "folder" || row.entry.type === "smart_group";
+
+        return (
+          <div
+            key={row.id}
+            className={`${styles.galleryCard} ${isSelected ? styles.galleryCardSelected : ""} ${isFolder ? styles.galleryCardFolder : ""}`}
+            role="button"
+            tabIndex={0}
+            onClick={() => onSelect(row.id)}
+            onDoubleClick={() => { if (row.entry.href) window.location.href = row.entry.href; }}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect(row.id); } }}
+          >
+            <div className={styles.galleryCardHeader}>
+              <div className={styles.galleryCardIconWrap}>
+                <span className={styles.galleryCardIcon}>
+                  {renderStoredIcon(row.entry.icon, {
+                    fallback: <span className="material-symbols-outlined">description</span>,
+                    materialClassName: "material-symbols-outlined",
+                    emojiStyle: { fontSize: "28px", lineHeight: 1 },
+                  })}
+                </span>
+              </div>
+              <div className={styles.galleryCardBadges}>
+                {row.entry.isFavorite && <span className={styles.galleryBadge}><span className="material-symbols-outlined sm">star</span></span>}
+                {row.entry.type === "note" && (
+                  <span className={`${styles.galleryBadge} ${row.entry.isPublished ? styles.galleryBadgePublished : styles.galleryBadgePrivate}`}>
+                    <span className="material-symbols-outlined sm">{row.entry.isPublished ? "public" : "lock"}</span>
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className={styles.galleryCardBody}>
+              {row.entry.href ? (
+                <Link href={row.entry.href} className={styles.galleryCardTitle} onClick={(e) => e.stopPropagation()}>
+                  {row.entry.title}
+                </Link>
+              ) : (
+                <span className={styles.galleryCardTitle}>{row.entry.title}</span>
+              )}
+              <span className={styles.galleryCardKind}>{row.entry.kindLabel}</span>
+            </div>
+
+            <div className={styles.galleryCardFooter}>
+              {row.entry.categoryName && (
+                <span className={styles.categoryChip} style={categoryTokens ?? undefined}>
+                  {row.entry.categoryName}
+                </span>
+              )}
+              {row.entry.tagNames.slice(0, 2).map((tag) => (
+                <span className={styles.tagChip} key={`${row.id}-${tag}`}>#{tag}</span>
+              ))}
+              {row.entry.tagNames.length > 2 && (
+                <span className={styles.tagChip}>+{row.entry.tagNames.length - 2}</span>
+              )}
+              <span className={styles.galleryCardDate}>{formatRelativeTime(row.entry.updatedAt)}</span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── Empty State ──────────────────────────────────────────────────────────────
+
+function EmptyState() {
+  return (
+    <div className={styles.empty}>
+      <div className={styles.emptyTitle}>This view is empty</div>
+      <div className={styles.emptyBody}>Switch tabs or reduce the filters.</div>
+    </div>
+  );
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function filterEntries(entries: LibraryEntry[], filters: { activeTab: LibraryTabId; searchQuery: string; activeContentTypes: LibraryContentType[]; activeFlags: LibraryFlagFilterId[]; activeCategoryIds: string[]; activeTagIds: string[]; }) {
   const search = filters.searchQuery.trim().toLocaleLowerCase("tr");
