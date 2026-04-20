@@ -182,6 +182,7 @@ export function LibraryWorkspace({
 
     return columnsGroupRows[0]?.entry ?? null;
   }, [columnsActiveGroupId, columnsGroupRows, entryById]);
+  const resolvedColumnsActiveGroupId = activeColumnsGroup?.id ?? null;
   const columnsItems = activeColumnsGroup?.children ?? [];
   const columnsPreviewEntry =
     entryById.get(effectiveSelectedId) ?? activeColumnsGroup;
@@ -191,23 +192,6 @@ export function LibraryWorkspace({
       headerCheckboxRef.current.indeterminate = someVisibleNotesSelected;
     }
   }, [someVisibleNotesSelected]);
-
-  useEffect(() => {
-    if (viewMode !== "columns") {
-      return;
-    }
-
-    if (!activeColumnsGroup) {
-      if (columnsActiveGroupId !== null) {
-        setColumnsActiveGroupId(null);
-      }
-      return;
-    }
-
-    if (columnsActiveGroupId !== activeColumnsGroup.id) {
-      setColumnsActiveGroupId(activeColumnsGroup.id);
-    }
-  }, [activeColumnsGroup, columnsActiveGroupId, viewMode]);
 
   useEffect(() => {
     if (viewMode !== "list") return;
@@ -436,7 +420,7 @@ export function LibraryWorkspace({
             activeColumnsGroup={activeColumnsGroup}
             columnsPreviewEntry={columnsPreviewEntry}
             effectiveSelectedId={effectiveSelectedId}
-            columnsActiveGroupId={columnsActiveGroupId}
+            columnsActiveGroupId={resolvedColumnsActiveGroupId}
             onSelectGroup={(id) => {
               setColumnsActiveGroupId(id);
               setSelectedId(id);
