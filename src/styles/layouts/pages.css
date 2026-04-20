@@ -48,9 +48,11 @@
   position: absolute;
   inset: 0;
   background-image: var(--giraffe-spots);
-  background-size: 220px 220px;
+  background-size: var(--giraffe-spots-size);
+  background-position: var(--giraffe-spots-position);
+  background-repeat: repeat;
   pointer-events: none;
-  opacity: 0.35;
+  opacity: var(--giraffe-spots-opacity-dashboard);
   border-radius: inherit;
 }
 
@@ -2339,9 +2341,11 @@
   position: absolute;
   inset: 0;
   background-image: var(--giraffe-spots);
-  background-size: 220px 220px;
+  background-size: var(--giraffe-spots-size);
+  background-position: var(--giraffe-spots-position);
+  background-repeat: repeat;
   pointer-events: none;
-  opacity: 0.55;
+  opacity: var(--giraffe-spots-opacity-page);
   z-index: 0;
 }
 

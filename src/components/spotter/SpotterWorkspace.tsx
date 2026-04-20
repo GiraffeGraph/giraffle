@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ConversationThread } from "./ConversationThread";
 import { PromptComposer } from "./PromptComposer";
@@ -18,9 +18,6 @@ export function SpotterWorkspace({
   initialMessages = [],
   initialPrompt = null,
 }: SpotterWorkspaceProps) {
-  const uid = useId().replace(/:/g, "");
-  const filterId = `spotter-organic-${uid}`;
-  const patternId = `spotter-giraffe-${uid}`;
   const router = useRouter();
   const composerRef = useRef<HTMLTextAreaElement | null>(null);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(
@@ -231,71 +228,7 @@ export function SpotterWorkspace({
 
   return (
     <div className={`${styles.page} ${embedded ? styles.pageEmbedded : ""}`}>
-      <svg
-        className={styles.spotsBg}
-        aria-hidden="true"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <defs>
-          <filter id={filterId}>
-            <feTurbulence
-              type="fractalNoise"
-              baseFrequency="0.032"
-              numOctaves="3"
-              seed="14"
-              result="noise"
-            />
-            <feDisplacementMap
-              in="SourceGraphic"
-              in2="noise"
-              scale="11"
-              xChannelSelector="R"
-              yChannelSelector="G"
-            />
-          </filter>
-          <pattern
-            id={patternId}
-            x="0"
-            y="0"
-            width="150"
-            height="150"
-            patternUnits="userSpaceOnUse"
-            patternTransform="rotate(12)"
-          >
-            {/* blob 1 — large, top left */}
-            <path
-              d="M14,16 C28,8 50,13 54,28 C58,43 46,58 30,60 C14,62 5,50 6,35 C7,20 0,24 14,16 Z"
-              fill="#C47A2B"
-            />
-            {/* blob 2 — top right */}
-            <path
-              d="M88,20 C102,12 122,18 124,34 C126,50 113,63 98,62 C83,61 76,50 78,36 C80,22 74,28 88,20 Z"
-              fill="#B8681E"
-            />
-            {/* blob 3 — alt orta */}
-            <path
-              d="M42,95 C57,86 76,91 77,105 C78,119 65,130 50,128 C35,126 27,115 30,102 C33,89 27,104 42,95 Z"
-              fill="#C47A2B"
-            />
-            {/* blob 4 — bottom right, small */}
-            <path
-              d="M104,98 C113,92 124,96 124,106 C124,116 115,123 106,121 C97,119 94,112 97,104 C100,96 95,104 104,98 Z"
-              fill="#A85D15"
-            />
-            {/* blob 5 — sol alt, mini */}
-            <path
-              d="M4,76 C10,69 20,73 20,82 C20,91 13,97 6,94 C-1,91 0,86 2,79 C4,72 -2,83 4,76 Z"
-              fill="#B8681E"
-            />
-          </pattern>
-        </defs>
-        <rect
-          width="100%"
-          height="100%"
-          fill={`url(#${patternId})`}
-          filter={`url(#${filterId})`}
-        />
-      </svg>
+      <div className={styles.spotsBg} aria-hidden="true" />
       <div className={styles.pageInner}>
         <main
           className={`${styles.chatShell} ${isEmpty ? styles.chatShellEmpty : ""}`}

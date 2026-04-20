@@ -415,9 +415,10 @@
   pointer-events: none;
   border-radius: 12px;
   background-image: var(--giraffe-spots);
-  background-size: 220px 220px;
+  background-size: var(--giraffe-spots-size);
+  background-position: var(--giraffe-spots-position);
   background-repeat: repeat;
-  opacity: 0.55;
+  opacity: var(--giraffe-spots-opacity-cell);
   z-index: 0;
 }
 
