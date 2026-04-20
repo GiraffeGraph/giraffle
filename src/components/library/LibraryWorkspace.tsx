@@ -45,6 +45,19 @@ interface VisibleLibraryRow {
   entry: LibraryEntry;
 }
 
+interface ColumnsGroupRow {
+  id: string;
+  depth: number;
+  entry: LibraryEntry;
+}
+
+const VIEW_MODE_OPTIONS: Array<{ id: LibraryViewMode; icon: string; label: string }> = [
+  { id: "icons", icon: "grid_view", label: "Icons" },
+  { id: "list", icon: "table_rows", label: "List" },
+  { id: "columns", icon: "view_column", label: "Columns" },
+  { id: "gallery", icon: "photo_library", label: "Gallery" },
+];
+
 interface LibraryNoteDragData {
   type: "library-note";
   noteId: string;
@@ -100,9 +113,18 @@ export function LibraryWorkspace({
       }),
     [activeCategoryIds, activeContentTypes, activeFlags, activeTab, activeTagIds, entries, searchQuery]
   );
+  const entryById = useMemo(() => buildEntryIndex(filteredEntries), [filteredEntries]);
+  const expandedRowsOutsideList = useMemo(
+    () => new Set(collectExpandableIds(filteredEntries)),
+    [filteredEntries]
+  );
   const visibleRows = useMemo(
-    () => flattenEntries(filteredEntries, expandedIds),
-    [expandedIds, filteredEntries]
+    () =>
+      flattenEntries(
+        filteredEntries,
+        viewMode === "list" ? expandedIds : expandedRowsOutsideList
+      ),
+    [expandedIds, expandedRowsOutsideList, filteredEntries, viewMode]
   );
   const allRows = useMemo(
     () => flattenEntries(entries, new Set(initialExpandedIds)),
@@ -111,7 +133,9 @@ export function LibraryWorkspace({
   const noteEntryById = useMemo(() => {
     const next = new Map<string, LibraryEntry>();
     for (const row of allRows) {
-      if (row.entry.type === "note" && row.entry.entityId) next.set(row.entry.entityId, row.entry);
+      if (row.entry.type === "note" && row.entry.entityId) {
+        next.set(row.entry.entityId, row.entry);
+      }
     }
     return next;
   }, [allRows]);
@@ -123,37 +147,70 @@ export function LibraryWorkspace({
   const effectiveSelectedId = visibleRows.some((row) => row.id === selectedId)
     ? selectedId
     : visibleRows[0]?.id ?? "";
-  const activeRow = visibleRows.find((row) => row.id === effectiveSelectedId)?.entry ?? null;
+  const activeRow = entryById.get(effectiveSelectedId) ?? null;
   const visibleNoteIds = visibleRows
-    .filter((row): row is VisibleLibraryRow & { entry: LibraryEntry & { type: "note"; entityId: string } } => row.entry.type === "note" && typeof row.entry.entityId === "string")
+    .filter(
+      (
+        row
+      ): row is VisibleLibraryRow & {
+        entry: LibraryEntry & { type: "note"; entityId: string };
+      } => row.entry.type === "note" && typeof row.entry.entityId === "string"
+    )
     .map((row) => row.entry.entityId);
   const selectedNoteIdsArray = Array.from(effectiveSelectedNoteIds);
   const selectedNoteEntries = selectedNoteIdsArray
     .map((noteId) => noteEntryById.get(noteId))
     .filter((entry): entry is LibraryEntry => Boolean(entry));
-  const allVisibleNotesSelected = visibleNoteIds.length > 0 && visibleNoteIds.every((noteId) => effectiveSelectedNoteIds.has(noteId));
-  const someVisibleNotesSelected = visibleNoteIds.some((noteId) => effectiveSelectedNoteIds.has(noteId)) && !allVisibleNotesSelected;
+  const allVisibleNotesSelected =
+    visibleNoteIds.length > 0 &&
+    visibleNoteIds.every((noteId) => effectiveSelectedNoteIds.has(noteId));
+  const someVisibleNotesSelected =
+    visibleNoteIds.some((noteId) => effectiveSelectedNoteIds.has(noteId)) &&
+    !allVisibleNotesSelected;
   const selectedHasPrivate = selectedNoteEntries.some((entry) => !entry.isPublished);
   const selectedHasPublished = selectedNoteEntries.some((entry) => entry.isPublished);
 
-  // Columns view: top-level groups and selected group's items
-  const topLevelGroups = filteredEntries;
-  const activeColumnsGroup = columnsActiveGroupId
-    ? filteredEntries.find((e) => e.id === columnsActiveGroupId) ?? filteredEntries[0] ?? null
-    : filteredEntries[0] ?? null;
-  const columnsItems = activeColumnsGroup
-    ? activeColumnsGroup.children.length > 0
-      ? activeColumnsGroup.children
-      : [activeColumnsGroup]
-    : [];
-  const columnsPreviewEntry = visibleRows.find((r) => r.id === effectiveSelectedId)?.entry ?? activeColumnsGroup;
+  const columnsGroupRows = useMemo(
+    () => flattenContainerRows(filteredEntries),
+    [filteredEntries]
+  );
+  const activeColumnsGroup = useMemo(() => {
+    const selectedGroup = columnsActiveGroupId ? entryById.get(columnsActiveGroupId) : null;
+    if (selectedGroup && isContainerEntry(selectedGroup)) {
+      return selectedGroup;
+    }
+
+    return columnsGroupRows[0]?.entry ?? null;
+  }, [columnsActiveGroupId, columnsGroupRows, entryById]);
+  const columnsItems = activeColumnsGroup?.children ?? [];
+  const columnsPreviewEntry =
+    entryById.get(effectiveSelectedId) ?? activeColumnsGroup;
 
   useEffect(() => {
-    if (headerCheckboxRef.current) headerCheckboxRef.current.indeterminate = someVisibleNotesSelected;
+    if (headerCheckboxRef.current) {
+      headerCheckboxRef.current.indeterminate = someVisibleNotesSelected;
+    }
   }, [someVisibleNotesSelected]);
 
   useEffect(() => {
-    if (viewMode !== "list" && viewMode !== "columns") return;
+    if (viewMode !== "columns") {
+      return;
+    }
+
+    if (!activeColumnsGroup) {
+      if (columnsActiveGroupId !== null) {
+        setColumnsActiveGroupId(null);
+      }
+      return;
+    }
+
+    if (columnsActiveGroupId !== activeColumnsGroup.id) {
+      setColumnsActiveGroupId(activeColumnsGroup.id);
+    }
+  }, [activeColumnsGroup, columnsActiveGroupId, viewMode]);
+
+  useEffect(() => {
+    if (viewMode !== "list") return;
     const cleanups: Array<() => void> = [];
     for (const row of visibleRows) {
       const element = rowRefs.current[row.id];
@@ -247,13 +304,6 @@ export function LibraryWorkspace({
     });
   };
 
-  const viewModeButtons: Array<{ id: LibraryViewMode; icon: string; title: string }> = [
-    { id: "icons", icon: "grid_view", title: "Icons" },
-    { id: "list", icon: "format_list_bulleted", title: "List" },
-    { id: "columns", icon: "view_column", title: "Columns" },
-    { id: "gallery", icon: "auto_awesome_mosaic", title: "Gallery" },
-  ];
-
   const topbarMeta = (
     <div className={styles.topbarTabs}>
       {LIBRARY_TABS.map((tab) => (
@@ -264,16 +314,21 @@ export function LibraryWorkspace({
 
   const topbarActions = (
     <>
-      <div className={styles.viewModeGroup}>
-        {viewModeButtons.map((btn) => (
+      <div className={styles.viewModeGroup} aria-label="Library view mode">
+        {VIEW_MODE_OPTIONS.map((option) => (
           <button
-            key={btn.id}
+            key={option.id}
             type="button"
-            className={`${styles.viewModeBtn} ${viewMode === btn.id ? styles.viewModeBtnActive : ""}`}
-            onClick={() => setViewMode(btn.id)}
-            title={btn.title}
+            aria-pressed={viewMode === option.id}
+            aria-label={`${option.label} view`}
+            className={`${styles.viewModeBtn} ${viewMode === option.id ? styles.viewModeBtnActive : ""}`}
+            onClick={() => setViewMode(option.id)}
+            title={option.label}
           >
-            <span className="material-symbols-outlined">{btn.icon}</span>
+            <span className={`material-symbols-outlined ${styles.viewModeBtnIcon}`} aria-hidden="true">
+              {option.icon}
+            </span>
+            <span className={styles.viewModeBtnLabel}>{option.label}</span>
           </button>
         ))}
       </div>
@@ -349,13 +404,8 @@ export function LibraryWorkspace({
           <IconsView
             visibleRows={visibleRows}
             effectiveSelectedId={effectiveSelectedId}
-            effectiveSelectedNoteIds={effectiveSelectedNoteIds}
             draggedNoteId={draggedNoteId}
-            dropTargetEntryId={dropTargetEntryId}
-            expandedIds={expandedIds}
             onSelect={setSelectedId}
-            onToggleExpand={(id) => setExpandedIds((current) => { const next = new Set(current); if (next.has(id)) { next.delete(id); } else { next.add(id); } return next; })}
-            onToggleNoteSelect={(noteId) => setSelectedNoteIds((current) => { const next = new Set(current); if (next.has(noteId)) { next.delete(noteId); } else { next.add(noteId); } return next; })}
           />
         )}
 
@@ -365,8 +415,6 @@ export function LibraryWorkspace({
             effectiveSelectedId={effectiveSelectedId}
             effectiveSelectedNoteIds={effectiveSelectedNoteIds}
             allVisibleNotesSelected={allVisibleNotesSelected}
-            someVisibleNotesSelected={someVisibleNotesSelected}
-            visibleNoteIds={visibleNoteIds}
             draggedNoteId={draggedNoteId}
             dropTargetEntryId={dropTargetEntryId}
             expandedIds={expandedIds}
@@ -383,14 +431,22 @@ export function LibraryWorkspace({
 
         {viewMode === "columns" && (
           <ColumnsView
-            topLevelGroups={topLevelGroups}
+            groupRows={columnsGroupRows}
             columnsItems={columnsItems}
             activeColumnsGroup={activeColumnsGroup}
             columnsPreviewEntry={columnsPreviewEntry}
             effectiveSelectedId={effectiveSelectedId}
-            columnsActiveGroupId={columnsActiveGroupId ?? activeColumnsGroup?.id ?? null}
-            onSelectGroup={(id) => { setColumnsActiveGroupId(id); setSelectedId(""); }}
-            onSelectItem={setSelectedId}
+            columnsActiveGroupId={columnsActiveGroupId}
+            onSelectGroup={(id) => {
+              setColumnsActiveGroupId(id);
+              setSelectedId(id);
+            }}
+            onSelectItem={(entry) => {
+              setSelectedId(entry.id);
+              if (isContainerEntry(entry)) {
+                setColumnsActiveGroupId(entry.id);
+              }
+            }}
           />
         )}
 
@@ -411,13 +467,8 @@ export function LibraryWorkspace({
 interface IconsViewProps {
   visibleRows: VisibleLibraryRow[];
   effectiveSelectedId: string;
-  effectiveSelectedNoteIds: Set<string>;
   draggedNoteId: string | null;
-  dropTargetEntryId: string | null;
-  expandedIds: Set<string>;
   onSelect: (id: string) => void;
-  onToggleExpand: (id: string) => void;
-  onToggleNoteSelect: (noteId: string) => void;
 }
 
 function IconsView({ visibleRows, effectiveSelectedId, draggedNoteId, onSelect }: IconsViewProps) {
@@ -477,8 +528,6 @@ interface ListViewProps {
   effectiveSelectedId: string;
   effectiveSelectedNoteIds: Set<string>;
   allVisibleNotesSelected: boolean;
-  someVisibleNotesSelected: boolean;
-  visibleNoteIds: string[];
   draggedNoteId: string | null;
   dropTargetEntryId: string | null;
   expandedIds: Set<string>;
@@ -497,7 +546,6 @@ function ListView({
   effectiveSelectedId,
   effectiveSelectedNoteIds,
   allVisibleNotesSelected,
-  visibleNoteIds,
   draggedNoteId,
   dropTargetEntryId,
   expandedIds,
@@ -580,18 +628,18 @@ function ListView({
 // ─── Columns View ─────────────────────────────────────────────────────────────
 
 interface ColumnsViewProps {
-  topLevelGroups: LibraryEntry[];
+  groupRows: ColumnsGroupRow[];
   columnsItems: LibraryEntry[];
   activeColumnsGroup: LibraryEntry | null;
   columnsPreviewEntry: LibraryEntry | null;
   effectiveSelectedId: string;
   columnsActiveGroupId: string | null;
   onSelectGroup: (id: string) => void;
-  onSelectItem: (id: string) => void;
+  onSelectItem: (entry: LibraryEntry) => void;
 }
 
 function ColumnsView({
-  topLevelGroups,
+  groupRows,
   columnsItems,
   activeColumnsGroup,
   columnsPreviewEntry,
@@ -602,61 +650,85 @@ function ColumnsView({
 }: ColumnsViewProps) {
   return (
     <div className={styles.columnsLayout}>
-      {/* Panel 1: Groups / top-level folders */}
       <div className={styles.columnsPanel}>
-        <div className={styles.columnsPanelHeader}>Folders</div>
+        <div className={styles.columnsPanelHeader}>Folder tree</div>
         <div className={styles.columnsPanelList}>
-          {topLevelGroups.length === 0 ? (
-            <div className={styles.columnsPanelEmpty}>Nothing here</div>
-          ) : topLevelGroups.map((entry) => (
-            <button
-              key={entry.id}
-              type="button"
-              className={`${styles.columnsPanelItem} ${columnsActiveGroupId === entry.id ? styles.columnsPanelItemActive : ""}`}
-              onClick={() => onSelectGroup(entry.id)}
-            >
-              <span className={styles.columnsPanelIcon}>
-                {renderStoredIcon(entry.icon, {
-                  fallback: <span className="material-symbols-outlined sm">folder</span>,
-                  materialClassName: "material-symbols-outlined sm",
-                  emojiStyle: { fontSize: "15px", lineHeight: 1 },
-                })}
-              </span>
-              <span className={styles.columnsPanelLabel}>{entry.title}</span>
-              {entry.children.length > 0 && <span className={styles.columnsPanelChevron}><span className="material-symbols-outlined">chevron_right</span></span>}
-            </button>
-          ))}
+          {groupRows.length === 0 ? (
+            <div className={styles.columnsPanelEmpty}>No folders to show</div>
+          ) : (
+            groupRows.map((row) => (
+              <button
+                key={row.id}
+                type="button"
+                className={`${styles.columnsPanelItem} ${
+                  columnsActiveGroupId === row.id ? styles.columnsPanelItemActive : ""
+                }`}
+                onClick={() => onSelectGroup(row.id)}
+              >
+                <span
+                  className={styles.columnsPanelIndent}
+                  style={{ width: `${row.depth * 12}px` }}
+                  aria-hidden="true"
+                />
+                <span className={styles.columnsPanelIcon}>
+                  {renderStoredIcon(row.entry.icon, {
+                    fallback: <span className="material-symbols-outlined sm">folder</span>,
+                    materialClassName: "material-symbols-outlined sm",
+                    emojiStyle: { fontSize: "15px", lineHeight: 1 },
+                  })}
+                </span>
+                <span className={styles.columnsPanelLabel}>{row.entry.title}</span>
+                {row.entry.noteCount > 0 ? (
+                  <span className={styles.columnsPanelMeta}>{row.entry.noteCount}</span>
+                ) : null}
+              </button>
+            ))
+          )}
         </div>
       </div>
 
-      {/* Panel 2: Items in active group */}
       <div className={styles.columnsPanel}>
         <div className={styles.columnsPanelHeader}>{activeColumnsGroup?.title ?? "Items"}</div>
         <div className={styles.columnsPanelList}>
           {columnsItems.length === 0 ? (
-            <div className={styles.columnsPanelEmpty}>Empty folder</div>
-          ) : columnsItems.map((entry) => (
-            <button
-              key={entry.id}
-              type="button"
-              className={`${styles.columnsPanelItem} ${effectiveSelectedId === entry.id ? styles.columnsPanelItemActive : ""}`}
-              onClick={() => onSelectItem(entry.id)}
-            >
-              <span className={styles.columnsPanelIcon}>
-                {renderStoredIcon(entry.icon, {
-                  fallback: <span className="material-symbols-outlined sm">description</span>,
-                  materialClassName: "material-symbols-outlined sm",
-                  emojiStyle: { fontSize: "15px", lineHeight: 1 },
-                })}
-              </span>
-              <span className={styles.columnsPanelLabel}>{entry.title}</span>
-              <span className={styles.columnsPanelMeta}>{formatRelativeTime(entry.updatedAt)}</span>
-            </button>
-          ))}
+            <div className={styles.columnsPanelEmpty}>No items in this folder</div>
+          ) : (
+            columnsItems.map((entry) => {
+              const isContainer = isContainerEntry(entry);
+
+              return (
+                <button
+                  key={entry.id}
+                  type="button"
+                  className={`${styles.columnsPanelItem} ${
+                    effectiveSelectedId === entry.id ? styles.columnsPanelItemActive : ""
+                  }`}
+                  onClick={() => onSelectItem(entry)}
+                >
+                  <span className={styles.columnsPanelIcon}>
+                    {renderStoredIcon(entry.icon, {
+                      fallback: <span className="material-symbols-outlined sm">description</span>,
+                      materialClassName: "material-symbols-outlined sm",
+                      emojiStyle: { fontSize: "15px", lineHeight: 1 },
+                    })}
+                  </span>
+                  <span className={styles.columnsPanelLabel}>{entry.title}</span>
+                  {isContainer ? (
+                    <span className={styles.columnsPanelChevron}>
+                      <span className="material-symbols-outlined">chevron_right</span>
+                    </span>
+                  ) : (
+                    <span className={styles.columnsPanelMeta}>
+                      {formatRelativeTime(entry.updatedAt)}
+                    </span>
+                  )}
+                </button>
+              );
+            })
+          )}
         </div>
       </div>
 
-      {/* Panel 3: Preview / detail */}
       <div className={`${styles.columnsPanel} ${styles.columnsPanelPreview}`}>
         <div className={styles.columnsPanelHeader}>Preview</div>
         {columnsPreviewEntry ? (
@@ -829,23 +901,121 @@ function EmptyState() {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+function buildEntryIndex(entries: LibraryEntry[]) {
+  const index = new Map<string, LibraryEntry>();
+
+  const visit = (nodes: LibraryEntry[]) => {
+    for (const node of nodes) {
+      index.set(node.id, node);
+      if (node.children.length > 0) {
+        visit(node.children);
+      }
+    }
+  };
+
+  visit(entries);
+  return index;
+}
+
+function collectExpandableIds(entries: LibraryEntry[]): string[] {
+  return entries.flatMap((entry) =>
+    entry.children.length > 0
+      ? [entry.id, ...collectExpandableIds(entry.children)]
+      : []
+  );
+}
+
+function flattenContainerRows(
+  entries: LibraryEntry[],
+  depth = 0
+): ColumnsGroupRow[] {
+  return entries.flatMap((entry) => {
+    const childRows = flattenContainerRows(entry.children, depth + 1);
+
+    if (!isContainerEntry(entry)) {
+      return childRows;
+    }
+
+    return [{ id: entry.id, depth, entry }, ...childRows];
+  });
+}
+
 function filterEntries(entries: LibraryEntry[], filters: { activeTab: LibraryTabId; searchQuery: string; activeContentTypes: LibraryContentType[]; activeFlags: LibraryFlagFilterId[]; activeCategoryIds: string[]; activeTagIds: string[]; }) {
   const search = filters.searchQuery.trim().toLocaleLowerCase("tr");
-  return sortEntries(entries.map((entry) => filterEntryTree(entry, { ...filters, searchQuery: search })).filter((entry): entry is LibraryEntry => entry !== null), filters.activeTab);
+  const normalizedFilters = { ...filters, searchQuery: search };
+
+  return sortEntries(
+    entries
+      .map((entry) => filterEntryTree(entry, normalizedFilters))
+      .filter((entry): entry is LibraryEntry => entry !== null),
+    filters.activeTab
+  );
 }
 
 function filterEntryTree(entry: LibraryEntry, filters: { activeTab: LibraryTabId; searchQuery: string; activeContentTypes: LibraryContentType[]; activeFlags: LibraryFlagFilterId[]; activeCategoryIds: string[]; activeTagIds: string[]; }): LibraryEntry | null {
-  const filteredChildren = sortEntries(entry.children.map((child) => filterEntryTree(child, filters)).filter((child): child is LibraryEntry => child !== null), filters.activeTab);
-  const matchesSearch = filters.searchQuery.length === 0 || `${entry.title} ${entry.locationLabel} ${entry.kindLabel} ${entry.categoryName ?? ""} ${entry.tagNames.join(" ")}`.toLocaleLowerCase("tr").includes(filters.searchQuery);
-  if (!(matchesTabFilter(entry, filters.activeTab) && matchesSearch && matchesFacetFilters(entry, filters)) && filteredChildren.length === 0) return null;
-  return { ...entry, children: filteredChildren, hasChildren: filteredChildren.length > 0 || entry.hasChildren };
+  const filteredChildren = sortEntries(
+    entry.children
+      .map((child) => filterEntryTree(child, filters))
+      .filter((child): child is LibraryEntry => child !== null),
+    filters.activeTab
+  );
+  const matchesSearch =
+    filters.searchQuery.length === 0 ||
+    `${entry.title} ${entry.locationLabel} ${entry.kindLabel} ${
+      entry.categoryName ?? ""
+    } ${entry.tagNames.join(" ")}`
+      .toLocaleLowerCase("tr")
+      .includes(filters.searchQuery);
+
+  const matchesSelf =
+    matchesTabFilter(entry, filters.activeTab) &&
+    matchesSearch &&
+    matchesFacetFilters(entry, filters);
+  const keepFolderShell = shouldKeepFolderShell(entry, filters);
+
+  if (!matchesSelf && filteredChildren.length === 0 && !keepFolderShell) {
+    return null;
+  }
+
+  return {
+    ...entry,
+    children: filteredChildren,
+    hasChildren: filteredChildren.length > 0 || entry.hasChildren,
+  };
 }
 
 function flattenEntries(entries: LibraryEntry[], expandedIds: Set<string>, depth = 0): VisibleLibraryRow[] {
   return entries.flatMap((entry) => (entry.children.length === 0 || !expandedIds.has(entry.id)) ? [{ id: entry.id, depth, entry }] : [{ id: entry.id, depth, entry }, ...flattenEntries(entry.children, expandedIds, depth + 1)]);
 }
 
+function shouldKeepFolderShell(entry: LibraryEntry, filters: { activeContentTypes: LibraryContentType[]; activeFlags: LibraryFlagFilterId[]; searchQuery: string; }) {
+  if (entry.type !== "folder") {
+    return false;
+  }
+
+  if (filters.searchQuery.length > 0) {
+    return false;
+  }
+
+  if (filters.activeFlags.includes("root") && entry.parentId !== null) {
+    return false;
+  }
+
+  if (
+    filters.activeContentTypes.length > 0 &&
+    !filters.activeContentTypes.includes("folder")
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
 function matchesTabFilter(entry: LibraryEntry, activeTab: LibraryTabId) {
+  if (entry.type === "folder") {
+    return true;
+  }
+
   if (activeTab === "favorites") return entry.isFavorite;
   if (activeTab === "shared") return entry.isPublished;
   if (activeTab === "private") return entry.type === "note" && !entry.isPublished;
@@ -875,11 +1045,24 @@ function sortEntries(entries: LibraryEntry[], activeTab: LibraryTabId) {
       if (left.type === "note") return -1;
       if (right.type === "note") return 1;
     }
+
+    if (left.type === "folder" && right.type === "folder") {
+      return 0;
+    }
+
+    if (left.type === "smart_group" && right.type === "smart_group") {
+      return 0;
+    }
+
     if (left.type === "note" && right.type === "note") {
       if (left.isFavorite !== right.isFavorite) return left.isFavorite ? -1 : 1;
       return new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime();
     }
-    if (activeTab === "recents" || activeTab === "favorites") return new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime();
+
+    if (activeTab === "recents" || activeTab === "favorites") {
+      return new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime();
+    }
+
     return left.title.localeCompare(right.title, "tr");
   });
 }
@@ -909,6 +1092,10 @@ function formatVisibility(visibility: LibraryEntry["visibility"]) {
   if (visibility === "published") return "Published";
   if (visibility === "private") return "Private";
   return "Internal";
+}
+
+function isContainerEntry(entry: LibraryEntry) {
+  return entry.type === "folder" || entry.type === "smart_group";
 }
 
 function getDropFolderId(entry: LibraryEntry) {
