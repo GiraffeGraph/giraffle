@@ -190,7 +190,20 @@ async function runStepNode(state: OState): Promise<Partial<OState>> {
   const { sendToAgentInput, waitForIdleMarker, extractHandoffNote, captureTmuxPane } =
     await import("@/lib/ws-terminal-server");
 
-  await sendToAgentInput(agent.id, taskMessage);
+  const sent = await sendToAgentInput(agent.id, taskMessage);
+  if (!sent) {
+    const errorMsg = `Failed to send task to agent ${agent.label} (${agent.id}). Agent runtime or tmux session may not be initialized.`;
+    console.error(`[orchestrator] ${errorMsg}`);
+    await addAgentMessage({
+      sessionId,
+      role: "system",
+      content: errorMsg,
+      messageType: "error",
+    });
+    updatedPlan[currentStepIndex] = { ...step, status: "failed" };
+    await updateAgentSessionPlan(sessionId, updatedPlan);
+    return { plan: updatedPlan, phase: "failed", error: errorMsg };
+  }
 
   await addAgentMessage({
     sessionId,

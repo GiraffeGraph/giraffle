@@ -143,11 +143,11 @@
 .topbar-shell {
   display: flex;
   align-items: center;
-  gap: 12px;
-  min-height: 36px;
-  padding: 0 12px 0 16px;
+  gap: 10px;
+  min-height: 32px;
+  padding: 0 12px 0 14px;
   border-bottom: 1px solid var(--md-sys-color-outline-variant);
-  font-size: 12px;
+  font-size: 11px;
   color: var(--md-sys-color-on-surface-variant);
   flex-shrink: 0;
   position: sticky;
@@ -182,9 +182,9 @@
 .page-topbar-link {
   color: inherit;
   text-decoration: none;
-  padding: 2px 4px;
-  border-radius: 4px;
-  font-size: 12px;
+  padding: 1px 3px;
+  border-radius: 3px;
+  font-size: 11px;
   white-space: nowrap;
 }
 
@@ -198,6 +198,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   font-weight: 600;
+  font-size: 11px;
 }
 
 .page-topbar-meta {

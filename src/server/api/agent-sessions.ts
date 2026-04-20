@@ -55,16 +55,31 @@ export async function startAgentSessionAction(id: string) {
   const { hasAgentChannel, runAgentShell } = await import("@/lib/ws-terminal-server");
   const workingDirectory = sessionWithAgents.workingDirectory || "";
 
-  await Promise.allSettled(
+  const startResults = await Promise.allSettled(
     sessionWithAgents.agents.map(async ({ agent }) => {
       try {
-        if (hasAgentChannel(agent.id)) return;
+        if (hasAgentChannel(agent.id)) {
+          console.log(`[startAgentSessionAction] Agent ${agent.id} already has channel`);
+          return;
+        }
+        console.log(`[startAgentSessionAction] Starting agent ${agent.id} (${agent.label}) on machine ${agent.machine.id}`);
         await runAgentShell(agent.id, agent.machine.id, agent.agentCommand, workingDirectory);
-      } catch {
+        console.log(`[startAgentSessionAction] Agent ${agent.id} started successfully`);
+      } catch (err) {
+        const errMsg = err instanceof Error ? err.message : String(err);
+        console.error(`[startAgentSessionAction] Failed to start agent ${agent.id} (${agent.label}): ${errMsg}`);
         // Agent start failure is non-fatal — orchestrator handles errors
       }
     }),
   );
+
+  // Log results
+  startResults.forEach((result, idx) => {
+    const agent = sessionWithAgents.agents[idx];
+    if (result.status === "rejected") {
+      console.error(`[startAgentSessionAction] Start rejected for agent ${agent?.agent.id}: ${result.reason}`);
+    }
+  });
 
   const baseUrl = await getInternalBaseUrl();
   const cookieHeader = await serializeCookiesForInternalFetch();

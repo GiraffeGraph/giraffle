@@ -154,12 +154,20 @@ async function ensureTmuxRuntime(params: {
   const { agentId, machineId, command, workingDirectory, forceRestart = false } = params;
   const sessionName = tmuxSessionName(agentId);
 
-  await tmuxEnsureInstalled(machineId);
+  console.log(`[ensureTmuxRuntime] Starting for agent ${agentId} on machine ${machineId}, session: ${sessionName}`);
+
+  try {
+    await tmuxEnsureInstalled(machineId);
+  } catch (err) {
+    throw new Error(`tmux not installed on machine ${machineId}: ${err instanceof Error ? err.message : String(err)}`);
+  }
 
   const exists = await tmuxHasSession(machineId, sessionName);
+  console.log(`[ensureTmuxRuntime] Session ${sessionName} exists: ${exists}`);
 
   if (forceRestart && exists) {
     const { sshExec } = await import("@/lib/ssh-manager");
+    console.log(`[ensureTmuxRuntime] Killing existing session ${sessionName}`);
     await sshExec(machineId, `tmux kill-session -t ${shellQuote(sessionName)} 2>/dev/null || true`);
   }
 
@@ -168,6 +176,7 @@ async function ensureTmuxRuntime(params: {
   if (!existsAfterRestart) {
     const { sshExec } = await import("@/lib/ssh-manager");
 
+    console.log(`[ensureTmuxRuntime] Creating new tmux session ${sessionName}`);
     await sshExec(machineId, `tmux new-session -d -s ${shellQuote(sessionName)}`);
     await sshExec(machineId, `tmux set-option -t ${shellQuote(sessionName)} history-limit 200000`);
 
@@ -220,10 +229,13 @@ function bindChannelOutput(agentId: string, channel: ClientChannel): void {
 async function attachChannelToTmux(agentId: string, machineId: string, sessionName: string): Promise<ClientChannel> {
   const { sshOpenShell } = await import("@/lib/ssh-manager");
 
+  console.log(`[attachChannelToTmux] Attaching agent ${agentId} to tmux session ${sessionName} on machine ${machineId}`);
+
   // close previous attached channel only; tmux runtime remains alive.
   closeAgentChannel(agentId);
 
   const channel = await sshOpenShell(machineId);
+  console.log(`[attachChannelToTmux] SSH shell opened for agent ${agentId}`);
   bindChannelOutput(agentId, channel);
 
   const runtime = agentRuntimes.get(agentId) ?? {
@@ -427,9 +439,17 @@ export async function sendToAgentInput(agentId: string, text: string): Promise<b
   }
 
   const runtime = agentRuntimes.get(agentId);
-  if (runtime && (await tmuxHasSession(runtime.machineId, runtime.tmuxSession))) {
-    await tmuxSendLine(runtime.machineId, runtime.tmuxSession, text);
-    return true;
+  if (runtime) {
+    const hasSession = await tmuxHasSession(runtime.machineId, runtime.tmuxSession);
+    if (hasSession) {
+      try {
+        await tmuxSendLine(runtime.machineId, runtime.tmuxSession, text);
+        return true;
+      } catch (err) {
+        console.error(`[sendToAgentInput] tmuxSendLine failed for ${agentId}:`, err);
+        return false;
+      }
+    }
   }
 
   // fallback: discover runtime from DB and deterministic tmux session name
@@ -439,20 +459,31 @@ export async function sendToAgentInput(agentId: string, text: string): Promise<b
     select: { machineId: true },
   });
 
-  if (!agent) return false;
+  if (!agent) {
+    console.error(`[sendToAgentInput] Agent ${agentId} not found in DB`);
+    return false;
+  }
 
   const sessionName = tmuxSessionName(agentId);
   const exists = await tmuxHasSession(agent.machineId, sessionName);
-  if (!exists) return false;
+  if (!exists) {
+    console.error(`[sendToAgentInput] tmux session ${sessionName} not found on machine ${agent.machineId}`);
+    return false;
+  }
 
-  agentRuntimes.set(agentId, {
-    machineId: agent.machineId,
-    tmuxSession: sessionName,
-    channel: runtime?.channel ?? null,
-  });
+  try {
+    agentRuntimes.set(agentId, {
+      machineId: agent.machineId,
+      tmuxSession: sessionName,
+      channel: runtime?.channel ?? null,
+    });
 
-  await tmuxSendLine(agent.machineId, sessionName, text);
-  return true;
+    await tmuxSendLine(agent.machineId, sessionName, text);
+    return true;
+  } catch (err) {
+    console.error(`[sendToAgentInput] fallback tmuxSendLine failed for ${agentId}:`, err);
+    return false;
+  }
 }
 
 /**
@@ -523,6 +554,13 @@ export async function captureTmuxPane(agentId: string, lines = 50): Promise<stri
   return result?.stdout ?? "";
 }
 
+// Set of agentIds for which the orchestrator should skip waiting and treat as idle.
+const forceContinueAgents = new Set<string>();
+
+export function forceAgentContinue(agentId: string): void {
+  forceContinueAgents.add(agentId);
+}
+
 /**
  * Poll tmux capture-pane until the agent's idle marker appears on the last line.
  * Returns true when idle, false on timeout.
@@ -537,6 +575,11 @@ export async function waitForIdleMarker(
   let lastConfirmAt = 0;
 
   while (Date.now() < deadline) {
+    if (forceContinueAgents.has(agentId)) {
+      forceContinueAgents.delete(agentId);
+      return true;
+    }
+
     const pane = await captureTmuxPane(agentId, 15);
     const lines = pane.trim().split("\n");
     const lastLine = lines.at(-1) ?? "";

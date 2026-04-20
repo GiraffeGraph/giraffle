@@ -1,5 +1,4 @@
 import { notFound } from "next/navigation";
-import { PageTopbar } from "@/components/ui/PageTopbar";
 import { getAgentSessionById } from "@/domain/agents/agent-sessions.service";
 import { SessionDetailClient } from "@/components/agents/SessionDetailClient";
 
@@ -35,21 +34,14 @@ export default async function SessionPage({ params }: SessionPageProps) {
   };
 
   return (
-    <>
-      <PageTopbar
-        icon="hub"
-        label={session.label}
-        meta={<span className="agents-chip">{session.status}</span>}
-      />
-      <div className="agents-page app-page">
-        <div className="agents-page-inner" style={{ maxWidth: 1200, gap: 16 }}>
-          <SessionDetailClient
-            session={
-              serialized as unknown as Parameters<typeof SessionDetailClient>[0]["session"]
-            }
-          />
-        </div>
+    <div className="agents-page app-page">
+      <div className="agents-page-inner" style={{ maxWidth: 1200, gap: 16 }}>
+        <SessionDetailClient
+          session={
+            serialized as unknown as Parameters<typeof SessionDetailClient>[0]["session"]
+          }
+        />
       </div>
-    </>
+    </div>
   );
 }

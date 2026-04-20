@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { XTerminal } from "@/components/agents/XTerminal";
+import { TopbarShell } from "@/components/ui/TopbarShell";
 import {
   startAgentSessionAction,
   pauseAgentSessionAction,
@@ -87,6 +89,7 @@ export function SessionDetailClient({ session }: SessionDetailClientProps) {
   const [activeTab, setActiveTab] = useState<PanelTab>("messages");
   const [actionInProgress, setActionInProgress] = useState(false);
   const [liveSession, setLiveSession] = useState<Session>(session);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Terminal controls
   const [terminalEpoch, setTerminalEpoch] = useState<Record<string, number>>({});
@@ -112,6 +115,13 @@ export function SessionDetailClient({ session }: SessionDetailClientProps) {
 
     return () => clearInterval(interval);
   }, [liveSession.status, refreshSessionState]);
+
+  // Auto-scroll messages to bottom when new messages arrive
+  useEffect(() => {
+    if (activeTab === "messages") {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [liveSession.messages.length, activeTab]);
 
   const sessionStatus = STATUS_CONFIG[liveSession.status] ?? STATUS_CONFIG.pending;
 
@@ -151,145 +161,105 @@ export function SessionDetailClient({ session }: SessionDetailClientProps) {
     await clearAgentTerminalHistoryAction(agentId).catch(() => undefined);
   }
 
+  async function handleForceContinue() {
+    setActionInProgress(true);
+    try {
+      await fetch(`/api/agents/sessions/${liveSession.id}/force-continue`, { method: "POST" });
+    } finally {
+      setActionInProgress(false);
+    }
+  }
+
+  const lastLog = [...liveSession.messages]
+    .reverse()
+    .find((m) => m.messageType === "log" || m.messageType === "done" || m.messageType === "error");
+
+  const lastLogColor = lastLog
+    ? lastLog.messageType === "error"
+      ? "var(--agents-status-offline)"
+      : lastLog.messageType === "done"
+      ? "#5c8cff"
+      : "var(--agents-status-online)"
+    : undefined;
+
   return (
     <div className="session-detail">
-      {/* ── Header ────────────────────────────────────────────────────── */}
-      <div className="session-detail-header">
-        <div className="session-detail-title-row">
-          <div className="session-detail-title-group">
-            <h1 className="session-detail-title">{liveSession.label}</h1>
+      {/* ── Topbar ────────────────────────────────────────────────────── */}
+      <TopbarShell
+        left={
+          <>
+            <span className="material-symbols-outlined page-topbar-icon" aria-hidden="true">hub</span>
+            <Link href="/dashboard" className="page-topbar-link">Workspace</Link>
+            <span className="page-topbar-separator">/</span>
+            <Link href="/agents" className="page-topbar-link">Sessions</Link>
+            <span className="page-topbar-separator">/</span>
+            <span className="page-topbar-title">{liveSession.label}</span>
+            {liveSession.agents.length > 0 && (
+              <>
+                <span className="page-topbar-separator">/</span>
+                <span style={{ fontSize: "0.78rem", color: "var(--text-primary)" }}>
+                  {liveSession.agents.map((a) => a.agent.label).join(", ")}
+                </span>
+              </>
+            )}
             <span
               className="agents-status-badge"
-              style={{ "--badge-color": sessionStatus.color } as React.CSSProperties}
+              style={{ "--badge-color": sessionStatus.color, marginLeft: "auto" } as React.CSSProperties}
             >
-              <span className="material-symbols-outlined" style={{ fontSize: 14 }}>
-                {sessionStatus.icon}
-              </span>
+              <span className="material-symbols-outlined" style={{ fontSize: 13 }}>{sessionStatus.icon}</span>
               {sessionStatus.label}
             </span>
-          </div>
-          <div className="agents-row-actions">
-            {(liveSession.status === "pending" || liveSession.status === "failed") && (
-              <button
-                className="agents-btn agents-btn-primary"
-                onClick={handleStart}
-                disabled={actionInProgress}
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: 16 }}>
-                  play_arrow
+            {liveSession.workingDirectory && (
+              <span className="agents-chip" style={{ marginLeft: 4 }}>
+                <span className="material-symbols-outlined" style={{ fontSize: 13 }}>folder_open</span>
+                <span
+                  style={{ maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "inline-block", verticalAlign: "middle" }}
+                  title={liveSession.workingDirectory}
+                >
+                  {liveSession.workingDirectory}
                 </span>
-                Start
-              </button>
+              </span>
             )}
-            {liveSession.status === "running" && (
-              <button
-                className="agents-btn agents-btn-ghost"
-                onClick={handlePause}
-                disabled={actionInProgress}
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: 16 }}>
-                  pause
-                </span>
-                Pause
-              </button>
-            )}
-            <button
-              className="agents-icon-btn"
-              title="Back to sessions"
-              onClick={() => router.push("/agents")}
-            >
-              <span className="material-symbols-outlined" style={{ fontSize: 18 }}>
-                arrow_back
-              </span>
-            </button>
-          </div>
-        </div>
-
-        <p className="session-detail-goal">{liveSession.goal}</p>
-
-        <div className="session-detail-meta">
-          <span className="agents-chip">
-            <span className="material-symbols-outlined" style={{ fontSize: 13 }}>
-              smart_toy
-            </span>
-            {liveSession.agents.length} agent{liveSession.agents.length !== 1 ? "s" : ""}
-          </span>
-          {liveSession.workingDirectory && (
-            <span className="agents-chip">
-              <span className="material-symbols-outlined" style={{ fontSize: 13 }}>
-                folder_open
-              </span>
-              <span
-                style={{
-                  maxWidth: 240,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                  display: "inline-block",
-                  verticalAlign: "middle",
-                }}
-                title={liveSession.workingDirectory}
-              >
-                {liveSession.workingDirectory}
-              </span>
-            </span>
-          )}
-          {(() => {
-            const lastLog = [...liveSession.messages]
-              .reverse()
-              .find((m) => m.messageType === "log" || m.messageType === "done" || m.messageType === "error");
-            if (!lastLog) return null;
-            const phaseColor =
-              lastLog.messageType === "error"
-                ? "var(--agents-status-offline)"
-                : lastLog.messageType === "done"
-                ? "#5c8cff"
-                : "var(--agents-status-online)";
-            return (
-              <span className="agents-chip" style={{ color: phaseColor, maxWidth: 320 }}>
+            {lastLog && (
+              <span className="agents-chip" style={{ color: lastLogColor, maxWidth: 300, marginLeft: 4 }}>
                 <span className="material-symbols-outlined" style={{ fontSize: 13 }}>
                   {lastLog.messageType === "error" ? "error" : lastLog.messageType === "done" ? "check_circle" : "pending"}
                 </span>
                 <span
-                  style={{
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                    display: "inline-block",
-                    verticalAlign: "middle",
-                    maxWidth: 280,
-                  }}
+                  style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "inline-block", verticalAlign: "middle", maxWidth: 260 }}
                   title={lastLog.content}
                 >
-                  {lastLog.content.length > 60 ? lastLog.content.slice(0, 60) + "…" : lastLog.content}
+                  {lastLog.content.length > 55 ? lastLog.content.slice(0, 55) + "…" : lastLog.content}
                 </span>
               </span>
-            );
-          })()}
-          <span className="agents-chip">
-            <span className="material-symbols-outlined" style={{ fontSize: 13 }}>
-              schedule
-            </span>
-            <time suppressHydrationWarning dateTime={liveSession.createdAt}>
-              {new Date(liveSession.createdAt).toLocaleString()}
-            </time>
-          </span>
-          {liveSession.endedAt && (
-            <span className="agents-chip">
-              <span className="material-symbols-outlined" style={{ fontSize: 13 }}>
-                flag
-              </span>
-              Ended{" "}
-              <time suppressHydrationWarning dateTime={liveSession.endedAt}>
-                {new Date(liveSession.endedAt).toLocaleString()}
-              </time>
-            </span>
-          )}
-        </div>
-      </div>
+            )}
+          </>
+        }
+        right={
+          <div className="agents-row-actions">
+            {(liveSession.status === "pending" || liveSession.status === "failed") && (
+              <button className="agents-btn agents-btn-primary" onClick={handleStart} disabled={actionInProgress}>
+                <span className="material-symbols-outlined" style={{ fontSize: 16 }}>play_arrow</span>
+                Start
+              </button>
+            )}
+            {liveSession.status === "running" && (
+              <button className="agents-btn agents-btn-ghost" onClick={handlePause} disabled={actionInProgress}>
+                <span className="material-symbols-outlined" style={{ fontSize: 16 }}>pause</span>
+                Pause
+              </button>
+            )}
+            <button className="agents-icon-btn" title="Back to sessions" onClick={() => router.push("/agents")}>
+              <span className="material-symbols-outlined" style={{ fontSize: 18 }}>arrow_back</span>
+            </button>
+          </div>
+        }
+      />
 
-      {/* ── Agent status bar ──────────────────────────────────────────── */}
-      <div className="session-agent-bar">
+      {/* ── Thin tabs bar (sticky) ────────────────────────────────────── */}
+      <div className="session-tabs-bar">
+        {/* Agent status bar */}
+        <div className="session-agent-bar">
         {liveSession.agents.map(({ agent }) => (
           <div key={agent.id} className="session-agent-pill">
             <span className="material-symbols-outlined" style={{ fontSize: 14 }}>
@@ -319,8 +289,6 @@ export function SessionDetailClient({ session }: SessionDetailClientProps) {
         ))}
       </div>
 
-      {/* ── Main panel ────────────────────────────────────────────────── */}
-      <div className="session-main-panel">
         {/* Tab bar */}
         <div className="agents-tabs" role="tablist">
           <button
@@ -368,7 +336,10 @@ export function SessionDetailClient({ session }: SessionDetailClientProps) {
             </button>
           ))}
         </div>
+      </div>
 
+      {/* ── Main panel ────────────────────────────────────────────────── */}
+      <div className="session-main-panel">
         {/* Messages panel */}
         {activeTab === "messages" && (
           <div className="session-messages-panel">
@@ -381,7 +352,13 @@ export function SessionDetailClient({ session }: SessionDetailClientProps) {
               </div>
             ) : (
               <div className="session-messages-list">
-                {liveSession.messages.map((msg) => (
+                {liveSession.messages.map((msg, idx) => {
+                  const isLastMessage = idx === liveSession.messages.length - 1;
+                  const isWaiting =
+                    msg.messageType === "log" && msg.content.startsWith("Waiting for ");
+                  const showContinue =
+                    isWaiting && isLastMessage && liveSession.status === "running";
+                  return (
                   <div key={msg.id} className={`session-message session-message-${msg.role}`}>
                     <div className="session-message-header">
                       <span
@@ -414,10 +391,26 @@ export function SessionDetailClient({ session }: SessionDetailClientProps) {
                       >
                         {new Date(msg.createdAt).toLocaleTimeString()}
                       </time>
+                      {showContinue && (
+                        <button
+                          className="agents-btn agents-btn-primary"
+                          style={{ marginLeft: "auto", padding: "2px 10px", fontSize: "0.75rem" }}
+                          onClick={() => void handleForceContinue()}
+                          disabled={actionInProgress}
+                          title="Mark agent as idle and continue to the next step"
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: 14 }}>
+                            skip_next
+                          </span>
+                          Continue
+                        </button>
+                      )}
                     </div>
                     <pre className="session-message-content">{msg.content}</pre>
                   </div>
-                ))}
+                  );
+                })}
+                <div ref={messagesEndRef} />
               </div>
             )}
           </div>
