@@ -20,7 +20,7 @@ type Session = {
   label: string;
   goal: string;
   status: string;
-  supervisorModel: string;
+  workingDirectory: string;
   createdAt: Date;
   endedAt: Date | null;
   agents: { agent: AgentInSession }[];
@@ -37,7 +37,7 @@ interface SessionsManagerProps {
 interface CreateForm {
   label: string;
   goal: string;
-  supervisorModel: string;
+  workingDirectory: string;
   agentIds: string[];
 }
 
@@ -64,7 +64,7 @@ export function SessionsManager({ sessions, availableAgents }: SessionsManagerPr
   const [form, setForm] = useState<CreateForm>({
     label: "",
     goal: "",
-    supervisorModel: "claude-3-5-sonnet-20241022",
+    workingDirectory: "",
     agentIds: [],
   });
   const [submitting, setSubmitting] = useState(false);
@@ -87,14 +87,14 @@ export function SessionsManager({ sessions, availableAgents }: SessionsManagerPr
     e.preventDefault();
     setSubmitting(true);
     try {
-      await createAgentSessionAction(form);
-      setShowCreate(false);
-      setForm({
-        label: "",
-        goal: "",
-        supervisorModel: "claude-3-5-sonnet-20241022",
-        agentIds: [],
+      await createAgentSessionAction({
+        label: form.label,
+        goal: form.goal,
+        workingDirectory: form.workingDirectory,
+        agentIds: form.agentIds,
       });
+      setShowCreate(false);
+      setForm({ label: "", goal: "", workingDirectory: "", agentIds: [] });
       router.refresh();
     } finally {
       setSubmitting(false);
@@ -122,7 +122,7 @@ export function SessionsManager({ sessions, availableAgents }: SessionsManagerPr
       <div className="agents-section-header">
         <div>
           <h2 className="agents-section-title">Sessions</h2>
-          <p className="agents-section-desc">Orchestration runs managed by the LangGraph supervisor</p>
+          <p className="agents-section-desc">Orchestration runs — agents coordinate via LangGraph, each in its own terminal</p>
         </div>
         <button
           className="agents-btn agents-btn-primary"
@@ -190,6 +190,12 @@ export function SessionsManager({ sessions, availableAgents }: SessionsManagerPr
               </div>
               <p className="agents-session-goal">{s.goal}</p>
               <div className="agents-session-meta">
+                {s.workingDirectory && (
+                  <span className="agents-session-meta-item">
+                    <span className="material-symbols-outlined" style={{ fontSize: 13 }}>folder_open</span>
+                    <code style={{ fontSize: "0.78rem" }}>{s.workingDirectory}</code>
+                  </span>
+                )}
                 <span className="agents-session-meta-item">
                   <span className="material-symbols-outlined" style={{ fontSize: 13 }}>smart_toy</span>
                   {s.agents.map((a) => a.agent.label).join(", ") || "No agents"}
@@ -230,7 +236,7 @@ export function SessionsManager({ sessions, availableAgents }: SessionsManagerPr
                 <input
                   className="agents-input"
                   required
-                  placeholder="e.g. Build ToDo API"
+                  placeholder="e.g. Build Auth System"
                   value={form.label}
                   onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))}
                 />
@@ -241,18 +247,22 @@ export function SessionsManager({ sessions, availableAgents }: SessionsManagerPr
                   className="agents-input agents-textarea"
                   rows={4}
                   required
-                  placeholder="Describe the top-level task for the supervisor…"
+                  placeholder="Describe the top-level task. The orchestrator will plan which agent does what."
                   value={form.goal}
                   onChange={(e) => setForm((f) => ({ ...f, goal: e.target.value }))}
                 />
               </label>
               <label className="agents-label">
-                Supervisor Model
+                Working Directory
                 <input
-                  className="agents-input"
-                  value={form.supervisorModel}
-                  onChange={(e) => setForm((f) => ({ ...f, supervisorModel: e.target.value }))}
+                  className="agents-input agents-input-mono"
+                  placeholder="/var/www/my-project"
+                  value={form.workingDirectory}
+                  onChange={(e) => setForm((f) => ({ ...f, workingDirectory: e.target.value }))}
                 />
+                <span className="agents-label-hint">
+                  All agents will <code>cd</code> into this path before launching. Leave empty to use the agent&apos;s default directory.
+                </span>
               </label>
               <div className="agents-label">
                 Participating Agents
@@ -271,6 +281,9 @@ export function SessionsManager({ sessions, availableAgents }: SessionsManagerPr
                     </label>
                   ))}
                 </div>
+                <span className="agents-label-hint">
+                  The orchestrator plans the order. You can also set a manual plan from the session detail page.
+                </span>
               </div>
               <div className="agents-modal-actions">
                 <button

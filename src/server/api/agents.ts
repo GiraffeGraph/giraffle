@@ -23,8 +23,7 @@ export async function createAgentAction(input: {
   machineId: string;
   agentType: "pi" | "claude_code" | "aider" | "opencode" | "codex" | "custom";
   agentCommand: string;
-  systemPrompt?: string;
-  modelConfig?: Record<string, unknown>;
+  idleMarker?: string;
 }) {
   const agent = await createAgent(input);
   revalidatePath("/agents");
@@ -38,8 +37,7 @@ export async function updateAgentAction(
     machineId?: string;
     agentType?: "pi" | "claude_code" | "aider" | "opencode" | "codex" | "custom";
     agentCommand?: string;
-    systemPrompt?: string;
-    modelConfig?: Record<string, unknown>;
+    idleMarker?: string;
     status?: "idle" | "running" | "error" | "stopped";
   },
 ) {
@@ -59,13 +57,7 @@ export async function startAgentAction(id: string) {
 
   try {
     const { runAgentShell } = await import("@/lib/ws-terminal-server");
-
-    await runAgentShell(
-      id,
-      agent.machine.id,
-      agent.agentCommand,
-      agent.systemPrompt ?? undefined,
-    );
+    await runAgentShell(id, agent.machine.id, agent.agentCommand);
   } catch (err) {
     await setAgentStatus(id, "error");
     throw err;
@@ -95,12 +87,7 @@ export async function restartAgentShellAction(id: string) {
 
   try {
     const { runAgentShell } = await import("@/lib/ws-terminal-server");
-    await runAgentShell(
-      id,
-      agent.machine.id,
-      agent.agentCommand,
-      agent.systemPrompt ?? undefined,
-    );
+    await runAgentShell(id, agent.machine.id, agent.agentCommand);
   } catch (err) {
     await setAgentStatus(id, "error");
     throw err;

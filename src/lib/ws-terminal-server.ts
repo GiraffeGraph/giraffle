@@ -146,10 +146,10 @@ async function ensureTmuxRuntime(params: {
   agentId: string;
   machineId: string;
   command?: string;
-  systemPrompt?: string;
+  workingDirectory?: string;
   forceRestart?: boolean;
 }): Promise<AgentRuntime> {
-  const { agentId, machineId, command, systemPrompt, forceRestart = false } = params;
+  const { agentId, machineId, command, workingDirectory, forceRestart = false } = params;
   const sessionName = tmuxSessionName(agentId);
 
   await tmuxEnsureInstalled(machineId);
@@ -174,12 +174,12 @@ async function ensureTmuxRuntime(params: {
       `\r\n\u001b[90m[agent-start] tmux session: ${sessionName}\u001b[0m\r\n`,
     );
 
-    if (systemPrompt?.trim()) {
-      await tmuxSendLine(
-        machineId,
-        sessionName,
-        `export AGENT_SYSTEM_PROMPT=${JSON.stringify(systemPrompt)}`,
+    if (workingDirectory?.trim()) {
+      fanOutAgentOutput(
+        agentId,
+        `\r\n\u001b[90m[agent-start] cd ${workingDirectory}\u001b[0m\r\n`,
       );
+      await tmuxSendLine(machineId, sessionName, `cd ${shellQuote(workingDirectory)}`);
     }
 
     if (command?.trim()) {
@@ -329,7 +329,6 @@ export async function startWsTerminalServer(): Promise<void> {
           agentId,
           machineId: agent.machine.id,
           command: agent.agentCommand,
-          systemPrompt: agent.systemPrompt ?? undefined,
           forceRestart: false,
         }),
         15_000,
@@ -462,7 +461,7 @@ export async function runAgentShell(
   agentId: string,
   machineId: string,
   command: string,
-  systemPrompt?: string,
+  workingDirectory?: string,
 ) {
   clearAgentOutputBuffer(agentId);
 
@@ -470,7 +469,7 @@ export async function runAgentShell(
     agentId,
     machineId,
     command,
-    systemPrompt,
+    workingDirectory,
     forceRestart: true,
   });
 
@@ -503,6 +502,56 @@ export function closeAgentChannel(agentId: string): void {
   runtime.channel.end();
   runtime.channel = null;
   agentRuntimes.set(agentId, runtime);
+}
+
+/**
+ * Capture the current contents of the agent's tmux pane.
+ * Returns last `lines` lines of visible terminal output.
+ */
+export async function captureTmuxPane(agentId: string, lines = 50): Promise<string> {
+  const runtime = agentRuntimes.get(agentId);
+  if (!runtime) return "";
+
+  const { sshExec } = await import("@/lib/ssh-manager");
+  const result = await sshExec(
+    runtime.machineId,
+    `tmux capture-pane -p -t ${shellQuote(runtime.tmuxSession)} 2>/dev/null | tail -${lines}`,
+  ).catch(() => null);
+
+  return result?.stdout ?? "";
+}
+
+/**
+ * Poll tmux capture-pane until the agent's idle marker appears on the last line.
+ * Returns true when idle, false on timeout.
+ */
+export async function waitForIdleMarker(
+  agentId: string,
+  idleMarker: string,
+  timeoutMs: number,
+): Promise<boolean> {
+  const deadline = Date.now() + timeoutMs;
+  const marker = idleMarker.trim();
+
+  while (Date.now() < deadline) {
+    const pane = await captureTmuxPane(agentId, 10);
+    const lastLine = pane.trim().split("\n").at(-1) ?? "";
+
+    if (lastLine.includes(marker)) return true;
+
+    await sleep(1000);
+  }
+
+  return false;
+}
+
+/**
+ * Extract text between [HANDOFF_START] and [HANDOFF_END] tags from terminal pane.
+ */
+export async function extractHandoffNote(agentId: string): Promise<string> {
+  const pane = await captureTmuxPane(agentId, 200);
+  const match = pane.match(/\[HANDOFF_START\]([\s\S]*?)\[HANDOFF_END\]/);
+  return match?.[1]?.trim() ?? "";
 }
 
 /** Fully stop runtime: detach channel + kill tmux session. */

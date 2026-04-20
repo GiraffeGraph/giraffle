@@ -37,7 +37,8 @@ type Session = {
   label: string;
   goal: string;
   status: string;
-  supervisorModel: string;
+  workingDirectory: string;
+  plan: PlanStep[];
   createdAt: string;
   endedAt: string | null;
   agents: SessionAgent[];
@@ -71,7 +72,15 @@ const STATUS_CONFIG: Record<string, { color: string; icon: string; label: string
   failed: { color: "var(--agents-status-offline)", icon: "cancel", label: "Failed" },
 };
 
-type PanelTab = "messages" | string; // string = agent id
+type PanelTab = "messages" | "plan" | string; // string = agent id
+
+type PlanStep = {
+  agentId: string;
+  agentLabel: string;
+  task: string;
+  status: "pending" | "executing" | "done" | "failed";
+  handoffNote: string;
+};
 
 export function SessionDetailClient({ session }: SessionDetailClientProps) {
   const router = useRouter();
@@ -205,12 +214,58 @@ export function SessionDetailClient({ session }: SessionDetailClientProps) {
             </span>
             {liveSession.agents.length} agent{liveSession.agents.length !== 1 ? "s" : ""}
           </span>
-          <span className="agents-chip">
-            <span className="material-symbols-outlined" style={{ fontSize: 13 }}>
-              psychology
+          {liveSession.workingDirectory && (
+            <span className="agents-chip">
+              <span className="material-symbols-outlined" style={{ fontSize: 13 }}>
+                folder_open
+              </span>
+              <span
+                style={{
+                  maxWidth: 240,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                  display: "inline-block",
+                  verticalAlign: "middle",
+                }}
+                title={liveSession.workingDirectory}
+              >
+                {liveSession.workingDirectory}
+              </span>
             </span>
-            {liveSession.supervisorModel}
-          </span>
+          )}
+          {(() => {
+            const lastLog = [...liveSession.messages]
+              .reverse()
+              .find((m) => m.messageType === "log" || m.messageType === "done" || m.messageType === "error");
+            if (!lastLog) return null;
+            const phaseColor =
+              lastLog.messageType === "error"
+                ? "var(--agents-status-offline)"
+                : lastLog.messageType === "done"
+                ? "#5c8cff"
+                : "var(--agents-status-online)";
+            return (
+              <span className="agents-chip" style={{ color: phaseColor, maxWidth: 320 }}>
+                <span className="material-symbols-outlined" style={{ fontSize: 13 }}>
+                  {lastLog.messageType === "error" ? "error" : lastLog.messageType === "done" ? "check_circle" : "pending"}
+                </span>
+                <span
+                  style={{
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                    display: "inline-block",
+                    verticalAlign: "middle",
+                    maxWidth: 280,
+                  }}
+                  title={lastLog.content}
+                >
+                  {lastLog.content.length > 60 ? lastLog.content.slice(0, 60) + "…" : lastLog.content}
+                </span>
+              </span>
+            );
+          })()}
           <span className="agents-chip">
             <span className="material-symbols-outlined" style={{ fontSize: 13 }}>
               schedule
@@ -283,6 +338,21 @@ export function SessionDetailClient({ session }: SessionDetailClientProps) {
             )}
           </button>
 
+          <button
+            role="tab"
+            aria-selected={activeTab === "plan"}
+            className={`agents-tab ${activeTab === "plan" ? "active" : ""}`}
+            onClick={() => setActiveTab("plan")}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: 16 }}>
+              account_tree
+            </span>
+            Plan
+            {liveSession.plan.length > 0 && (
+              <span className="agents-tab-count">{liveSession.plan.length}</span>
+            )}
+          </button>
+
           {liveSession.agents.map(({ agent }) => (
             <button
               key={agent.id}
@@ -348,6 +418,73 @@ export function SessionDetailClient({ session }: SessionDetailClientProps) {
                     <pre className="session-message-content">{msg.content}</pre>
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Plan panel */}
+        {activeTab === "plan" && (
+          <div className="session-messages-panel">
+            {liveSession.plan.length === 0 ? (
+              <div className="agents-empty">
+                <span className="material-symbols-outlined agents-empty-icon">account_tree</span>
+                <p>No plan yet. Start the session to let the orchestrator generate a plan.</p>
+              </div>
+            ) : (
+              <div className="agents-table-wrap" style={{ padding: "1rem" }}>
+                <table className="agents-table">
+                  <thead>
+                    <tr>
+                      <th style={{ width: 48 }}>Step</th>
+                      <th>Agent</th>
+                      <th>Task</th>
+                      <th style={{ width: 100 }}>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {liveSession.plan.map((step, i) => {
+                      const statusColor =
+                        step.status === "done"
+                          ? "#5c8cff"
+                          : step.status === "executing"
+                          ? "#e1a63e"
+                          : step.status === "failed"
+                          ? "var(--agents-status-offline)"
+                          : "var(--agents-status-unknown)";
+                      const statusIcon =
+                        step.status === "done"
+                          ? "check_circle"
+                          : step.status === "executing"
+                          ? "pending"
+                          : step.status === "failed"
+                          ? "cancel"
+                          : "radio_button_unchecked";
+                      return (
+                        <tr key={i}>
+                          <td style={{ textAlign: "center", color: "var(--agents-muted)", fontSize: "0.85rem" }}>
+                            {i + 1}
+                          </td>
+                          <td>
+                            <span className="agents-chip agents-chip-accent">{step.agentLabel}</span>
+                          </td>
+                          <td style={{ fontSize: "0.85rem" }}>{step.task}</td>
+                          <td>
+                            <span
+                              className="agents-status-badge"
+                              style={{ "--badge-color": statusColor } as React.CSSProperties}
+                            >
+                              <span className="material-symbols-outlined" style={{ fontSize: 13 }}>
+                                {statusIcon}
+                              </span>
+                              {step.status}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>

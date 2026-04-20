@@ -451,8 +451,7 @@ model Agent {
   machine       Machine   @relation(fields: [machineId], references: [id], onDelete: Cascade)
   agentType     String    @default("custom") // 'pi' | 'claude_code' | 'custom'
   agentCommand  String
-  systemPrompt  String    @default("")
-  modelConfig   Json      @default("{}")
+  idleMarker    String    @default("> ")     // terminal prompt that signals agent is idle
   status        String    @default("idle")  // 'idle' | 'running' | 'error' | 'stopped'
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -471,7 +470,9 @@ model AgentSession {
   label                  String
   goal                   String
   status                 String    @default("pending") // 'pending' | 'running' | 'completed' | 'failed'
-  supervisorModel        String    @default("claude-3-5-sonnet-20241022")
+  supervisorModel        String    @default("gpt-4o")
+  workingDirectory       String    @default("")         // project path all agents cd into
+  plan                   Json      @default("[]")       // PlanStep[] set by orchestrator
   createdAt              DateTime  @default(now())
   endedAt                DateTime?
   updatedAt              DateTime  @updatedAt

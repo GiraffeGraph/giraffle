@@ -34,8 +34,7 @@ type Agent = {
   label: string;
   agentType: string;
   agentCommand: string;
-  systemPrompt: string;
-  modelConfig: unknown;
+  idleMarker: string;
   status: string;
   createdAt: string;
   machine: AgentMachine;
@@ -49,7 +48,7 @@ type Session = {
   label: string;
   goal: string;
   status: string;
-  supervisorModel: string;
+  workingDirectory: string;
   createdAt: string;
   endedAt: string | null;
   agents: SessionAgentEntry[];

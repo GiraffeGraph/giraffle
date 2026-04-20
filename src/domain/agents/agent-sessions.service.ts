@@ -4,6 +4,7 @@ export interface CreateAgentSessionInput {
   label: string;
   goal: string;
   supervisorModel?: string;
+  workingDirectory?: string;
   agentIds: string[];
 }
 
@@ -63,7 +64,8 @@ export async function createAgentSession(input: CreateAgentSessionInput) {
     data: {
       label: input.label,
       goal: input.goal,
-      supervisorModel: input.supervisorModel ?? "claude-3-5-sonnet-20241022",
+      supervisorModel: input.supervisorModel ?? process.env.ORCHESTRATOR_MODEL ?? "gpt-4o",
+      workingDirectory: input.workingDirectory ?? "",
       status: "pending",
       agents: {
         create: input.agentIds.map((agentId) => ({ agentId })),
@@ -82,6 +84,13 @@ export async function updateAgentSessionStatus(
       status,
       ...(["completed", "failed"].includes(status) && { endedAt: new Date() }),
     },
+  });
+}
+
+export async function updateAgentSessionPlan(id: string, plan: unknown[]) {
+  return db.agentSession.update({
+    where: { id },
+    data: { plan: plan as object[] },
   });
 }
 

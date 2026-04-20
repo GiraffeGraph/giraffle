@@ -5,8 +5,7 @@ export interface CreateAgentInput {
   machineId: string;
   agentType: "pi" | "claude_code" | "aider" | "opencode" | "codex" | "custom";
   agentCommand: string;
-  systemPrompt?: string;
-  modelConfig?: Record<string, unknown>;
+  idleMarker?: string;
 }
 
 export interface UpdateAgentInput {
@@ -14,8 +13,7 @@ export interface UpdateAgentInput {
   machineId?: string;
   agentType?: "pi" | "claude_code" | "aider" | "opencode" | "codex" | "custom";
   agentCommand?: string;
-  systemPrompt?: string;
-  modelConfig?: Record<string, unknown>;
+  idleMarker?: string;
   status?: "idle" | "running" | "error" | "stopped";
 }
 
@@ -45,8 +43,7 @@ export async function createAgent(input: CreateAgentInput) {
       machineId: input.machineId,
       agentType: input.agentType,
       agentCommand: input.agentCommand,
-      systemPrompt: input.systemPrompt ?? "",
-      modelConfig: (input.modelConfig ?? {}) as object,
+      idleMarker: input.idleMarker ?? "> ",
       status: "idle",
     },
   });
@@ -59,15 +56,8 @@ export async function updateAgent(id: string, input: UpdateAgentInput) {
       ...(input.label !== undefined && { label: input.label }),
       ...(input.machineId !== undefined && { machineId: input.machineId }),
       ...(input.agentType !== undefined && { agentType: input.agentType }),
-      ...(input.agentCommand !== undefined && {
-        agentCommand: input.agentCommand,
-      }),
-      ...(input.systemPrompt !== undefined && {
-        systemPrompt: input.systemPrompt,
-      }),
-      ...(input.modelConfig !== undefined && {
-        modelConfig: input.modelConfig as object,
-      }),
+      ...(input.agentCommand !== undefined && { agentCommand: input.agentCommand }),
+      ...(input.idleMarker !== undefined && { idleMarker: input.idleMarker }),
       ...(input.status !== undefined && { status: input.status }),
     },
   });

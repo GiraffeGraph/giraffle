@@ -45,7 +45,7 @@ export default async function SessionPage({ params }: SessionPageProps) {
         <div className="agents-page-inner" style={{ maxWidth: 1200, gap: 16 }}>
           <SessionDetailClient
             session={
-              serialized as Parameters<typeof SessionDetailClient>[0]["session"]
+              serialized as unknown as Parameters<typeof SessionDetailClient>[0]["session"]
             }
           />
         </div>

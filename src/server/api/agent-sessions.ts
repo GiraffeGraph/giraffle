@@ -21,7 +21,7 @@ export async function getAgentSessionByIdAction(id: string) {
 export async function createAgentSessionAction(input: {
   label: string;
   goal: string;
-  supervisorModel?: string;
+  workingDirectory?: string;
   agentIds: string[];
 }) {
   const session = await createAgentSession(input);
@@ -45,7 +45,6 @@ async function getInternalBaseUrl(): Promise<string> {
 }
 
 export async function startAgentSessionAction(id: string) {
-  // 1. Start all agents in the session on their machines
   const sessionWithAgents = await getAgentSessionById(id);
   if (!sessionWithAgents) throw new Error("Session not found");
 
@@ -54,43 +53,19 @@ export async function startAgentSessionAction(id: string) {
   }
 
   const { hasAgentChannel, runAgentShell } = await import("@/lib/ws-terminal-server");
+  const workingDirectory = sessionWithAgents.workingDirectory || "";
 
-  const manualLoginAgentTypes = new Set(["pi", "codex", "claude_code", "opencode"]);
-  const missingLoginAgents = sessionWithAgents.agents
-    .map(({ agent }) => agent)
-    .filter((agent) => manualLoginAgentTypes.has(agent.agentType) && !hasAgentChannel(agent.id));
-
-  // In dev/runtime edge cases, channel maps can be empty even when user was logged in.
-  // We warn and attempt to re-bootstrap shells below.
-  if (missingLoginAgents.length > 0) {
-    console.warn(
-      "[agents] No live shell detected at session start; re-bootstrapping:",
-      missingLoginAgents.map((a) => a.label).join(", "),
-    );
-  }
-
-  // Ensure each agent has a shell. If a shell is missing, bootstrap it.
-  // Most CLI tools cache login locally, so re-launch is typically safe.
   await Promise.allSettled(
     sessionWithAgents.agents.map(async ({ agent }) => {
       try {
-        if (hasAgentChannel(agent.id)) {
-          return; // keep existing shell
-        }
-
-        await runAgentShell(
-          agent.id,
-          agent.machine.id,
-          agent.agentCommand,
-          agent.systemPrompt ?? undefined,
-        );
+        if (hasAgentChannel(agent.id)) return;
+        await runAgentShell(agent.id, agent.machine.id, agent.agentCommand, workingDirectory);
       } catch {
-        // Agent start failure is non-fatal — supervisor will handle errors
+        // Agent start failure is non-fatal — orchestrator handles errors
       }
     }),
   );
 
-  // 2. Start supervisor loop via internal API route (authenticated with current session cookies)
   const baseUrl = await getInternalBaseUrl();
   const cookieHeader = await serializeCookiesForInternalFetch();
 
@@ -105,10 +80,9 @@ export async function startAgentSessionAction(id: string) {
 
   if (!res.ok) {
     const body = await res.text().catch(() => "");
-    throw new Error(`Could not start supervisor (${res.status}): ${body || "Unknown error"}`);
+    throw new Error(`Could not start orchestrator (${res.status}): ${body || "Unknown error"}`);
   }
 
-  // Supervisor will mark status=running itself.
   const session = await getAgentSessionById(id);
   revalidatePath("/agents/sessions");
   revalidatePath(`/agents/sessions/${id}`);
@@ -116,7 +90,6 @@ export async function startAgentSessionAction(id: string) {
 }
 
 export async function pauseAgentSessionAction(id: string) {
-  // Abort the running supervisor loop
   const baseUrl = await getInternalBaseUrl();
   const cookieHeader = await serializeCookiesForInternalFetch();
 

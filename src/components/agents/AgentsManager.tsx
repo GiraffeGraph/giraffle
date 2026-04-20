@@ -15,7 +15,6 @@ import {
   updateAgentAction,
 } from "@/server/api/agents";
 
-// Lazy-load the terminal so it doesn't bloat the initial bundle
 const XTerminal = dynamic(
   () => import("@/components/agents/XTerminal").then((m) => ({ default: m.XTerminal })),
   { ssr: false, loading: () => <div className="xterm-loading">Loading terminal…</div> },
@@ -28,8 +27,7 @@ type Agent = {
   label: string;
   agentType: AgentType | string;
   agentCommand: string;
-  systemPrompt: string;
-  modelConfig: unknown;
+  idleMarker: string;
   status: string;
   createdAt: Date;
   machine: Machine;
@@ -40,7 +38,7 @@ interface AgentsManagerProps {
   machines: Machine[];
 }
 
-type ModalMode = "add" | "edit" | "prompt";
+type ModalMode = "add" | "edit";
 
 type AgentType = "pi" | "claude_code" | "aider" | "opencode" | "codex" | "custom";
 
@@ -49,40 +47,40 @@ interface FormState {
   machineId: string;
   agentType: AgentType;
   agentCommand: string;
-  modelName: string;
+  idleMarker: string;
 }
 
-/** Preset configs for known CLI coding agents. */
-const AGENT_PRESETS: Record<AgentType, { command: string; model: string; hint: string }> = {
+/** Preset idle markers and commands for known CLI coding agents. */
+const AGENT_PRESETS: Record<AgentType, { command: string; idleMarker: string; hint: string }> = {
   claude_code: {
     command: "claude",
-    model: "claude-sonnet-4-5",
-    hint: "Uses ANTHROPIC_API_KEY env var. Model set via Claude Code's own config.",
+    idleMarker: "> ",
+    hint: "Configure model and settings inside Claude Code itself (claude config). Giraffle only sends tasks to its terminal.",
   },
   pi: {
     command: "pi",
-    model: "gpt-4o",
-    hint: "Uses OPENAI_API_KEY. Model passed via pi's own config or flags.",
+    idleMarker: "> ",
+    hint: "Configure model inside pi's own settings.",
   },
   aider: {
     command: "aider --no-auto-commits",
-    model: "gpt-4o",
-    hint: "Model can be set via --model flag. Uses OPENAI_API_KEY or ANTHROPIC_API_KEY.",
+    idleMarker: "> ",
+    hint: "Configure model via aider's own flags or .aider.conf.yml. Giraffle just sends prompts.",
   },
   opencode: {
     command: "opencode",
-    model: "claude-sonnet-4-5",
-    hint: "OpenCode CLI agent. Uses its own API key config.",
+    idleMarker: "> ",
+    hint: "Configure via OpenCode's own settings.",
   },
   codex: {
     command: "codex",
-    model: "o4-mini",
-    hint: "OpenAI Codex CLI. Uses OPENAI_API_KEY.",
+    idleMarker: "> ",
+    hint: "Configure via Codex CLI settings. Uses OPENAI_API_KEY.",
   },
   custom: {
     command: "",
-    model: "",
-    hint: "Enter any CLI command that starts an interactive AI coding agent.",
+    idleMarker: "$ ",
+    hint: "Any interactive CLI tool. Set the idle marker to whatever prompt it shows when ready.",
   },
 };
 
@@ -91,7 +89,7 @@ const DEFAULT_FORM: FormState = {
   machineId: "",
   agentType: "claude_code",
   agentCommand: AGENT_PRESETS.claude_code.command,
-  modelName: AGENT_PRESETS.claude_code.model,
+  idleMarker: AGENT_PRESETS.claude_code.idleMarker,
 };
 
 const STATUS_MAP: Record<string, { label: string; icon: string; color: string }> = {
@@ -124,11 +122,9 @@ export function AgentsManager({ agents, machines }: AgentsManagerProps) {
   const router = useRouter();
   const [modal, setModal] = useState<{ mode: ModalMode; agent?: Agent } | null>(null);
   const [form, setForm] = useState<FormState>(DEFAULT_FORM);
-  const [promptDraft, setPromptDraft] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [toggling, setToggling] = useState<string | null>(null);
 
-  // Inline terminal panel — which agent is expanded
   const [terminalAgentId, setTerminalAgentId] = useState<string | null>(null);
   const [terminalEpoch, setTerminalEpoch] = useState<Record<string, number>>({});
   const [clearSignals, setClearSignals] = useState<Record<string, number>>({});
@@ -139,7 +135,7 @@ export function AgentsManager({ agents, machines }: AgentsManagerProps) {
       ...DEFAULT_FORM,
       machineId: machines[0]?.id ?? "",
       agentCommand: preset.command,
-      modelName: preset.model,
+      idleMarker: preset.idleMarker,
     });
     setModal({ mode: "add" });
   }
@@ -153,7 +149,7 @@ export function AgentsManager({ agents, machines }: AgentsManagerProps) {
       machineId: agent.machine.id,
       agentType: mappedType,
       agentCommand: agent.agentCommand,
-      modelName: (agent.modelConfig as Record<string, string> | null)?.model ?? "",
+      idleMarker: agent.idleMarker,
     });
     setModal({ mode: "edit", agent });
   }
@@ -163,15 +159,9 @@ export function AgentsManager({ agents, machines }: AgentsManagerProps) {
     setForm((f) => ({
       ...f,
       agentType: type,
-      // Only auto-fill command/model if user hasn't already customized them
       agentCommand: preset.command,
-      modelName: preset.model,
+      idleMarker: preset.idleMarker,
     }));
-  }
-
-  function openPrompt(agent: Agent) {
-    setPromptDraft(agent.systemPrompt);
-    setModal({ mode: "prompt", agent });
   }
 
   function closeModal() {
@@ -205,7 +195,7 @@ export function AgentsManager({ agents, machines }: AgentsManagerProps) {
           machineId: form.machineId,
           agentType: form.agentType,
           agentCommand: form.agentCommand,
-          modelConfig: { model: form.modelName },
+          idleMarker: form.idleMarker,
         });
       } else if (modal?.mode === "edit" && modal.agent) {
         await updateAgentAction(modal.agent.id, {
@@ -213,10 +203,8 @@ export function AgentsManager({ agents, machines }: AgentsManagerProps) {
           machineId: form.machineId,
           agentType: form.agentType,
           agentCommand: form.agentCommand,
-          modelConfig: { model: form.modelName },
+          idleMarker: form.idleMarker,
         });
-      } else if (modal?.mode === "prompt" && modal.agent) {
-        await updateAgentAction(modal.agent.id, { systemPrompt: promptDraft });
       }
       setModal(null);
       router.refresh();
@@ -232,7 +220,6 @@ export function AgentsManager({ agents, machines }: AgentsManagerProps) {
         await stopAgentAction(agent.id);
       } else {
         await startAgentAction(agent.id);
-        // Auto-open terminal when starting
         setTerminalAgentId(agent.id);
       }
       router.refresh();
@@ -253,7 +240,7 @@ export function AgentsManager({ agents, machines }: AgentsManagerProps) {
       <div className="agents-section-header">
         <div>
           <h2 className="agents-section-title">Agents</h2>
-          <p className="agents-section-desc">CLI-based AI coding agents running on machines</p>
+          <p className="agents-section-desc">CLI coding tools running on machines — model and settings configured inside each tool</p>
         </div>
         <button
           className="agents-btn agents-btn-primary"
@@ -284,6 +271,7 @@ export function AgentsManager({ agents, machines }: AgentsManagerProps) {
                 <th>Machine</th>
                 <th>Type</th>
                 <th>Command</th>
+                <th>Idle Marker</th>
                 <th>Status</th>
                 <th></th>
               </tr>
@@ -302,10 +290,12 @@ export function AgentsManager({ agents, machines }: AgentsManagerProps) {
                       </span>
                     </td>
                     <td className="agents-table-mono agents-table-truncate">{a.agentCommand}</td>
+                    <td className="agents-table-mono" style={{ color: "var(--agents-muted)", fontSize: "0.78rem" }}>
+                      {JSON.stringify(a.idleMarker)}
+                    </td>
                     <td><AgentStatusBadge status={a.status} /></td>
                     <td>
                       <div className="agents-row-actions">
-                        {/* ── Start / Stop ─────────────────── */}
                         <button
                           className={`agents-icon-btn ${a.status === "running" ? "agents-icon-btn-active" : ""}`}
                           title={a.status === "running" ? "Stop agent" : "Start agent"}
@@ -321,7 +311,6 @@ export function AgentsManager({ agents, machines }: AgentsManagerProps) {
                           </span>
                         </button>
 
-                        {/* ── Terminal toggle ───────────────── */}
                         <button
                           className={`agents-icon-btn ${terminalAgentId === a.id ? "agents-icon-btn-active" : ""}`}
                           title={terminalAgentId === a.id ? "Close terminal" : "Open terminal"}
@@ -332,16 +321,6 @@ export function AgentsManager({ agents, machines }: AgentsManagerProps) {
                           </span>
                         </button>
 
-                        {/* ── System Prompt ─────────────────── */}
-                        <button
-                          className="agents-icon-btn"
-                          title="Edit system prompt"
-                          onClick={() => openPrompt(a)}
-                        >
-                          <span className="material-symbols-outlined" style={{ fontSize: 16 }}>psychology</span>
-                        </button>
-
-                        {/* ── Edit ─────────────────────────── */}
                         <button
                           className="agents-icon-btn"
                           title="Edit"
@@ -350,7 +329,6 @@ export function AgentsManager({ agents, machines }: AgentsManagerProps) {
                           <span className="material-symbols-outlined" style={{ fontSize: 16 }}>edit</span>
                         </button>
 
-                        {/* ── Delete ───────────────────────── */}
                         <button
                           className="agents-icon-btn agents-icon-btn-danger"
                           title="Delete"
@@ -362,10 +340,9 @@ export function AgentsManager({ agents, machines }: AgentsManagerProps) {
                     </td>
                   </tr>
 
-                  {/* ── Inline terminal panel ─────────────────────────── */}
                   {terminalAgentId === a.id && (
                     <tr key={`terminal-${a.id}`} className="agents-terminal-row">
-                      <td colSpan={6} style={{ padding: 0 }}>
+                      <td colSpan={7} style={{ padding: 0 }}>
                         <div className="agents-inline-terminal">
                           <div className="agents-inline-terminal-bar">
                             <span className="material-symbols-outlined" style={{ fontSize: 14 }}>dns</span>
@@ -417,7 +394,7 @@ export function AgentsManager({ agents, machines }: AgentsManagerProps) {
       )}
 
       {/* ── Add / Edit Modal ──────────────────────────────────────────── */}
-      {modal && modal.mode !== "prompt" && (
+      {modal && (
         <div className="agents-modal-backdrop" onClick={closeModal} role="presentation">
           <div
             className="agents-modal"
@@ -437,7 +414,7 @@ export function AgentsManager({ agents, machines }: AgentsManagerProps) {
                 <input
                   className="agents-input"
                   required
-                  placeholder="e.g. Architect Agent"
+                  placeholder="e.g. Reviewer Agent"
                   value={form.label}
                   onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))}
                 />
@@ -465,7 +442,7 @@ export function AgentsManager({ agents, machines }: AgentsManagerProps) {
                   value={form.agentType}
                   onChange={(e) => handleAgentTypeChange(e.target.value as AgentType)}
                 >
-                  <option value="claude_code">Claude Code — claude</option>
+                  <option value="claude_code">Claude Code</option>
                   <option value="pi">pi</option>
                   <option value="aider">Aider</option>
                   <option value="opencode">OpenCode</option>
@@ -477,7 +454,7 @@ export function AgentsManager({ agents, machines }: AgentsManagerProps) {
                 </span>
               </label>
               <label className="agents-label">
-                Agent Command
+                Launch Command
                 <input
                   className="agents-input agents-input-mono"
                   required
@@ -486,21 +463,21 @@ export function AgentsManager({ agents, machines }: AgentsManagerProps) {
                   onChange={(e) => setForm((f) => ({ ...f, agentCommand: e.target.value }))}
                 />
                 <span className="agents-label-hint">
-                  The CLI command that launches the agent on the remote machine.
-                  You can add extra flags here (e.g. <code>claude --model claude-opus-4-5</code>).
+                  Shell command that launches the agent. Add flags here if needed (e.g. <code>aider --model gpt-4o</code>).
+                  Model and system prompt are set inside the tool itself.
                 </span>
               </label>
               <label className="agents-label">
-                Model (metadata)
+                Idle Marker
                 <input
-                  className="agents-input"
-                  placeholder="claude-sonnet-4-5"
-                  value={form.modelName}
-                  onChange={(e) => setForm((f) => ({ ...f, modelName: e.target.value }))}
+                  className="agents-input agents-input-mono"
+                  required
+                  placeholder="> "
+                  value={form.idleMarker}
+                  onChange={(e) => setForm((f) => ({ ...f, idleMarker: e.target.value }))}
                 />
                 <span className="agents-label-hint">
-                  For reference only — the actual model is configured by the CLI tool via its own env vars / flags.
-                  This value is stored and shown in the supervisor context.
+                  The terminal prompt the tool shows when it&apos;s done and waiting. The orchestrator watches for this string to know the agent has finished its task.
                 </span>
               </label>
               <div className="agents-modal-actions">
@@ -514,47 +491,6 @@ export function AgentsManager({ agents, machines }: AgentsManagerProps) {
                 </button>
                 <button type="submit" className="agents-btn agents-btn-primary" disabled={submitting}>
                   {submitting ? "Saving…" : modal.mode === "add" ? "Add Agent" : "Save"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ── System Prompt Modal ───────────────────────────────────────── */}
-      {modal?.mode === "prompt" && modal.agent && (
-        <div className="agents-modal-backdrop" onClick={closeModal} role="presentation">
-          <div
-            className="agents-modal agents-modal-wide"
-            onClick={(e) => e.stopPropagation()}
-            role="dialog"
-            aria-modal="true"
-          >
-            <div className="agents-modal-header">
-              <h3>System Prompt — {modal.agent.label}</h3>
-              <button className="agents-modal-close" onClick={closeModal} disabled={submitting}>
-                <span className="material-symbols-outlined">close</span>
-              </button>
-            </div>
-            <form className="agents-modal-body" onSubmit={handleSubmit}>
-              <textarea
-                className="agents-input agents-textarea agents-prompt-editor"
-                rows={18}
-                value={promptDraft}
-                onChange={(e) => setPromptDraft(e.target.value)}
-                placeholder="Inject orchestration context and role description here…"
-              />
-              <div className="agents-modal-actions">
-                <button
-                  type="button"
-                  className="agents-btn agents-btn-ghost"
-                  onClick={closeModal}
-                  disabled={submitting}
-                >
-                  Cancel
-                </button>
-                <button type="submit" className="agents-btn agents-btn-primary" disabled={submitting}>
-                  {submitting ? "Saving…" : "Save Prompt"}
                 </button>
               </div>
             </form>

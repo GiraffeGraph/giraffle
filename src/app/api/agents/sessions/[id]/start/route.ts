@@ -52,13 +52,13 @@ export async function POST(
   const controller = new AbortController();
   supervisorAbortControllers.set(sessionId, controller);
 
-  // Fire-and-forget: run supervisor in background
+  // Fire-and-forget: run orchestrator in background
   void (async () => {
     try {
-      const { runSupervisor } = await import("@/lib/supervisor");
-      await runSupervisor({ sessionId, signal: controller.signal });
+      const { runOrchestrator } = await import("@/lib/orchestrator");
+      await runOrchestrator({ sessionId, signal: controller.signal });
     } catch (err) {
-      console.error(`[supervisor] Session ${sessionId} crashed:`, err);
+      console.error(`[orchestrator] Session ${sessionId} crashed:`, err);
     } finally {
       supervisorAbortControllers.delete(sessionId);
     }
