@@ -99,13 +99,14 @@ ${agentDescriptions}
 Return a JSON array of steps. Each step:
 { "agentId": "<id>", "agentLabel": "<label>", "task": "<clear task description>" }
 
-Return ONLY valid JSON array, no markdown, no commentary.`,
+Return ONLY a raw JSON array. No markdown fences, no backticks, no commentary. Start your response with [ and end with ].`,
     temperature: 0.1,
   });
 
   let plan: PlanStep[] = [];
   try {
-    const parsed = JSON.parse(text.trim()) as Array<{
+    const cleaned = text.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+    const parsed = JSON.parse(cleaned) as Array<{
       agentId: string;
       agentLabel: string;
       task: string;
