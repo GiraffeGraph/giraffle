@@ -1,9 +1,12 @@
 "use client";
 
+import { combine } from "@atlaskit/pragmatic-drag-and-drop/combine";
+import { dropTargetForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PageTopbar } from "@/components/ui/PageTopbar";
+import { isSidebarNoteDragData } from "@/components/sidebar/sidebar.types";
 import { saveSavannaStateAction } from "@/server/api/savanna";
 import type { AppState, ExcalidrawImperativeAPI, ExcalidrawProps } from "@excalidraw/excalidraw/types";
 import type { ExcalidrawElement } from "@excalidraw/excalidraw/element/types";
@@ -63,6 +66,8 @@ function getCanvasCenter(appState: AppState) {
   };
 }
 
+type ViewportPoint = { clientX: number; clientY: number };
+
 function pickPersistedAppState(appState: AppState) {
   return {
     viewBackgroundColor: appState.viewBackgroundColor,
@@ -79,8 +84,9 @@ export function SavannaEditor({ canvas, notes }: SavannaEditorProps) {
   const router = useRouter();
   const [excalidrawAPI, setExcalidrawAPI] = useState<ExcalidrawImperativeAPI | null>(null);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
-  const [noteSearch, setNoteSearch] = useState("");
   const [theme, setTheme] = useState<ExcalidrawTheme>("light");
+  const [isNoteDragOver, setIsNoteDragOver] = useState(false);
+  const canvasDropRef = useRef<HTMLElement | null>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const initialData = useMemo(
@@ -110,6 +116,8 @@ export function SavannaEditor({ canvas, notes }: SavannaEditorProps) {
     };
   }, []);
 
+  const noteById = useMemo(() => new Map(notes.map((note) => [note.id, note])), [notes]);
+
   const handleChange = useCallback(
     (elements: readonly ExcalidrawElement[], appState: AppState) => {
       setSaveStatus("unsaved");
@@ -135,20 +143,24 @@ export function SavannaEditor({ canvas, notes }: SavannaEditorProps) {
   );
 
   const addNoteToCanvas = useCallback(
-    async (note: SavannaNote) => {
+    async (note: SavannaNote, viewportPoint?: ViewportPoint) => {
       if (!excalidrawAPI) return;
 
-      const { convertToExcalidrawElements } = await import("@excalidraw/excalidraw");
+      const { convertToExcalidrawElements, viewportCoordsToSceneCoords } = await import(
+        "@excalidraw/excalidraw"
+      );
       const appState = excalidrawAPI.getAppState();
-      const center = getCanvasCenter(appState);
+      const scenePoint = viewportPoint
+        ? viewportCoordsToSceneCoords(viewportPoint, appState)
+        : getCanvasCenter(appState);
       const currentElements = excalidrawAPI.getSceneElements();
 
       const newElements = convertToExcalidrawElements([
         {
           type: "text",
           text: `${note.icon ?? "📄"} ${note.title || "Untitled"}`,
-          x: center.x - 120,
-          y: center.y - 20,
+          x: scenePoint.x - 120,
+          y: scenePoint.y - 20,
           fontSize: 24,
           link: `/notes/${note.id}`,
         },
@@ -161,11 +173,31 @@ export function SavannaEditor({ canvas, notes }: SavannaEditorProps) {
     [excalidrawAPI],
   );
 
-  const filteredNotes = useMemo(() => {
-    const query = noteSearch.trim().toLowerCase();
-    if (!query) return notes;
-    return notes.filter((note) => note.title.toLowerCase().includes(query));
-  }, [noteSearch, notes]);
+  useEffect(() => {
+    const element = canvasDropRef.current;
+    if (!element) return;
+
+    return combine(
+      dropTargetForElements({
+        element,
+        canDrop: ({ source }) => isSidebarNoteDragData(source.data),
+        onDragEnter: () => setIsNoteDragOver(true),
+        onDragLeave: () => setIsNoteDragOver(false),
+        onDrop: ({ location, source }) => {
+          setIsNoteDragOver(false);
+          if (!isSidebarNoteDragData(source.data)) return;
+
+          const note = noteById.get(source.data.noteId);
+          if (!note) return;
+
+          void addNoteToCanvas(note, {
+            clientX: location.current.input.clientX,
+            clientY: location.current.input.clientY,
+          });
+        },
+      }),
+    );
+  }, [addNoteToCanvas, noteById]);
 
   return (
     <div className="svn-excalidraw-shell">
@@ -197,45 +229,13 @@ export function SavannaEditor({ canvas, notes }: SavannaEditorProps) {
       />
 
       <div className="svn-excalidraw-body">
-        <aside className="svn-excalidraw-sidebar">
-          <div className="svn-note-panel__header">
-            <span className="svn-note-panel__title">Add notes</span>
+        <main
+          ref={canvasDropRef}
+          className={`svn-excalidraw-canvas${isNoteDragOver ? " svn-excalidraw-canvas--drop-over" : ""}`}
+        >
+          <div className="svn-excalidraw-drop-hint" aria-hidden="true">
+            Drag notes from the sidebar onto this canvas
           </div>
-
-          <div className="svn-note-panel__search">
-            <span className="material-symbols-outlined">search</span>
-            <input
-              type="text"
-              placeholder="Search notes…"
-              value={noteSearch}
-              onChange={(event) => setNoteSearch(event.target.value)}
-              spellCheck={false}
-            />
-          </div>
-
-          <div className="svn-note-panel__list">
-            {filteredNotes.length === 0 ? (
-              <div className="svn-note-panel__empty">No notes found</div>
-            ) : (
-              filteredNotes.map((note) => (
-                <button
-                  key={note.id}
-                  type="button"
-                  className="svn-note-panel__item"
-                  onClick={() => void addNoteToCanvas(note)}
-                  title="Add as a linked Excalidraw text element"
-                >
-                  <span className="svn-note-panel__item-title">
-                    {note.icon ? `${note.icon} ` : ""}
-                    {note.title || "Untitled"}
-                  </span>
-                </button>
-              ))
-            )}
-          </div>
-        </aside>
-
-        <main className="svn-excalidraw-canvas">
           <Excalidraw
             excalidrawAPI={setExcalidrawAPI}
             initialData={initialData}
