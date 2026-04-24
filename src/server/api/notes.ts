@@ -8,7 +8,6 @@ import {
   createCalendarTodo,
   createNote,
   deleteCalendarTodo,
-  deleteBlock,
   deleteNote,
   findNoteByTitle,
   getArchivedNotes,
@@ -21,8 +20,6 @@ import {
   getPublishedNotesForExport,
   getTodosForCalendar,
   getUnscheduledTodos,
-  insertBlock,
-  moveBlock,
   moveNote,
   relocateNote,
   restoreNote,
@@ -33,18 +30,15 @@ import {
   setTodoDuration,
   toggleCalendarTodo,
   toggleTodoBlock,
-  updateBlock,
   updateCalendarTodoText,
   updateNote,
 } from "@/domain/note/note.service";
 import { buildNoteExportArtifact } from "@/domain/note/note.export";
 import type {
-  InsertBlockInput,
   CreateNoteInput,
   EisenhowerQuadrant,
   NoteReference,
   TiptapDocument,
-  UpdateBlockInput,
   UpdateNoteInput,
 } from "@/domain/note/note.types";
 import { normalizeWikilinkTarget } from "@/domain/link/wikilink.parser";
@@ -202,52 +196,6 @@ export async function createNoteFromWikilinkAction(
     title,
     folderId: folderId ?? null,
   };
-}
-
-export async function insertBlockAction(
-  noteId: string,
-  input: InsertBlockInput
-) {
-  const { userId } = await requireAuthenticatedUser();
-  const document = await insertBlock(userId, noteId, input);
-  revalidatePath(`/notes/${noteId}`);
-  revalidatePath("/graph");
-  return document;
-}
-
-export async function updateBlockAction(
-  noteId: string,
-  blockId: string,
-  input: UpdateBlockInput
-) {
-  const { userId } = await requireAuthenticatedUser();
-  const document = await updateBlock(userId, noteId, blockId, input);
-  revalidatePath(`/notes/${noteId}`);
-  revalidatePath("/graph");
-  return document;
-}
-
-export async function moveBlockAction(
-  noteId: string,
-  blockId: string,
-  placement: {
-    parentBlockId?: string | null;
-    afterBlockId?: string | null;
-  }
-) {
-  const { userId } = await requireAuthenticatedUser();
-  const document = await moveBlock(userId, noteId, blockId, placement);
-  revalidatePath(`/notes/${noteId}`);
-  revalidatePath("/graph");
-  return document;
-}
-
-export async function deleteBlockAction(noteId: string, blockId: string) {
-  const { userId } = await requireAuthenticatedUser();
-  const document = await deleteBlock(userId, noteId, blockId);
-  revalidatePath(`/notes/${noteId}`);
-  revalidatePath("/graph");
-  return document;
 }
 
 export async function getNoteExportAction(

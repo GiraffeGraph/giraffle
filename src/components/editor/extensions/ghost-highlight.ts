@@ -2,7 +2,7 @@ import { Extension } from "@tiptap/core";
 import { Plugin, PluginKey, Transaction } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
 
-export const ghostKey = new PluginKey("ghostHighlight");
+const ghostKey = new PluginKey("ghostHighlight");
 
 export interface GhostHighlightItem {
   id: string;

@@ -719,7 +719,7 @@ export async function getPublishedNotesForExport(userId: string) {
   }));
 }
 
-export async function insertBlock(
+async function insertBlock(
   userId: string,
   noteId: string,
   input: InsertBlockInput
@@ -730,7 +730,7 @@ export async function insertBlock(
   return document;
 }
 
-export async function updateBlock(
+async function updateBlock(
   userId: string,
   noteId: string,
   blockId: string,
@@ -742,7 +742,7 @@ export async function updateBlock(
   return document;
 }
 
-export async function moveBlock(
+async function moveBlock(
   userId: string,
   noteId: string,
   blockId: string,
@@ -757,7 +757,7 @@ export async function moveBlock(
   return document;
 }
 
-export async function deleteBlock(
+async function deleteBlock(
   userId: string,
   noteId: string,
   blockId: string

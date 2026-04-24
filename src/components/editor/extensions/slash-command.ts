@@ -1,7 +1,4 @@
 import type { Editor } from "@tiptap/core";
-import { Extension } from "@tiptap/core";
-import { PluginKey } from "@tiptap/pm/state";
-import Suggestion from "@tiptap/suggestion";
 
 export interface SlashCommandItem {
   title: string;
@@ -218,42 +215,3 @@ export const defaultSlashCommands: SlashCommandItem[] = [
     },
   },
 ];
-
-export const SlashCommandExtension = Extension.create({
-  name: "slashCommand",
-
-  addOptions() {
-    return {
-      suggestion: {
-        char: "/",
-        pluginKey: new PluginKey("slashCommand"),
-        command: ({
-          editor,
-          range,
-          props,
-        }: {
-          editor: Editor;
-          range: { from: number; to: number };
-          props: SlashCommandItem;
-        }) => {
-          editor.chain().focus().deleteRange(range).run();
-          props.command(editor);
-        },
-        items: ({ query }: { query: string }) => {
-          return defaultSlashCommands.filter((item) =>
-            item.title.toLowerCase().includes(query.toLowerCase())
-          );
-        },
-      },
-    };
-  },
-
-  addProseMirrorPlugins() {
-    return [
-      Suggestion({
-        editor: this.editor,
-        ...this.options.suggestion,
-      }),
-    ];
-  },
-});
