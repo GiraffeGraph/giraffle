@@ -9,7 +9,7 @@ type SavannaSummary = {
   title: string;
   createdAt: Date;
   updatedAt: Date;
-  _count: { nodes: number };
+  elements: unknown;
 };
 
 const RELATIVE = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
@@ -21,6 +21,10 @@ function relativeTime(date: Date): string {
   if (abs < 3600) return RELATIVE.format(Math.round(diff / 60), "minute");
   if (abs < 86400) return RELATIVE.format(Math.round(diff / 3600), "hour");
   return RELATIVE.format(Math.round(diff / 86400), "day");
+}
+
+function elementCount(elements: unknown): number {
+  return Array.isArray(elements) ? elements.length : 0;
 }
 
 export function SavannaListPage({ savannas }: { savannas: SavannaSummary[] }) {
@@ -119,7 +123,7 @@ export function SavannaListPage({ savannas }: { savannas: SavannaSummary[] }) {
                   <span className="savanna-card-title">{savanna.title}</span>
                 )}
                 <span className="savanna-card-meta">
-                  {savanna._count.nodes} node{savanna._count.nodes !== 1 ? "s" : ""} · updated {relativeTime(new Date(savanna.updatedAt))}
+                  {elementCount(savanna.elements)} element{elementCount(savanna.elements) !== 1 ? "s" : ""} · updated {relativeTime(new Date(savanna.updatedAt))}
                 </span>
               </button>
               <div className="savanna-card-actions">

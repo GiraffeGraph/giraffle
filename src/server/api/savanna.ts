@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import type { Prisma } from "@prisma/client";
 import { persistedBlocksToDocument } from "@/domain/note/block-tree";
 import { requireAuthenticatedUser } from "@/lib/auth-session";
 import { db } from "@/lib/db";
@@ -28,6 +29,159 @@ function summarizeBlocks(blocks: Array<{ content: unknown }>, maxLength = 6000):
   return `${body.slice(0, maxLength).trimEnd()}…`;
 }
 
+function toJsonValue(value: unknown, fallback: Prisma.InputJsonValue): Prisma.InputJsonValue {
+  if (value === undefined) return fallback;
+
+  try {
+    return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
+  } catch {
+    return fallback;
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function sanitizeAppState(appState: unknown): Prisma.InputJsonObject {
+  if (!isRecord(appState)) return {};
+
+  const nextState: Record<string, Prisma.InputJsonValue> = {};
+
+  if (typeof appState.viewBackgroundColor === "string") {
+    nextState.viewBackgroundColor = appState.viewBackgroundColor;
+  }
+
+  if (typeof appState.scrollX === "number") {
+    nextState.scrollX = appState.scrollX;
+  }
+
+  if (typeof appState.scrollY === "number") {
+    nextState.scrollY = appState.scrollY;
+  }
+
+  if (isRecord(appState.zoom)) {
+    const zoom = appState.zoom;
+    if (typeof zoom.value === "number") {
+      nextState.zoom = { value: zoom.value };
+    }
+  }
+
+  if (typeof appState.theme === "string") {
+    nextState.theme = appState.theme;
+  }
+
+  if (typeof appState.gridSize === "number") {
+    nextState.gridSize = appState.gridSize;
+  }
+
+  if (typeof appState.gridStep === "number") {
+    nextState.gridStep = appState.gridStep;
+  }
+
+  return nextState;
+}
+
+function randomSeed() {
+  return Math.floor(Math.random() * 2_147_483_647);
+}
+
+function createExcalidrawTextElement(input: {
+  id?: string;
+  title: string;
+  icon?: string | null;
+  noteId: string;
+  x: number;
+  y: number;
+}): Prisma.InputJsonObject {
+  const id = input.id ?? crypto.randomUUID();
+  const label = `${input.icon ?? "📄"} ${input.title || "Untitled"}`;
+  const fontSize = 24;
+  const width = Math.max(180, Math.min(520, Math.ceil(label.length * fontSize * 0.62)));
+  const height = Math.ceil(fontSize * 1.35);
+
+  return {
+    id,
+    type: "text",
+    x: input.x,
+    y: input.y,
+    width,
+    height,
+    angle: 0,
+    strokeColor: "#1e1e1e",
+    backgroundColor: "transparent",
+    fillStyle: "solid",
+    strokeWidth: 2,
+    strokeStyle: "solid",
+    roughness: 1,
+    opacity: 100,
+    groupIds: [],
+    frameId: null,
+    roundness: null,
+    seed: randomSeed(),
+    version: 1,
+    versionNonce: randomSeed(),
+    isDeleted: false,
+    boundElements: null,
+    updated: Date.now(),
+    link: `/notes/${input.noteId}`,
+    locked: false,
+    text: label,
+    fontSize,
+    fontFamily: 5,
+    textAlign: "left",
+    verticalAlign: "top",
+    containerId: null,
+    originalText: label,
+    autoResize: true,
+    lineHeight: 1.25,
+  };
+}
+
+function createExcalidrawArrowElement(input: {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+}): Prisma.InputJsonObject {
+  return {
+    id: crypto.randomUUID(),
+    type: "arrow",
+    x: input.x1,
+    y: input.y1,
+    width: input.x2 - input.x1,
+    height: input.y2 - input.y1,
+    angle: 0,
+    strokeColor: "#8465d9",
+    backgroundColor: "transparent",
+    fillStyle: "solid",
+    strokeWidth: 2,
+    strokeStyle: "solid",
+    roughness: 1,
+    opacity: 100,
+    groupIds: [],
+    frameId: null,
+    roundness: { type: 2 },
+    seed: randomSeed(),
+    version: 1,
+    versionNonce: randomSeed(),
+    isDeleted: false,
+    boundElements: null,
+    updated: Date.now(),
+    link: null,
+    locked: false,
+    points: [
+      [0, 0],
+      [input.x2 - input.x1, input.y2 - input.y1],
+    ],
+    lastCommittedPoint: null,
+    startBinding: null,
+    endBinding: null,
+    startArrowhead: null,
+    endArrowhead: "arrow",
+  };
+}
+
 export async function getSavannasAction() {
   const { userId } = await requireAuthenticatedUser();
   return db.canvas.findMany({
@@ -37,7 +191,7 @@ export async function getSavannasAction() {
       title: true,
       createdAt: true,
       updatedAt: true,
-      _count: { select: { nodes: true } },
+      elements: true,
     },
     orderBy: { updatedAt: "desc" },
   });
@@ -72,99 +226,10 @@ export async function renameSavannaAction(id: string, title: string) {
 
 export async function getSavannaAction(id: string) {
   const { userId } = await requireAuthenticatedUser();
-  const canvas = await db.canvas.findUnique({
-    where: { id },
-    include: {
-      nodes: {
-        include: {
-          note: { select: { id: true, title: true, icon: true } },
-        },
-      },
-      edges: true,
-    },
-  });
+  const canvas = await db.canvas.findUnique({ where: { id } });
 
   if (!canvas || canvas.userId !== userId) return null;
-
-  const noteNodes = canvas.nodes.filter(
-    (node) => typeof node.noteId === "string" && node.noteId.length > 0,
-  );
-  const noteIds = Array.from(new Set(noteNodes.map((node) => node.noteId!)));
-
-  if (noteIds.length < 2) return canvas;
-
-  const noteLinks = await db.link.findMany({
-    where: {
-      sourceNoteId: { in: noteIds },
-      targetNoteId: { in: noteIds },
-      sourceNote: { userId },
-      targetNote: { userId },
-    },
-    select: {
-      sourceNoteId: true,
-      targetNoteId: true,
-    },
-  });
-
-  if (noteLinks.length === 0) return canvas;
-
-  const noteIdByNodeId = new Map<string, string>();
-  const primaryNodeIdByNoteId = new Map<string, string>();
-
-  for (const node of noteNodes) {
-    if (!node.noteId) continue;
-    noteIdByNodeId.set(node.id, node.noteId);
-
-    if (!primaryNodeIdByNoteId.has(node.noteId)) {
-      primaryNodeIdByNoteId.set(node.noteId, node.id);
-    }
-  }
-
-  const existingPairs = new Set<string>();
-  for (const edge of canvas.edges) {
-    const sourceNoteId = noteIdByNodeId.get(edge.sourceNodeId);
-    const targetNoteId = noteIdByNodeId.get(edge.targetNodeId);
-    if (!sourceNoteId || !targetNoteId) continue;
-    existingPairs.add(`${sourceNoteId}->${targetNoteId}`);
-  }
-
-  const linkedEdges = noteLinks
-    .filter((link) => typeof link.targetNoteId === "string")
-    .flatMap((link) => {
-      const sourceNodeId = primaryNodeIdByNoteId.get(link.sourceNoteId);
-      const targetNoteId = link.targetNoteId as string;
-      const targetNodeId = primaryNodeIdByNoteId.get(targetNoteId);
-
-      if (!sourceNodeId || !targetNodeId || sourceNodeId === targetNodeId) {
-        return [];
-      }
-
-      const pairKey = `${link.sourceNoteId}->${targetNoteId}`;
-      if (existingPairs.has(pairKey)) {
-        return [];
-      }
-
-      existingPairs.add(pairKey);
-      return [
-        {
-          id: `savanna-link:${link.sourceNoteId}:${targetNoteId}`,
-          canvasId: canvas.id,
-          sourceNodeId,
-          targetNodeId,
-          sourceHandle: null,
-          targetHandle: null,
-          data: { origin: "note-link" },
-          type: "default",
-        },
-      ];
-    });
-
-  if (linkedEdges.length === 0) return canvas;
-
-  return {
-    ...canvas,
-    edges: [...canvas.edges, ...linkedEdges],
-  };
+  return canvas;
 }
 
 export async function getSavannaNoteContentAction(noteId: string) {
@@ -246,193 +311,22 @@ export async function getSavannaNoteEditorAction(noteId: string) {
   };
 }
 
-export interface SavannaNodeInput {
-  id: string;
-  type: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  noteId?: string | null;
-  data: Record<string, unknown>;
-  color?: string | null;
-}
-
-export interface SavannaEdgeInput {
-  id: string;
-  sourceNodeId: string;
-  targetNodeId: string;
-  sourceHandle?: string | null;
-  targetHandle?: string | null;
-}
-
-export async function saveSavannaCameraAction(
+export async function saveSavannaStateAction(
   canvasId: string,
-  camera: { x: number; y: number; zoom: number },
+  elements: unknown[],
+  appState: unknown,
 ) {
   const { userId } = await requireAuthenticatedUser();
   const result = await db.canvas.updateMany({
     where: { id: canvasId, userId },
     data: {
-      cameraX: camera.x,
-      cameraY: camera.y,
-      zoom: camera.zoom,
+      elements: toJsonValue(elements, []),
+      appState: sanitizeAppState(appState),
     },
   });
 
   if (result.count === 0) {
     throw new Error("Unauthorized");
-  }
-}
-
-async function syncSavannaLinksFromEdges(
-  userId: string,
-  nodes: SavannaNodeInput[],
-  edges: SavannaEdgeInput[],
-): Promise<number> {
-  const noteIdByNodeId = new Map<string, string>();
-
-  for (const node of nodes) {
-    if (node.type !== "noteCard") continue;
-    if (typeof node.noteId !== "string" || node.noteId.length === 0) continue;
-    noteIdByNodeId.set(node.id, node.noteId);
-  }
-
-  if (noteIdByNodeId.size < 2 || edges.length === 0) {
-    return 0;
-  }
-
-  const pairKeys = new Set<string>();
-
-  for (const edge of edges) {
-    const sourceNoteId = noteIdByNodeId.get(edge.sourceNodeId);
-    const targetNoteId = noteIdByNodeId.get(edge.targetNodeId);
-
-    if (!sourceNoteId || !targetNoteId || sourceNoteId === targetNoteId) continue;
-
-    pairKeys.add(`${sourceNoteId}:::${targetNoteId}`);
-  }
-
-  if (pairKeys.size === 0) {
-    return 0;
-  }
-
-  const pairs = Array.from(pairKeys).map((key) => {
-    const [sourceNoteId, targetNoteId] = key.split(":::");
-    return { sourceNoteId, targetNoteId };
-  });
-
-  const sourceNoteIds = Array.from(new Set(pairs.map((pair) => pair.sourceNoteId)));
-  const targetNoteIds = Array.from(new Set(pairs.map((pair) => pair.targetNoteId)));
-  const allNoteIds = Array.from(new Set([...sourceNoteIds, ...targetNoteIds]));
-
-  const [ownedNotes, existingLinks] = await Promise.all([
-    db.note.findMany({
-      where: {
-        id: { in: allNoteIds },
-        userId,
-        isArchived: false,
-      },
-      select: {
-        id: true,
-        title: true,
-      },
-    }),
-    db.link.findMany({
-      where: {
-        sourceNoteId: { in: sourceNoteIds },
-        targetNoteId: { in: targetNoteIds },
-        sourceNote: { userId },
-        targetNote: { userId },
-      },
-      select: {
-        sourceNoteId: true,
-        targetNoteId: true,
-      },
-    }),
-  ]);
-
-  const titleByNoteId = new Map(ownedNotes.map((note) => [note.id, note.title]));
-  const existingPairSet = new Set(
-    existingLinks
-      .filter((link) => typeof link.targetNoteId === "string")
-      .map((link) => `${link.sourceNoteId}->${link.targetNoteId as string}`),
-  );
-
-  const linksToCreate = pairs
-    .filter((pair) => titleByNoteId.has(pair.sourceNoteId) && titleByNoteId.has(pair.targetNoteId))
-    .filter((pair) => !existingPairSet.has(`${pair.sourceNoteId}->${pair.targetNoteId}`))
-    .map((pair) => ({
-      sourceNoteId: pair.sourceNoteId,
-      sourceBlockId: null,
-      targetRaw: titleByNoteId.get(pair.targetNoteId)!,
-      targetNoteId: pair.targetNoteId,
-      linkType: "savanna",
-    }));
-
-  if (linksToCreate.length === 0) {
-    return 0;
-  }
-
-  await db.link.createMany({ data: linksToCreate });
-  return linksToCreate.length;
-}
-
-export async function saveSavannaStateAction(
-  canvasId: string,
-  nodes: SavannaNodeInput[],
-  edges: SavannaEdgeInput[],
-  camera: { x: number; y: number; zoom: number }
-) {
-  const { userId } = await requireAuthenticatedUser();
-  const canvas = await db.canvas.findUnique({ where: { id: canvasId } });
-  if (!canvas || canvas.userId !== userId) throw new Error("Unauthorized");
-
-  await db.$transaction(async (tx) => {
-    await tx.canvasEdge.deleteMany({ where: { canvasId } });
-    await tx.canvasNode.deleteMany({ where: { canvasId } });
-    await tx.canvas.update({
-      where: { id: canvasId },
-      data: {
-        cameraX: camera.x,
-        cameraY: camera.y,
-        zoom: camera.zoom,
-      },
-    });
-    if (nodes.length > 0) {
-      await tx.canvasNode.createMany({
-        data: nodes.map((n) => ({
-          id: n.id,
-          canvasId,
-          type: n.type,
-          x: n.x,
-          y: n.y,
-          width: n.width,
-          height: n.height,
-          noteId: n.noteId ?? null,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          data: n.data as any,
-          color: n.color ?? null,
-        })),
-      });
-    }
-    if (edges.length > 0) {
-      await tx.canvasEdge.createMany({
-        data: edges.map((e) => ({
-          id: e.id,
-          canvasId,
-          sourceNodeId: e.sourceNodeId,
-          targetNodeId: e.targetNodeId,
-          sourceHandle: e.sourceHandle ?? null,
-          targetHandle: e.targetHandle ?? null,
-        })),
-      });
-    }
-  });
-
-  const createdLinks = await syncSavannaLinksFromEdges(userId, nodes, edges);
-  if (createdLinks > 0) {
-    revalidatePath("/graph");
   }
 }
 
@@ -450,72 +344,66 @@ export async function createSavannaFromNoteAction(noteId: string) {
   if (!note || note.userId !== userId) throw new Error("Unauthorized");
 
   const linkedNotes = [
-    ...note.outgoingLinks.filter((l) => l.targetNote).map((l) => l.targetNote!),
-    ...note.incomingLinks.filter((l) => l.sourceNote).map((l) => l.sourceNote),
-  ].filter((n, i, arr) => arr.findIndex((x) => x.id === n.id) === i && n.id !== noteId);
+    ...note.outgoingLinks.filter((link) => link.targetNote).map((link) => link.targetNote!),
+    ...note.incomingLinks.filter((link) => link.sourceNote).map((link) => link.sourceNote),
+  ].filter(
+    (linkedNote, index, allNotes) =>
+      allNotes.findIndex((candidate) => candidate.id === linkedNote.id) === index &&
+      linkedNote.id !== noteId,
+  );
 
-  const centerNodeId = crypto.randomUUID();
-  const nodeRows: {
-    id: string; canvasId: string; type: string; x: number; y: number;
-    width: number; height: number; noteId: string;
-    data: { noteId: string; title: string; icon: string | null };
-  }[] = [];
-
-  nodeRows.push({
-    id: centerNodeId,
-    canvasId: "", // filled after canvas create
-    type: "noteCard",
-    x: 0,
-    y: 0,
-    width: 220,
-    height: 80,
+  const center = { x: 0, y: 0 };
+  const centerElement = createExcalidrawTextElement({
+    id: crypto.randomUUID(),
+    title: note.title,
+    icon: note.icon,
     noteId: note.id,
-    data: { noteId: note.id, title: note.title, icon: note.icon },
+    x: center.x,
+    y: center.y,
   });
 
+  const elements: Prisma.InputJsonValue[] = [centerElement];
+  const radius = 360;
   const angleStep = linkedNotes.length > 0 ? (2 * Math.PI) / linkedNotes.length : 0;
-  const radius = 340;
-  const linkedNodeIds: string[] = [];
 
-  linkedNotes.forEach((ln, idx) => {
-    const angle = idx * angleStep - Math.PI / 2;
-    const id = crypto.randomUUID();
-    linkedNodeIds.push(id);
-    nodeRows.push({
-      id,
-      canvasId: "",
-      type: "noteCard",
-      x: Math.round(Math.cos(angle) * radius),
-      y: Math.round(Math.sin(angle) * radius),
-      width: 220,
-      height: 80,
-      noteId: ln.id,
-      data: { noteId: ln.id, title: ln.title, icon: ln.icon },
-    });
+  linkedNotes.forEach((linkedNote, index) => {
+    const angle = index * angleStep - Math.PI / 2;
+    const x = Math.round(Math.cos(angle) * radius);
+    const y = Math.round(Math.sin(angle) * radius);
+
+    elements.push(
+      createExcalidrawTextElement({
+        title: linkedNote.title,
+        icon: linkedNote.icon,
+        noteId: linkedNote.id,
+        x,
+        y,
+      }),
+    );
+
+    elements.push(
+      createExcalidrawArrowElement({
+        x1: center.x + 110,
+        y1: center.y + 18,
+        x2: x + 90,
+        y2: y + 18,
+      }),
+    );
   });
 
   const canvas = await db.canvas.create({
     data: {
       userId,
       title: `${note.title} — Savanna`,
-      nodes: {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
-        create: nodeRows.map(({ canvasId: _c, ...n }) => ({ ...n, data: n.data as any })),
+      elements,
+      appState: {
+        viewBackgroundColor: "#ffffff",
+        scrollX: 0,
+        scrollY: 0,
+        zoom: { value: 1 },
       },
     },
-    include: { nodes: { select: { id: true } } },
   });
-
-  if (linkedNodeIds.length > 0) {
-    await db.canvasEdge.createMany({
-      data: linkedNodeIds.map((targetId) => ({
-        id: crypto.randomUUID(),
-        canvasId: canvas.id,
-        sourceNodeId: centerNodeId,
-        targetNodeId: targetId,
-      })),
-    });
-  }
 
   revalidatePath("/savanna");
   return canvas.id;

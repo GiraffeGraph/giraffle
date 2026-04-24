@@ -32,6 +32,7 @@ import "@/styles/layouts/coat-canvas.css";
 import "@/styles/layouts/stride.css";
 import "@/styles/layouts/agents.css";
 import "@xterm/xterm/css/xterm.css";
+import "@excalidraw/excalidraw/index.css";
 import "./globals.css";
 
 export const metadata: Metadata = {

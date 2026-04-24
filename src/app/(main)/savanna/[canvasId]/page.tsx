@@ -21,34 +21,13 @@ export default async function SavannaEditorPage({
       canvas={{
         id: canvas.id,
         title: canvas.title,
-        cameraX: canvas.cameraX,
-        cameraY: canvas.cameraY,
-        zoom: canvas.zoom,
-        nodes: canvas.nodes.map((n) => ({
-          id: n.id,
-          type: n.type,
-          x: n.x,
-          y: n.y,
-          width: n.width,
-          height: n.height,
-          noteId: n.noteId,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          data: n.data as any,
-          color: n.color,
-          note: n.note,
-        })),
-        edges: canvas.edges.map((e) => ({
-          id: e.id,
-          sourceNodeId: e.sourceNodeId,
-          targetNodeId: e.targetNodeId,
-          sourceHandle: e.sourceHandle,
-          targetHandle: e.targetHandle,
-        })),
+        elements: canvas.elements,
+        appState: canvas.appState,
       }}
-      notes={notes.map((n) => ({
-        id: n.id,
-        title: n.title,
-        icon: n.icon,
+      notes={notes.map((note) => ({
+        id: note.id,
+        title: note.title,
+        icon: note.icon,
       }))}
     />
   );

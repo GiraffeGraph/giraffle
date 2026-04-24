@@ -10,6 +10,10 @@ import { db } from "@/lib/db";
 import { requireAuthenticatedUser } from "@/lib/auth-session";
 import { buildLibraryWorkspaceSeed } from "./library.data";
 
+function elementCount(elements: unknown): number {
+  return Array.isArray(elements) ? elements.length : 0;
+}
+
 export async function getLibraryWorkspaceSeed() {
   const { userId } = await requireAuthenticatedUser();
 
@@ -78,11 +82,7 @@ export async function getLibraryWorkspaceSeed() {
           title: true,
           updatedAt: true,
           createdAt: true,
-          _count: {
-            select: {
-              nodes: true,
-            },
-          },
+          elements: true,
         },
       }),
       db.mediaAsset.findMany({
@@ -123,7 +123,7 @@ export async function getLibraryWorkspaceSeed() {
     templates,
     canvases: canvases.map((canvas) => ({
       ...canvas,
-      nodeCount: canvas._count.nodes,
+      nodeCount: elementCount(canvas.elements),
     })),
     assets,
   });
