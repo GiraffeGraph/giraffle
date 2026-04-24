@@ -1,6 +1,8 @@
 "use client";
 
 import type { Editor as TiptapEditor } from "@tiptap/core";
+import { Fragment, Slice } from "@tiptap/pm/model";
+import type { EditorView } from "@tiptap/pm/view";
 import CodeBlock from "@tiptap/extension-code-block";
 import Color from "@tiptap/extension-color";
 import Highlight from "@tiptap/extension-highlight";
@@ -31,6 +33,7 @@ import type {
   NoteReference,
   TiptapDocument,
 } from "@/domain/note/note.types";
+import { markdownToBlocks } from "@/domain/note/note.serializer";
 import { generateId } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import {
@@ -82,6 +85,60 @@ interface BlockDropIndicatorState {
   width: number;
   targetBlockId: string;
   mode: "before" | "after";
+}
+
+const MARKDOWN_BLOCK_PATTERNS = [
+  /^#{1,6}\s+.+/m,
+  /^[-*+]\s+.+/m,
+  /^\d+\.\s+.+/m,
+  /^-\s+\[[ xX]\]\s+.+/m,
+  /^>\s+.+/m,
+  /^```[\s\S]*```/m,
+  /^\s*([-*_])\1\1+\s*$/m,
+  /^!\[[^\]]*\]\([^)]+\)/m,
+  /^\|.+\|\s*\n\|\s*[-: ]+\|/m,
+  /^<details>\s*$/m,
+] as const;
+
+const MARKDOWN_INLINE_PATTERN =
+  /(\*\*[^*\n]+\*\*|__[^_\n]+__|~~[^~\n]+~~|`[^`\n]+`|\[[^\]\n]+\]\([^\)\n]+\)|\[\[[^\]\n]+\]\]|\*[^*\n]+\*|_[^_\n]+_)/;
+
+function shouldRenderMarkdownPaste(text: string, html: string): boolean {
+  const trimmed = text.trim();
+
+  if (!trimmed) {
+    return false;
+  }
+
+  if (MARKDOWN_BLOCK_PATTERNS.some((pattern) => pattern.test(trimmed))) {
+    return true;
+  }
+
+  if (MARKDOWN_INLINE_PATTERN.test(trimmed)) {
+    return true;
+  }
+
+  return !html.trim() && trimmed.includes("\n\n");
+}
+
+function insertMarkdownPaste(view: EditorView, text: string): boolean {
+  const document = markdownToBlocks(text);
+
+  if (document.content.length === 0) {
+    return false;
+  }
+
+  try {
+    const nodes = document.content.map((node) =>
+      view.state.schema.nodeFromJSON(node)
+    );
+    const slice = new Slice(Fragment.fromArray(nodes), 0, 0);
+    view.dispatch(view.state.tr.replaceSelection(slice).scrollIntoView());
+    return true;
+  } catch (error) {
+    console.error("[Editor] failed to render pasted markdown", error);
+    return false;
+  }
 }
 
 /* ─── Props ───────────────────────────────────────────────────── */
@@ -435,6 +492,20 @@ export function Editor({
     editorProps: {
       attributes: {
         class: "giraffle-editor-content",
+      },
+      handlePaste: (view, event) => {
+        if (!editable) {
+          return false;
+        }
+
+        const text = event.clipboardData?.getData("text/plain") ?? "";
+        const html = event.clipboardData?.getData("text/html") ?? "";
+
+        if (!shouldRenderMarkdownPaste(text, html)) {
+          return false;
+        }
+
+        return insertMarkdownPaste(view, text);
       },
     },
     onUpdate: ({ editor }) => {

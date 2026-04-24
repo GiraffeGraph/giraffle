@@ -1,4 +1,9 @@
-import type { BlockNodeContent, TiptapDocument, TiptapNode } from "./note.types";
+import type {
+  BlockMark,
+  BlockNodeContent,
+  TiptapDocument,
+  TiptapNode,
+} from "./note.types";
 
 /**
  * Convert a Tiptap JSON document to Markdown.
@@ -181,7 +186,7 @@ export function markdownToBlocks(markdown: string): TiptapDocument {
       content.push({
         type: "heading",
         attrs: { level: headingMatch[1].length },
-        content: [{ type: "text", text: headingMatch[2] }],
+        content: parseInlineMarkdown(headingMatch[2]),
       });
       index++;
       continue;
@@ -225,9 +230,7 @@ export function markdownToBlocks(markdown: string): TiptapDocument {
           content: [
             {
               type: "paragraph",
-              content: taskLineMatch[2]
-                ? [{ type: "text", text: taskLineMatch[2] }]
-                : [],
+              content: parseInlineMarkdown(taskLineMatch[2] ?? ""),
             },
           ],
         });
@@ -332,7 +335,7 @@ export function markdownToBlocks(markdown: string): TiptapDocument {
         content: [
           {
             type: "paragraph",
-            content: [{ type: "text", text: quoteLines.join("\n") }],
+            content: parseInlineMarkdown(quoteLines.join("\n")),
           },
         ],
       });
@@ -349,7 +352,7 @@ export function markdownToBlocks(markdown: string): TiptapDocument {
             {
               type: "paragraph",
               content: [
-                { type: "text", text: lines[index].replace(/^[-*+]\s+/, "") },
+                ...parseInlineMarkdown(lines[index].replace(/^[-*+]\s+/, "")),
               ],
             },
           ],
@@ -371,7 +374,7 @@ export function markdownToBlocks(markdown: string): TiptapDocument {
             {
               type: "paragraph",
               content: [
-                { type: "text", text: lines[index].replace(/^\d+\.\s+/, "") },
+                ...parseInlineMarkdown(lines[index].replace(/^\d+\.\s+/, "")),
               ],
             },
           ],
@@ -412,7 +415,7 @@ export function markdownToBlocks(markdown: string): TiptapDocument {
             content: [
               {
                 type: "paragraph",
-                content: cell.length > 0 ? [{ type: "text", text: cell }] : [],
+                content: parseInlineMarkdown(cell),
               },
             ],
           })),
@@ -423,12 +426,71 @@ export function markdownToBlocks(markdown: string): TiptapDocument {
 
     content.push({
       type: "paragraph",
-      content: [{ type: "text", text: line }],
+      content: parseInlineMarkdown(line),
     });
     index++;
   }
 
   return { type: "doc", content };
+}
+
+const INLINE_MARKDOWN_PATTERN =
+  /(\*\*([^*\n]+)\*\*|__([^_\n]+)__|~~([^~\n]+)~~|`([^`\n]+)`|\[([^\]\n]+)\]\(([^)\n]+)\)|\[\[([^\]|\n]+)(?:\|([^\]\n]+))?\]\]|\*([^*\n]+)\*|_([^_\n]+)_)/g;
+
+function parseInlineMarkdown(text: string): TiptapNode[] {
+  if (!text) {
+    return [];
+  }
+
+  const nodes: TiptapNode[] = [];
+  let lastIndex = 0;
+
+  for (const match of text.matchAll(INLINE_MARKDOWN_PATTERN)) {
+    const start = match.index ?? 0;
+    pushTextNode(nodes, text.slice(lastIndex, start));
+
+    if (match[2]) {
+      pushTextNode(nodes, match[2], [{ type: "bold" }]);
+    } else if (match[3]) {
+      pushTextNode(nodes, match[3], [{ type: "bold" }]);
+    } else if (match[4]) {
+      pushTextNode(nodes, match[4], [{ type: "strike" }]);
+    } else if (match[5]) {
+      pushTextNode(nodes, match[5], [{ type: "code" }]);
+    } else if (match[6] && match[7]) {
+      pushTextNode(nodes, match[6], [
+        { type: "link", attrs: { href: match[7].trim().split(/\s+/)[0] } },
+      ]);
+    } else if (match[8]) {
+      const target = match[8].trim();
+      const displayText = match[9]?.trim() || target;
+      pushTextNode(nodes, displayText, [
+        { type: "wikilink", attrs: { target, displayText } },
+      ]);
+    } else if (match[10]) {
+      pushTextNode(nodes, match[10], [{ type: "italic" }]);
+    } else if (match[11]) {
+      pushTextNode(nodes, match[11], [{ type: "italic" }]);
+    }
+
+    lastIndex = start + match[0].length;
+  }
+
+  pushTextNode(nodes, text.slice(lastIndex));
+
+  return nodes;
+}
+
+function pushTextNode(
+  nodes: TiptapNode[],
+  text: string,
+  marks?: BlockMark[]
+): void {
+  if (!text) {
+    return;
+  }
+
+  nodes.push(marks ? { type: "text", text, marks } : { type: "text", text });
 }
 
 function toTableRows(value: unknown): string[][] {
