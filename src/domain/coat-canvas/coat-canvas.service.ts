@@ -183,12 +183,13 @@ export async function addCoatCell(
   const nextPosition = (lastCell?.position ?? -1) + 1;
 
   let noteTitle = input.title;
-  if (input.noteId && !noteTitle) {
+  if (input.noteId) {
     const note = await db.note.findFirst({
-      where: { id: input.noteId },
+      where: { id: input.noteId, userId },
       select: { title: true },
     });
-    noteTitle = note?.title ?? "";
+    if (!note) throw new Error("Note not found");
+    noteTitle = noteTitle ?? note.title;
   }
 
   const cell = await db.coatCell.create({

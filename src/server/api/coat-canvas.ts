@@ -13,7 +13,7 @@ import {
   updateCoatCell,
 } from "@/domain/coat-canvas/coat-canvas.service";
 import { requireAuthenticatedUser } from "@/lib/auth-session";
-import type { CoatCellColor, CreateCanvasInput, UpdateCellInput } from "@/domain/coat-canvas/coat-canvas.types";
+import type { CoatCell, CoatCellColor, CreateCanvasInput, UpdateCellInput } from "@/domain/coat-canvas/coat-canvas.types";
 
 export async function getCoatCanvasesAction() {
   const { userId } = await requireAuthenticatedUser();
@@ -60,11 +60,14 @@ export async function addNoteToCanvasAction(
   canvasId: string,
   noteId: string,
   input: { colSpan?: number; rowSpan?: number; color?: CoatCellColor }
-) {
+): Promise<CoatCell> {
   const { userId } = await requireAuthenticatedUser();
   const cellId = await addCoatCell(userId, canvasId, { noteId, ...input });
+  const canvas = await getCoatCanvas(userId, canvasId);
+  const cell = canvas?.cells.find((item) => item.id === cellId);
+  if (!cell) throw new Error("Cell not found after creation");
   revalidatePath(`/coat-canvas/${canvasId}`);
-  return cellId;
+  return cell;
 }
 
 export async function updateCoatCellAction(

@@ -14,7 +14,6 @@ import type {
   CoatCanvas,
   CoatCell,
   CoatCellColor,
-  NoteForCanvas,
   NotePreview,
 } from "@/domain/coat-canvas/coat-canvas.types";
 
@@ -31,6 +30,39 @@ const GRID_COLS = 12;
 const GRID_GAP = 12;
 const ROW_SNAP = 160;
 const MAX_ROW_SPAN = 6;
+const NOTE_DRAG_TYPE = "application/coat-note";
+const NOTE_DRAG_META_TYPE = "application/coat-note-meta";
+
+type DraggedNoteMeta = {
+  id: string;
+  title?: string;
+  icon?: string | null;
+};
+
+function hasNoteDrag(dataTransfer: DataTransfer) {
+  return (
+    dataTransfer.types.includes(NOTE_DRAG_TYPE) ||
+    dataTransfer.types.includes(NOTE_DRAG_META_TYPE)
+  );
+}
+
+function readDraggedNote(dataTransfer: DataTransfer): DraggedNoteMeta | null {
+  const id = dataTransfer.getData(NOTE_DRAG_TYPE);
+  const metaRaw = dataTransfer.getData(NOTE_DRAG_META_TYPE);
+
+  if (metaRaw) {
+    try {
+      const meta = JSON.parse(metaRaw) as DraggedNoteMeta;
+      if (typeof meta.id === "string" && meta.id) {
+        return meta;
+      }
+    } catch {
+      // Fall through to the plain id payload.
+    }
+  }
+
+  return id ? { id } : null;
+}
 
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
@@ -295,108 +327,17 @@ function CanvasCell({
   );
 }
 
-function NotesPanel({
-  notes,
-  onNoteDragStart,
-  onNoteDragEnd,
-}: {
-  notes: NoteForCanvas[];
-  onNoteDragStart: (noteId: string) => void;
-  onNoteDragEnd: () => void;
-}) {
-  const [filter, setFilter] = useState("");
-
-  const filtered = filter
-    ? notes.filter((n) =>
-        (n.title || "Untitled").toLowerCase().includes(filter.toLowerCase())
-      )
-    : notes;
-
-  return (
-    <div className="cc-notes-panel">
-      <div className="cc-notes-panel-header">
-        <span className="material-symbols-outlined cc-notes-panel-icon">sticky_note_2</span>
-        <span className="cc-notes-panel-title">Notes</span>
-      </div>
-
-      <div className="cc-notes-panel-search">
-        <span className="material-symbols-outlined cc-notes-search-icon">search</span>
-        <input
-          className="cc-notes-panel-input"
-          placeholder="Filter notes…"
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-        />
-        {filter && (
-          <button
-            className="cc-notes-search-clear"
-            type="button"
-            onClick={() => setFilter("")}
-          >
-            <span className="material-symbols-outlined">close</span>
-          </button>
-        )}
-      </div>
-
-      <div className="cc-notes-panel-hint">
-        <span className="material-symbols-outlined" style={{ fontSize: 13 }}>drag_indicator</span>
-        Drag notes onto the canvas
-      </div>
-
-      <div className="cc-notes-panel-list">
-        {filtered.length === 0 ? (
-          <p className="cc-notes-panel-empty">
-            {filter ? "No notes match" : "No notes yet"}
-          </p>
-        ) : (
-          filtered.map((note) => (
-            <div
-              key={note.id}
-              className="cc-note-item"
-              draggable
-              onDragStart={(e) => {
-                e.dataTransfer.effectAllowed = "copy";
-                e.dataTransfer.setData("application/coat-note", note.id);
-                e.dataTransfer.setData("text/plain", `note:${note.id}`);
-                onNoteDragStart(note.id);
-              }}
-              onDragEnd={onNoteDragEnd}
-              title={`Drag "${note.title || "Untitled"}" to canvas`}
-            >
-              <span className="cc-note-item-icon">
-                {note.icon ?? (
-                  <span className="material-symbols-outlined" style={{ fontSize: 15 }}>
-                    description
-                  </span>
-                )}
-              </span>
-              <span className="cc-note-item-title">{note.title || "Untitled"}</span>
-              <span className="cc-note-item-drag">
-                <span className="material-symbols-outlined">drag_indicator</span>
-              </span>
-            </div>
-          ))
-        )}
-      </div>
-    </div>
-  );
-}
-
 export function CoatCanvasEditor({
   canvas,
-  notes,
 }: {
   canvas: CoatCanvas;
-  notes: NoteForCanvas[];
 }) {
   const router = useRouter();
   const [cells, setCells] = useState<CoatCell[]>(canvas.cells);
   const [selectedCellId, setSelectedCellId] = useState<string | null>(null);
-  const [showNotesPanel, setShowNotesPanel] = useState(true);
   const [isDeleting, startDelete] = useTransition();
   const [resizeCursor, setResizeCursor] = useState<"ew-resize" | "ns-resize" | null>(null);
   const [draggedCellId, setDraggedCellId] = useState<string | null>(null);
-  const [draggedNoteId, setDraggedNoteId] = useState<string | null>(null);
   const [dropTargetCellId, setDropTargetCellId] = useState<string | null>(null);
   const [isCanvasDropTarget, setIsCanvasDropTarget] = useState(false);
   const gridRef = useRef<HTMLDivElement>(null);
@@ -531,7 +472,6 @@ export function CoatCanvasEditor({
 
   const handleCellDragStart = useCallback((cellId: string) => {
     setDraggedCellId(cellId);
-    setDraggedNoteId(null);
     setDropTargetCellId(null);
     setSelectedCellId(cellId);
   }, []);
@@ -541,47 +481,16 @@ export function CoatCanvasEditor({
     setDropTargetCellId(null);
   }, []);
 
-  const handleNoteDragStart = useCallback((noteId: string) => {
-    setDraggedNoteId(noteId);
-    setDraggedCellId(null);
-    setDropTargetCellId(null);
-    setSelectedCellId(null);
-  }, []);
-
-  const handleNoteDragEnd = useCallback(() => {
-    setDraggedNoteId(null);
-    setIsCanvasDropTarget(false);
-    setDropTargetCellId(null);
-  }, []);
-
   const handleAddNoteToCanvas = useCallback(
-    async (noteId: string, beforeCellId?: string) => {
-      const note = notes.find((n) => n.id === noteId);
-      if (!note) return;
-
-      const cellId = await addNoteToCanvasAction(canvas.id, noteId, {
+    async (noteMeta: DraggedNoteMeta, beforeCellId?: string) => {
+      const createdCell = await addNoteToCanvasAction(canvas.id, noteMeta.id, {
         colSpan: 4,
         rowSpan: 1,
       });
 
       const newCell: CoatCell = {
-        id: cellId,
-        canvasId: canvas.id,
-        noteId: noteId,
-        note: {
-          id: note.id,
-          title: note.title,
-          icon: note.icon,
-          previewText: "",
-        },
-        title: note.title,
-        content: "",
-        colSpan: 4,
-        rowSpan: 1,
+        ...createdCell,
         position: cells.length,
-        color: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
       };
 
       if (beforeCellId) {
@@ -595,13 +504,12 @@ export function CoatCanvasEditor({
         setCells((prev) => [...prev, newCell]);
       }
     },
-    [canvas.id, cells, notes, persistCellOrder]
+    [canvas.id, cells, persistCellOrder]
   );
 
   const handleDragOver = useCallback(
     (event: React.DragEvent, cellId: string) => {
-      const noteId = event.dataTransfer.types.includes("application/coat-note");
-      if (noteId) {
+      if (hasNoteDrag(event.dataTransfer)) {
         event.preventDefault();
         event.dataTransfer.dropEffect = "copy";
         setDropTargetCellId(cellId);
@@ -620,12 +528,11 @@ export function CoatCanvasEditor({
       event.preventDefault();
       event.stopPropagation();
 
-      const noteId = event.dataTransfer.getData("application/coat-note");
-      if (noteId) {
-        setDraggedNoteId(null);
+      const noteMeta = readDraggedNote(event.dataTransfer);
+      if (noteMeta) {
         setDropTargetCellId(null);
         setIsCanvasDropTarget(false);
-        await handleAddNoteToCanvas(noteId, cellId);
+        await handleAddNoteToCanvas(noteMeta, cellId);
         return;
       }
 
@@ -643,25 +550,21 @@ export function CoatCanvasEditor({
     [cells, draggedCellId, handleCellDragEnd, persistCellOrder, handleAddNoteToCanvas]
   );
 
-  const handleCanvasDragOver = useCallback(
-    (event: React.DragEvent) => {
-      if (draggedNoteId || event.dataTransfer.types.includes("application/coat-note")) {
-        event.preventDefault();
-        event.dataTransfer.dropEffect = "copy";
-        setIsCanvasDropTarget(true);
-      }
-    },
-    [draggedNoteId]
-  );
+  const handleCanvasDragOver = useCallback((event: React.DragEvent) => {
+    if (hasNoteDrag(event.dataTransfer)) {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "copy";
+      setIsCanvasDropTarget(true);
+    }
+  }, []);
 
   const handleCanvasDrop = useCallback(
     async (event: React.DragEvent) => {
-      const noteId = event.dataTransfer.getData("application/coat-note");
-      if (!noteId) return;
+      const noteMeta = readDraggedNote(event.dataTransfer);
+      if (!noteMeta) return;
       event.preventDefault();
-      setDraggedNoteId(null);
       setIsCanvasDropTarget(false);
-      await handleAddNoteToCanvas(noteId);
+      await handleAddNoteToCanvas(noteMeta);
     },
     [handleAddNoteToCanvas]
   );
@@ -718,27 +621,10 @@ export function CoatCanvasEditor({
             </button>
           )}
 
-          <button
-            className={`cc-btn cc-btn--ghost cc-btn--sm${showNotesPanel ? " cc-btn--active" : ""}`}
-            type="button"
-            onClick={() => setShowNotesPanel((v) => !v)}
-            title="Toggle notes panel"
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: 15 }}>sticky_note_2</span>
-            Notes
-          </button>
         </div>
       </div>
 
       <div className="cc-editor-body">
-        {showNotesPanel && (
-          <NotesPanel
-            notes={notes}
-            onNoteDragStart={handleNoteDragStart}
-            onNoteDragEnd={handleNoteDragEnd}
-          />
-        )}
-
         <div
           className={`cc-editor-scroll${isCanvasDropTarget ? " cc-editor-scroll--drop-target" : ""}`}
           onClick={() => setSelectedCellId(null)}
@@ -755,23 +641,8 @@ export function CoatCanvasEditor({
               <span className="material-symbols-outlined cc-editor-empty-icon">texture</span>
               <p className="cc-editor-empty-title">Canvas is empty</p>
               <p className="cc-editor-empty-sub">
-                {showNotesPanel
-                  ? "Drag a note from the panel on the left to add it to the canvas"
-                  : "Open the Notes panel and drag notes onto the canvas"}
+                Drag a note from the main sidebar onto the canvas
               </p>
-              {!showNotesPanel && (
-                <button
-                  className="cc-btn cc-btn--primary"
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowNotesPanel(true);
-                  }}
-                >
-                  <span className="material-symbols-outlined" style={{ fontSize: 16 }}>sticky_note_2</span>
-                  Open Notes panel
-                </button>
-              )}
             </div>
           ) : (
             <div className="cc-grid" ref={gridRef}>

@@ -18,12 +18,6 @@ export interface NotePreview {
   previewText: string;
 }
 
-export interface NoteForCanvas {
-  id: string;
-  title: string;
-  icon: string | null;
-}
-
 // ─── Domain types ─────────────────────────────────────────────
 export interface CoatCell {
   id: string;

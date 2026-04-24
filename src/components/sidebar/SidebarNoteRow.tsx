@@ -31,6 +31,9 @@ function PinIcon() {
   );
 }
 
+const NOTE_DRAG_TYPE = "application/coat-note";
+const NOTE_DRAG_META_TYPE = "application/coat-note-meta";
+
 export function SidebarNoteRow({
   note,
   active,
@@ -94,6 +97,15 @@ export function SidebarNoteRow({
       className={`sidebar-entity-row ${active ? "active" : ""}${isAfterDropTarget ? " drag-target-after" : ""}${
         draggedNoteId && draggedNoteId === note.id ? " drag-source" : ""
       }`}
+      onDragStart={(event) => {
+        event.dataTransfer.effectAllowed = "copyMove";
+        event.dataTransfer.setData(NOTE_DRAG_TYPE, note.id);
+        event.dataTransfer.setData(
+          NOTE_DRAG_META_TYPE,
+          JSON.stringify({ id: note.id, title: note.title, icon: note.icon })
+        );
+        event.dataTransfer.setData("text/plain", `note:${note.id}`);
+      }}
     >
       <button
         type="button"
