@@ -20,17 +20,13 @@ import type {
   InsertBlockInput,
   NoteReference,
   TiptapDocument,
-  UpdateBlockInput,
   UpdateNoteInput,
 } from "./note.types";
 import {
   createEmptyDocument,
   insertBlockInDocument,
-  moveBlockInDocument,
   documentToPersistedBlocks,
   persistedBlocksToDocument,
-  removeBlockFromDocument,
-  updateBlockInDocument,
 } from "./block-tree";
 
 async function assertOwnedNote(noteId: string, userId: string) {
@@ -728,52 +724,6 @@ async function insertBlock(
   const document = insertBlockInDocument(note.document, input.block, input);
   await saveNoteContent(userId, noteId, document);
   return document;
-}
-
-async function updateBlock(
-  userId: string,
-  noteId: string,
-  blockId: string,
-  input: UpdateBlockInput
-): Promise<TiptapDocument> {
-  const note = await getOwnedNoteDocument(userId, noteId);
-  const document = updateBlockInDocument(note.document, blockId, input);
-  await saveNoteContent(userId, noteId, document);
-  return document;
-}
-
-async function moveBlock(
-  userId: string,
-  noteId: string,
-  blockId: string,
-  placement: {
-    parentBlockId?: string | null;
-    afterBlockId?: string | null;
-  }
-): Promise<TiptapDocument> {
-  const note = await getOwnedNoteDocument(userId, noteId);
-  const document = moveBlockInDocument(note.document, blockId, placement);
-  await saveNoteContent(userId, noteId, document);
-  return document;
-}
-
-async function deleteBlock(
-  userId: string,
-  noteId: string,
-  blockId: string
-): Promise<TiptapDocument> {
-  const note = await getOwnedNoteDocument(userId, noteId);
-  const result = removeBlockFromDocument(note.document, blockId);
-
-  if (!result.removedBlock) {
-    throw new Error(`Block not found: ${blockId}`);
-  }
-
-  const nextDocument =
-    result.document.content.length > 0 ? result.document : createEmptyDocument();
-
-  await saveNoteContent(userId, noteId, nextDocument);
-  return nextDocument;
 }
 
 export async function moveNote(
