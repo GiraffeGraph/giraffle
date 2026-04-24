@@ -233,9 +233,6 @@ export function SavannaEditor({ canvas, notes }: SavannaEditorProps) {
           ref={canvasDropRef}
           className={`svn-excalidraw-canvas${isNoteDragOver ? " svn-excalidraw-canvas--drop-over" : ""}`}
         >
-          <div className="svn-excalidraw-drop-hint" aria-hidden="true">
-            Drag notes from the sidebar onto this canvas
-          </div>
           <Excalidraw
             excalidrawAPI={setExcalidrawAPI}
             initialData={initialData}

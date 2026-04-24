@@ -1071,10 +1071,22 @@
 
 /* ─── Excalidraw Savanna Editor ───────────────────────────────── */
 
+.main-content:has(.svn-excalidraw-shell),
+.main-content-inner:has(.svn-excalidraw-shell) {
+  overflow: hidden;
+}
+
+.main-content-inner:has(.svn-excalidraw-shell) {
+  height: 100vh;
+  min-height: 100vh;
+}
+
 .svn-excalidraw-shell {
   display: flex;
   flex-direction: column;
-  min-height: calc(100vh - 56px);
+  height: 100vh;
+  min-height: 0;
+  overflow: hidden;
   background: var(--surface-1);
 }
 
@@ -1110,31 +1122,6 @@
   background: rgb(var(--accent-rgb) / 0.07);
 }
 
-.svn-excalidraw-drop-hint {
-  position: absolute;
-  left: 50%;
-  top: 18px;
-  z-index: 5;
-  transform: translateX(-50%);
-  pointer-events: none;
-  padding: 8px 12px;
-  border: 1px solid var(--border-soft);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--surface-glass-strong) 86%, transparent);
-  color: var(--text-secondary);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.01em;
-  box-shadow: var(--shadow-soft);
-  opacity: 0.78;
-}
-
-.svn-excalidraw-canvas--drop-over .svn-excalidraw-drop-hint {
-  border-color: rgb(var(--accent-rgb) / 0.5);
-  color: var(--text-primary);
-  opacity: 1;
-}
-
 .svn-excalidraw-canvas .excalidraw {
   --color-primary: var(--accent);
   --color-primary-darker: color-mix(in srgb, var(--accent) 82%, black);
@@ -1150,13 +1137,4 @@
   height: 100%;
   color: var(--text-secondary);
   font-size: 13px;
-}
-
-@media (max-width: 720px) {
-  .svn-excalidraw-drop-hint {
-    max-width: calc(100% - 32px);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
 }
