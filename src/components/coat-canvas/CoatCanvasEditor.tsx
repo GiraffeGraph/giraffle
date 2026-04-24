@@ -5,13 +5,18 @@ import { useRouter } from "next/navigation";
 import {
   updateCanvasTitleAction,
   updateCoatCellAction,
-  addCoatCellAction,
+  addNoteToCanvasAction,
   removeCoatCellAction,
   deleteCoatCanvasAction,
 } from "@/server/api/coat-canvas";
 import { COAT_CELL_COLORS } from "@/domain/coat-canvas/coat-canvas.types";
-import type { CoatCanvas, CoatCell, CoatCellColor } from "@/domain/coat-canvas/coat-canvas.types";
-import { CellEditor } from "./CellEditor";
+import type {
+  CoatCanvas,
+  CoatCell,
+  CoatCellColor,
+  NoteForCanvas,
+  NotePreview,
+} from "@/domain/coat-canvas/coat-canvas.types";
 
 const COLOR_HEX: Record<CoatCellColor, string> = {
   amber: "#e8b84b",
@@ -114,36 +119,63 @@ function TopbarColorPicker({
   );
 }
 
+function NoteContentPreview({ note }: { note: NotePreview | null }) {
+  if (!note) {
+    return (
+      <div className="cc-cell-note-unlinked">
+        <span className="material-symbols-outlined">link_off</span>
+        <span>No note linked</span>
+      </div>
+    );
+  }
+
+  const lines = note.previewText
+    ? note.previewText.split("\n").filter(Boolean).slice(0, 10)
+    : [];
+
+  if (lines.length === 0) {
+    return <p className="cc-cell-preview-empty">Empty note</p>;
+  }
+
+  return (
+    <div className="cc-cell-preview">
+      {lines.map((line, i) => (
+        <p key={i} className="cc-cell-preview-line">{line}</p>
+      ))}
+    </div>
+  );
+}
+
 function CanvasCell({
   cell,
   isSelected,
   isDragging,
   isDropTarget,
   onSelect,
-  onTitleChange,
-  onContentSave,
   onResizeStart,
   onResizeStep,
   onDragStart,
   onDragEnd,
   onDragOver,
   onDrop,
+  onOpenNote,
 }: {
   cell: CoatCell;
   isSelected: boolean;
   isDragging: boolean;
   isDropTarget: boolean;
   onSelect: (e: React.MouseEvent) => void;
-  onTitleChange: (id: string, title: string) => void;
-  onContentSave: (id: string, json: string) => void;
   onResizeStart: (e: React.MouseEvent, cellId: string, dir: "col" | "row") => void;
   onResizeStep: (cellId: string, dir: "col" | "row", delta: number) => void;
   onDragStart: (cellId: string) => void;
   onDragEnd: () => void;
   onDragOver: (e: React.DragEvent, cellId: string) => void;
   onDrop: (e: React.DragEvent, cellId: string) => void;
+  onOpenNote: (noteId: string) => void;
 }) {
-
+  const note = cell.note;
+  const displayTitle = note ? note.title || "Untitled" : cell.title || "Untitled";
+  const displayIcon = note?.icon ?? null;
 
   return (
     <div
@@ -172,13 +204,25 @@ function CanvasCell({
           <span className="material-symbols-outlined">drag_indicator</span>
         </button>
 
-        <input
-          className="cc-cell-title"
-          defaultValue={cell.title}
-          placeholder="Title…"
-          onBlur={(e) => onTitleChange(cell.id, e.target.value)}
-          onClick={(e) => e.stopPropagation()}
-        />
+        {displayIcon && (
+          <span className="cc-cell-note-icon">{displayIcon}</span>
+        )}
+
+        <span className="cc-cell-note-title">{displayTitle}</span>
+
+        {note && (
+          <button
+            className="cc-cell-open-note"
+            type="button"
+            title="Open note"
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenNote(note.id);
+            }}
+          >
+            <span className="material-symbols-outlined">open_in_new</span>
+          </button>
+        )}
 
         {isSelected ? (
           <div className="cc-cell-controls" onClick={(e) => e.stopPropagation()}>
@@ -219,11 +263,7 @@ function CanvasCell({
       </div>
 
       <div className="cc-cell-content-area" onClick={(e) => e.stopPropagation()}>
-        <CellEditor
-          key={cell.id}
-          initialContent={cell.content}
-          onSave={(json) => onContentSave(cell.id, json)}
-        />
+        <NoteContentPreview note={note} />
       </div>
 
       {isSelected ? (
@@ -255,15 +295,110 @@ function CanvasCell({
   );
 }
 
-export function CoatCanvasEditor({ canvas }: { canvas: CoatCanvas }) {
+function NotesPanel({
+  notes,
+  onNoteDragStart,
+  onNoteDragEnd,
+}: {
+  notes: NoteForCanvas[];
+  onNoteDragStart: (noteId: string) => void;
+  onNoteDragEnd: () => void;
+}) {
+  const [filter, setFilter] = useState("");
+
+  const filtered = filter
+    ? notes.filter((n) =>
+        (n.title || "Untitled").toLowerCase().includes(filter.toLowerCase())
+      )
+    : notes;
+
+  return (
+    <div className="cc-notes-panel">
+      <div className="cc-notes-panel-header">
+        <span className="material-symbols-outlined cc-notes-panel-icon">sticky_note_2</span>
+        <span className="cc-notes-panel-title">Notes</span>
+      </div>
+
+      <div className="cc-notes-panel-search">
+        <span className="material-symbols-outlined cc-notes-search-icon">search</span>
+        <input
+          className="cc-notes-panel-input"
+          placeholder="Filter notes…"
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+        />
+        {filter && (
+          <button
+            className="cc-notes-search-clear"
+            type="button"
+            onClick={() => setFilter("")}
+          >
+            <span className="material-symbols-outlined">close</span>
+          </button>
+        )}
+      </div>
+
+      <div className="cc-notes-panel-hint">
+        <span className="material-symbols-outlined" style={{ fontSize: 13 }}>drag_indicator</span>
+        Drag notes onto the canvas
+      </div>
+
+      <div className="cc-notes-panel-list">
+        {filtered.length === 0 ? (
+          <p className="cc-notes-panel-empty">
+            {filter ? "No notes match" : "No notes yet"}
+          </p>
+        ) : (
+          filtered.map((note) => (
+            <div
+              key={note.id}
+              className="cc-note-item"
+              draggable
+              onDragStart={(e) => {
+                e.dataTransfer.effectAllowed = "copy";
+                e.dataTransfer.setData("application/coat-note", note.id);
+                e.dataTransfer.setData("text/plain", `note:${note.id}`);
+                onNoteDragStart(note.id);
+              }}
+              onDragEnd={onNoteDragEnd}
+              title={`Drag "${note.title || "Untitled"}" to canvas`}
+            >
+              <span className="cc-note-item-icon">
+                {note.icon ?? (
+                  <span className="material-symbols-outlined" style={{ fontSize: 15 }}>
+                    description
+                  </span>
+                )}
+              </span>
+              <span className="cc-note-item-title">{note.title || "Untitled"}</span>
+              <span className="cc-note-item-drag">
+                <span className="material-symbols-outlined">drag_indicator</span>
+              </span>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+export function CoatCanvasEditor({
+  canvas,
+  notes,
+}: {
+  canvas: CoatCanvas;
+  notes: NoteForCanvas[];
+}) {
   const router = useRouter();
   const [cells, setCells] = useState<CoatCell[]>(canvas.cells);
   const [selectedCellId, setSelectedCellId] = useState<string | null>(null);
-  const [showAddPopover, setShowAddPopover] = useState(false);
+  const [showNotesPanel, setShowNotesPanel] = useState(true);
   const [isDeleting, startDelete] = useTransition();
   const [resizeCursor, setResizeCursor] = useState<"ew-resize" | "ns-resize" | null>(null);
   const [draggedCellId, setDraggedCellId] = useState<string | null>(null);
+  const [draggedNoteId, setDraggedNoteId] = useState<string | null>(null);
   const [dropTargetCellId, setDropTargetCellId] = useState<string | null>(null);
+  const [isCanvasDropTarget, setIsCanvasDropTarget] = useState(false);
   const gridRef = useRef<HTMLDivElement>(null);
   const resizeRef = useRef<{
     cellId: string;
@@ -281,22 +416,6 @@ export function CoatCanvasEditor({ canvas }: { canvas: CoatCanvas }) {
           updateCoatCellAction(canvas.id, cell.id, { position: index })
         )
       );
-    },
-    [canvas.id]
-  );
-
-  const handleTitleChange = useCallback(
-    (id: string, title: string) => {
-      setCells((prev) => prev.map((c) => (c.id === id ? { ...c, title } : c)));
-      updateCoatCellAction(canvas.id, id, { title });
-    },
-    [canvas.id]
-  );
-
-  const handleContentSave = useCallback(
-    (id: string, json: string) => {
-      setCells((prev) => prev.map((c) => (c.id === id ? { ...c, content: json } : c)));
-      updateCoatCellAction(canvas.id, id, { content: json });
     },
     [canvas.id]
   );
@@ -322,9 +441,7 @@ export function CoatCanvasEditor({ canvas }: { canvas: CoatCanvas }) {
         dir === "col" ? GRID_COLS : MAX_ROW_SPAN
       );
 
-      if ((dir === "col" ? cell.colSpan : cell.rowSpan) === nextValue) {
-        return;
-      }
+      if ((dir === "col" ? cell.colSpan : cell.rowSpan) === nextValue) return;
 
       setCells((prev) =>
         prev.map((item) =>
@@ -342,28 +459,6 @@ export function CoatCanvasEditor({ canvas }: { canvas: CoatCanvas }) {
     removeCoatCellAction(canvas.id, selectedCellId);
     setSelectedCellId(null);
   }, [canvas.id, selectedCellId]);
-
-  const handleAddCell = useCallback(
-    async (colSpan: number, rowSpan: number) => {
-      setShowAddPopover(false);
-      const cellId = await addCoatCellAction(canvas.id, { colSpan, rowSpan });
-      const newCell: CoatCell = {
-        id: cellId,
-        canvasId: canvas.id,
-        title: "New Box",
-        content: "",
-        colSpan,
-        rowSpan,
-        position: cells.length,
-        color: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      setCells((prev) => [...prev, newCell]);
-      setSelectedCellId(cellId);
-    },
-    [canvas.id, cells.length]
-  );
 
   const handleDeleteCanvas = () => {
     startDelete(async () => {
@@ -434,20 +529,84 @@ export function CoatCanvasEditor({ canvas }: { canvas: CoatCanvas }) {
     [canvas.id, cells]
   );
 
-  const handleDragStart = useCallback((cellId: string) => {
+  const handleCellDragStart = useCallback((cellId: string) => {
     setDraggedCellId(cellId);
+    setDraggedNoteId(null);
     setDropTargetCellId(null);
     setSelectedCellId(cellId);
-    setShowAddPopover(false);
   }, []);
 
-  const handleDragEnd = useCallback(() => {
+  const handleCellDragEnd = useCallback(() => {
     setDraggedCellId(null);
     setDropTargetCellId(null);
   }, []);
 
+  const handleNoteDragStart = useCallback((noteId: string) => {
+    setDraggedNoteId(noteId);
+    setDraggedCellId(null);
+    setDropTargetCellId(null);
+    setSelectedCellId(null);
+  }, []);
+
+  const handleNoteDragEnd = useCallback(() => {
+    setDraggedNoteId(null);
+    setIsCanvasDropTarget(false);
+    setDropTargetCellId(null);
+  }, []);
+
+  const handleAddNoteToCanvas = useCallback(
+    async (noteId: string, beforeCellId?: string) => {
+      const note = notes.find((n) => n.id === noteId);
+      if (!note) return;
+
+      const cellId = await addNoteToCanvasAction(canvas.id, noteId, {
+        colSpan: 4,
+        rowSpan: 1,
+      });
+
+      const newCell: CoatCell = {
+        id: cellId,
+        canvasId: canvas.id,
+        noteId: noteId,
+        note: {
+          id: note.id,
+          title: note.title,
+          icon: note.icon,
+          previewText: "",
+        },
+        title: note.title,
+        content: "",
+        colSpan: 4,
+        rowSpan: 1,
+        position: cells.length,
+        color: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      if (beforeCellId) {
+        const targetIndex = cells.findIndex((c) => c.id === beforeCellId);
+        const nextCells = [...cells];
+        nextCells.splice(targetIndex, 0, { ...newCell, position: targetIndex });
+        const reindexed = nextCells.map((c, i) => ({ ...c, position: i }));
+        setCells(reindexed);
+        await persistCellOrder(reindexed);
+      } else {
+        setCells((prev) => [...prev, newCell]);
+      }
+    },
+    [canvas.id, cells, notes, persistCellOrder]
+  );
+
   const handleDragOver = useCallback(
     (event: React.DragEvent, cellId: string) => {
+      const noteId = event.dataTransfer.types.includes("application/coat-note");
+      if (noteId) {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "copy";
+        setDropTargetCellId(cellId);
+        return;
+      }
       if (!draggedCellId || draggedCellId === cellId) return;
       event.preventDefault();
       event.dataTransfer.dropEffect = "move";
@@ -459,18 +618,59 @@ export function CoatCanvasEditor({ canvas }: { canvas: CoatCanvas }) {
   const handleDrop = useCallback(
     async (event: React.DragEvent, cellId: string) => {
       event.preventDefault();
+      event.stopPropagation();
+
+      const noteId = event.dataTransfer.getData("application/coat-note");
+      if (noteId) {
+        setDraggedNoteId(null);
+        setDropTargetCellId(null);
+        setIsCanvasDropTarget(false);
+        await handleAddNoteToCanvas(noteId, cellId);
+        return;
+      }
+
       if (!draggedCellId || draggedCellId === cellId) {
-        handleDragEnd();
+        handleCellDragEnd();
         return;
       }
 
       const nextCells = reorderCells(cells, draggedCellId, cellId);
       setCells(nextCells);
       setSelectedCellId(draggedCellId);
-      handleDragEnd();
+      handleCellDragEnd();
       await persistCellOrder(nextCells);
     },
-    [cells, draggedCellId, handleDragEnd, persistCellOrder]
+    [cells, draggedCellId, handleCellDragEnd, persistCellOrder, handleAddNoteToCanvas]
+  );
+
+  const handleCanvasDragOver = useCallback(
+    (event: React.DragEvent) => {
+      if (draggedNoteId || event.dataTransfer.types.includes("application/coat-note")) {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "copy";
+        setIsCanvasDropTarget(true);
+      }
+    },
+    [draggedNoteId]
+  );
+
+  const handleCanvasDrop = useCallback(
+    async (event: React.DragEvent) => {
+      const noteId = event.dataTransfer.getData("application/coat-note");
+      if (!noteId) return;
+      event.preventDefault();
+      setDraggedNoteId(null);
+      setIsCanvasDropTarget(false);
+      await handleAddNoteToCanvas(noteId);
+    },
+    [handleAddNoteToCanvas]
+  );
+
+  const handleOpenNote = useCallback(
+    (noteId: string) => {
+      router.push(`/notes/${noteId}`);
+    },
+    [router]
   );
 
   return (
@@ -506,114 +706,98 @@ export function CoatCanvasEditor({ canvas }: { canvas: CoatCanvas }) {
                 <span className="material-symbols-outlined" style={{ fontSize: 15 }}>vertical_align_bottom</span>
                 Taller
               </button>
-              <button className="cc-btn cc-btn--ghost cc-btn--sm" type="button" onClick={() => setShowAddPopover((v) => !v)}>
-                <span className="material-symbols-outlined" style={{ fontSize: 15 }}>add</span>
-                Add box
-              </button>
               <button className="cc-btn cc-btn--danger cc-btn--sm" type="button" onClick={handleRemoveSelected}>
                 <span className="material-symbols-outlined" style={{ fontSize: 15 }}>delete</span>
-                Delete
+                Remove
               </button>
             </>
           ) : (
-            <>
-              <button className="cc-btn cc-btn--ghost cc-btn--sm" type="button" onClick={() => setShowAddPopover((v) => !v)}>
-                <span className="material-symbols-outlined" style={{ fontSize: 15 }}>add</span>
-                Add box
-              </button>
-              <button className="cc-btn cc-btn--danger cc-btn--sm" type="button" onClick={handleDeleteCanvas} disabled={isDeleting}>
-                <span className="material-symbols-outlined" style={{ fontSize: 15 }}>delete_forever</span>
-                {isDeleting ? "Deleting…" : "Delete canvas"}
-              </button>
-            </>
+            <button className="cc-btn cc-btn--danger cc-btn--sm" type="button" onClick={handleDeleteCanvas} disabled={isDeleting}>
+              <span className="material-symbols-outlined" style={{ fontSize: 15 }}>delete_forever</span>
+              {isDeleting ? "Deleting…" : "Delete canvas"}
+            </button>
           )}
+
+          <button
+            className={`cc-btn cc-btn--ghost cc-btn--sm${showNotesPanel ? " cc-btn--active" : ""}`}
+            type="button"
+            onClick={() => setShowNotesPanel((v) => !v)}
+            title="Toggle notes panel"
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: 15 }}>sticky_note_2</span>
+            Notes
+          </button>
         </div>
       </div>
 
-      {showAddPopover ? <AddCellPopover onAdd={handleAddCell} onClose={() => setShowAddPopover(false)} /> : null}
-
-      <div className="cc-editor-scroll" onClick={() => setSelectedCellId(null)}>
-        {cells.length === 0 ? (
-          <div className="cc-editor-empty">
-            <span className="material-symbols-outlined cc-editor-empty-icon">texture</span>
-            <p className="cc-editor-empty-title">Canvas is empty</p>
-            <p className="cc-editor-empty-sub">Click the Add box button to add your first box</p>
-            <button
-              className="cc-btn cc-btn--primary"
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowAddPopover(true);
-              }}
-            >
-              <span className="material-symbols-outlined" style={{ fontSize: 16 }}>add</span>
-              Add box
-            </button>
-          </div>
-        ) : (
-          <div className="cc-grid" ref={gridRef}>
-            {cells.map((cell) => (
-              <CanvasCell
-                key={cell.id}
-                cell={cell}
-                isSelected={cell.id === selectedCellId}
-                isDragging={cell.id === draggedCellId}
-                isDropTarget={cell.id === dropTargetCellId}
-                onSelect={(e) => {
-                  e.stopPropagation();
-                  setSelectedCellId(cell.id);
-                }}
-                onTitleChange={handleTitleChange}
-                onContentSave={handleContentSave}
-                onResizeStart={handleResizeStart}
-                onResizeStep={handleResizeStep}
-                onDragStart={handleDragStart}
-                onDragEnd={handleDragEnd}
-                onDragOver={handleDragOver}
-                onDrop={handleDrop}
-              />
-            ))}
-          </div>
+      <div className="cc-editor-body">
+        {showNotesPanel && (
+          <NotesPanel
+            notes={notes}
+            onNoteDragStart={handleNoteDragStart}
+            onNoteDragEnd={handleNoteDragEnd}
+          />
         )}
-      </div>
-    </div>
-  );
-}
 
-const SPAN_PRESETS = [
-  { label: "Narrow (3 columns)", colSpan: 3, rowSpan: 1 },
-  { label: "Medium (4 columns)", colSpan: 4, rowSpan: 1 },
-  { label: "Wide (6 columns)", colSpan: 6, rowSpan: 1 },
-  { label: "Full width", colSpan: 12, rowSpan: 1 },
-  { label: "Tall (4×2)", colSpan: 4, rowSpan: 2 },
-  { label: "Square (6×2)", colSpan: 6, rowSpan: 2 },
-];
-
-function AddCellPopover({
-  onAdd,
-  onClose,
-}: {
-  onAdd: (colSpan: number, rowSpan: number) => void;
-  onClose: () => void;
-}) {
-  return (
-    <div className="cc-add-popover-backdrop" onClick={onClose}>
-      <div className="cc-add-popover" onClick={(e) => e.stopPropagation()}>
-        <p className="cc-add-popover-label">Choose size</p>
-        {SPAN_PRESETS.map((preset) => (
-          <button
-            key={preset.label}
-            className="cc-add-popover-item"
-            type="button"
-            onClick={() => onAdd(preset.colSpan, preset.rowSpan)}
-          >
-            <span
-              className="cc-add-popover-preview"
-              style={{ "--cols": preset.colSpan, "--rows": preset.rowSpan } as React.CSSProperties}
-            />
-            <span>{preset.label}</span>
-          </button>
-        ))}
+        <div
+          className={`cc-editor-scroll${isCanvasDropTarget ? " cc-editor-scroll--drop-target" : ""}`}
+          onClick={() => setSelectedCellId(null)}
+          onDragOver={handleCanvasDragOver}
+          onDragLeave={(e) => {
+            if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+              setIsCanvasDropTarget(false);
+            }
+          }}
+          onDrop={handleCanvasDrop}
+        >
+          {cells.length === 0 ? (
+            <div className="cc-editor-empty">
+              <span className="material-symbols-outlined cc-editor-empty-icon">texture</span>
+              <p className="cc-editor-empty-title">Canvas is empty</p>
+              <p className="cc-editor-empty-sub">
+                {showNotesPanel
+                  ? "Drag a note from the panel on the left to add it to the canvas"
+                  : "Open the Notes panel and drag notes onto the canvas"}
+              </p>
+              {!showNotesPanel && (
+                <button
+                  className="cc-btn cc-btn--primary"
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowNotesPanel(true);
+                  }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: 16 }}>sticky_note_2</span>
+                  Open Notes panel
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="cc-grid" ref={gridRef}>
+              {cells.map((cell) => (
+                <CanvasCell
+                  key={cell.id}
+                  cell={cell}
+                  isSelected={cell.id === selectedCellId}
+                  isDragging={cell.id === draggedCellId}
+                  isDropTarget={cell.id === dropTargetCellId}
+                  onSelect={(e) => {
+                    e.stopPropagation();
+                    setSelectedCellId(cell.id);
+                  }}
+                  onResizeStart={handleResizeStart}
+                  onResizeStep={handleResizeStep}
+                  onDragStart={handleCellDragStart}
+                  onDragEnd={handleCellDragEnd}
+                  onDragOver={handleDragOver}
+                  onDrop={handleDrop}
+                  onOpenNote={handleOpenNote}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

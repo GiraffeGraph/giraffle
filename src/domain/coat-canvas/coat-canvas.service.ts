@@ -7,8 +7,29 @@ import type {
   CoatCanvasSummary,
   CoatCellColor,
   CreateCanvasInput,
+  NotePreview,
   UpdateCellInput,
 } from "./coat-canvas.types";
+
+function extractBlockText(content: unknown): string {
+  if (!content || typeof content !== "object") return "";
+  const node = content as Record<string, unknown>;
+  if (node.type === "text" && typeof node.text === "string") return node.text;
+  if (Array.isArray(node.content)) {
+    return (node.content as unknown[]).map(extractBlockText).join("");
+  }
+  return "";
+}
+
+function buildPreviewText(blocks: Array<{ type: string; content: unknown }>): string {
+  const lines: string[] = [];
+  for (const block of blocks) {
+    const text = extractBlockText(block.content).trim();
+    if (text) lines.push(text);
+    if (lines.length >= 8) break;
+  }
+  return lines.join("\n");
+}
 
 function parseColor(color: string | null | undefined): CoatCellColor | null {
   return (COAT_CELL_COLORS as readonly string[]).includes(color ?? "")
@@ -56,7 +77,24 @@ export async function getCoatCanvas(
   const canvas = await db.coatCanvas.findFirst({
     where: { id: canvasId, userId },
     include: {
-      cells: { orderBy: { position: "asc" } },
+      cells: {
+        orderBy: { position: "asc" },
+        include: {
+          note: {
+            select: {
+              id: true,
+              title: true,
+              icon: true,
+              blocks: {
+                where: { parentId: null },
+                orderBy: { position: "asc" },
+                take: 10,
+                select: { type: true, content: true },
+              },
+            },
+          },
+        },
+      },
     },
   });
 
@@ -64,10 +102,26 @@ export async function getCoatCanvas(
 
   return {
     ...canvas,
-    cells: canvas.cells.map((c) => ({
-      ...c,
-      color: parseColor(c.color),
-    })),
+    cells: canvas.cells.map((c) => {
+      const note = c.note;
+      const notePreview: NotePreview | null = note
+        ? {
+            id: note.id,
+            title: note.title,
+            icon: note.icon,
+            previewText: buildPreviewText(
+              note.blocks.map((b) => ({ type: b.type, content: b.content }))
+            ),
+          }
+        : null;
+
+      return {
+        ...c,
+        noteId: c.noteId,
+        note: notePreview,
+        color: parseColor(c.color),
+      };
+    }),
   };
 }
 
@@ -115,6 +169,7 @@ export async function addCoatCell(
     colSpan?: number;
     rowSpan?: number;
     color?: CoatCellColor;
+    noteId?: string;
   }
 ): Promise<string> {
   await assertOwnedCanvas(canvasId, userId);
@@ -127,10 +182,20 @@ export async function addCoatCell(
 
   const nextPosition = (lastCell?.position ?? -1) + 1;
 
+  let noteTitle = input.title;
+  if (input.noteId && !noteTitle) {
+    const note = await db.note.findFirst({
+      where: { id: input.noteId },
+      select: { title: true },
+    });
+    noteTitle = note?.title ?? "";
+  }
+
   const cell = await db.coatCell.create({
     data: {
       canvasId,
-      title: input.title ?? "Yeni Kutu",
+      noteId: input.noteId ?? null,
+      title: noteTitle ?? "",
       content: "",
       colSpan: input.colSpan ?? 4,
       rowSpan: input.rowSpan ?? 1,
@@ -167,6 +232,9 @@ export async function updateCoatCell(
         color: input.color ?? null,
       }),
       ...(input.position !== undefined && { position: input.position }),
+      ...(Object.prototype.hasOwnProperty.call(input, "noteId") && {
+        noteId: input.noteId ?? null,
+      }),
       updatedAt: new Date(),
     },
   });

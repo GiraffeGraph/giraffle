@@ -48,10 +48,21 @@ export async function updateCanvasTitleAction(canvasId: string, title: string) {
 
 export async function addCoatCellAction(
   canvasId: string,
-  input: { title?: string; colSpan?: number; rowSpan?: number; color?: CoatCellColor }
+  input: { title?: string; colSpan?: number; rowSpan?: number; color?: CoatCellColor; noteId?: string }
 ) {
   const { userId } = await requireAuthenticatedUser();
   const cellId = await addCoatCell(userId, canvasId, input);
+  revalidatePath(`/coat-canvas/${canvasId}`);
+  return cellId;
+}
+
+export async function addNoteToCanvasAction(
+  canvasId: string,
+  noteId: string,
+  input: { colSpan?: number; rowSpan?: number; color?: CoatCellColor }
+) {
+  const { userId } = await requireAuthenticatedUser();
+  const cellId = await addCoatCell(userId, canvasId, { noteId, ...input });
   revalidatePath(`/coat-canvas/${canvasId}`);
   return cellId;
 }

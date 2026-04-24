@@ -10,10 +10,26 @@ export const COAT_CELL_COLORS = [
 
 export type CoatCellColor = (typeof COAT_CELL_COLORS)[number];
 
+// ─── Note references ──────────────────────────────────────────
+export interface NotePreview {
+  id: string;
+  title: string;
+  icon: string | null;
+  previewText: string;
+}
+
+export interface NoteForCanvas {
+  id: string;
+  title: string;
+  icon: string | null;
+}
+
 // ─── Domain types ─────────────────────────────────────────────
 export interface CoatCell {
   id: string;
   canvasId: string;
+  noteId: string | null;
+  note: NotePreview | null;
   title: string;
   content: string;
   colSpan: number;
@@ -61,6 +77,7 @@ export interface UpdateCellInput {
   rowSpan?: number;
   color?: CoatCellColor | null;
   position?: number;
+  noteId?: string | null;
 }
 
 // ─── Templates ───────────────────────────────────────────────

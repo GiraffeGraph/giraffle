@@ -115,6 +115,7 @@ model Note {
   incomingLinks Link[]                @relation("IncomingLinks")
   assets        MediaAsset[]
   feedSources   WorkspaceFeedSource[]
+  coatCells     CoatCell[]
 
   @@index([folderId])
   @@index([categoryId])
@@ -511,6 +512,8 @@ model CoatCell {
   id        String     @id @default(uuid())
   canvasId  String
   canvas    CoatCanvas @relation(fields: [canvasId], references: [id], onDelete: Cascade)
+  noteId    String?
+  note      Note?      @relation(fields: [noteId], references: [id], onDelete: SetNull)
   title     String     @default("")
   content   String     @default("")
   colSpan   Int        @default(4)
@@ -522,4 +525,5 @@ model CoatCell {
 
   @@index([canvasId])
   @@index([canvasId, position])
+  @@index([noteId])
 }
