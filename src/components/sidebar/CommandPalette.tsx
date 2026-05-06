@@ -168,7 +168,7 @@ export function CommandPalette({
             type="text"
             value={query}
             onChange={(event) => onQueryChange(event.target.value)}
-            placeholder="Search notes, folders, tags, or commands..."
+            placeholder="Search notes, folders, or commands..."
             spellCheck={false}
             style={{ flex: 1, border: "none", background: "transparent", fontSize: "var(--md-sys-typescale-headline-small-size)", color: "var(--md-sys-color-on-surface)", outline: "none" }}
           />

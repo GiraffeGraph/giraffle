@@ -4,12 +4,10 @@ import { PageTopbar } from "@/components/ui/PageTopbar";
 import { searchWorkspaceNotesAction } from "@/server/api/search";
 
 const SEARCH_OPERATOR_EXAMPLES = [
-  'tag:work',
   'folder:"Product"',
   'title:weekly',
   'is:pinned',
   '"launch plan"',
-  '-tag:archive',
   '/roadmap|plan/i',
 ] as const;
 
@@ -35,13 +33,11 @@ function getSearchModeLabel(mode: "recent" | "hybrid" | "regex") {
 function buildAppliedFilterPills(query: ParsedWorkspaceSearchQuery) {
   const pills: string[] = [];
 
-  for (const tag of query.tagFilters) pills.push(`tag:${tag}`);
   for (const folder of query.folderFilters) pills.push(`folder:${folder}`);
   for (const title of query.titleFilters) pills.push(`title:${title}`);
   for (const phrase of query.phrases) pills.push(`"${phrase}"`);
   if (query.isPinned === true) pills.push("is:pinned");
   for (const token of query.negativeTokens) pills.push(`-${token}`);
-  for (const tag of query.excludedTags) pills.push(`-tag:${tag}`);
   for (const folder of query.excludedFolders) pills.push(`-folder:${folder}`);
   for (const title of query.excludedTitles) pills.push(`-title:${title}`);
 
@@ -73,7 +69,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             name="q"
             defaultValue={query}
             className="search-input"
-            placeholder="Search notes, folders, tags, regex…"
+            placeholder="Search notes, folders, regex…"
           />
           <input type="hidden" name="scope" value="notes" />
           <button type="submit">Search</button>
@@ -129,11 +125,6 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                     {note.isPinned ? " · pinned" : ""}
                     {note.folderPath ? ` · ${note.folderPath}` : ""}
                   </span>
-                  {note.tags.length > 0 ? (
-                    <span className="search-result-meta">
-                      tags: {note.tags.slice(0, 5).join(", ")}
-                    </span>
-                  ) : null}
                   {note.reasons.length > 0 ? (
                     <span className="search-result-meta">
                       {note.reasons.map((reason) => reason.label).join(" · ")}

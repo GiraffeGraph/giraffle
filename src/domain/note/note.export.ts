@@ -11,7 +11,6 @@ export interface NoteExportInput {
   isPublished: boolean;
   updatedAt: Date;
   document: TiptapDocument;
-  tags?: string[];
 }
 
 export interface NoteExportArtifact {
@@ -37,9 +36,6 @@ export function buildNoteExportArtifact(
     `noteId: "${note.id}"`,
     `published: ${note.isPublished ? "true" : "false"}`,
     `updatedAt: "${note.updatedAt.toISOString()}"`,
-    ...(note.tags && note.tags.length > 0
-      ? [`tags: [${note.tags.map((tag) => `"${escapeFrontmatter(tag)}"`).join(", ")}]`]
-      : []),
     "---",
   ].join("\n");
 

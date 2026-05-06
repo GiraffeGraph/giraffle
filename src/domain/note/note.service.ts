@@ -7,7 +7,6 @@ import { normalizeWikilinkTarget } from "@/domain/link/wikilink.parser";
 import { getAllFolders } from "@/domain/folder/folder.service";
 import { normalizeNoteCategoryColor } from "@/domain/category/category.types";
 import { recordOperation } from "@/domain/sync/operation-log.service";
-import { syncNoteTags } from "@/domain/tag/tag.service";
 import { generateId, slugify } from "@/lib/utils";
 import {
   DEFAULT_NOTE_TITLE,
@@ -102,7 +101,6 @@ export async function createNote(
             icon: input.icon,
             folderId: input.folderId,
             categoryId: input.categoryId,
-            templateId: input.templateId,
             position: nextPosition,
             userId,
           },
@@ -158,11 +156,6 @@ export async function getNote(userId: string, noteId: string) {
       blocks: {
         orderBy: [{ position: "asc" }, { createdAt: "asc" }],
       },
-      tags: {
-        include: {
-          tag: true,
-        },
-      },
       category: {
         select: {
           id: true,
@@ -180,7 +173,6 @@ export async function getNote(userId: string, noteId: string) {
 
   return {
     ...note,
-    tags: note.tags.map((noteTag) => noteTag.tag.name),
     category: note.category
       ? {
           id: note.category.id,
@@ -436,10 +428,7 @@ export async function saveNoteContent(
     return;
   }
 
-  await Promise.all([
-    extractAndSaveLinks(userId, noteId),
-    syncNoteTags(userId, noteId, document),
-  ]);
+  await extractAndSaveLinks(userId, noteId);
 
   await recordOperation({
     userId,
@@ -542,11 +531,6 @@ export async function getPublicNote(noteId: string) {
       blocks: {
         orderBy: [{ position: "asc" }, { createdAt: "asc" }],
       },
-      tags: {
-        include: {
-          tag: true,
-        },
-      },
       category: {
         select: {
           id: true,
@@ -564,7 +548,6 @@ export async function getPublicNote(noteId: string) {
 
   return {
     ...note,
-    tags: note.tags.map((noteTag) => noteTag.tag.name),
     category: note.category
       ? {
           id: note.category.id,
@@ -597,11 +580,6 @@ export async function getPublicNoteBySlug(slug: string) {
       blocks: {
         orderBy: [{ position: "asc" }, { createdAt: "asc" }],
       },
-      tags: {
-        include: {
-          tag: true,
-        },
-      },
       folder: {
         select: {
           id: true,
@@ -625,8 +603,7 @@ export async function getPublicNoteBySlug(slug: string) {
 
     return {
       ...note,
-      tags: note.tags.map((noteTag) => noteTag.tag.name),
-      category: note.category
+        category: note.category
         ? {
             id: note.category.id,
             name: note.category.name,
@@ -666,7 +643,6 @@ export async function getNoteForExport(userId: string, noteId: string) {
     isPublished: note.isPublished,
     updatedAt: note.updatedAt,
     document: note.document,
-    tags: note.tags ?? [],
   };
 }
 
@@ -682,11 +658,6 @@ export async function getPublishedNotesForExport(userId: string) {
         blocks: {
           orderBy: [{ position: "asc" }, { createdAt: "asc" }],
         },
-        tags: {
-          include: {
-            tag: true,
-          },
-        },
       },
       orderBy: [{ updatedAt: "desc" }, { title: "asc" }],
     }),
@@ -701,7 +672,6 @@ export async function getPublishedNotesForExport(userId: string) {
     folderPath: buildFolderPath(folders, note.folderId),
     isPublished: note.isPublished,
     updatedAt: note.updatedAt,
-    tags: note.tags.map((noteTag) => noteTag.tag.name),
     document: persistedBlocksToDocument(
       note.blocks.map((block) => ({
         id: block.id,

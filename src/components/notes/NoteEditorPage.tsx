@@ -17,7 +17,6 @@ import { NoteTopbar } from "@/components/notes/NoteTopbar";
 import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 import { Button } from "@/components/ui/Button";
 import { useIsMobileViewport } from "@/components/ui/useIsMobileViewport";
-import { FeedAssignmentsCard } from "@/components/feeds/FeedAssignmentsCard";
 import { Card, CardContent } from "@/components/ui/Card";
 import {
   NOTE_CATEGORY_COLOR_OPTIONS,
@@ -27,7 +26,6 @@ import {
 import type { BacklinkResult } from "@/domain/link/link.types";
 import { DEFAULT_NOTE_TITLE } from "@/domain/note/note.types";
 import type { NoteReference, TiptapDocument } from "@/domain/note/note.types";
-import { TEMPLATE_CATEGORIES } from "@/domain/template/template.types";
 import {
   moveNoteAction,
   archiveNoteAction,
@@ -40,8 +38,6 @@ import {
 } from "@/server/api/notes";
 import { createNoteCategoryAction } from "@/server/api/categories";
 import { createSavannaFromNoteAction } from "@/server/api/savanna";
-import { createTemplateFromNoteAction } from "@/server/api/templates";
-import { getTemplateCategoryLabel } from "@/lib/template-category";
 import { queueLocalMutation, resolveLocalMutation } from "@/lib/local-sync";
 
 interface NoteEditorPageProps {
@@ -54,7 +50,6 @@ interface NoteEditorPageProps {
     category: NoteCategorySummary | null;
     isPinned: boolean;
     isPublished: boolean;
-    tags: string[];
     document: TiptapDocument;
   };
   folders: Array<{
@@ -64,14 +59,6 @@ interface NoteEditorPageProps {
   }>;
   categories: NoteCategorySummary[];
   backlinks: BacklinkResult[];
-  feedAssignments: Array<{
-    id: string;
-    title: string;
-    kind: "suggestion" | "news";
-    isSelected: boolean;
-    refreshIntervalHours: number;
-    itemCount: number;
-  }>;
 }
 
 type SaveStatus = "saved" | "saving" | "pending";
@@ -81,7 +68,6 @@ export function NoteEditorPage({
   folders,
   categories,
   backlinks,
-  feedAssignments,
 }: NoteEditorPageProps) {
   const [title, setTitle] = useState(note.title);
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(
@@ -101,7 +87,6 @@ export function NoteEditorPage({
   } | null>(null);
   const [isExportPending, startExportTransition] = useTransition();
   const [isCategoryPending, startCategoryTransition] = useTransition();
-  const [isTemplatePending, startTemplateTransition] = useTransition();
   const [isFolderMenuOpen, setIsFolderMenuOpen] = useState(false);
   const [isMetaPanelOpen, setIsMetaPanelOpen] = useState(false);
   const [isCreateCategoryOpen, setIsCreateCategoryOpen] = useState(false);
@@ -109,11 +94,6 @@ export function NoteEditorPage({
   const [newCategoryColor, setNewCategoryColor] =
     useState<(typeof NOTE_CATEGORY_COLOR_OPTIONS)[number]>("slate");
   const [newCategoryIcon, setNewCategoryIcon] = useState("");
-  const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
-  const [templateName, setTemplateName] = useState(note.title);
-  const [templateDescription, setTemplateDescription] = useState("");
-  const [templateCategory, setTemplateCategory] = useState<string>("custom");
-  const [templateIcon, setTemplateIcon] = useState(note.icon ?? "");
   const [noteIcon, setNoteIcon] = useState<string | null>(note.icon);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
   const [iconPickerPosition, setIconPickerPosition] = useState<{
@@ -496,14 +476,6 @@ export function NoteEditorPage({
     }
   }, [note.id, router]);
 
-  const handleOpenTemplateDialog = useCallback(() => {
-    setTemplateName(effectiveTitle);
-    setTemplateDescription("");
-    setTemplateCategory("custom");
-    setTemplateIcon(noteIcon ?? currentCategory?.icon ?? "");
-    setIsTemplateDialogOpen(true);
-  }, [currentCategory?.icon, effectiveTitle, noteIcon]);
-
   const handleCreateCategory = useCallback(() => {
     const normalizedName = newCategoryName.trim();
 
@@ -544,28 +516,6 @@ export function NoteEditorPage({
       }
     });
   }, [newCategoryColor, newCategoryIcon, newCategoryName, note.id]);
-
-  const handleSaveTemplate = useCallback(() => {
-    startTemplateTransition(async () => {
-      const template = await createTemplateFromNoteAction(note.id, {
-        name: templateName.trim() || effectiveTitle,
-        description: templateDescription.trim() || null,
-        category: templateCategory,
-        icon: templateIcon.trim() || null,
-      });
-
-      setIsTemplateDialogOpen(false);
-      router.push(`/templates?selected=${template.id}`);
-    });
-  }, [
-    effectiveTitle,
-    note.id,
-    router,
-    templateCategory,
-    templateDescription,
-    templateIcon,
-    templateName,
-  ]);
 
   const flushDocumentSave = useCallback(async () => {
     if (documentSaveInFlightRef.current) {
@@ -894,49 +844,27 @@ export function NoteEditorPage({
                 }}
               />
 
-              {currentCategory || note.tags.length > 0 ? (
+              {currentCategory ? (
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                  {currentCategory ? (
-                    <button
-                      type="button"
-                      style={{
-                        background: currentCategoryTokens.background,
-                        color: currentCategoryTokens.foreground,
-                        border: "none",
-                        padding: "2px 10px",
-                        borderRadius: "999px",
-                        fontSize: "12px",
-                        cursor: "pointer",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "6px",
-                      }}
-                      onClick={() => setIsMetaPanelOpen(true)}
-                    >
-                      <span aria-hidden="true">
-                        {currentCategory.icon ?? "•"}
-                      </span>
-                      <span>{currentCategory.name}</span>
-                    </button>
-                  ) : null}
-                  {note.tags.map((tag) => (
-                    <button
-                      key={tag}
-                      type="button"
-                      style={{
-                        background: "var(--md-sys-color-secondary-container)",
-                        color: "var(--md-sys-color-on-secondary-container)",
-                        border: "none",
-                        padding: "2px 10px",
-                        borderRadius: "6px",
-                        fontSize: "12px",
-                        cursor: "pointer",
-                      }}
-                      onClick={() => router.push(`/tags/${tag}`)}
-                    >
-                      #{tag}
-                    </button>
-                  ))}
+                  <button
+                    type="button"
+                    style={{
+                      background: currentCategoryTokens.background,
+                      color: currentCategoryTokens.foreground,
+                      border: "none",
+                      padding: "2px 10px",
+                      borderRadius: "999px",
+                      fontSize: "12px",
+                      cursor: "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                    }}
+                    onClick={() => setIsMetaPanelOpen(true)}
+                  >
+                    <span aria-hidden="true">{currentCategory.icon ?? "•"}</span>
+                    <span>{currentCategory.name}</span>
+                  </button>
                 </div>
               ) : null}
 
@@ -980,7 +908,7 @@ export function NoteEditorPage({
                               color: "var(--md-sys-color-on-surface-variant)",
                             }}
                           >
-                            Place the note in a main group separate from tags.
+                            Place the note in a main group.
                           </div>
                         </div>
                         <Button
@@ -1184,47 +1112,6 @@ export function NoteEditorPage({
                         ? `Published path: /published/${slug}`
                         : "A path is created automatically when published."}
                     </p>
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        gap: "12px",
-                        marginTop: "16px",
-                        paddingTop: "16px",
-                        borderTop:
-                          "1px solid var(--md-sys-color-outline-variant)",
-                        flexWrap: "wrap",
-                      }}
-                    >
-                      <div>
-                        <div
-                          style={{
-                            fontSize:
-                              "var(--md-sys-typescale-title-small-size)",
-                            fontWeight: 600,
-                            color: "var(--md-sys-color-on-surface)",
-                          }}
-                        >
-                          Template flow
-                        </div>
-                        <div
-                          style={{
-                            fontSize: "var(--md-sys-typescale-body-small-size)",
-                            color: "var(--md-sys-color-on-surface-variant)",
-                          }}
-                        >
-                          Save this note as a reusable starting point.
-                        </div>
-                      </div>
-                      <Button
-                        variant="tonal"
-                        onClick={handleOpenTemplateDialog}
-                        disabled={isTemplatePending}
-                      >
-                        Save as template
-                      </Button>
-                    </div>
                   </CardContent>
                 </Card>
               ) : null}
@@ -1308,21 +1195,6 @@ export function NoteEditorPage({
             </div>
           ) : null}
 
-          <div
-            style={{
-              margin: isMobileViewport ? "24px 0 32px" : "32px 0 40px",
-              padding: footerSectionPadding,
-            }}
-          >
-            <FeedAssignmentsCard
-              title="Feed connections"
-              description="Choose which suggestion and news feeds should be fed by this note here, or start a new feed directly."
-              assignments={feedAssignments}
-              sourceType="note"
-              sourceId={note.id}
-            />
-          </div>
-
         </div>
         {/* end main content column */}
 
@@ -1397,122 +1269,6 @@ export function NoteEditorPage({
         ) : null}
       </div>
       {/* end flex layout wrapper */}
-
-      {isTemplateDialogOpen ? (
-        <div
-          className="md-dialog-scrim"
-          onClick={() => setIsTemplateDialogOpen(false)}
-        >
-          <div
-            className="md-dialog"
-            style={{ maxWidth: "560px", width: "90vw" }}
-            onClick={(event) => event.stopPropagation()}
-          >
-            <h2 className="md-dialog-headline">Save as template</h2>
-            <div
-              className="md-dialog-content"
-              style={{ display: "grid", gap: "16px" }}
-            >
-              <div className="md-text-field md-text-field--outlined md-text-field--has-value">
-                <div className="md-text-field-container">
-                  <input
-                    className="md-text-field-input"
-                    value={templateName}
-                    onChange={(event) => setTemplateName(event.target.value)}
-                    placeholder=" "
-                  />
-                  <span className="md-text-field-label">Template name</span>
-                </div>
-              </div>
-
-              <div className="md-text-field md-text-field--outlined md-text-field--has-value">
-                <div
-                  className="md-text-field-container"
-                  style={{
-                    height: "auto",
-                    minHeight: "88px",
-                    padding: "12px 16px",
-                  }}
-                >
-                  <textarea
-                    className="md-text-field-input"
-                    value={templateDescription}
-                    onChange={(event) =>
-                      setTemplateDescription(event.target.value)
-                    }
-                    rows={3}
-                    placeholder=" "
-                    style={{ resize: "vertical", paddingTop: 0 }}
-                  />
-                  <span className="md-text-field-label">Description</span>
-                </div>
-              </div>
-
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: isMobileViewport
-                    ? "1fr"
-                    : "minmax(0, 1fr) 180px",
-                  gap: "12px",
-                }}
-              >
-                <label
-                  style={{
-                    display: "grid",
-                    gap: "4px",
-                    fontSize: "var(--md-sys-typescale-label-medium-size)",
-                    color: "var(--md-sys-color-on-surface-variant)",
-                  }}
-                >
-                  <span>Template category</span>
-                  <select
-                    value={templateCategory}
-                    onChange={(event) =>
-                      setTemplateCategory(event.target.value)
-                    }
-                    style={buildSelectStyle()}
-                  >
-                    {TEMPLATE_CATEGORIES.map((category) => (
-                      <option key={category} value={category}>
-                        {getTemplateCategoryLabel(category)}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <div className="md-text-field md-text-field--outlined md-text-field--has-value">
-                  <div className="md-text-field-container">
-                    <input
-                      className="md-text-field-input"
-                      value={templateIcon}
-                      onChange={(event) => setTemplateIcon(event.target.value)}
-                      placeholder=" "
-                    />
-                    <span className="md-text-field-label">Icon</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="md-dialog-actions">
-              <Button
-                variant="text"
-                onClick={() => setIsTemplateDialogOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="filled"
-                disabled={!templateName.trim() || isTemplatePending}
-                onClick={handleSaveTemplate}
-              >
-                {isTemplatePending ? "Saving..." : "Save template"}
-              </Button>
-            </div>
-          </div>
-        </div>
-      ) : null}
 
       {iconPickerPosition ? (
         <SidebarIconPicker

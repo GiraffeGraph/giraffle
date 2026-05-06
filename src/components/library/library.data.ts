@@ -1,9 +1,7 @@
 import type { SidebarFolder } from "@/components/sidebar/sidebar.types";
 import type { NoteCategorySummary } from "@/domain/category/category.types";
-import type { WorkspaceTag } from "@/domain/tag/tag.types";
 
 export const LIBRARY_UNFILED_GROUP_ID = "__library-unfiled__";
-export const LIBRARY_TEMPLATES_GROUP_ID = "__library-templates__";
 export const LIBRARY_CANVASES_GROUP_ID = "__library-canvases__";
 export const LIBRARY_ASSETS_GROUP_ID = "__library-assets__";
 
@@ -19,7 +17,6 @@ export type LibraryFlagFilterId = "root" | "pinned" | "published";
 export type LibraryContentType =
   | "folder"
   | "note"
-  | "template"
   | "canvas"
   | "asset";
 
@@ -28,8 +25,6 @@ export type LibraryEntryType = LibraryContentType | "smart_group";
 export interface LibraryCategoryFacet extends NoteCategorySummary {
   noteCount: number;
 }
-
-export type LibraryTagFacet = WorkspaceTag;
 
 export interface LibraryNoteSeed {
   id: string;
@@ -43,19 +38,6 @@ export interface LibraryNoteSeed {
   createdAt: Date | string;
   updatedAt: Date | string;
   category: NoteCategorySummary | null;
-  tags: Array<{
-    id: string;
-    name: string;
-  }>;
-}
-
-export interface LibraryTemplateSeed {
-  id: string;
-  name: string;
-  category: string;
-  icon: string | null;
-  createdAt: Date | string;
-  updatedAt: Date | string;
 }
 
 export interface LibraryCanvasSeed {
@@ -103,8 +85,6 @@ export interface LibraryEntry {
   categoryName: string | null;
   categoryColor: NoteCategorySummary["color"] | null;
   categoryIcon: string | null;
-  tagIds: string[];
-  tagNames: string[];
   isDroppableTarget: boolean;
   isDraggable: boolean;
 }
@@ -114,11 +94,9 @@ export interface LibraryWorkspaceSeed {
   expandedIds: string[];
   totalNotes: number;
   totalFolders: number;
-  totalTemplates: number;
   totalCanvases: number;
   totalAssets: number;
   categories: LibraryCategoryFacet[];
-  tags: LibraryTagFacet[];
 }
 
 export const LIBRARY_TABS: Array<{ id: LibraryTabId; label: string }> = [
@@ -144,7 +122,6 @@ export const LIBRARY_CONTENT_FILTERS: Array<{
 }> = [
   { id: "folder", label: "Folders" },
   { id: "note", label: "Notes" },
-  { id: "template", label: "Templates" },
   { id: "canvas", label: "Canvas" },
   { id: "asset", label: "Media" },
 ];
@@ -168,9 +145,7 @@ const MEETING_KEYWORDS = [
 export function buildLibraryWorkspaceSeed(input: {
   folders: SidebarFolder[];
   categories: NoteCategorySummary[];
-  tags: WorkspaceTag[];
   notes: LibraryNoteSeed[];
-  templates: LibraryTemplateSeed[];
   canvases: LibraryCanvasSeed[];
   assets: LibraryAssetSeed[];
 }): LibraryWorkspaceSeed {
@@ -199,10 +174,6 @@ export function buildLibraryWorkspaceSeed(input: {
 
   if (unfiledNotes.length > 0) {
     extraGroups.push(buildUnfiledEntry(unfiledNotes));
-  }
-
-  if (input.templates.length > 0) {
-    extraGroups.push(buildTemplatesEntry(input.templates));
   }
 
   if (input.canvases.length > 0) {
@@ -245,11 +216,9 @@ export function buildLibraryWorkspaceSeed(input: {
     expandedIds: collectExpandableIds([...rootEntries, ...extraGroups]),
     totalNotes: input.notes.length,
     totalFolders: countFolders(input.folders),
-    totalTemplates: input.templates.length,
     totalCanvases: input.canvases.length,
     totalAssets: input.assets.length,
     categories,
-    tags: input.tags,
   };
 }
 
@@ -311,8 +280,6 @@ function buildFolderEntry(input: {
     categoryName: null,
     categoryColor: null,
     categoryIcon: null,
-    tagIds: [],
-    tagNames: [],
     isDroppableTarget: true,
     isDraggable: false,
   };
@@ -323,9 +290,6 @@ function buildNoteEntry(
   pathSegments: string[]
 ): LibraryEntry {
   const isPublished = Boolean(note.isPublished);
-  const tagIds = note.tags.map((tag) => tag.id);
-  const tagNames = note.tags.map((tag) => tag.name);
-
   return {
     id: note.id,
     entityId: note.id,
@@ -342,9 +306,7 @@ function buildNoteEntry(
     isFavorite: Boolean(note.isPinned),
     isPublished,
     isAiMeeting:
-      hasMeetingKeyword(note.title) ||
-      note.tags.some((tag) => hasMeetingKeyword(tag.name)) ||
-      pathSegments.some(hasMeetingKeyword),
+      hasMeetingKeyword(note.title) || pathSegments.some(hasMeetingKeyword),
     href: `/notes/${note.id}`,
     folderId: note.folderId ?? null,
     noteCount: 1,
@@ -352,8 +314,6 @@ function buildNoteEntry(
     categoryName: note.category?.name ?? null,
     categoryColor: note.category?.color ?? null,
     categoryIcon: note.category?.icon ?? null,
-    tagIds,
-    tagNames,
     isDroppableTarget: false,
     isDraggable: true,
   };
@@ -386,69 +346,7 @@ function buildUnfiledEntry(notes: LibraryNoteSeed[]): LibraryEntry {
     categoryName: null,
     categoryColor: null,
     categoryIcon: null,
-    tagIds: [],
-    tagNames: [],
     isDroppableTarget: true,
-    isDraggable: false,
-  };
-}
-
-function buildTemplatesEntry(templates: LibraryTemplateSeed[]): LibraryEntry {
-  const children = templates.map((template) => ({
-    id: `template-${template.id}`,
-    entityId: template.id,
-    title: template.name,
-    icon: template.icon ?? "tooltip",
-    type: "template" as const,
-    kindLabel: template.category,
-    locationLabel: "Template Library",
-    visibility: "neutral" as const,
-    updatedAt: toIsoString(template.updatedAt),
-    parentId: LIBRARY_TEMPLATES_GROUP_ID,
-    hasChildren: false,
-    children: [],
-    isFavorite: false,
-    isPublished: false,
-    isAiMeeting: hasMeetingKeyword(template.name) || hasMeetingKeyword(template.category),
-    href: `/templates?selected=${template.id}`,
-    folderId: null,
-    noteCount: 0,
-    categoryId: null,
-    categoryName: null,
-    categoryColor: null,
-    categoryIcon: null,
-    tagIds: [],
-    tagNames: [],
-    isDroppableTarget: false,
-    isDraggable: false,
-  }));
-
-  return {
-    id: LIBRARY_TEMPLATES_GROUP_ID,
-    entityId: null,
-    title: "Templates",
-    icon: "tooltip",
-    type: "smart_group",
-    kindLabel: templates.length === 1 ? "1 template" : `${templates.length} templates`,
-    locationLabel: "Workspace tools",
-    visibility: "neutral",
-    updatedAt: children[0]?.updatedAt ?? new Date().toISOString(),
-    parentId: null,
-    hasChildren: children.length > 0,
-    children,
-    isFavorite: false,
-    isPublished: false,
-    isAiMeeting: children.some((child) => child.isAiMeeting),
-    href: "/templates",
-    folderId: null,
-    noteCount: 0,
-    categoryId: null,
-    categoryName: null,
-    categoryColor: null,
-    categoryIcon: null,
-    tagIds: [],
-    tagNames: [],
-    isDroppableTarget: false,
     isDraggable: false,
   };
 }
@@ -477,8 +375,6 @@ function buildCanvasesEntry(canvases: LibraryCanvasSeed[]): LibraryEntry {
     categoryName: null,
     categoryColor: null,
     categoryIcon: null,
-    tagIds: [],
-    tagNames: [],
     isDroppableTarget: false,
     isDraggable: false,
   }));
@@ -506,8 +402,6 @@ function buildCanvasesEntry(canvases: LibraryCanvasSeed[]): LibraryEntry {
     categoryName: null,
     categoryColor: null,
     categoryIcon: null,
-    tagIds: [],
-    tagNames: [],
     isDroppableTarget: false,
     isDraggable: false,
   };
@@ -550,8 +444,6 @@ function buildAssetsEntry(
       categoryName: null,
       categoryColor: null,
       categoryIcon: null,
-      tagIds: [],
-      tagNames: [],
       isDroppableTarget: false,
       isDraggable: false,
     };
@@ -580,8 +472,6 @@ function buildAssetsEntry(
     categoryName: null,
     categoryColor: null,
     categoryIcon: null,
-    tagIds: [],
-    tagNames: [],
     isDroppableTarget: false,
     isDraggable: false,
   };
@@ -648,7 +538,7 @@ function sortLibraryEntries(entries: LibraryEntry[]) {
       );
     }
 
-    if (left.type === "template" || left.type === "canvas" || left.type === "asset") {
+    if (left.type === "canvas" || left.type === "asset") {
       return (
         new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime()
       );

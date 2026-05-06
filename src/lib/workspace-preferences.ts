@@ -11,20 +11,18 @@ export const SIDEBAR_COMPACT_WIDTH = 60;
 export interface SidebarCollapseState {
   spotter: boolean;
   folders: boolean;
-  tags: boolean;
   recentNotes: boolean;
 }
 
 export const DEFAULT_COLLAPSED_SECTIONS: SidebarCollapseState = {
   spotter: false,
   folders: false,
-  tags: false,
   recentNotes: false,
 };
 
 export interface LocalSyncQueueItem {
   id: string;
-  entityType: "note" | "folder" | "template";
+  entityType: "note" | "folder";
   entityId: string;
   actionType: string;
   queuedAt: string;

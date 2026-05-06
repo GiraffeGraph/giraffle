@@ -45,7 +45,7 @@ Instead of storing notes as loose markdown files first and reconstructing struct
 - Block-based editing with Tiptap and custom block behaviors
 - Wikilinks, backlinks, unresolved links, and graph projection
 - PostgreSQL-backed canonical note and block storage
-- Folder hierarchy, tags, templates, publishing, and note proposals
+- Folder hierarchy, publishing, and note organization tools
 - Markdown and MDX export from canonical note data
 - Public note routes and slug-based published pages
 - Self-hosted production stack with Docker Compose, PostgreSQL, and nginx
@@ -57,8 +57,6 @@ Instead of storing notes as loose markdown files first and reconstructing struct
 - Canonical AST persistence into `Note` and `Block` tables
 - Patch-aware note saves plus explicit block mutation service APIs
 - Persisted wikilink index, backlinks, unresolved links, and graph projection
-- Tag extraction and persistence into `Tag` and `NoteTag`
-- Seeded daily, meeting, and project templates with variable filling
 - Folder navigation, note move flow, publish toggle, Markdown/MDX export, and public note pages
 
 ## Stack
@@ -79,8 +77,6 @@ Instead of storing notes as loose markdown files first and reconstructing struct
 | Note | metadata, canonical document, publish state |
 | Block | stable block IDs, ordering, parent-child nesting |
 | Link | wikilinks, resolved note targets, backlinks, graph edges |
-| Tag | extracted note tags with indexed browsing |
-| Template | seeded and custom note starters |
 | Folder | hierarchical organization and publish path segments |
 
 ## Local Development
@@ -131,13 +127,10 @@ ENV_FILE=.env.production npm run smoke:prod
 - `/dashboard` workspace overview
 - `/notes/[noteId]` editable note view
 - `/folders/[folderId]` folder-scoped note listing
-- `/tags/[tagName]` indexed tag browsing
 - `/graph` link graph over persisted projections
 - `/inbox` default landing area for notes without folders
 - `/search` filterable workspace search
-- `/templates` template library management
 - `/publish` publish/export workspace
-- `/proposals` review-first proposal queue
 - `/settings` theme, sidebar, and local sync preferences
 - `/account` account and password maintenance
 - `/p/[noteId]` public published note surface
@@ -240,7 +233,6 @@ Then open `http://localhost:3000` for a production smoke test, or point your dom
 - optional: `APP_ENCRYPTION_KEY` to encrypt app-managed provider settings stored from inside the UI
 - optional: `OPENAI_API_KEY` to enable AI-assisted routes
 - optional: `OPENAI_BASE_URL` for OpenAI-compatible gateways or self-hosted inference
-- optional: `FEED_REFRESH_SECRET` to enable authenticated feed refresh jobs
 - optional: `DEPLOYMENT_ID` for version-skew protection during rolling deploys
 - `POSTGRES_USER`
 - `POSTGRES_PASSWORD`
@@ -324,13 +316,10 @@ src/
     graph/
     notes/
     sidebar/
-    templates/
   domain/
     folder/
     link/
     note/
-    tag/
-    template/
   lib/
   server/
 ```

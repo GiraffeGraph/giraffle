@@ -45,7 +45,6 @@ describe("env.server", () => {
     expect(getAiRuntimeEnv({ OPENAI_API_KEY: "key-123" }).enabled).toBe(true);
     expect(result.warnings).toEqual([
       "OPENAI_API_KEY is not configured. AI routes will rely on app-managed provider settings or return 503.",
-      "FEED_REFRESH_SECRET is not configured. Feed refresh endpoint will return 503.",
     ]);
   });
 });

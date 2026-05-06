@@ -9,7 +9,6 @@ export type WorkspaceSearchMode = "recent" | "hybrid" | "regex";
 export type WorkspaceSearchReasonType =
   | "title"
   | "folder"
-  | "tag"
   | "body"
   | "fuzzy"
   | "regex"
@@ -26,7 +25,6 @@ export interface WorkspaceSearchNoteHit {
   slug: string | null;
   folderId: string | null;
   folderPath: string | null;
-  tags: string[];
   isPinned: boolean;
   updatedAt: Date;
   score: number;
@@ -42,8 +40,6 @@ export interface ParsedWorkspaceSearchQuery {
   tokens: string[];
   phrases: string[];
   negativeTokens: string[];
-  tagFilters: string[];
-  excludedTags: string[];
   folderFilters: string[];
   excludedFolders: string[];
   titleFilters: string[];
@@ -71,9 +67,6 @@ interface IndexedNote {
   folderId: string | null;
   folderPath: string | null;
   folderPathNormalized: string;
-  tagNames: string[];
-  tagNamesNormalized: string[];
-  tagsJoinedNormalized: string;
   isPinned: boolean;
   updatedAt: Date;
   bodyPlain: string;
@@ -106,15 +99,6 @@ export async function searchWorkspaceNotes(
         folderId: true,
         isPinned: true,
         updatedAt: true,
-        tags: {
-          select: {
-            tag: {
-              select: {
-                name: true,
-              },
-            },
-          },
-        },
         blocks: {
           orderBy: [{ position: "asc" }, { createdAt: "asc" }],
           take: MAX_BLOCKS_PER_NOTE,
@@ -143,11 +127,6 @@ export async function searchWorkspaceNotes(
       .replace(/\s+/g, " ")
       .trim();
     const folderPath = note.folderId ? folderPathById.get(note.folderId) ?? null : null;
-    const tagNames = note.tags.map((noteTag) => noteTag.tag.name).sort((a, b) =>
-      a.localeCompare(b, "tr"),
-    );
-    const tagNamesNormalized = tagNames.map(normalizeForSearch);
-
     return {
       id: note.id,
       title: note.title,
@@ -156,9 +135,6 @@ export async function searchWorkspaceNotes(
       folderId: note.folderId,
       folderPath,
       folderPathNormalized: normalizeForSearch(folderPath ?? ""),
-      tagNames,
-      tagNamesNormalized,
-      tagsJoinedNormalized: tagNamesNormalized.join(" "),
       isPinned: note.isPinned,
       updatedAt: note.updatedAt,
       bodyPlain,
@@ -179,7 +155,6 @@ export async function searchWorkspaceNotes(
         slug: note.slug,
         folderId: note.folderId,
         folderPath: note.folderPath,
-        tags: note.tagNames,
         isPinned: note.isPinned,
         updatedAt: note.updatedAt,
         score: limit - index,
@@ -187,10 +162,9 @@ export async function searchWorkspaceNotes(
           body: note.bodyPlain,
           title: note.title,
           folderPath: note.folderPath,
-          tags: note.tagNames,
-          parsed,
+            parsed,
         }),
-        highlights: note.tagNames.slice(0, 3),
+        highlights: [],
         reasons: [{ type: "title", label: "Recent" }],
         mode: "recent",
       })),
@@ -254,8 +228,6 @@ export function parseWorkspaceSearchQuery(query: string): ParsedWorkspaceSearchQ
       tokens: [],
       phrases: [],
       negativeTokens: [],
-      tagFilters: [],
-      excludedTags: [],
       folderFilters: [],
       excludedFolders: [],
       titleFilters: [],
@@ -267,8 +239,6 @@ export function parseWorkspaceSearchQuery(query: string): ParsedWorkspaceSearchQ
     };
   }
 
-  const tagFilters: string[] = [];
-  const excludedTags: string[] = [];
   const folderFilters: string[] = [];
   const excludedFolders: string[] = [];
   const titleFilters: string[] = [];
@@ -299,11 +269,6 @@ export function parseWorkspaceSearchQuery(query: string): ParsedWorkspaceSearchQ
     const normalizedValue = normalizeForSearch(value);
 
     if (!normalizedValue && prefix !== "is") {
-      continue;
-    }
-
-    if (hasPrefix && prefix === "tag") {
-      (isNegated ? excludedTags : tagFilters).push(normalizedValue);
       continue;
     }
 
@@ -350,8 +315,6 @@ export function parseWorkspaceSearchQuery(query: string): ParsedWorkspaceSearchQ
     tokens: tokenize(normalizedText),
     phrases,
     negativeTokens: Array.from(new Set(negativeTokens)),
-    tagFilters: Array.from(new Set(tagFilters)),
-    excludedTags: Array.from(new Set(excludedTags)),
     folderFilters: Array.from(new Set(folderFilters)),
     excludedFolders: Array.from(new Set(excludedFolders)),
     titleFilters: Array.from(new Set(titleFilters)),
@@ -375,13 +338,11 @@ function scoreRegexHit(
 
   const titleMatches = collectRegexMatches(note.title, regex, 6);
   const folderMatches = collectRegexMatches(note.folderPath ?? "", regex, 4);
-  const tagMatches = note.tagNames.flatMap((tag) => collectRegexMatches(tag, regex, 2)).slice(0, 6);
   const bodyMatches = collectRegexMatches(note.bodyPlain, regex, 10);
 
   if (
     titleMatches.length === 0 &&
     folderMatches.length === 0 &&
-    tagMatches.length === 0 &&
     bodyMatches.length === 0
   ) {
     return null;
@@ -398,9 +359,6 @@ function scoreRegexHit(
     reasons.push({ type: "regex", label: "Regex folder" });
   }
 
-  if (tagMatches.length > 0) {
-    reasons.push({ type: "regex", label: "Regex tags" });
-  }
 
   if (bodyMatches.length > 0) {
     reasons.push({ type: "regex", label: "Regex body" });
@@ -409,7 +367,6 @@ function scoreRegexHit(
   const score =
     titleMatches.length * 150 +
     folderMatches.length * 80 +
-    tagMatches.length * 72 +
     bodyMatches.length * 24 +
     phraseBoost(note, parsed) +
     getRecencyBoost(note.updatedAt) +
@@ -421,7 +378,6 @@ function scoreRegexHit(
     slug: note.slug,
     folderId: note.folderId,
     folderPath: note.folderPath,
-    tags: note.tagNames,
     isPinned: note.isPinned,
     updatedAt: note.updatedAt,
     score,
@@ -429,10 +385,9 @@ function scoreRegexHit(
       body: note.bodyPlain,
       title: note.title,
       folderPath: note.folderPath,
-      tags: note.tagNames,
-      parsed,
+        parsed,
     }),
-    highlights: [...titleMatches, ...folderMatches, ...tagMatches, ...bodyMatches].slice(0, 6),
+    highlights: [...titleMatches, ...folderMatches, ...bodyMatches].slice(0, 6),
     reasons: dedupeReasons(reasons).slice(0, 5),
     mode: "regex",
   };
@@ -478,13 +433,6 @@ function scoreHybridHit(
     reasons,
   });
 
-  score += scoreTagField({
-    note,
-    parsed,
-    reasons,
-    highlights,
-  });
-
   score += scoreBodyField({
     note,
     parsed,
@@ -519,7 +467,7 @@ function scoreHybridHit(
     if (
       note.titleNormalized.includes(token) ||
       note.folderPathNormalized.includes(token) ||
-      note.tagsJoinedNormalized.includes(token)
+      false
     ) {
       highlights.add(token);
     }
@@ -531,7 +479,6 @@ function scoreHybridHit(
     slug: note.slug,
     folderId: note.folderId,
     folderPath: note.folderPath,
-    tags: note.tagNames,
     isPinned: note.isPinned,
     updatedAt: note.updatedAt,
     score,
@@ -539,8 +486,7 @@ function scoreHybridHit(
       body: note.bodyPlain,
       title: note.title,
       folderPath: note.folderPath,
-      tags: note.tagNames,
-      parsed,
+        parsed,
     }),
     highlights: Array.from(highlights).slice(0, 6),
     reasons: dedupeReasons(reasons).slice(0, 5),
@@ -550,20 +496,6 @@ function scoreHybridHit(
 
 function noteMatchesFilters(note: IndexedNote, parsed: ParsedWorkspaceSearchQuery) {
   if (parsed.isPinned !== null && note.isPinned !== parsed.isPinned) {
-    return false;
-  }
-
-  if (
-    parsed.tagFilters.length > 0 &&
-    !parsed.tagFilters.every((filter) => note.tagsJoinedNormalized.includes(filter))
-  ) {
-    return false;
-  }
-
-  if (
-    parsed.excludedTags.length > 0 &&
-    parsed.excludedTags.some((filter) => note.tagsJoinedNormalized.includes(filter))
-  ) {
     return false;
   }
 
@@ -598,7 +530,6 @@ function noteMatchesFilters(note: IndexedNote, parsed: ParsedWorkspaceSearchQuer
   const combined = [
     note.titleNormalized,
     note.folderPathNormalized,
-    note.tagsJoinedNormalized,
     note.bodyNormalized,
   ]
     .filter(Boolean)
@@ -682,77 +613,6 @@ function scoreTextField({
   return score;
 }
 
-function scoreTagField({
-  note,
-  parsed,
-  reasons,
-  highlights,
-}: {
-  note: IndexedNote;
-  parsed: ParsedWorkspaceSearchQuery;
-  reasons: WorkspaceSearchReason[];
-  highlights: Set<string>;
-}) {
-  let score = 0;
-  let matchedTagCount = 0;
-
-  for (let index = 0; index < note.tagNamesNormalized.length; index += 1) {
-    const tagNormalized = note.tagNamesNormalized[index] ?? "";
-    const rawTag = note.tagNames[index] ?? "";
-
-    if (!tagNormalized) {
-      continue;
-    }
-
-    if (parsed.normalizedText && tagNormalized === parsed.normalizedText) {
-      score += 200;
-      matchedTagCount += 1;
-      highlights.add(rawTag);
-      continue;
-    }
-
-    if (parsed.normalizedText && tagNormalized.startsWith(parsed.normalizedText)) {
-      score += 118;
-      matchedTagCount += 1;
-      highlights.add(rawTag);
-      continue;
-    }
-
-    if (parsed.normalizedText && tagNormalized.includes(parsed.normalizedText)) {
-      score += 88;
-      matchedTagCount += 1;
-      highlights.add(rawTag);
-      continue;
-    }
-
-    const tokenOverlap = parsed.tokens.filter((token) => tagNormalized.includes(token)).length;
-
-    if (tokenOverlap > 0) {
-      score += tokenOverlap * 34;
-      matchedTagCount += 1;
-      highlights.add(rawTag);
-      continue;
-    }
-
-    const fuzzyScore = Math.max(
-      parsed.normalizedText ? diceCoefficient(parsed.normalizedText, tagNormalized) : 0,
-      tokenSetSimilarity(parsed.tokens, tokenize(tagNormalized)),
-    );
-
-    if (fuzzyScore >= 0.52) {
-      score += Math.round(fuzzyScore * 74);
-      matchedTagCount += 1;
-      highlights.add(rawTag);
-    }
-  }
-
-  if (matchedTagCount > 0) {
-    reasons.push({ type: "tag", label: "Tag match" });
-  }
-
-  return score;
-}
-
 function scoreBodyField({
   note,
   parsed,
@@ -810,12 +670,10 @@ function computeSemanticSignals(
 ) {
   const titleTokens = tokenize(note.titleNormalized);
   const folderTokens = tokenize(note.folderPathNormalized);
-  const tagTokens = note.tagNamesNormalized.flatMap((tag) => tokenize(tag));
   const topBodyTokens = tokenize(note.bodyNormalized).slice(0, 60);
 
   const titleSimilarity = tokenSetSimilarity(parsed.tokens, titleTokens);
   const folderSimilarity = tokenSetSimilarity(parsed.tokens, folderTokens);
-  const tagSimilarity = tokenSetSimilarity(parsed.tokens, tagTokens);
   const bodySimilarity = tokenSetSimilarity(parsed.tokens, topBodyTokens);
   const phraseSimilarity = Math.max(
     parsed.normalizedText ? diceCoefficient(parsed.normalizedText, note.titleNormalized) : 0,
@@ -825,7 +683,6 @@ function computeSemanticSignals(
   const score =
     Math.round(titleSimilarity * 72) +
     Math.round(folderSimilarity * 34) +
-    Math.round(tagSimilarity * 62) +
     Math.round(bodySimilarity * 18) +
     Math.round(phraseSimilarity * 36);
 
@@ -833,13 +690,6 @@ function computeSemanticSignals(
     return {
       score: 0,
       label: "",
-    };
-  }
-
-  if (tagSimilarity >= titleSimilarity && tagSimilarity >= folderSimilarity) {
-    return {
-      score,
-      label: "Tag fuzzy",
     };
   }
 
@@ -855,7 +705,6 @@ function computeSemanticSignals(
     label: "Fuzzy match",
   };
 }
-
 function phraseBoost(note: IndexedNote, parsed: ParsedWorkspaceSearchQuery) {
   if (parsed.phrases.length === 0) {
     return 0;
@@ -872,10 +721,6 @@ function phraseBoost(note: IndexedNote, parsed: ParsedWorkspaceSearchQuery) {
       score += 54;
     }
 
-    if (note.tagsJoinedNormalized.includes(phrase)) {
-      score += 72;
-    }
-
     if (note.bodyNormalized.includes(phrase)) {
       score += 28;
     }
@@ -890,10 +735,6 @@ function addFilterReasons(
 ) {
   if (parsed.isPinned === true) {
     reasons.push({ type: "filter", label: "Pinned only" });
-  }
-
-  if (parsed.tagFilters.length > 0) {
-    reasons.push({ type: "filter", label: `tag:${parsed.tagFilters[0]}` });
   }
 
   if (parsed.folderFilters.length > 0) {
@@ -920,19 +761,16 @@ function buildSnippet({
   body,
   title,
   folderPath,
-  tags,
   parsed,
 }: {
   body: string;
   title: string;
   folderPath: string | null;
-  tags: string[];
   parsed: ParsedWorkspaceSearchQuery;
 }) {
   const sourceCandidates = [
     body.trim(),
     folderPath?.trim() ?? "",
-    tags.join(" · ").trim(),
     title,
   ].filter(Boolean);
   const source = sourceCandidates[0] ?? title;

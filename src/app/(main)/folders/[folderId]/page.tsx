@@ -1,6 +1,5 @@
 import { notFound } from "next/navigation";
 import { FolderDetailPage } from "@/components/folders/FolderDetailPage";
-import { getFolderFeedAssignmentsAction } from "@/server/api/feeds";
 import { getAllFoldersAction, getFolderAction } from "@/server/api/folders";
 
 interface FolderPageProps {
@@ -9,10 +8,9 @@ interface FolderPageProps {
 
 export default async function FolderPage({ params }: FolderPageProps) {
   const { folderId } = await params;
-  const [folder, allFolders, feedAssignments] = await Promise.all([
+  const [folder, allFolders] = await Promise.all([
     getFolderAction(folderId),
     getAllFoldersAction(),
-    getFolderFeedAssignmentsAction(folderId),
   ]);
 
   if (!folder) {
@@ -39,7 +37,6 @@ export default async function FolderPage({ params }: FolderPageProps) {
         })),
       }}
       allFolders={allFolders}
-      feedAssignments={feedAssignments}
     />
   );
 }

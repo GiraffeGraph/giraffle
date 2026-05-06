@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import { useRouter } from "next/navigation";
 import { getSavannaNoteEditorAction } from "@/server/api/savanna";
 import { saveNoteContentAction } from "@/server/api/notes";
 import type { TiptapDocument } from "@/domain/note/note.types";
@@ -37,7 +36,6 @@ type NoteData = {
 };
 
 export function NotePreviewPanel({ noteId, anchorX, anchorY, onClose }: NotePreviewPanelProps) {
-  const router = useRouter();
   const [noteData, setNoteData] = useState<NoteData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

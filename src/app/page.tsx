@@ -36,7 +36,6 @@ const features = [
 const NAV_ITEMS = [
   { icon: "space_dashboard", label: "Dashboard", active: true },
   { icon: "inbox",           label: "Inbox" },
-  { icon: "layers",          label: "Templates" },
   { icon: "hub",             label: "Graph" },
   { icon: "public",          label: "Published" },
 ];

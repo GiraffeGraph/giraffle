@@ -22,7 +22,6 @@ export async function createNoteCategoryAction(input: {
 
   revalidatePath("/dashboard");
   revalidatePath("/search");
-  revalidatePath("/templates");
 
   return category;
 }

@@ -85,7 +85,6 @@ export interface Note {
     color: string;
     icon: string | null;
   } | null;
-  templateId: string | null;
   position: number;
   isPinned: boolean;
   isArchived: boolean;
@@ -94,7 +93,6 @@ export interface Note {
   createdAt: Date;
   updatedAt: Date;
   blocks?: Block[];
-  tags?: string[];
 }
 
 export interface NoteReference {
@@ -110,7 +108,6 @@ export interface CreateNoteInput {
   icon?: string;
   folderId?: string;
   categoryId?: string;
-  templateId?: string;
 }
 
 export interface UpdateNoteInput {

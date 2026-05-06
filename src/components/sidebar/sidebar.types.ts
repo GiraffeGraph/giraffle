@@ -1,5 +1,4 @@
 import type { ContextMenuItem } from "@/components/ui/ContextMenu";
-import type { TemplateVariable } from "@/domain/template/template.types";
 
 export interface SidebarNote {
   id: string;
@@ -24,22 +23,6 @@ export interface SidebarFolder {
   };
 }
 
-export interface SidebarTag {
-  id: string;
-  name: string;
-  noteCount: number;
-}
-
-export interface SidebarTemplate {
-  id: string;
-  name: string;
-  description: string | null;
-  category: string;
-  icon: string | null;
-  previewText?: string;
-  variables: TemplateVariable[];
-}
-
 export interface SidebarSpotterSession {
   id: string;
   title: string;
@@ -50,8 +33,6 @@ export interface SidebarSpotterSession {
 export interface SidebarProps {
   notes: SidebarNote[];
   folders: SidebarFolder[];
-  templates: SidebarTemplate[];
-  tags: SidebarTag[];
   spotterSessions: SidebarSpotterSession[];
   activeNoteId?: string;
 }
@@ -66,7 +47,7 @@ export interface FolderDropTarget {
   mode: "inside" | "after";
 }
 
-export type SidebarSectionKey = "spotter" | "folders" | "tags" | "recentNotes";
+export type SidebarSectionKey = "spotter" | "folders" | "recentNotes";
 
 export interface SidebarFolderDragData {
   type: "sidebar-folder";

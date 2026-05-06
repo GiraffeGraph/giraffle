@@ -23,7 +23,6 @@ import {
 import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 import { ThemeSelector } from "@/components/theme/ThemeSelector";
 import { Button } from "@/components/ui/Button";
-import { TemplatePicker } from "@/components/templates/TemplatePicker";
 import { useIsMobileViewport } from "@/components/ui/useIsMobileViewport";
 import { createFolderAction, relocateFolderAction } from "@/server/api/folders";
 import {
@@ -47,7 +46,6 @@ import {
   SIDEBAR_WIDTH_STORAGE_KEY,
   type SidebarCollapseState,
 } from "@/lib/workspace-preferences";
-import { getTemplateCategoryLabel } from "@/lib/template-category";
 import {
   isSidebarFolderDragData,
   isSidebarFolderDropData,
@@ -194,8 +192,6 @@ function ChevronLeftIcon() {
 export function Sidebar({
   notes,
   folders,
-  templates,
-  tags,
   spotterSessions,
   activeNoteId,
 }: SidebarProps) {
@@ -208,7 +204,6 @@ export function Sidebar({
   const [contextMenu, setContextMenu] = useState<SidebarMenuState | null>(null);
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
   const [paletteQuery, setPaletteQuery] = useState("");
-  const [templatePickerOpenSignal, setTemplatePickerOpenSignal] = useState(0);
   const [draggedFolderId, setDraggedFolderId] = useState<string | null>(null);
   const [folderDropTarget, setFolderDropTarget] =
     useState<FolderDropTarget | null>(null);
@@ -746,13 +741,6 @@ export function Sidebar({
     return q ? filterFolderTree(folders, q) : folders;
   }, [folders, paletteQuery]);
 
-  const filteredTags = useMemo(() => {
-    const q = paletteQuery.trim().toLowerCase();
-    const source = q
-      ? tags.filter((t) => t.name.toLowerCase().includes(q))
-      : tags.slice(0, 8);
-    return source.slice(0, 10);
-  }, [paletteQuery, tags]);
 
   const deferredSearchQuery = useDeferredValue(paletteQuery);
   const normalizedQuery = deferredSearchQuery.trim().toLowerCase();
@@ -800,18 +788,7 @@ export function Sidebar({
           closePalette();
           handleStartCreateFolder();
         },
-      },
-      {
-        id: "action-template-note",
-        group: "Quick actions",
-        title: "Create note from template",
-        description: "Open the template picker",
-        icon: encodeMaterialSymbol("tooltip"),
-        onSelect: async () => {
-          setTemplatePickerOpenSignal((v) => v + 1);
-        },
-      },
-      {
+      },      {
         id: "action-dashboard",
         group: "Navigation",
         title: "Go to dashboard",
@@ -890,28 +867,7 @@ export function Sidebar({
         onSelect: async () => {
           router.push("/search");
         },
-      },
-      {
-        id: "action-discover",
-        group: "Navigation",
-        title: "Open discover feed",
-        description: "See news and external world feeds",
-        icon: encodeMaterialSymbol("newspaper"),
-        onSelect: async () => {
-          router.push("/discover");
-        },
-      },
-      {
-        id: "action-templates",
-        group: "Navigation",
-        title: "Template library",
-        description: "Open the template management area",
-        icon: encodeMaterialSymbol("tooltip"),
-        onSelect: async () => {
-          router.push("/templates");
-        },
-      },
-      {
+      },      {
         id: "action-publish",
         group: "Navigation",
         title: "Publishing area",
@@ -920,18 +876,7 @@ export function Sidebar({
         onSelect: async () => {
           router.push("/publish");
         },
-      },
-      {
-        id: "action-suggestions",
-        group: "Navigation",
-        title: "Open suggestions feed",
-        description: "See note and folder suggestions",
-        icon: encodeMaterialSymbol("auto_awesome"),
-        onSelect: async () => {
-          router.push("/suggestions");
-        },
-      },
-      {
+      },      {
         id: "action-settings",
         group: "Navigation",
         title: "Settings",
@@ -989,44 +934,6 @@ export function Sidebar({
         },
       }));
 
-    const tagItems = tags
-      .filter(
-        (t) =>
-          !normalizedPaletteQuery ||
-          t.name.toLowerCase().includes(normalizedPaletteQuery),
-      )
-      .slice(0, normalizedPaletteQuery ? 8 : 5)
-      .map<CommandPaletteItem>((t) => ({
-        id: `tag-${t.id}`,
-        group: "Tags",
-        title: `#${t.name}`,
-        description: `${t.noteCount} tag containing notes`,
-        icon: "#",
-        onSelect: async () => {
-          router.push(`/tags/${t.name}`);
-        },
-      }));
-
-    const templateItems = templates
-      .filter(
-        (t) =>
-          !normalizedPaletteQuery ||
-          `${t.name} ${t.description ?? ""}`
-            .toLowerCase()
-            .includes(normalizedPaletteQuery),
-      )
-      .slice(0, normalizedPaletteQuery ? 6 : 4)
-      .map<CommandPaletteItem>((t) => ({
-        id: `template-${t.id}`,
-        group: "Templates",
-        title: t.name,
-        description:
-          t.description ?? `${getTemplateCategoryLabel(t.category)} template`,
-        icon: t.icon ?? encodeMaterialSymbol("tooltip"),
-        onSelect: async () => {
-          router.push(`/templates?selected=${t.id}`);
-        },
-      }));
 
     const spotterSessionItems = spotterSessions
       .filter(
@@ -1052,8 +959,6 @@ export function Sidebar({
         ...spotterSessionItems,
         ...noteItems,
         ...folderItems,
-        ...tagItems,
-        ...templateItems,
       ];
 
     const filteredActions = actionItems.filter((item) =>
@@ -1066,8 +971,6 @@ export function Sidebar({
       ...spotterSessionItems,
       ...noteItems,
       ...folderItems,
-      ...tagItems,
-      ...templateItems,
     ];
   }, [
     closePalette,
@@ -1079,8 +982,6 @@ export function Sidebar({
     spotterSessions,
     notes,
     router,
-    tags,
-    templates,
   ]);
 
   const folderGroupActions = useMemo<SidebarGroupAction[]>(
@@ -1101,13 +1002,11 @@ export function Sidebar({
 
   const isSpotterCollapsed = hasQuery ? false : collapsedSections.spotter;
   const isFoldersCollapsed = hasQuery ? false : collapsedSections.folders;
-  const isTagsCollapsed = hasQuery ? false : collapsedSections.tags;
   const isRecentNotesCollapsed = hasQuery
     ? false
     : collapsedSections.recentNotes;
   const inboxCount = notes.filter((n) => !n.folderId).length;
   const foldersCountLabel = flattenedFolders.length > 0 ? String(flattenedFolders.length) : undefined;
-  const tagsCountLabel = tags.length > 0 ? String(tags.length) : undefined;
   const recentNotesCountLabel = notes.length > 0 ? String(notes.length) : undefined;
 
   return (
@@ -1319,13 +1218,7 @@ export function Sidebar({
                         path: "/stride",
                         icon: "calendar_month",
                         label: "Stride",
-                      },
-                      {
-                        path: "/discover",
-                        icon: "newspaper",
-                        label: "Discover",
-                      },
-                      {
+                      },                      {
                         path: "/agents",
                         icon: "hub",
                         label: "Agents",
@@ -1611,51 +1504,6 @@ export function Sidebar({
                     )}
                   </div>
                 </SidebarGroup>
-
-                {/* Tags */}
-                <SidebarGroup
-                  label="Tags"
-                  icon={
-                    <span
-                      className="material-symbols-outlined sm"
-                      aria-hidden="true"
-                    >
-                      sell
-                    </span>
-                  }
-                  meta={tagsCountLabel}
-                  collapsed={isTagsCollapsed}
-                  showChevron
-                  onToggle={() => toggleSection("tags")}
-                >
-                  <div className="sidebar-tag-list">
-                    {filteredTags.length === 0 ? (
-                      <div className="sidebar-empty">
-                        {hasQuery
-                          ? "No matching tags."
-                          : "No indexed tags yet."}
-                      </div>
-                    ) : (
-                      filteredTags.map((tag) => (
-                        <button
-                          key={tag.id}
-                          className={`sidebar-item sidebar-tag-item${pathname === `/tags/${tag.name}` ? " active" : ""}`}
-                          onClick={() => router.push(`/tags/${tag.name}`)}
-                        >
-                          <span className="sidebar-item-label">
-                            #{tag.name}
-                          </span>
-                          {tag.noteCount > 0 && (
-                            <span className="sidebar-tag-count">
-                              {tag.noteCount}
-                            </span>
-                          )}
-                        </button>
-                      ))
-                    )}
-                  </div>
-                </SidebarGroup>
-
                 {/* Recent notes */}
                 <SidebarGroup
                   label={hasQuery ? "Matching notes" : "Recent notes"}
@@ -1704,17 +1552,6 @@ export function Sidebar({
           ) : null}
         </>
       )}
-
-      {/* Template picker (hidden trigger) */}
-      <div className="sidebar-template-host" aria-hidden="true">
-        <TemplatePicker
-          templates={templates}
-          buttonLabel="Template"
-          buttonClassName="sidebar-template-host-button"
-          openSignal={templatePickerOpenSignal}
-        />
-      </div>
-
       {!effectiveIsSidebarCompact && !isMobileViewport ? (
         <div
           className="sidebar-resize-handle"

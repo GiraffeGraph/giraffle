@@ -13,15 +13,13 @@ beforeAll(async () => {
 describe("search.service", () => {
   it("parses operators, phrases, and negation", () => {
     const parsed = parseWorkspaceSearchQuery(
-      'tag:work folder:"Product Roadmap" title:weekly is:pinned "launch plan" -draft -tag:archive',
+      'folder:"Product Roadmap" title:weekly is:pinned "launch plan" -draft',
     );
 
-    expect(parsed.tagFilters).toEqual(["work"]);
     expect(parsed.folderFilters).toEqual(["product roadmap"]);
     expect(parsed.titleFilters).toEqual(["weekly"]);
     expect(parsed.phrases).toEqual(["launch plan"]);
     expect(parsed.negativeTokens).toContain("draft");
-    expect(parsed.excludedTags).toEqual(["archive"]);
     expect(parsed.isPinned).toBe(true);
   });
 

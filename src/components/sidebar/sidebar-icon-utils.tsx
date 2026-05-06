@@ -7,7 +7,6 @@ const LEGACY_MATERIAL_ICON_ALIASES: Record<string, string> = {
   daily: "event",
   meeting: "groups",
   project: "assignment",
-  template: "tooltip",
 };
 
 export const SIDEBAR_ICON_MATERIAL_SYMBOLS = [

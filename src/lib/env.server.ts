@@ -33,17 +33,11 @@ export interface AiRuntimeEnv {
   enabled: boolean;
 }
 
-export interface FeedRuntimeEnv {
-  refreshSecret: string | null;
-  enabled: boolean;
-}
-
 export interface StartupValidationResult {
   app: AppRuntimeEnv;
   auth: AuthRuntimeEnv;
   database: DatabaseRuntimeEnv;
   ai: AiRuntimeEnv;
-  feed: FeedRuntimeEnv;
   warnings: string[];
 }
 
@@ -150,21 +144,11 @@ export function getAiRuntimeEnv(rawEnv: RawEnv = process.env) {
   } satisfies AiRuntimeEnv;
 }
 
-export function getFeedRuntimeEnv(rawEnv: RawEnv = process.env) {
-  const refreshSecret = readTrimmed(rawEnv, "FEED_REFRESH_SECRET");
-
-  return {
-    refreshSecret,
-    enabled: Boolean(refreshSecret),
-  } satisfies FeedRuntimeEnv;
-}
-
 export function validateStartupEnv(rawEnv: RawEnv = process.env) {
   const app = getAppRuntimeEnv(rawEnv);
   const auth = getAuthRuntimeEnv(rawEnv);
   const database = getDatabaseRuntimeEnv(rawEnv);
   const ai = getAiRuntimeEnv(rawEnv);
-  const feed = getFeedRuntimeEnv(rawEnv);
   const errors: string[] = [];
   const warnings: string[] = [];
 
@@ -182,10 +166,6 @@ export function validateStartupEnv(rawEnv: RawEnv = process.env) {
     );
   }
 
-  if (!feed.enabled) {
-    warnings.push("FEED_REFRESH_SECRET is not configured. Feed refresh endpoint will return 503.");
-  }
-
   if (errors.length > 0) {
     throw new Error(`Invalid runtime configuration:\n- ${errors.join("\n- ")}`);
   }
@@ -195,7 +175,6 @@ export function validateStartupEnv(rawEnv: RawEnv = process.env) {
     auth,
     database,
     ai,
-    feed,
     warnings,
   } satisfies StartupValidationResult;
 }

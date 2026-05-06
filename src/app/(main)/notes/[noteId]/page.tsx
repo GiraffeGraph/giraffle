@@ -3,7 +3,6 @@ import { getAllFoldersAction } from "@/server/api/folders";
 import { getNoteCategoriesAction } from "@/server/api/categories";
 import { getNoteAction, getBacklinksAction } from "@/server/api/notes";
 import { NoteEditorPage } from "@/components/notes/NoteEditorPage";
-import { getNoteFeedAssignmentsAction } from "@/server/api/feeds";
 
 interface NotePageProps {
   params: Promise<{ noteId: string }>;
@@ -11,12 +10,11 @@ interface NotePageProps {
 
 export default async function NotePage({ params }: NotePageProps) {
   const { noteId } = await params;
-  const [note, backlinks, folders, categories, feedAssignments] = await Promise.all([
+  const [note, backlinks, folders, categories] = await Promise.all([
     getNoteAction(noteId),
     getBacklinksAction(noteId),
     getAllFoldersAction(),
     getNoteCategoriesAction(),
-    getNoteFeedAssignmentsAction(noteId),
   ]);
 
   if (!note) {
@@ -32,7 +30,6 @@ export default async function NotePage({ params }: NotePageProps) {
     category: note.category ?? null,
     isPinned: note.isPinned,
     isPublished: note.isPublished,
-    tags: note.tags ?? [],
     document: note.document,
   };
 
@@ -42,7 +39,6 @@ export default async function NotePage({ params }: NotePageProps) {
       folders={folders}
       categories={categories}
       backlinks={backlinks}
-      feedAssignments={feedAssignments}
     />
   );
 }

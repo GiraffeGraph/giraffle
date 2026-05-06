@@ -76,7 +76,6 @@ export function LibraryWorkspace({
   totalCanvases,
   totalAssets,
   categories,
-  tags,
 }: LibraryWorkspaceSeed) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<LibraryTabId>("recents");
@@ -88,7 +87,6 @@ export function LibraryWorkspace({
   const [activeContentTypes, setActiveContentTypes] = useState<LibraryContentType[]>([]);
   const [activeFlags, setActiveFlags] = useState<LibraryFlagFilterId[]>([]);
   const [activeCategoryIds, setActiveCategoryIds] = useState<string[]>([]);
-  const [activeTagIds, setActiveTagIds] = useState<string[]>([]);
   const [compactMode, setCompactMode] = useState(false);
   const [selectedNoteIds, setSelectedNoteIds] = useState<Set<string>>(() => new Set());
   const [draggedNoteId, setDraggedNoteId] = useState<string | null>(null);
@@ -109,9 +107,8 @@ export function LibraryWorkspace({
         activeContentTypes,
         activeFlags,
         activeCategoryIds,
-        activeTagIds,
       }),
-    [activeCategoryIds, activeContentTypes, activeFlags, activeTab, activeTagIds, entries, searchQuery]
+    [activeCategoryIds, activeContentTypes, activeFlags, activeTab, entries, searchQuery]
   );
   const entryById = useMemo(() => buildEntryIndex(filteredEntries), [filteredEntries]);
   const expandedRowsOutsideList = useMemo(
@@ -266,11 +263,6 @@ export function LibraryWorkspace({
     setActiveCategoryIds((current) =>
       current.includes(categoryId) ? current.filter((value) => value !== categoryId) : [...current, categoryId]
     );
-  const toggleTag = (tagId: string) =>
-    setActiveTagIds((current) =>
-      current.includes(tagId) ? current.filter((value) => value !== tagId) : [...current, tagId]
-    );
-
   const handleCreatePage = () => {
     const folderId = activeRow?.type === "folder" ? activeRow.folderId : activeRow?.type === "note" ? activeRow.folderId : null;
     const categoryId = activeRow?.type === "note" ? activeRow.categoryId : null;
@@ -333,7 +325,7 @@ export function LibraryWorkspace({
           <div className={styles.facetSection}>
             <div className={styles.facetSectionHeader}>
               <span className={styles.facetTitle}>Quick filters</span>
-              <button type="button" className={styles.clearFiltersButton} onClick={() => { setActiveContentTypes([]); setActiveFlags([]); setActiveCategoryIds([]); setActiveTagIds([]); }}>Clear</button>
+              <button type="button" className={styles.clearFiltersButton} onClick={() => { setActiveContentTypes([]); setActiveFlags([]); setActiveCategoryIds([]); }}>Clear</button>
             </div>
             <div className={styles.filterRow}>{LIBRARY_FLAG_FILTERS.map((filter) => <button key={filter.id} type="button" className={`${styles.filterChip} ${activeFlags.includes(filter.id) ? styles.filterChipActive : ""}`} onClick={() => toggleFlag(filter.id)}>{filter.label}</button>)}</div>
           </div>
@@ -342,7 +334,6 @@ export function LibraryWorkspace({
             <div className={styles.filterRow}>{LIBRARY_CONTENT_FILTERS.map((filter) => <button key={filter.id} type="button" className={`${styles.filterChip} ${activeContentTypes.includes(filter.id) ? styles.filterChipActive : ""}`} onClick={() => toggleContentType(filter.id)}>{filter.label}</button>)}</div>
           </div>
           {categories.length > 0 ? <div className={styles.facetSection}><span className={styles.facetTitle}>Categories</span><div className={styles.filterRow}>{categories.map((category) => <button key={category.id} type="button" className={`${styles.filterChip} ${activeCategoryIds.includes(category.id) ? styles.filterChipActive : ""}`} onClick={() => toggleCategory(category.id)} style={activeCategoryIds.includes(category.id) ? getNoteCategoryColorTokens(category.color) : undefined}>{category.icon ? <span className="material-symbols-outlined sm">{category.icon}</span> : null}{category.name}<span className={styles.facetCount}>{category.noteCount}</span></button>)}</div></div> : null}
-          {tags.length > 0 ? <div className={styles.facetSection}><span className={styles.facetTitle}>Tags</span><div className={styles.filterRow}>{tags.slice(0, 16).map((tag) => <button key={tag.id} type="button" className={`${styles.filterChip} ${activeTagIds.includes(tag.id) ? styles.filterChipActive : ""}`} onClick={() => toggleTag(tag.id)}>#{tag.name}<span className={styles.facetCount}>{tag.noteCount}</span></button>)}</div></div> : null}
         </div>
       ) : null}
     </div>
@@ -590,8 +581,6 @@ function ListView({
                           <span className={styles.typeChip}>{formatType(row.entry.type)}</span>
                           {row.entry.type === "note" ? <span className={`${styles.visibilityChip} ${row.entry.visibility === "private" ? styles.visibilityPrivate : styles.visibilityShared}`}>{formatVisibility(row.entry.visibility)}</span> : null}
                           {row.entry.categoryName ? <span className={styles.categoryChip} style={categoryTokens ?? undefined}>{row.entry.categoryIcon ? renderStoredIcon(row.entry.categoryIcon, { materialClassName: "material-symbols-outlined sm", emojiStyle: { fontSize: "14px", lineHeight: 1 } }) : null}{row.entry.categoryName}</span> : null}
-                          {row.entry.tagNames.slice(0, 2).map((tag) => <span className={styles.tagChip} key={`${row.id}-${tag}`}>#{tag}</span>)}
-                          {row.entry.tagNames.length > 2 ? <span className={styles.tagChip}>+{row.entry.tagNames.length - 2}</span> : null}
                         </div>
                       </div>
                     </div>
@@ -760,15 +749,6 @@ function ColumnsPreview({ entry }: { entry: LibraryEntry }) {
             <span className={styles.categoryChip} style={categoryTokens ?? undefined}>{entry.categoryName}</span>
           </div>
         )}
-        {entry.tagNames.length > 0 && (
-          <div className={styles.columnsPreviewMetaRow}>
-            <span className={styles.columnsPreviewMetaIcon}><span className="material-symbols-outlined sm">tag</span></span>
-            <span className={styles.columnsPreviewMetaLabel}>Tags</span>
-            <div className={styles.columnsPreviewTags}>
-              {entry.tagNames.map((tag) => <span className={styles.tagChip} key={tag}>#{tag}</span>)}
-            </div>
-          </div>
-        )}
       </div>
       {entry.href && (
         <Link href={entry.href} className={styles.columnsPreviewOpenBtn}>
@@ -857,12 +837,6 @@ function GalleryView({ visibleRows, effectiveSelectedId, onSelect }: GalleryView
                   {row.entry.categoryName}
                 </span>
               )}
-              {row.entry.tagNames.slice(0, 2).map((tag) => (
-                <span className={styles.tagChip} key={`${row.id}-${tag}`}>#{tag}</span>
-              ))}
-              {row.entry.tagNames.length > 2 && (
-                <span className={styles.tagChip}>+{row.entry.tagNames.length - 2}</span>
-              )}
               <span className={styles.galleryCardDate}>{formatRelativeTime(row.entry.updatedAt)}</span>
             </div>
           </div>
@@ -924,7 +898,7 @@ function flattenContainerRows(
   });
 }
 
-function filterEntries(entries: LibraryEntry[], filters: { activeTab: LibraryTabId; searchQuery: string; activeContentTypes: LibraryContentType[]; activeFlags: LibraryFlagFilterId[]; activeCategoryIds: string[]; activeTagIds: string[]; }) {
+function filterEntries(entries: LibraryEntry[], filters: { activeTab: LibraryTabId; searchQuery: string; activeContentTypes: LibraryContentType[]; activeFlags: LibraryFlagFilterId[]; activeCategoryIds: string[]; }) {
   const search = filters.searchQuery.trim().toLocaleLowerCase("tr");
   const normalizedFilters = { ...filters, searchQuery: search };
 
@@ -936,7 +910,7 @@ function filterEntries(entries: LibraryEntry[], filters: { activeTab: LibraryTab
   );
 }
 
-function filterEntryTree(entry: LibraryEntry, filters: { activeTab: LibraryTabId; searchQuery: string; activeContentTypes: LibraryContentType[]; activeFlags: LibraryFlagFilterId[]; activeCategoryIds: string[]; activeTagIds: string[]; }): LibraryEntry | null {
+function filterEntryTree(entry: LibraryEntry, filters: { activeTab: LibraryTabId; searchQuery: string; activeContentTypes: LibraryContentType[]; activeFlags: LibraryFlagFilterId[]; activeCategoryIds: string[]; }): LibraryEntry | null {
   const filteredChildren = sortEntries(
     entry.children
       .map((child) => filterEntryTree(child, filters))
@@ -947,7 +921,7 @@ function filterEntryTree(entry: LibraryEntry, filters: { activeTab: LibraryTabId
     filters.searchQuery.length === 0 ||
     `${entry.title} ${entry.locationLabel} ${entry.kindLabel} ${
       entry.categoryName ?? ""
-    } ${entry.tagNames.join(" ")}`
+    }`
       .toLocaleLowerCase("tr")
       .includes(filters.searchQuery);
 
@@ -1007,10 +981,9 @@ function matchesTabFilter(entry: LibraryEntry, activeTab: LibraryTabId) {
   return true;
 }
 
-function matchesFacetFilters(entry: LibraryEntry, filters: { activeContentTypes: LibraryContentType[]; activeFlags: LibraryFlagFilterId[]; activeCategoryIds: string[]; activeTagIds: string[]; }) {
+function matchesFacetFilters(entry: LibraryEntry, filters: { activeContentTypes: LibraryContentType[]; activeFlags: LibraryFlagFilterId[]; activeCategoryIds: string[]; }) {
   if (filters.activeContentTypes.length > 0 && (entry.type === "smart_group" || !filters.activeContentTypes.includes(entry.type))) return false;
   if (filters.activeCategoryIds.length > 0 && (entry.type !== "note" || !entry.categoryId || !filters.activeCategoryIds.includes(entry.categoryId))) return false;
-  if (filters.activeTagIds.length > 0 && (entry.type !== "note" || filters.activeTagIds.some((tagId) => !entry.tagIds.includes(tagId)))) return false;
   for (const flag of filters.activeFlags) {
     if (flag === "root" && entry.parentId !== null) return false;
     if (flag === "pinned" && !entry.isFavorite) return false;
@@ -1065,7 +1038,6 @@ function formatRelativeTime(input: string) {
 
 function formatType(type: LibraryEntry["type"]) {
   if (type === "folder") return "Folder";
-  if (type === "template") return "Template";
   if (type === "canvas") return "Canvas";
   if (type === "asset") return "File";
   if (type === "smart_group") return "Group";

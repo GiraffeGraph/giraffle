@@ -82,7 +82,6 @@ export async function saveNoteContentAction(
   await saveNoteContent(userId, noteId, document);
   revalidatePath("/dashboard");
   revalidatePath("/graph");
-  revalidatePath("/tags");
   revalidatePath(`/notes/${noteId}`);
   revalidatePath(`/p/${noteId}`);
 }

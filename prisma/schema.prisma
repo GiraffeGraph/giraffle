@@ -23,7 +23,6 @@ model User {
   folders             Folder[]
   assets              MediaAsset[]
   passwordResetTokens PasswordResetToken[]
-  feeds               WorkspaceFeed[]
   operationLogs       OperationLog[]
   canvases            Canvas[]
   noteCategories      NoteCategory[]
@@ -79,7 +78,6 @@ model Folder {
   userId      String
   user        User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   notes       Note[]
-  feedSources WorkspaceFeedSource[]
   createdAt   DateTime              @default(now())
   updatedAt   DateTime              @updatedAt
 
@@ -97,7 +95,6 @@ model Note {
   folder      Folder?       @relation(fields: [folderId], references: [id], onDelete: SetNull)
   categoryId  String?
   category    NoteCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  templateId  String?
   userId      String
   user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   position    Int           @default(0)
@@ -109,11 +106,9 @@ model Note {
   updatedAt   DateTime      @updatedAt
 
   blocks        Block[]
-  tags          NoteTag[]
   outgoingLinks Link[]                @relation("OutgoingLinks")
   incomingLinks Link[]                @relation("IncomingLinks")
   assets        MediaAsset[]
-  feedSources   WorkspaceFeedSource[]
 
   @@index([folderId])
   @@index([categoryId])
@@ -133,7 +128,6 @@ model NoteCategory {
   userId      String
   user        User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   notes       Note[]
-  feedSources WorkspaceFeedSource[]
   createdAt   DateTime              @default(now())
   updatedAt   DateTime              @updatedAt
 
@@ -182,37 +176,6 @@ model Link {
   @@index([targetRaw])
 }
 
-model Tag {
-  id    String    @id @default(uuid())
-  name  String    @unique
-  notes NoteTag[]
-
-  @@index([name])
-}
-
-model NoteTag {
-  noteId String
-  note   Note   @relation(fields: [noteId], references: [id], onDelete: Cascade)
-  tagId  String
-  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
-
-  @@id([noteId, tagId])
-}
-
-model Template {
-  id          String   @id @default(uuid())
-  name        String
-  description String?
-  category    String   @default("blank")
-  icon        String?
-  blocks      Json     @default("[]")
-  variables   Json     @default("[]")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@index([category])
-}
-
 model MediaAsset {
   id          String   @id @default(uuid())
   noteId      String?
@@ -257,78 +220,6 @@ model OperationLog {
 
   @@index([userId, createdAt])
   @@index([entityType, entityId])
-}
-
-model WorkspaceFeed {
-  id                   String                @id @default(uuid())
-  title                String
-  description          String?
-  kind                 String                @default("news")
-  refreshIntervalHours Int                   @default(24)
-  language             String                @default("mixed")
-  queryMode            String                @default("auto")
-  queryOverride        String?
-  isEnabled            Boolean               @default(true)
-  showOnDashboard      Boolean               @default(true)
-  lastRefreshedAt      DateTime?
-  nextRefreshAt        DateTime?
-  userId               String
-  user                 User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  sources              WorkspaceFeedSource[]
-  items                WorkspaceFeedItem[]
-  createdAt            DateTime              @default(now())
-  updatedAt            DateTime              @updatedAt
-
-  @@index([userId])
-  @@index([userId, kind])
-  @@index([userId, isEnabled, nextRefreshAt])
-}
-
-model WorkspaceFeedSource {
-  id              String        @id @default(uuid())
-  feedId          String
-  feed            WorkspaceFeed @relation(fields: [feedId], references: [id], onDelete: Cascade)
-  sourceType      String        @default("manual")
-  folderId        String?
-  folder          Folder?       @relation(fields: [folderId], references: [id], onDelete: SetNull)
-  noteId          String?
-  note            Note?         @relation(fields: [noteId], references: [id], onDelete: SetNull)
-  categoryId      String?
-  category        NoteCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  includeChildren Boolean       @default(true)
-  createdAt       DateTime      @default(now())
-
-  @@unique([feedId, folderId])
-  @@unique([feedId, noteId])
-  @@unique([feedId, categoryId])
-  @@index([feedId])
-  @@index([feedId, sourceType])
-  @@index([folderId])
-  @@index([noteId])
-  @@index([categoryId])
-}
-
-model WorkspaceFeedItem {
-  id          String        @id @default(uuid())
-  feedId      String
-  feed        WorkspaceFeed @relation(fields: [feedId], references: [id], onDelete: Cascade)
-  itemType    String        @default("entry")
-  title       String
-  summary     String?
-  whyRelevant String?
-  sourceName  String?
-  sourceUrl   String?
-  sourceKey   String?
-  publishedAt DateTime?
-  payload     Json          @default("{}")
-  position    Int           @default(0)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-
-  @@unique([feedId, sourceKey])
-  @@index([feedId, createdAt])
-  @@index([feedId, position])
-  @@index([feedId, publishedAt])
 }
 
 model SpotterSession {

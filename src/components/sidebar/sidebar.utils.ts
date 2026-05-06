@@ -23,7 +23,6 @@ export function areSidebarCollapseStatesEqual(
   return (
     left.spotter === right.spotter &&
     left.folders === right.folders &&
-    left.tags === right.tags &&
     left.recentNotes === right.recentNotes
   );
 }
@@ -37,7 +36,6 @@ export function loadSidebarCollapseState(): SidebarCollapseState {
     return {
       spotter: Boolean(parsed.spotter),
       folders: Boolean(parsed.folders),
-      tags: Boolean(parsed.tags),
       recentNotes: Boolean(parsed.recentNotes),
     };
   } catch {

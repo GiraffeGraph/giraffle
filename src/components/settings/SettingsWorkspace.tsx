@@ -5,22 +5,17 @@ import {
   LOCAL_SYNC_QUEUE_STORAGE_KEY,
   type LocalSyncQueueItem,
 } from "@/lib/workspace-preferences";
-import { FeedSettingsPanel } from "@/components/feeds/FeedSettingsPanel";
 import { IntegrationSettingsCard } from "@/components/settings/IntegrationSettingsCard";
 import { SelfHostedGuideCard } from "@/components/settings/SelfHostedGuideCard";
 import { UpdateCenterCard } from "@/components/update/UpdateCenterCard";
 import { Button } from "@/components/ui/Button";
 import { Card, CardHeader, CardTitle, CardContent, CardActions } from "@/components/ui/Card";
 import type { OpenAiIntegrationSummary } from "@/domain/integration/integration.types";
-import type { WorkspaceFeedSummary } from "@/domain/feed/feed.types";
 import type { AppUpdateStatus } from "@/domain/update/update.types";
 
 export interface SettingsWorkspaceProps {
   appVersion: string;
   updateStatus?: AppUpdateStatus;
-  feeds?: WorkspaceFeedSummary[];
-  notes?: Array<{ id: string; title: string }>;
-  folders?: Array<{ id: string; name: string }>;
   openaiIntegration: Omit<OpenAiIntegrationSummary, "updatedAt"> & {
     updatedAt: string | null;
   };
@@ -42,9 +37,6 @@ export interface SettingsWorkspaceProps {
 export function SettingsWorkspace({
   appVersion,
   updateStatus,
-  feeds = [],
-  notes = [],
-  folders = [],
   openaiIntegration,
   encryptionAvailable,
   operationLogs,
@@ -109,17 +101,6 @@ export function SettingsWorkspace({
       />
 
       {updateStatus ? <UpdateCenterCard status={updateStatus} /> : null}
-
-      {feeds.length > 0 || notes.length > 0 || folders.length > 0 ? (
-        <Card variant="outlined">
-          <CardHeader>
-            <CardTitle>Feed Management</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <FeedSettingsPanel feeds={feeds} notes={notes} folders={folders} />
-          </CardContent>
-        </Card>
-      ) : null}
 
       <Card variant="outlined">
         <CardHeader>
