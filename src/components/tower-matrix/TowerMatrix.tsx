@@ -347,76 +347,6 @@ function OuterQuadrant({
   );
 }
 
-function NotePool({
-  notes,
-  selectedNoteId,
-  onDrop,
-  onSelect,
-  onCreate,
-}: {
-  notes: NoteWithTodoSummary[];
-  selectedNoteId: string | null;
-  onDrop: (id: string, q: null) => void;
-  onSelect: (n: NoteWithTodoSummary) => void;
-  onCreate: (note: NoteWithTodoSummary) => void;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [isOver, setIsOver] = useState(false);
-  const [filter, setFilter] = useState("");
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    return combine(
-      dropTargetForElements({
-        element: el,
-        canDrop: ({ source }) =>
-          isNote(source.data as Record<string, unknown>) ||
-          isSidebarNoteDragData(source.data),
-        onDragEnter: () => setIsOver(true),
-        onDragLeave: () => setIsOver(false),
-        onDrop: ({ source }) => {
-          setIsOver(false);
-          const d = source.data as Record<string, unknown>;
-          if (isNote(d)) onDrop(d.id, null);
-          else if (isSidebarNoteDragData(source.data))
-            onDrop(source.data.noteId, null);
-        },
-      })
-    );
-  }, [onDrop]);
-
-  const filtered = filter
-    ? notes.filter((n) => n.title.toLowerCase().includes(filter.toLowerCase()))
-    : notes;
-
-  return (
-    <div ref={ref} className={`tm-pool${isOver ? " tm-pool--over" : ""}`}>
-      <div className="tm-pool-header">
-        <span className="material-symbols-outlined" style={{ fontSize: 15 }}>inbox</span>
-        <span>Notes</span>
-        <span className="tm-pool-count">{notes.length}</span>
-        {notes.length > 5 && (
-          <input
-            className="tm-pool-filter"
-            placeholder="Filter..."
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            onClick={(e) => e.stopPropagation()}
-          />
-        )}
-      </div>
-      <div className="tm-pool-body">
-        <QuickAddNote quadrant={null} onCreated={onCreate} />
-        {filtered.map((n) => (
-          <NoteCard key={n.id} note={n} isSelected={n.id === selectedNoteId} onSelect={onSelect} onRemove={() => {}} />
-        ))}
-        {filtered.length === 0 && <p className="tm-empty-hint">{notes.length === 0 ? "All notes are assigned" : "No matches"}</p>}
-      </div>
-    </div>
-  );
-}
-
 // ─────────────────────────────────────────────────────────────
 // INNER MATRIX (right panel — always mounted, content changes)
 // ─────────────────────────────────────────────────────────────
@@ -877,8 +807,6 @@ export function TowerMatrix({ notes }: { notes: NoteWithTodoSummary[] }) {
     });
   }, []);
 
-  const unassigned = noteItems.filter((n) => n.quadrant === null);
-
   return (
     <div className="tm-page">
       <div className="tm-left">
@@ -896,13 +824,6 @@ export function TowerMatrix({ notes }: { notes: NoteWithTodoSummary[] }) {
             />
           ))}
         </div>
-        <NotePool
-          notes={unassigned}
-          selectedNoteId={selectedNote?.id ?? null}
-          onDrop={handleNoteDrop}
-          onSelect={handleNoteSelect}
-          onCreate={handleNoteCreate}
-        />
       </div>
 
       <div className="tm-right">
