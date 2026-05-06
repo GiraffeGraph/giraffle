@@ -360,8 +360,13 @@
   flex: 1;
   overflow-y: scroll;
   scrollbar-gutter: stable;
+  scrollbar-width: none;
   overscroll-behavior: contain;
   background: var(--surface-overlay);
+}
+
+.stride-time-grid-scroll::-webkit-scrollbar {
+  display: none;
 }
 
 /* The grid container holds the gutter, gridlines, and day columns */
