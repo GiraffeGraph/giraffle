@@ -1,29 +1,24 @@
 .shell {
   position: relative;
   width: min(100%, 980px);
-  margin: 22px auto 0;
-  border: 1px solid var(--border-soft);
-  border-radius: calc(var(--radius-lg) + 4px);
-  background: color-mix(in srgb, var(--surface-overlay) 82%, transparent);
-  box-shadow: var(--shadow-panel);
+  margin: 12px auto 0;
+  border: 1px solid var(--app-border, var(--border-soft));
+  border-radius: var(--app-radius-lg, 12px);
+  background: var(--app-surface, var(--surface-glass-soft));
+  box-shadow: none;
   overflow: hidden;
 }
 
 .backgroundGradient {
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(120% 140% at 0% 0%, rgb(var(--accent-rgb) / 0.12), transparent 55%),
-    radial-gradient(120% 140% at 100% 100%, rgb(var(--accent-warm-rgb) / 0.10), transparent 60%);
-  pointer-events: none;
+  display: none;
 }
 
 .content {
   position: relative;
   z-index: 1;
   display: grid;
-  gap: 14px;
-  padding: 24px;
+  gap: 10px;
+  padding: 12px;
 }
 
 .form {
@@ -36,13 +31,13 @@
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 10px;
-  min-height: 64px;
-  padding: 10px 10px 10px 14px;
-  border: 1px solid var(--border-soft);
-  border-radius: calc(var(--radius-md) + 4px);
-  background: color-mix(in srgb, var(--surface-overlay) 92%, transparent);
-  transition: border-color 160ms ease, box-shadow 160ms ease;
+  gap: 8px;
+  min-height: 42px;
+  padding: 6px 6px 6px 10px;
+  border: 1px solid var(--app-border, var(--border-soft));
+  border-radius: var(--app-radius-md, 10px);
+  background: transparent;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
 }
 
 .inputWrap:focus-within {
@@ -51,8 +46,8 @@
 }
 
 .inputIcon {
-  color: var(--accent);
-  font-size: 24px;
+  color: var(--text-tertiary);
+  font-size: 20px;
 }
 
 .input {
@@ -60,7 +55,7 @@
   border: none;
   background: transparent;
   color: var(--text-primary);
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
   outline: none;
 }
@@ -74,42 +69,42 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 44px;
-  padding: 0 16px;
-  border: 1px solid transparent;
-  border-radius: var(--radius-control);
-  background: linear-gradient(130deg, var(--accent), var(--accent-strong));
-  color: var(--text-on-accent);
-  font-size: 13px;
+  min-height: var(--app-control-h, 32px);
+  padding: 0 12px;
+  border: 1px solid var(--accent-line);
+  border-radius: var(--app-radius-sm, 8px);
+  background: var(--surface-accent-blend);
+  color: var(--text-primary);
+  font-size: 12px;
   font-weight: 700;
   cursor: pointer;
 }
 
 .submitButton:hover {
-  filter: brightness(1.04);
+  background: var(--app-surface-hover, var(--surface-glass-hover));
 }
 
 .suggestionList {
   display: grid;
-  gap: 6px;
+  gap: 4px;
   margin: 0;
-  padding: 10px;
+  padding: 8px;
   list-style: none;
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-md);
-  background: color-mix(in srgb, var(--surface-overlay) 88%, transparent);
-  box-shadow: var(--shadow-soft);
+  border: 1px solid var(--app-border, var(--border-soft));
+  border-radius: var(--app-radius-lg, 12px);
+  background: transparent;
+  box-shadow: none;
 }
 
 .suggestionItem {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   width: 100%;
-  padding: 10px 12px;
+  padding: 8px 10px;
   border: 1px solid transparent;
-  border-radius: var(--radius-control);
+  border-radius: var(--app-radius-sm, 8px);
   background: transparent;
   color: inherit;
   text-align: left;
@@ -159,10 +154,10 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 12px;
-  border: 1px solid var(--border-soft);
-  border-radius: 999px;
-  background: var(--surface-chip);
+  padding: 6px 9px;
+  border: 1px solid var(--app-border, var(--border-soft));
+  border-radius: var(--app-radius-sm, 8px);
+  background: transparent;
   color: var(--text-secondary);
   font-size: 12px;
   font-weight: 700;
@@ -188,10 +183,10 @@
   display: inline-flex;
   align-items: center;
   max-width: 100%;
-  padding: 7px 12px;
-  border: 1px solid var(--border-soft);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--surface-glass) 85%, transparent);
+  padding: 6px 9px;
+  border: 1px solid var(--app-border, var(--border-soft));
+  border-radius: var(--app-radius-sm, 8px);
+  background: transparent;
   color: var(--text-secondary);
   font-size: 12px;
   cursor: pointer;
@@ -214,10 +209,10 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 7px 11px;
-  border: 1px solid var(--border-soft);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--surface-glass) 86%, transparent);
+  padding: 6px 9px;
+  border: 1px solid var(--app-border, var(--border-soft));
+  border-radius: var(--app-radius-sm, 8px);
+  background: transparent;
   color: var(--text-secondary);
   font-size: 12px;
   font-weight: 700;

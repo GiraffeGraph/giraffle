@@ -31,6 +31,7 @@ import "@/styles/layouts/tower-matrix.css";
 import "@/styles/layouts/stride.css";
 import "@excalidraw/excalidraw/index.css";
 import "./globals.css";
+import "@/styles/system.css";
 
 export const metadata: Metadata = {
   title: "Giraffle — Knowledge Graph Editor",

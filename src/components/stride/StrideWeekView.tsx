@@ -2,6 +2,7 @@
 
 import {
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -20,6 +21,15 @@ const SNAP = 15;           // snap grid in minutes
 const MIN_DURATION = 15;
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+// Infinite-mode constants
+const INF_DAY_W = 180;
+const INF_GUTTER_W = 52;
+const INF_HEADER_H = 64;
+const INF_INITIAL_DAYS = 28;
+const INF_INITIAL_OFFSET = -14; // days before anchor week start
+const INF_PAGE = 14;
+const INF_EDGE = 600; // px from edge to trigger load
 
 // ─── Helpers ─────────────────────────────────────────────────
 
@@ -617,7 +627,12 @@ interface StrideWeekViewProps {
   customDays?: number;
 }
 
-export function StrideWeekView({
+export function StrideWeekView(props: StrideWeekViewProps) {
+  if (props.customDays == null) return <InfiniteWeekView {...props} />;
+  return <FixedWeekView {...props} />;
+}
+
+function FixedWeekView({
   anchor,
   todos,
   onToggle,
@@ -791,6 +806,229 @@ export function StrideWeekView({
                 </div>
               );
             })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Infinite horizontal scroll mode ──────────────────────────
+
+function InfiniteWeekView({
+  anchor,
+  todos,
+  onToggle,
+  onDurationChange,
+  onCreateTodo,
+  onUpdateText,
+  onDelete,
+}: StrideWeekViewProps) {
+  const today = startOfDay(new Date());
+  const todayIso = today.toISOString();
+
+  const [{ start, count }, setRange] = useState(() => ({
+    start: addDays(startOfWeek(anchor), INF_INITIAL_OFFSET),
+    count: INF_INITIAL_DAYS,
+  }));
+
+  const days = useMemo(
+    () => Array.from({ length: count }, (_, i) => addDays(start, i)),
+    [start, count],
+  );
+
+  const byDay = useMemo(() => {
+    const map = new Map<string, CalendarTodo[]>();
+    for (const t of todos) {
+      if (!t.dueDate) continue;
+      const key = startOfDay(new Date(t.dueDate)).toISOString();
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(t);
+    }
+    return map;
+  }, [todos]);
+
+  const todosById = useMemo(() => {
+    const m = new Map<string, CalendarTodo>();
+    for (const t of todos) m.set(t.id, t);
+    return m;
+  }, [todos]);
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const pendingLeftAdjust = useRef(0);
+  const loadingRef = useRef(false);
+  const didInitialScroll = useRef(false);
+
+  // Initial scroll: center today, vertical to 7am
+  useLayoutEffect(() => {
+    if (didInitialScroll.current) return;
+    const el = scrollRef.current;
+    if (!el) return;
+    const todayIdx = Math.floor(
+      (today.getTime() - start.getTime()) / 86_400_000,
+    );
+    el.scrollLeft =
+      INF_GUTTER_W + todayIdx * INF_DAY_W - el.clientWidth / 2 + INF_DAY_W / 2;
+    el.scrollTop = HOUR_PX * 7;
+    didInitialScroll.current = true;
+  }, [start, today]);
+
+  // Apply pending scrollLeft adjustment after prepend (avoid jump)
+  useLayoutEffect(() => {
+    if (pendingLeftAdjust.current && scrollRef.current) {
+      scrollRef.current.scrollLeft += pendingLeftAdjust.current;
+      pendingLeftAdjust.current = 0;
+    }
+    loadingRef.current = false;
+  }, [start, count]);
+
+  const onScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    if (loadingRef.current) return;
+    const el = e.currentTarget;
+    if (el.scrollLeft < INF_EDGE) {
+      loadingRef.current = true;
+      pendingLeftAdjust.current = INF_PAGE * INF_DAY_W;
+      setRange((r) => ({
+        start: addDays(r.start, -INF_PAGE),
+        count: r.count + INF_PAGE,
+      }));
+    } else if (el.scrollLeft + el.clientWidth > el.scrollWidth - INF_EDGE) {
+      loadingRef.current = true;
+      setRange((r) => ({ ...r, count: r.count + INF_PAGE }));
+    }
+  }, []);
+
+  const [dragOverlay, setDragOverlay] = useState<DragOverlay | null>(null);
+  const [activeTodoId, setActiveTodoId] = useState<string | null>(null);
+  useAutoScroll(scrollRef, activeTodoId !== null);
+
+  useEffect(() => {
+    return monitorForElements({
+      onDragStart({ source }) {
+        const d = source.data as Record<string, unknown>;
+        if (d.type === "stride:todo" || d.type === "stride:unscheduled") {
+          setActiveTodoId(d.todoId as string);
+        }
+      },
+      onDrag({ source, location }) {
+        const d = source.data as Record<string, unknown>;
+        if (d.type !== "stride:todo" && d.type !== "stride:unscheduled") return;
+        const todoId = d.todoId as string;
+        const col = location.current.dropTargets[0];
+        if (!col) { setDragOverlay(null); return; }
+        const colData = col.data as Record<string, unknown>;
+        if (colData.type !== "stride:slot") { setDragOverlay(null); return; }
+        const hour = colData.hour as number;
+        const minute = (colData.minute as number) ?? 0;
+        const todo = todosById.get(todoId);
+        const duration = todo?.durationMinutes ?? 60;
+        const accentColor = todo?.quadrant
+          ? QUADRANT_COLORS[todo.quadrant]
+          : "var(--md-sys-color-primary)";
+        setDragOverlay({
+          todoId,
+          dayIso: colData.date as string,
+          startMinute: hour * 60 + minute,
+          duration,
+          accentColor,
+        });
+      },
+      onDrop() {
+        setDragOverlay(null);
+        setActiveTodoId(null);
+      },
+      onDropTargetChange({ location }) {
+        if (location.current.dropTargets.length === 0) setDragOverlay(null);
+      },
+    });
+  }, [todosById]);
+
+  const handleDuration = onDurationChange ?? (() => {});
+  const canvasWidth = INF_GUTTER_W + count * INF_DAY_W;
+
+  return (
+    <div className="stride-week-view stride-inf">
+      <div
+        ref={scrollRef}
+        className="stride-inf-scroll"
+        onScroll={onScroll}
+        style={{
+          ["--stride-day-w" as string]: `${INF_DAY_W}px`,
+          ["--stride-gutter-w" as string]: `${INF_GUTTER_W}px`,
+          ["--stride-day-count" as string]: count,
+        } as React.CSSProperties}
+      >
+        <div className="stride-inf-canvas" style={{ width: canvasWidth }}>
+          {/* Header row (sticky top) */}
+          <div className="stride-inf-row stride-inf-header-row">
+            <div className="stride-inf-gutter-cell stride-inf-corner" />
+            {days.map((d) => {
+              const isToday = isSameDay(d, today);
+              return (
+                <div
+                  key={d.toISOString()}
+                  className={`stride-day-header${isToday ? " stride-day-header--today" : ""}`}
+                >
+                  <span className="stride-day-header-label">{DAY_LABELS[d.getDay()]}</span>
+                  <span className={`stride-day-header-num${isToday ? " stride-day-header-num--today" : ""}`}>
+                    {d.getDate()}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* All-day row (sticky top) */}
+          <div className="stride-inf-row stride-inf-allday-row">
+            <div className="stride-inf-gutter-cell stride-inf-allday-label">
+              <span>All day</span>
+            </div>
+            {days.map((d) => <AllDaySlot key={d.toISOString()} date={d} />)}
+          </div>
+
+          {/* Time body */}
+          <div className="stride-inf-time" style={{ height: HOUR_PX * 24 }}>
+            <div className="stride-inf-time-gutter">
+              {HOURS.map((h) => (
+                <div
+                  key={h}
+                  className="stride-gutter-hour"
+                  style={{ top: h * HOUR_PX, height: HOUR_PX }}
+                >
+                  <span>{formatHour(h)}</span>
+                </div>
+              ))}
+            </div>
+            <div className="stride-inf-grid-lines">
+              {HOURS.map((h) => (
+                <div key={h} className="stride-grid-line" style={{ top: h * HOUR_PX }} />
+              ))}
+              {HOURS.map((h) => (
+                <div key={`${h}h`} className="stride-grid-line stride-grid-line--half" style={{ top: h * HOUR_PX + 30 }} />
+              ))}
+            </div>
+            <div className="stride-inf-day-cols">
+              {days.map((d) => {
+                const key = startOfDay(d).toISOString();
+                const isToday = key === todayIso;
+                return (
+                  <div key={key} className="stride-inf-day-wrap">
+                    {isToday && <NowLine />}
+                    <DayColumn
+                      date={d}
+                      todos={byDay.get(key) ?? []}
+                      dragOverlay={dragOverlay}
+                      activeTodoId={activeTodoId}
+                      onToggle={onToggle}
+                      onDurationChange={handleDuration}
+                      onCreateTodo={onCreateTodo}
+                      onUpdateText={onUpdateText}
+                      onDelete={onDelete}
+                    />
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>

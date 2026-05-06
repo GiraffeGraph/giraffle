@@ -457,6 +457,125 @@
   max-width: 100%;
 }
 
+/* ─── Infinite horizontal scroll mode ────────────────────────── */
+
+.stride-inf {
+  /* container is .stride-week-view; nothing extra needed */
+}
+
+.stride-inf-scroll {
+  flex: 1;
+  overflow: auto;
+  overscroll-behavior: contain;
+  background: var(--surface-overlay);
+  position: relative;
+}
+
+.stride-inf-canvas {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  /* width set inline = gutter + N * day-w */
+}
+
+.stride-inf-row {
+  display: grid;
+  grid-template-columns: var(--stride-gutter-w) repeat(var(--stride-day-count), var(--stride-day-w));
+}
+
+.stride-inf-header-row {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  height: 64px;
+  background: var(--surface-overlay);
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.stride-inf-allday-row {
+  position: sticky;
+  top: 64px;
+  z-index: 19;
+  min-height: 36px;
+  background: var(--surface-overlay);
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.stride-inf-gutter-cell {
+  position: sticky;
+  left: 0;
+  z-index: 5;
+  background: var(--surface-overlay);
+  border-right: 1px solid var(--border-soft);
+}
+
+.stride-inf-corner {
+  z-index: 25;
+}
+
+.stride-inf-allday-label {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 8px;
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.stride-inf-time {
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--stride-gutter-w) 1fr;
+}
+
+.stride-inf-time-gutter {
+  position: sticky;
+  left: 0;
+  z-index: 5;
+  width: var(--stride-gutter-w);
+  background: var(--surface-overlay);
+  border-right: 1px solid var(--border-soft);
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.stride-inf-time-gutter .stride-gutter-hour {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: 4px 8px 0 0;
+}
+
+.stride-inf-grid-lines {
+  position: absolute;
+  top: 0;
+  left: var(--stride-gutter-w);
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.stride-inf-day-cols {
+  grid-column: 2;
+  grid-row: 1;
+  position: relative;
+  z-index: 3;
+  display: grid;
+  grid-template-columns: repeat(var(--stride-day-count), var(--stride-day-w));
+}
+
+.stride-inf-day-wrap {
+  position: relative;
+  border-left: 1px solid var(--border-soft);
+}
+
 /* ─── Month view ─────────────────────────────────────────────── */
 
 .stride-month-view {

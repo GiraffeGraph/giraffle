@@ -121,20 +121,6 @@
   animation: rise-in 320ms ease both;
 }
 
-.main-content-inner::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image: var(--giraffe-spots);
-  background-size: var(--giraffe-spots-size);
-  background-position: var(--giraffe-spots-position);
-  background-repeat: repeat;
-  pointer-events: none;
-  opacity: var(--giraffe-spots-opacity-main-content);
-  border-radius: inherit;
-  z-index: 0;
-}
-
 .main-content-inner > * {
   position: relative;
   z-index: 1;

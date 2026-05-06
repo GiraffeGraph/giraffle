@@ -1,0 +1,420 @@
+/* ==========================================================================
+   system.css — canonical app UI layer
+
+   This is the shared visual contract for in-app pages. Legacy page CSS and
+   Material component CSS still exist underneath, but final app surfaces should
+   resolve here so sidebar, topbar, cards, forms and page content speak one
+   compact shell language.
+   ========================================================================== */
+
+:root {
+  --app-page-max: 1280px;
+  --app-page-pad-x: 12px;
+  --app-page-pad-y: 12px;
+  --app-surface: var(--surface-glass-soft);
+  --app-surface-hover: var(--surface-glass-hover);
+  --app-surface-strong: var(--surface-glass);
+  --app-surface-selected: color-mix(in srgb, var(--accent) 13%, var(--surface-glass));
+  --app-border: var(--border-soft);
+  --app-border-strong: var(--border-color);
+  --app-radius-xs: 6px;
+  --app-radius-sm: 8px;
+  --app-radius-md: 10px;
+  --app-radius-lg: 12px;
+  --app-control-h: 32px;
+  --app-control-h-lg: 36px;
+  --app-shadow: none;
+  --app-shadow-lift: 0 10px 24px rgb(40 32 20 / 0.06);
+}
+
+/* ── App shell and topbar ───────────────────────────────────────────────── */
+
+.app-layout {
+  gap: 0;
+  padding: 0;
+}
+
+.main-content-inner {
+  min-height: 100vh;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.topbar-shell {
+  min-height: 38px;
+  gap: 8px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--app-border);
+  background: color-mix(in srgb, var(--bg-page) 76%, transparent);
+  color: var(--text-secondary);
+  backdrop-filter: blur(12px);
+}
+
+.page-topbar-icon {
+  color: var(--text-tertiary);
+  font-size: 18px;
+}
+
+.page-topbar-link,
+.page-topbar-title,
+.page-topbar-meta-content {
+  font-size: 12px;
+  line-height: 1;
+}
+
+.page-topbar-title {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.page-topbar-link,
+.page-topbar-meta-content {
+  color: var(--text-secondary);
+}
+
+.page-topbar-separator {
+  color: var(--text-muted);
+}
+
+/* ── Page containers ─────────────────────────────────────────────────────── */
+
+.app-page,
+.dashboard,
+.note-page,
+.graph-page,
+.library-page {
+  width: min(100%, var(--app-page-max));
+  margin: 0 auto;
+  padding: var(--app-page-pad-y) var(--app-page-pad-x) 20px;
+}
+
+.dashboard.settings-page {
+  width: min(100%, var(--app-page-max));
+  padding: 0;
+}
+
+.dashboard-hero,
+.graph-header,
+.library-hero,
+.library-panel,
+.graph-panel,
+.dashboard-empty,
+.search-result-card,
+.publish-card,
+.settings-panel,
+.template-picker-panel,
+.auth-card,
+.published-shell,
+.md-card {
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius-lg);
+  background: var(--app-surface);
+  box-shadow: var(--app-shadow);
+  backdrop-filter: none;
+}
+
+.dashboard-hero,
+.graph-header,
+.library-hero,
+.library-panel,
+.auth-card,
+.published-shell {
+  padding: 14px;
+}
+
+.dashboard-hero {
+  overflow: visible;
+}
+
+.dashboard-title,
+.graph-title,
+.auth-title,
+.published-title {
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: clamp(1.25rem, 2vw, 1.65rem);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.025em;
+}
+
+.dashboard-subtitle,
+.graph-subtitle,
+.auth-subtitle,
+.template-picker-subtitle,
+.published-meta,
+.graph-panel-meta {
+  max-width: 62ch;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.dashboard-section-head {
+  margin: 14px 0 8px;
+}
+
+.dashboard-section-kicker,
+.graph-panel-section-title,
+.settings-field > span,
+.note-slug-field > span {
+  color: var(--text-tertiary);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.search-result-grid,
+.proposal-list,
+.settings-log-list {
+  gap: 8px;
+}
+
+.search-result-card,
+.publish-card {
+  padding: 11px 12px;
+  color: inherit;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.search-result-card:hover,
+.publish-card:hover,
+.md-card--clickable:hover {
+  transform: translateY(-1px);
+  border-color: var(--app-border-strong);
+  background: var(--app-surface-hover);
+  box-shadow: var(--app-shadow);
+}
+
+.search-result-title {
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.search-result-meta,
+.search-section-count {
+  color: var(--text-tertiary);
+  font-size: 12px;
+}
+
+.dashboard-empty {
+  padding: 14px;
+  color: var(--text-secondary);
+}
+
+/* ── Cards: app shell variant over M3 defaults ───────────────────────────── */
+
+.md-card {
+  padding: 14px;
+  color: var(--text-primary);
+}
+
+.md-card--elevated,
+.md-card--filled,
+.md-card--outlined {
+  border: 1px solid var(--app-border);
+  background: var(--app-surface);
+  box-shadow: var(--app-shadow);
+}
+
+.md-card-header {
+  margin-bottom: 10px;
+}
+
+.md-card-title {
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1.25;
+}
+
+.md-card-subtitle,
+.md-card-content {
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.md-card-actions {
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--app-border);
+}
+
+/* ── Controls and buttons ───────────────────────────────────────────────── */
+
+.md-button,
+.dashboard-empty-btn,
+.dashboard-secondary-btn,
+.template-picker-submit,
+.auth-submit,
+.search-form button {
+  min-height: var(--app-control-h);
+  height: var(--app-control-h);
+  padding: 0 12px;
+  border-radius: var(--app-radius-sm);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+  box-shadow: none;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.md-button:active,
+.dashboard-empty-btn:active,
+.dashboard-secondary-btn:active,
+.search-form button:active {
+  transform: translateY(1px);
+}
+
+.md-button--filled,
+.dashboard-empty-btn,
+.template-picker-submit,
+.auth-submit,
+.search-form button {
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
+  background: var(--surface-accent-blend);
+  color: var(--text-primary);
+}
+
+.md-button--filled:hover,
+.dashboard-empty-btn:hover,
+.template-picker-submit:hover,
+.auth-submit:hover,
+.search-form button:hover {
+  background: var(--app-surface-hover);
+  border-color: var(--accent-line);
+  box-shadow: none;
+}
+
+.md-button--outlined,
+.md-button--tonal,
+.md-button--elevated,
+.dashboard-secondary-btn {
+  border: 1px solid var(--app-border);
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.md-button--outlined:hover,
+.md-button--tonal:hover,
+.md-button--elevated:hover,
+.dashboard-secondary-btn:hover {
+  border-color: var(--app-border-strong);
+  background: var(--app-surface-hover);
+  color: var(--text-primary);
+  box-shadow: none;
+}
+
+.md-button--text {
+  height: var(--app-control-h);
+  padding: 0 8px;
+  color: var(--accent-strong);
+}
+
+.md-icon-button {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--app-radius-sm);
+  color: var(--text-secondary);
+}
+
+.md-icon-button--filled,
+.md-icon-button--tonal,
+.md-icon-button--outlined {
+  border: 1px solid var(--app-border);
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.md-icon-button:hover,
+.md-icon-button--filled:hover,
+.md-icon-button--tonal:hover,
+.md-icon-button--outlined:hover {
+  background: var(--app-surface-hover);
+  color: var(--text-primary);
+}
+
+.search-input,
+.search-select,
+.note-folder-select,
+.note-slug-input,
+.settings-field input,
+.settings-field select,
+.settings-field textarea,
+.template-picker-field input,
+.auth-field input {
+  min-height: var(--app-control-h-lg);
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius-sm);
+  background: var(--app-surface);
+  color: var(--text-primary);
+  box-shadow: none;
+}
+
+.search-input:focus,
+.search-select:focus,
+.note-folder-select:focus,
+.note-slug-input:focus,
+.settings-field input:focus,
+.settings-field select:focus,
+.settings-field textarea:focus,
+.template-picker-field input:focus,
+.auth-field input:focus {
+  border-color: var(--accent-line);
+  box-shadow: 0 0 0 3px var(--accent-subtle);
+}
+
+.settings-panel {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}
+
+/* ── Lists ──────────────────────────────────────────────────────────────── */
+
+.md-list-item {
+  min-height: 42px;
+}
+
+.md-list-item-headline {
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.md-list-item-supporting-text {
+  color: var(--text-tertiary);
+  font-size: 12px;
+}
+
+@media (max-width: 760px) {
+  :root {
+    --app-page-pad-x: 10px;
+    --app-page-pad-y: 10px;
+  }
+
+  .app-page,
+  .dashboard,
+  .note-page,
+  .graph-page,
+  .library-page {
+    padding-left: var(--app-page-pad-x);
+    padding-right: var(--app-page-pad-x);
+  }
+}

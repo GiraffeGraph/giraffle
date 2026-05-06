@@ -31,15 +31,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       baseClass = "md-fab";
     }
 
-    // Determine variant class
-    let variantClass = "";
-    if (variant !== "filled") {
-      variantClass = `${baseClass}--${variant}`;
-    } else if (icon || fab) {
-      // Icon and FAB variants need explicit filled modifier sometimes, 
-      // but usually base is filled.
-      variantClass = `${baseClass}--filled`;
-    }
+    const variantClass = `${baseClass}--${variant}`;
 
     // Determine fab specific size overrides
     let fabClass = "";
