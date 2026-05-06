@@ -8,6 +8,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PageTopbar } from "@/components/ui/PageTopbar";
 import { isSidebarNoteDragData } from "@/components/sidebar/sidebar.types";
 import { saveSavannaStateAction } from "@/server/api/savanna";
+import { isRecord } from "@/lib/utils";
 import { NotePreviewPanel } from "./NotePreviewPanel";
 import type { AppState, ExcalidrawImperativeAPI, ExcalidrawProps } from "@excalidraw/excalidraw/types";
 import type { ExcalidrawElement } from "@excalidraw/excalidraw/element/types";
@@ -41,10 +42,6 @@ interface SavannaEditorProps {
 type SaveStatus = "saved" | "saving" | "unsaved";
 
 type ExcalidrawTheme = "light" | "dark";
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
-}
 
 function asElements(value: unknown): readonly ExcalidrawElement[] {
   return Array.isArray(value) ? (value as ExcalidrawElement[]) : [];

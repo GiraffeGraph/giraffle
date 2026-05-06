@@ -1,3 +1,4 @@
+import { isRecord } from "@/lib/utils";
 import type {
   BlockMark,
   BlockNodeContent,
@@ -611,6 +612,3 @@ function kanbanToMarkdown(node: BlockNodeContent): string {
   return [`[Kanban] ${title}`, ...sections].join("\n\n");
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}

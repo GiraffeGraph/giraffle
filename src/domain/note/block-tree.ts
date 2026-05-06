@@ -1,4 +1,4 @@
-import { generateId } from "@/lib/utils";
+import { generateId, isRecord } from "@/lib/utils";
 import type {
   BlockAttributes,
   BlockNodeContent,
@@ -560,6 +560,3 @@ function toAttributes(value: unknown): BlockAttributes {
   return { ...value };
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}

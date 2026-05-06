@@ -7,7 +7,7 @@ import {
 } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import { NodeViewWrapper, type NodeViewProps } from "@tiptap/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { generateId } from "@/lib/utils";
+import { generateId, isRecord } from "@/lib/utils";
 import type { KanbanCard, KanbanColumn } from "../extensions/kanban.shared";
 import {
   createKanbanCard,
@@ -687,6 +687,3 @@ function isKanbanColumnDropData(
     typeof value.index === "number";
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}

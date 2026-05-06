@@ -1,4 +1,4 @@
-import { generateId } from "@/lib/utils";
+import { generateId, isRecord } from "@/lib/utils";
 
 export const KANBAN_COLUMN_TONES = [
   "accent",
@@ -180,6 +180,3 @@ function normalizeKanbanTone(
   return getNextKanbanTone(index);
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}

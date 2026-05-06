@@ -5,6 +5,7 @@ import type { Prisma } from "@prisma/client";
 import { persistedBlocksToDocument } from "@/domain/note/block-tree";
 import { requireAuthenticatedUser } from "@/lib/auth-session";
 import { db } from "@/lib/db";
+import { isRecord } from "@/lib/utils";
 
 function extractTextFromNode(node: unknown): string {
   if (!node || typeof node !== "object") return "";
@@ -37,10 +38,6 @@ function toJsonValue(value: unknown, fallback: Prisma.InputJsonValue): Prisma.In
   } catch {
     return fallback;
   }
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
 function sanitizeAppState(appState: unknown): Prisma.InputJsonObject {

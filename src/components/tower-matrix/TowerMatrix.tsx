@@ -24,6 +24,7 @@ import {
 } from "@/server/api/notes";
 import type { EisenhowerQuadrant } from "@/domain/note/note.types";
 import { isSidebarNoteDragData } from "@/components/sidebar/sidebar.types";
+import { isRecord } from "@/lib/utils";
 
 // ─── Types ───────────────────────────────────────────────────
 
@@ -110,11 +111,11 @@ const TODO_DRAG = "tm:todo" as const;
 
 function noteData(id: string) { return { type: NOTE_DRAG, id } as const; }
 function todoData(id: string) { return { type: TODO_DRAG, id } as const; }
-function isNote(d: Record<string, unknown>): d is { type: typeof NOTE_DRAG; id: string } {
-  return d.type === NOTE_DRAG && typeof d.id === "string";
+function isNote(d: unknown): d is { type: typeof NOTE_DRAG; id: string } {
+  return isRecord(d) && d.type === NOTE_DRAG && typeof d.id === "string";
 }
-function isTodo(d: Record<string, unknown>): d is { type: typeof TODO_DRAG; id: string } {
-  return d.type === TODO_DRAG && typeof d.id === "string";
+function isTodo(d: unknown): d is { type: typeof TODO_DRAG; id: string } {
+  return isRecord(d) && d.type === TODO_DRAG && typeof d.id === "string";
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -311,14 +312,12 @@ function OuterQuadrant({
       dropTargetForElements({
         element: el,
         canDrop: ({ source }) =>
-          isNote(source.data as Record<string, unknown>) ||
-          isSidebarNoteDragData(source.data),
+          isNote(source.data) || isSidebarNoteDragData(source.data),
         onDragEnter: () => setIsOver(true),
         onDragLeave: () => setIsOver(false),
         onDrop: ({ source }) => {
           setIsOver(false);
-          const d = source.data as Record<string, unknown>;
-          if (isNote(d)) onDrop(d.id, config.key);
+          if (isNote(source.data)) onDrop(source.data.id, config.key);
           else if (isSidebarNoteDragData(source.data))
             onDrop(source.data.noteId, config.key);
         },
@@ -420,13 +419,12 @@ function InnerQuadrant({
     return combine(
       dropTargetForElements({
         element: el,
-        canDrop: ({ source }) => isTodo(source.data as Record<string, unknown>),
+        canDrop: ({ source }) => isTodo(source.data),
         onDragEnter: () => setIsOver(true),
         onDragLeave: () => setIsOver(false),
         onDrop: ({ source }) => {
           setIsOver(false);
-          const d = source.data as Record<string, unknown>;
-          if (isTodo(d)) onDrop(d.id, config.key);
+          if (isTodo(source.data)) onDrop(source.data.id, config.key);
         },
       })
     );
@@ -701,13 +699,12 @@ function UnassignedTodoPool({
     return combine(
       dropTargetForElements({
         element: el,
-        canDrop: ({ source }) => isTodo(source.data as Record<string, unknown>),
+        canDrop: ({ source }) => isTodo(source.data),
         onDragEnter: () => setIsOver(true),
         onDragLeave: () => setIsOver(false),
         onDrop: ({ source }) => {
           setIsOver(false);
-          const d = source.data as Record<string, unknown>;
-          if (isTodo(d)) onDrop(d.id, null);
+          if (isTodo(source.data)) onDrop(source.data.id, null);
         },
       })
     );
