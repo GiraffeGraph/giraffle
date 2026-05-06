@@ -9,6 +9,7 @@ import { signOutAction } from "@/server/api/auth";
 const NAV_ITEMS = [
   { path: "/search", icon: "\uE8B6", label: "Search" },
   { path: "/publish", icon: "\uE255", label: "Publish" },
+  { path: "/trails", icon: "route", label: "Trails" },
   { path: "/archive", icon: "inventory_2", label: "Archive" },
   { path: "/settings", icon: "\uE8B8", label: "Settings" },
   { path: "/account", icon: "\uF20B", label: "Account" },

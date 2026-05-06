@@ -149,7 +149,7 @@ export function SavannaEditor({ canvas, notes }: SavannaEditorProps) {
     async (note: SavannaNote, viewportPoint?: ViewportPoint) => {
       if (!excalidrawAPI) return;
 
-      const { convertToExcalidrawElements, viewportCoordsToSceneCoords } = await import(
+      const { restoreElements, viewportCoordsToSceneCoords } = await import(
         "@excalidraw/excalidraw"
       );
       const appState = excalidrawAPI.getAppState();
@@ -158,16 +158,23 @@ export function SavannaEditor({ canvas, notes }: SavannaEditorProps) {
         : getCanvasCenter(appState);
       const currentElements = excalidrawAPI.getSceneElements();
 
-      const newElements = convertToExcalidrawElements([
-        {
-          type: "text",
-          text: `${note.icon ?? "📄"} ${note.title || "Untitled"}`,
-          x: scenePoint.x - 120,
-          y: scenePoint.y - 20,
-          fontSize: 24,
-          link: `/notes/${note.id}`,
-        },
-      ]);
+      const cardWidth = 360;
+      const cardHeight = 280;
+      const embedUrl = `${window.location.origin}/notes/${note.id}/embed`;
+
+      const newElements = restoreElements(
+        [
+          {
+            type: "embeddable",
+            x: scenePoint.x - cardWidth / 2,
+            y: scenePoint.y - cardHeight / 2,
+            width: cardWidth,
+            height: cardHeight,
+            link: embedUrl,
+          } as unknown as ExcalidrawElement,
+        ],
+        null,
+      );
 
       excalidrawAPI.updateScene({
         elements: [...currentElements, ...newElements],
@@ -240,27 +247,47 @@ export function SavannaEditor({ canvas, notes }: SavannaEditorProps) {
             excalidrawAPI={setExcalidrawAPI}
             initialData={initialData}
             onChange={handleChange}
+            validateEmbeddable={(url) => {
+              if (typeof window === "undefined") return false;
+              try {
+                const parsed = new URL(url, window.location.origin);
+                return (
+                  parsed.origin === window.location.origin &&
+                  /^\/notes\/[^/]+\/embed\/?$/.test(parsed.pathname)
+                );
+              } catch {
+                return false;
+              }
+            }}
             onLinkOpen={(element, event) => {
-              if (typeof element.link === "string") {
+              if (typeof element.link !== "string") return;
+
+              const link = element.link;
+
+              const embedMatch = link.match(/^https?:\/\/[^/]+\/notes\/([^/]+)\/embed\/?$/);
+              if (embedMatch) {
                 event.preventDefault();
-                
-                // Check if it's a note link
-                const match = element.link.match(/^\/notes\/(.+)$/);
-                if (match && excalidrawAPI) {
-                  const noteId = match[1];
-                  const appState = excalidrawAPI.getAppState();
-                  
-                  // Calculate screen position from element position
-                  const zoom = typeof appState.zoom?.value === "number" ? appState.zoom.value : 1;
-                  const screenX = (element.x + element.width / 2 + appState.scrollX) * zoom;
-                  const screenY = (element.y + appState.scrollY) * zoom;
-                  
-                  setPreviewNoteId(noteId);
-                  setPreviewAnchor({ x: screenX, y: screenY });
-                } else if (element.link.startsWith("/")) {
-                  // For other internal links, navigate
-                  router.push(element.link);
-                }
+                window.open(`/notes/${embedMatch[1]}`, "_blank", "noopener,noreferrer");
+                return;
+              }
+
+              const relativeMatch = link.match(/^\/notes\/([^/]+)$/);
+              if (relativeMatch && excalidrawAPI) {
+                event.preventDefault();
+                const noteId = relativeMatch[1];
+                const appState = excalidrawAPI.getAppState();
+                const zoom = typeof appState.zoom?.value === "number" ? appState.zoom.value : 1;
+                const screenX = (element.x + element.width / 2 + appState.scrollX) * zoom;
+                const screenY = (element.y + appState.scrollY) * zoom;
+
+                setPreviewNoteId(noteId);
+                setPreviewAnchor({ x: screenX, y: screenY });
+                return;
+              }
+
+              if (link.startsWith("/")) {
+                event.preventDefault();
+                router.push(link);
               }
             }}
             theme={theme}

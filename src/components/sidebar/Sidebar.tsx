@@ -1218,10 +1218,6 @@ export function Sidebar({
                         path: "/stride",
                         icon: "calendar_month",
                         label: "Stride",
-                      },                      {
-                        path: "/agents",
-                        icon: "hub",
-                        label: "Agents",
                       },
                     ] as Array<{
                       path: string;

@@ -11,11 +11,10 @@
 
 .backgroundGradient {
   position: absolute;
-  inset: -120px -180px auto;
-  height: 280px;
+  inset: 0;
   background:
-    radial-gradient(circle at 12% 46%, rgb(var(--accent-rgb) / 0.3), transparent 58%),
-    radial-gradient(circle at 85% 2%, rgb(var(--accent-warm-rgb) / 0.26), transparent 52%);
+    radial-gradient(120% 140% at 0% 0%, rgb(var(--accent-rgb) / 0.12), transparent 55%),
+    radial-gradient(120% 140% at 100% 100%, rgb(var(--accent-warm-rgb) / 0.10), transparent 60%);
   pointer-events: none;
 }
 
@@ -40,19 +39,15 @@
   gap: 10px;
   min-height: 64px;
   padding: 10px 10px 10px 14px;
-  border: 1px solid rgb(var(--accent-rgb) / 0.24);
+  border: 1px solid var(--border-soft);
   border-radius: calc(var(--radius-md) + 4px);
-  background: color-mix(in srgb, var(--surface-glass) 70%, transparent);
-  box-shadow:
-    0 1px 0 rgb(255 255 255 / 0.34) inset,
-    0 24px 36px rgb(var(--accent-rgb) / 0.12);
+  background: color-mix(in srgb, var(--surface-overlay) 92%, transparent);
+  transition: border-color 160ms ease, box-shadow 160ms ease;
 }
 
 .inputWrap:focus-within {
-  border-color: rgb(var(--accent-rgb) / 0.4);
-  box-shadow:
-    0 0 0 4px rgb(var(--accent-rgb) / 0.1),
-    0 22px 36px rgb(var(--accent-rgb) / 0.18);
+  border-color: rgb(var(--accent-rgb) / 0.45);
+  box-shadow: 0 0 0 3px rgb(var(--accent-rgb) / 0.14);
 }
 
 .inputIcon {
@@ -194,17 +189,19 @@
   align-items: center;
   max-width: 100%;
   padding: 7px 12px;
-  border: 1px dashed rgb(var(--accent-rgb) / 0.3);
+  border: 1px solid var(--border-soft);
   border-radius: 999px;
   background: color-mix(in srgb, var(--surface-glass) 85%, transparent);
   color: var(--text-secondary);
   font-size: 12px;
   cursor: pointer;
+  transition: border-color 140ms ease, color 140ms ease, background 140ms ease;
 }
 
 .exampleChip:hover {
-  border-style: solid;
+  border-color: rgb(var(--accent-rgb) / 0.35);
   color: var(--text-primary);
+  background: var(--surface-glass-hover);
 }
 
 .commandLegend {

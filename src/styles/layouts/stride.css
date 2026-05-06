@@ -242,13 +242,24 @@
   flex-direction: column;
   height: 100%;
   overflow: hidden;
+  background: var(--surface-overlay);
+  isolation: isolate;
 }
 
 .stride-week-header-row {
   display: grid;
   grid-template-columns: 52px repeat(var(--stride-col-count, 7), 1fr);
-  border-bottom: 1px solid var(--border-soft);
+  height: 64px;
   flex-shrink: 0;
+  border-bottom: 1px solid var(--border-soft);
+  background: var(--surface-overlay);
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+  scrollbar-width: none;
+}
+
+.stride-week-header-row::-webkit-scrollbar {
+  display: none;
 }
 
 .stride-day-header {
@@ -256,8 +267,8 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 8px 4px;
-  gap: 2px;
+  padding: 6px 4px;
+  gap: 4px;
   border-left: 1px solid var(--border-soft);
 }
 
@@ -270,12 +281,12 @@
 }
 
 .stride-day-header-num {
-  font-size: 18px;
-  font-weight: 400;
+  font-size: 16px;
+  font-weight: 500;
   color: var(--text-secondary);
   line-height: 1;
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -284,7 +295,7 @@
 
 .stride-day-header-num--today {
   background: var(--accent);
-  color: #fff;
+  color: var(--text-on-accent, #fff);
   font-weight: 700;
 }
 
@@ -296,9 +307,17 @@
 .stride-allday-row {
   display: grid;
   grid-template-columns: 52px repeat(var(--stride-col-count, 7), 1fr);
-  border-bottom: 1px solid var(--border-soft);
   flex-shrink: 0;
-  min-height: 28px;
+  min-height: 36px;
+  border-bottom: 1px solid var(--border-soft);
+  background: var(--surface-overlay);
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+  scrollbar-width: none;
+}
+
+.stride-allday-row::-webkit-scrollbar {
+  display: none;
 }
 
 .stride-time-gutter {
@@ -328,19 +347,21 @@
 
 .stride-allday-slot {
   border-left: 1px solid var(--border-soft);
-  padding: 2px 4px;
+  padding: 4px 4px;
   display: flex;
   flex-wrap: wrap;
   gap: 2px;
-  min-height: 28px;
+  min-height: 36px;
 }
 
 /* ─── Positioned time grid (absolute layout, 1px = 1min) ─────── */
 
 .stride-time-grid-scroll {
   flex: 1;
-  overflow-y: auto;
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
   overscroll-behavior: contain;
+  background: var(--surface-overlay);
 }
 
 /* The grid container holds the gutter, gridlines, and day columns */
@@ -367,14 +388,13 @@
   display: flex;
   align-items: flex-start;
   justify-content: flex-end;
-  padding-right: 8px;
+  padding: 4px 8px 0 0;
 }
 
 .stride-gutter-hour span {
   font-size: 10px;
   color: var(--text-muted);
   white-space: nowrap;
-  margin-top: -7px;
   line-height: 1;
 }
 
