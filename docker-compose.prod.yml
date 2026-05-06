@@ -48,9 +48,10 @@ services:
       HOSTNAME: "0.0.0.0"
       PORT: "3000"
       NODE_OPTIONS: "--max-old-space-size=512"
+      UPLOAD_DIR: ${UPLOAD_DIR:-/app/uploads}
     command: ["sh", "./scripts/container-start.sh"]
     volumes:
-      - giraffle_uploads:/app/public/uploads
+      - giraffle_uploads:/app/uploads
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/api/health/ready"]
       interval: 30s

@@ -11,5 +11,7 @@ if [ -n "${NEXTAUTH_SECRET_FILE:-}" ] && [ -f "$NEXTAUTH_SECRET_FILE" ]; then
   export NEXTAUTH_SECRET
 fi
 
+mkdir -p "${UPLOAD_DIR:-/app/uploads}"
+
 npx prisma migrate deploy
 exec node server.js

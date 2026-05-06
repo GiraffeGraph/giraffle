@@ -64,18 +64,19 @@ export async function POST(request: Request) {
   const baseName = slugify(path.basename(file.name, extension)) || "asset";
   const now = new Date();
   const relativeDirectory = path.join(
-    "uploads",
     String(now.getFullYear()),
     String(now.getMonth() + 1).padStart(2, "0")
   );
   const fileName = `${generateId()}-${baseName}${extension}`;
-  const publicDirectory = path.join(process.cwd(), "public", relativeDirectory);
-  const absolutePath = path.join(publicDirectory, fileName);
+  const uploadRoot =
+    process.env.UPLOAD_DIR ?? path.join(process.cwd(), "public", "uploads");
+  const targetDirectory = path.join(uploadRoot, relativeDirectory);
+  const absolutePath = path.join(targetDirectory, fileName);
 
-  await mkdir(publicDirectory, { recursive: true });
+  await mkdir(targetDirectory, { recursive: true });
   await writeFile(absolutePath, bytes);
 
-  const storagePath = `/${relativeDirectory.replaceAll("\\", "/")}/${fileName}`;
+  const storagePath = `/uploads/${relativeDirectory.replaceAll("\\", "/")}/${fileName}`;
 
   await db.mediaAsset.create({
     data: {

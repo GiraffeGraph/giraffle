@@ -39,6 +39,9 @@ yarn-error.log*
 /secrets/
 *.secret
 
+# user-uploaded media (served from UPLOAD_DIR volume in production)
+/public/uploads/
+
 # vercel
 .vercel
 
