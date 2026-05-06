@@ -42,27 +42,28 @@ export function SelfHostedGuideCard({
         <CardTitle>Image-first self-hosting</CardTitle>
       </CardHeader>
       <CardContent>
-        <div style={{ display: "grid", gap: "18px" }}>
+        <div style={{ display: "grid", gap: "12px" }}>
           <div
             style={{
               display: "grid",
-              gap: "8px",
-              padding: "16px",
-              borderRadius: "16px",
-              background: "var(--md-sys-color-primary-container)",
-              color: "var(--md-sys-color-on-primary-container)",
+              gap: "6px",
+              padding: "10px 12px",
+              border: "1px solid var(--app-border, var(--border-soft))",
+              borderRadius: "var(--app-radius-md, 10px)",
+              background: "transparent",
+              color: "var(--text-secondary)",
             }}
           >
             <strong>Published Docker image</strong>
-            <code style={{ fontSize: "13px", whiteSpace: "pre-wrap" }}>
+            <code style={{ fontSize: "12px", whiteSpace: "pre-wrap" }}>
               docker.io/efekurucay/giraffle:latest
             </code>
-            <span style={{ fontSize: "13px", opacity: 0.9 }}>
+            <span style={{ fontSize: "12px", opacity: 0.9 }}>
               Current app version: {currentVersion}. Immutable releases also publish tags like <strong>v{currentVersion}</strong>.
             </span>
           </div>
 
-          <div style={{ display: "grid", gap: "10px" }}>
+          <div style={{ display: "grid", gap: "6px" }}>
             <strong>Recommended install surfaces</strong>
             <ul className="md-list" style={{ padding: 0 }}>
               {PLATFORM_SURFACES.map((item) => (
@@ -75,19 +76,19 @@ export function SelfHostedGuideCard({
             </ul>
           </div>
 
-          <div style={{ display: "grid", gap: "10px" }}>
+          <div style={{ display: "grid", gap: "6px" }}>
             <strong>Required env vars</strong>
             <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
               {REQUIRED_ENV_KEYS.map((key) => (
                 <span
                   key={key}
                   style={{
-                    padding: "6px 10px",
+                    padding: "4px 8px",
                     borderRadius: "999px",
-                    border: "1px solid var(--md-sys-color-outline-variant)",
-                    background: "var(--md-sys-color-surface-container-low)",
-                    fontSize: "12px",
-                    fontWeight: 600,
+                    border: "1px solid var(--app-border, var(--border-soft))",
+                    background: "transparent",
+                    fontSize: "11px",
+                    fontWeight: 500,
                   }}
                 >
                   {key}
@@ -96,19 +97,19 @@ export function SelfHostedGuideCard({
             </div>
           </div>
 
-          <div style={{ display: "grid", gap: "10px" }}>
+          <div style={{ display: "grid", gap: "6px" }}>
             <strong>Optional env vars</strong>
             <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
               {OPTIONAL_ENV_KEYS.map((key) => (
                 <span
                   key={key}
                   style={{
-                    padding: "6px 10px",
+                    padding: "4px 8px",
                     borderRadius: "999px",
-                    border: "1px solid var(--md-sys-color-outline-variant)",
-                    background: "var(--md-sys-color-surface-container-lowest)",
-                    fontSize: "12px",
-                    fontWeight: 600,
+                    border: "1px solid var(--app-border, var(--border-soft))",
+                    background: "transparent",
+                    fontSize: "11px",
+                    fontWeight: 500,
                   }}
                 >
                   {key}
@@ -117,9 +118,9 @@ export function SelfHostedGuideCard({
             </div>
           </div>
 
-          <div style={{ display: "grid", gap: "8px" }}>
+          <div style={{ display: "grid", gap: "6px" }}>
             <strong>Image-first compose bundle</strong>
-            <div style={{ fontSize: "13px", color: "var(--md-sys-color-on-surface-variant)" }}>
+            <div style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
               Use <code>deploy/selfhost/docker-compose.image.yml</code> with <code>deploy/selfhost/.env.image.example</code> when you want a repo-light deploy for platforms that can import compose files.
             </div>
           </div>

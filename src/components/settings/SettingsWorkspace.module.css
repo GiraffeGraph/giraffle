@@ -36,8 +36,8 @@
 .kicker {
   margin: 0 0 4px;
   color: var(--text-tertiary);
-  font-size: 11px;
-  font-weight: 800;
+  font-size: 10px;
+  font-weight: 650;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -46,10 +46,10 @@
   margin: 0;
   color: var(--text-primary);
   font-family: var(--font-sans);
-  font-size: clamp(1.25rem, 2vw, 1.65rem);
-  font-weight: 800;
+  font-size: clamp(1.15rem, 1.6vw, 1.45rem);
+  font-weight: 680;
   line-height: 1.1;
-  letter-spacing: -0.025em;
+  letter-spacing: -0.018em;
 }
 
 .heroMeta {
@@ -73,7 +73,7 @@
 
 .metaValue {
   color: var(--text-primary);
-  font-weight: 800;
+  font-weight: 650;
 }
 
 .shell {
@@ -166,8 +166,8 @@
 .tabLabel {
   display: block;
   color: inherit;
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 620;
 }
 
 .tabDescription {
@@ -185,12 +185,12 @@
   align-items: center;
   justify-content: center;
   min-width: 28px;
-  padding: 4px 8px;
+  padding: 3px 7px;
   border-radius: 999px;
   background: var(--md-sys-color-surface-container-high);
   color: var(--text-tertiary);
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 600;
   white-space: nowrap;
 }
 
@@ -223,9 +223,9 @@
   margin: 0;
   color: var(--text-primary);
   font-family: var(--font-sans);
-  font-size: clamp(1.05rem, 1.5vw, 1.25rem);
-  font-weight: 800;
-  letter-spacing: -0.02em;
+  font-size: clamp(1rem, 1.3vw, 1.15rem);
+  font-weight: 650;
+  letter-spacing: -0.014em;
 }
 
 .statGrid {
@@ -246,16 +246,16 @@
   margin-bottom: 8px;
   color: var(--text-tertiary);
   font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.09em;
+  font-weight: 620;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
 .statValue {
   color: var(--text-primary);
   font-family: var(--font-sans);
-  font-size: 1.35rem;
-  font-weight: 850;
+  font-size: 1.2rem;
+  font-weight: 650;
   line-height: 1;
 }
 
@@ -296,9 +296,47 @@
 }
 
 .noticeValue {
-  font-size: var(--md-sys-typescale-display-small-size);
-  font-weight: 900;
+  font-size: 1.2rem;
+  font-weight: 650;
   line-height: 1;
+}
+
+.root :global(.md-card-title) {
+  font-size: 13px;
+  font-weight: 620;
+}
+
+.root :global(.md-card-content),
+.root :global(.md-list-item-supporting-text) {
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.root :global(.md-list-item) {
+  min-height: 38px;
+  padding: 8px 10px;
+}
+
+.root :global(.md-list-item-headline) {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.root :global(strong) {
+  font-weight: 600;
+}
+
+.root :global(code) {
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.root :global(.md-card-content [style*="font-weight: bold"]),
+.root :global(.md-card-content [style*="font-weight: 600"]),
+.root :global(.md-card-content [style*="fontWeight"]),
+.root :global(.md-card-content [style*="font-size: 13px"]) {
+  font-weight: 500 !important;
 }
 
 @keyframes settings-panel-in {
