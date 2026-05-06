@@ -6,6 +6,7 @@ import {
   type LocalSyncQueueItem,
 } from "@/lib/workspace-preferences";
 import { IntegrationSettingsCard } from "@/components/settings/IntegrationSettingsCard";
+import { McpAccessTokensCard, type McpAccessTokenView } from "@/components/settings/McpAccessTokensCard";
 import { SelfHostedGuideCard } from "@/components/settings/SelfHostedGuideCard";
 import { UpdateCenterCard } from "@/components/update/UpdateCenterCard";
 import { Button } from "@/components/ui/Button";
@@ -20,6 +21,7 @@ export interface SettingsWorkspaceProps {
     updatedAt: string | null;
   };
   encryptionAvailable: boolean;
+  mcpAccessTokens: McpAccessTokenView[];
   operationLogs: Array<{
     id: string;
     entityType: string;
@@ -39,6 +41,7 @@ export function SettingsWorkspace({
   updateStatus,
   openaiIntegration,
   encryptionAvailable,
+  mcpAccessTokens,
   operationLogs,
   embedded = false,
   showHeading = true,
@@ -99,6 +102,8 @@ export function SettingsWorkspace({
         openai={openaiIntegration}
         encryptionAvailable={encryptionAvailable}
       />
+
+      <McpAccessTokensCard tokens={mcpAccessTokens} />
 
       {updateStatus ? <UpdateCenterCard status={updateStatus} /> : null}
 

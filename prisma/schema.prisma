@@ -28,6 +28,7 @@ model User {
   noteCategories      NoteCategory[]
   spotterSessions         SpotterSession[]
   integrationSettings     UserIntegrationSetting[]
+  mcpAccessTokens         McpAccessToken[]
 }
 
 model Account {
@@ -233,6 +234,23 @@ model SpotterSession {
   updatedAt     DateTime         @updatedAt
 
   @@index([userId, lastMessageAt])
+}
+
+model McpAccessToken {
+  id          String    @id @default(uuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  tokenHash   String    @unique
+  tokenPrefix String
+  lastUsedAt  DateTime?
+  expiresAt   DateTime?
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([userId, revokedAt])
 }
 
 model UserIntegrationSetting {
