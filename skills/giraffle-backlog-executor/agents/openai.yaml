@@ -1,4 +1,0 @@
-interface:
-  display_name: "Giraffle Backlog Executor"
-  short_description: "Execute the next Giraffle backlog slice"
-  default_prompt: "Use $giraffle-backlog-executor to pick the next ready Giraffle task, execute it safely, and update the backlog."
