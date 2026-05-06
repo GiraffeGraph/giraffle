@@ -18,7 +18,7 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-RUN DATABASE_URL=postgresql://build:build@127.0.0.1:5432/giraffle AUTH_SECRET=build-time-placeholder-secret NEXTAUTH_SECRET=build-time-placeholder-secret NEXTAUTH_URL=http://localhost:3000 npm run build
+RUN DATABASE_URL=postgresql://build:build@127.0.0.1:5432/giraffle AUTH_SECRET=build-time-placeholder-secret NEXTAUTH_URL=http://localhost:3000 npm run build
 
 FROM node:20-alpine AS runner
 WORKDIR /app

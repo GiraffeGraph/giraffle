@@ -418,3 +418,180 @@
     padding-right: var(--app-page-pad-x);
   }
 }
+
+/* ── Right rail help drawer ─────────────────────────────────────────────── */
+
+.right-rail-help-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 58;
+  border: 0;
+  background: transparent;
+  cursor: default;
+}
+
+.right-rail-help {
+  position: fixed;
+  top: 46px;
+  right: 58px;
+  z-index: 59;
+  display: grid;
+  gap: 10px;
+  width: min(360px, calc(100vw - 76px));
+  max-height: calc(100vh - 68px);
+  overflow-y: auto;
+  padding: 10px;
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius-lg);
+  background: color-mix(in srgb, var(--bg-page) 92%, transparent);
+  box-shadow: var(--app-shadow-lift);
+  color: var(--text-primary);
+  backdrop-filter: blur(14px);
+  animation: right-rail-help-in 140ms ease both;
+}
+
+.right-rail-help-head,
+.right-rail-help-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.right-rail-help-kicker {
+  color: var(--text-tertiary);
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.right-rail-help h2,
+.right-rail-help h3 {
+  margin: 0;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  letter-spacing: -0.01em;
+}
+
+.right-rail-help h2 {
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.right-rail-help h3 {
+  font-size: 12px;
+  font-weight: 620;
+}
+
+.right-rail-help-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.right-rail-help-close:hover {
+  background: var(--app-surface-hover);
+  color: var(--text-primary);
+}
+
+.right-rail-help-close .material-symbols-outlined {
+  font-size: 17px;
+}
+
+.right-rail-help-card {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius-lg);
+  background: var(--app-surface);
+}
+
+.right-rail-help-row {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.right-rail-help-row strong,
+.right-rail-help-row code {
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 550;
+}
+
+.right-rail-help ul {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding-left: 16px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.right-rail-help-chip-row,
+.right-rail-help-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.right-rail-help-chip,
+.right-rail-help-links button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 550;
+}
+
+.right-rail-help-links button {
+  cursor: pointer;
+}
+
+.right-rail-help-links button:hover {
+  border-color: var(--app-border-strong);
+  background: var(--app-surface-hover);
+  color: var(--text-primary);
+}
+
+.right-rail-help-links .material-symbols-outlined {
+  font-size: 16px;
+}
+
+@keyframes right-rail-help-in {
+  from {
+    opacity: 0;
+    transform: translateX(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@media (max-width: 900px) {
+  .right-rail-help {
+    left: 12px;
+    right: 12px;
+    bottom: calc(66px + env(safe-area-inset-bottom, 0px));
+    top: auto;
+    width: auto;
+    max-height: min(66vh, 520px);
+  }
+}

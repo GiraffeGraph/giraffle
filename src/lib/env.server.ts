@@ -110,9 +110,7 @@ export function getAppRuntimeEnv(rawEnv: RawEnv = process.env) {
 
 export function getAuthRuntimeEnv(rawEnv: RawEnv = process.env) {
   const app = getAppRuntimeEnv(rawEnv);
-  const secret =
-    readTrimmed(rawEnv, "AUTH_SECRET") ??
-    readTrimmed(rawEnv, "NEXTAUTH_SECRET");
+  const secret = readTrimmed(rawEnv, "AUTH_SECRET");
 
   return {
     secret,

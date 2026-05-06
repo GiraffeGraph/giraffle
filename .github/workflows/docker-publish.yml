@@ -79,7 +79,6 @@ jobs:
         run: npm run build
         env:
           AUTH_SECRET: ${{ env.CI_AUTH_SECRET }}
-          NEXTAUTH_SECRET: ${{ env.CI_AUTH_SECRET }}
           DATABASE_URL: ${{ env.CI_DATABASE_URL }}
           NEXTAUTH_URL: http://localhost:3000
           LOG_LEVEL: info

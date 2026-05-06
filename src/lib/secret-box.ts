@@ -11,8 +11,7 @@ function resolveSecretBoxSeed(explicitSeed?: string | null) {
 
   const fromEnv =
     process.env.APP_ENCRYPTION_KEY?.trim() ||
-    process.env.AUTH_SECRET?.trim() ||
-    process.env.NEXTAUTH_SECRET?.trim();
+    process.env.AUTH_SECRET?.trim();
 
   if (fromEnv) {
     return fromEnv;

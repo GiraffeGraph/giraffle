@@ -23,6 +23,7 @@ import {
   toggleTodoAction,
 } from "@/server/api/notes";
 import type { EisenhowerQuadrant } from "@/domain/note/note.types";
+import { isSidebarNoteDragData } from "@/components/sidebar/sidebar.types";
 
 // ─── Types ───────────────────────────────────────────────────
 
@@ -309,13 +310,17 @@ function OuterQuadrant({
     return combine(
       dropTargetForElements({
         element: el,
-        canDrop: ({ source }) => isNote(source.data as Record<string, unknown>),
+        canDrop: ({ source }) =>
+          isNote(source.data as Record<string, unknown>) ||
+          isSidebarNoteDragData(source.data),
         onDragEnter: () => setIsOver(true),
         onDragLeave: () => setIsOver(false),
         onDrop: ({ source }) => {
           setIsOver(false);
           const d = source.data as Record<string, unknown>;
           if (isNote(d)) onDrop(d.id, config.key);
+          else if (isSidebarNoteDragData(source.data))
+            onDrop(source.data.noteId, config.key);
         },
       })
     );
@@ -365,13 +370,17 @@ function NotePool({
     return combine(
       dropTargetForElements({
         element: el,
-        canDrop: ({ source }) => isNote(source.data as Record<string, unknown>),
+        canDrop: ({ source }) =>
+          isNote(source.data as Record<string, unknown>) ||
+          isSidebarNoteDragData(source.data),
         onDragEnter: () => setIsOver(true),
         onDragLeave: () => setIsOver(false),
         onDrop: ({ source }) => {
           setIsOver(false);
           const d = source.data as Record<string, unknown>;
           if (isNote(d)) onDrop(d.id, null);
+          else if (isSidebarNoteDragData(source.data))
+            onDrop(source.data.noteId, null);
         },
       })
     );

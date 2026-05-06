@@ -7,7 +7,6 @@ import {
 } from "@/lib/workspace-preferences";
 import { IntegrationSettingsCard } from "@/components/settings/IntegrationSettingsCard";
 import { McpAccessTokensCard, type McpAccessTokenView } from "@/components/settings/McpAccessTokensCard";
-import { SelfHostedGuideCard } from "@/components/settings/SelfHostedGuideCard";
 import { UpdateCenterCard } from "@/components/update/UpdateCenterCard";
 import { Button } from "@/components/ui/Button";
 import { Card, CardHeader, CardTitle, CardContent, CardActions } from "@/components/ui/Card";
@@ -82,8 +81,8 @@ export function SettingsWorkspace({
   const tabs: SettingsTab[] = [
     {
       id: "hosting",
-      label: "Self-hosting",
-      description: "Docker, env vars, updates",
+      label: "Updates",
+      description: "Version and release flow",
       icon: "deployed_code",
       badge: updateStatus?.updateAvailable ? "Update" : `v${appVersion}`,
     },
@@ -153,8 +152,7 @@ export function SettingsWorkspace({
             hidden={activeTab !== "hosting"}
             className={styles.panel}
           >
-            <SettingsSectionIntro title="Self-hosting" />
-            <SelfHostedGuideCard currentVersion={appVersion} />
+            <SettingsSectionIntro title="Updates" />
             {updateStatus ? <UpdateCenterCard status={updateStatus} /> : null}
           </section>
 

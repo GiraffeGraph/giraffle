@@ -2,6 +2,7 @@ import { RightRail } from "@/components/right-rail/RightRail";
 import { Sidebar } from "@/components/sidebar/Sidebar";
 import { getFoldersAction } from "@/server/api/folders";
 import { getNotesAction } from "@/server/api/notes";
+import { getAppRuntimeEnv } from "@/lib/env.server";
 import { getSpotterSessionsAction } from "@/server/api/spotter";
 
 export const dynamic = "force-dynamic";
@@ -16,6 +17,7 @@ export default async function MainLayout({
     getFoldersAction(),
     getSpotterSessionsAction(),
   ]);
+  const app = getAppRuntimeEnv();
 
   return (
     <div className="app-layout">
@@ -23,7 +25,7 @@ export default async function MainLayout({
       <main className="main-content">
         <div className="main-content-inner">{children}</div>
       </main>
-      <RightRail />
+      <RightRail appVersion={app.version} />
     </div>
   );
 }
