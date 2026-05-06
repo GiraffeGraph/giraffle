@@ -259,20 +259,23 @@ function registerNoteTools(server: McpServer) {
       title: "Append blocks",
       description:
         "Append content to an existing note. Provide markdown for simple agent workflows or Tiptap block JSON for precise canonical blocks.",
-      inputSchema: NoteIdentifierInputSchema.and(
-        z
-          .object({
-            parentBlockId: z.string().min(1).nullable().optional(),
-            afterBlockId: z.string().min(1).nullable().optional(),
-            markdown: z.string().max(200_000).optional(),
-            blocks: z.array(BlockNodeContentSchema).max(100).optional(),
-          })
-          .strict()
-          .refine(
-            (input) => Boolean(input.markdown?.trim()) || Boolean(input.blocks?.length),
-            { message: "Provide markdown or at least one block." },
-          ),
-      ),
+      inputSchema: z
+        .object({
+          noteId: z.string().min(1).optional(),
+          slug: z.string().min(1).max(240).optional(),
+          parentBlockId: z.string().min(1).nullable().optional(),
+          afterBlockId: z.string().min(1).nullable().optional(),
+          markdown: z.string().max(200_000).optional(),
+          blocks: z.array(BlockNodeContentSchema).max(100).optional(),
+        })
+        .strict()
+        .refine((input) => Boolean(input.noteId) !== Boolean(input.slug), {
+          message: "Provide exactly one of noteId or slug.",
+        })
+        .refine(
+          (input) => Boolean(input.markdown?.trim()) || Boolean(input.blocks?.length),
+          { message: "Provide markdown or at least one block." },
+        ),
       outputSchema: NoteWithDocumentSchema,
       annotations: {
         title: "Append blocks",
@@ -317,9 +320,16 @@ function registerNoteTools(server: McpServer) {
       title: "Get note",
       description:
         "Retrieve one note by noteId or slug. Returns metadata, canonical Tiptap document, and Markdown for readability.",
-      inputSchema: NoteIdentifierInputSchema.and(
-        z.object({ includeArchived: z.boolean().optional() }).strict(),
-      ),
+      inputSchema: z
+        .object({
+          noteId: z.string().min(1).optional(),
+          slug: z.string().min(1).max(240).optional(),
+          includeArchived: z.boolean().optional(),
+        })
+        .strict()
+        .refine((input) => Boolean(input.noteId) !== Boolean(input.slug), {
+          message: "Provide exactly one of noteId or slug.",
+        }),
       outputSchema: NoteWithDocumentSchema,
       annotations: {
         title: "Get note",
@@ -413,9 +423,16 @@ function registerNoteTools(server: McpServer) {
     {
       title: "Export note",
       description: "Export a note as Markdown or MDX derived from the canonical block document.",
-      inputSchema: NoteIdentifierInputSchema.and(
-        z.object({ format: z.enum(["markdown", "mdx"]).default("markdown") }).strict(),
-      ),
+      inputSchema: z
+        .object({
+          noteId: z.string().min(1).optional(),
+          slug: z.string().min(1).max(240).optional(),
+          format: z.enum(["markdown", "mdx"]).default("markdown"),
+        })
+        .strict()
+        .refine((input) => Boolean(input.noteId) !== Boolean(input.slug), {
+          message: "Provide exactly one of noteId or slug.",
+        }),
       outputSchema: z
         .object({
           noteId: z.string(),
