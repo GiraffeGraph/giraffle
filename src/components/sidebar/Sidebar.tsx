@@ -1321,11 +1321,6 @@ export function Sidebar({
                         label: "Stride",
                       },
                       {
-                        path: "/coat-canvas",
-                        icon: "texture",
-                        label: "Coat Canvas",
-                      },
-                      {
                         path: "/discover",
                         icon: "newspaper",
                         label: "Discover",

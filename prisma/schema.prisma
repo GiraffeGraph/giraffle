@@ -28,7 +28,6 @@ model User {
   canvases            Canvas[]
   noteCategories      NoteCategory[]
   spotterSessions         SpotterSession[]
-  coatCanvases            CoatCanvas[]
   integrationSettings     UserIntegrationSetting[]
 }
 
@@ -115,7 +114,6 @@ model Note {
   incomingLinks Link[]                @relation("IncomingLinks")
   assets        MediaAsset[]
   feedSources   WorkspaceFeedSource[]
-  coatCells     CoatCell[]
 
   @@index([folderId])
   @@index([categoryId])
@@ -491,39 +489,4 @@ model TerminalSession {
   @@index([agentId])
   @@index([sessionId])
   @@index([isActive])
-}
-
-// ─── Coat Canvas Models ───────────────────────────────────────
-
-model CoatCanvas {
-  id        String     @id @default(uuid())
-  userId    String
-  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title     String     @default("New Canvas")
-  columns   Int        @default(12)
-  cells     CoatCell[]
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-
-  @@index([userId])
-}
-
-model CoatCell {
-  id        String     @id @default(uuid())
-  canvasId  String
-  canvas    CoatCanvas @relation(fields: [canvasId], references: [id], onDelete: Cascade)
-  noteId    String?
-  note      Note?      @relation(fields: [noteId], references: [id], onDelete: SetNull)
-  title     String     @default("")
-  content   String     @default("")
-  colSpan   Int        @default(4)
-  rowSpan   Int        @default(1)
-  position  Int        @default(0)
-  color     String?
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-
-  @@index([canvasId])
-  @@index([canvasId, position])
-  @@index([noteId])
 }

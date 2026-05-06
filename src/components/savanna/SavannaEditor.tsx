@@ -8,6 +8,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PageTopbar } from "@/components/ui/PageTopbar";
 import { isSidebarNoteDragData } from "@/components/sidebar/sidebar.types";
 import { saveSavannaStateAction } from "@/server/api/savanna";
+import { NotePreviewPanel } from "./NotePreviewPanel";
 import type { AppState, ExcalidrawImperativeAPI, ExcalidrawProps } from "@excalidraw/excalidraw/types";
 import type { ExcalidrawElement } from "@excalidraw/excalidraw/element/types";
 
@@ -86,6 +87,8 @@ export function SavannaEditor({ canvas, notes }: SavannaEditorProps) {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
   const [theme, setTheme] = useState<ExcalidrawTheme>("light");
   const [isNoteDragOver, setIsNoteDragOver] = useState(false);
+  const [previewNoteId, setPreviewNoteId] = useState<string | null>(null);
+  const [previewAnchor, setPreviewAnchor] = useState<{ x: number; y: number } | null>(null);
   const canvasDropRef = useRef<HTMLElement | null>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -238,13 +241,42 @@ export function SavannaEditor({ canvas, notes }: SavannaEditorProps) {
             initialData={initialData}
             onChange={handleChange}
             onLinkOpen={(element, event) => {
-              if (typeof element.link === "string" && element.link.startsWith("/")) {
+              if (typeof element.link === "string") {
                 event.preventDefault();
-                router.push(element.link);
+                
+                // Check if it's a note link
+                const match = element.link.match(/^\/notes\/(.+)$/);
+                if (match && excalidrawAPI) {
+                  const noteId = match[1];
+                  const appState = excalidrawAPI.getAppState();
+                  
+                  // Calculate screen position from element position
+                  const zoom = typeof appState.zoom?.value === "number" ? appState.zoom.value : 1;
+                  const screenX = (element.x + element.width / 2 + appState.scrollX) * zoom;
+                  const screenY = (element.y + appState.scrollY) * zoom;
+                  
+                  setPreviewNoteId(noteId);
+                  setPreviewAnchor({ x: screenX, y: screenY });
+                } else if (element.link.startsWith("/")) {
+                  // For other internal links, navigate
+                  router.push(element.link);
+                }
               }
             }}
             theme={theme}
           />
+          
+          {previewNoteId && previewAnchor && (
+            <NotePreviewPanel
+              noteId={previewNoteId}
+              anchorX={previewAnchor.x}
+              anchorY={previewAnchor.y}
+              onClose={() => {
+                setPreviewNoteId(null);
+                setPreviewAnchor(null);
+              }}
+            />
+          )}
         </main>
       </div>
     </div>
