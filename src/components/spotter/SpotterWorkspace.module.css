@@ -444,26 +444,18 @@
 }
 
 .messageCard {
-  display: grid;
-  grid-template-columns: 32px minmax(0, 1fr);
+  display: flex;
+  align-items: flex-start;
   gap: 12px;
   width: 100%;
 }
 
 .messageUser {
-  grid-template-columns: minmax(0, 1fr) 32px;
-}
-
-.messageUser .messageAvatar {
-  grid-column: 2;
-  grid-row: 1;
+  flex-direction: row-reverse;
 }
 
 .messageUser .messageContent {
-  grid-column: 1;
-  grid-row: 1;
-  justify-self: end;
-  max-width: min(620px, 100%);
+  max-width: min(620px, calc(100% - 44px));
   padding: 12px 14px;
   border: 1px solid var(--ng-border);
   border-radius: 8px;
@@ -471,6 +463,7 @@
 }
 
 .messageAssistant .messageContent {
+  max-width: min(680px, calc(100% - 44px));
   padding: 2px 0 0;
 }
 
@@ -873,18 +866,13 @@
     display: none;
   }
 
-  .messageCard,
-  .messageUser {
-    grid-template-columns: 28px minmax(0, 1fr);
+  .messageCard {
+    gap: 10px;
   }
 
-  .messageUser .messageAvatar {
-    grid-column: 1;
-  }
-
-  .messageUser .messageContent {
-    grid-column: 2;
-    justify-self: stretch;
+  .messageUser .messageContent,
+  .messageAssistant .messageContent {
+    max-width: calc(100% - 38px);
   }
 
   .messageAvatar {

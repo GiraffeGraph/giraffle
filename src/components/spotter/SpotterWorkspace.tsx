@@ -57,6 +57,9 @@ export function SpotterWorkspace({
 }: SpotterWorkspaceProps) {
   const composerRef = useRef<HTMLTextAreaElement | null>(null);
   const initialPromptRef = useRef<string | null>(null);
+  const activeSessionIdRef = useRef<string | null>(initialSessionId);
+  const workspaceContextRef = useRef("");
+  const adoptSessionIdRef = useRef<(serverSessionId: string) => void>(() => {});
   const [activeSessionId, setActiveSessionId] = useState<string | null>(
     initialSessionId,
   );
@@ -103,9 +106,12 @@ export function SpotterWorkspace({
     ].join("\n");
   }, [folderMeta, folders, notes]);
 
+  workspaceContextRef.current = workspaceContext;
+
   const adoptSessionId = useCallback(
     (serverSessionId: string) => {
-      if (serverSessionId === activeSessionId) return;
+      if (serverSessionId === activeSessionIdRef.current) return;
+      activeSessionIdRef.current = serverSessionId;
       setActiveSessionId(serverSessionId);
       if (!embedded) {
         window.history.replaceState(
@@ -115,7 +121,38 @@ export function SpotterWorkspace({
         );
       }
     },
-    [activeSessionId, embedded],
+    [embedded],
+  );
+
+  adoptSessionIdRef.current = adoptSessionId;
+  activeSessionIdRef.current = activeSessionId;
+
+  const transport = useMemo(
+    () => new DefaultChatTransport<UIMessage>({
+      api: "/api/spotter/chat",
+      fetch: async (input, init) => {
+        const response = await fetch(input, init);
+        const serverSessionId = response.headers.get("X-Spotter-Session-Id");
+        if (serverSessionId) adoptSessionIdRef.current(serverSessionId);
+        return response;
+      },
+      prepareSendMessagesRequest: ({ messages, body }) => {
+        const serverSessionId = activeSessionIdRef.current;
+        return {
+          body: {
+            ...(body ?? {}),
+            // Only send our real session id when we have one. useChat's internal
+            // chat id is a UUID it generates locally; sending that to the server
+            // would trigger a "session not found" 404.
+            ...(serverSessionId ? { id: serverSessionId } : {}),
+            messages,
+            mode: "workspace",
+            workspaceContext: workspaceContextRef.current,
+          },
+        };
+      },
+    }),
+    [],
   );
 
   const {
@@ -128,21 +165,7 @@ export function SpotterWorkspace({
   } = useChat({
     messages: initialMessages,
     sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithApprovalResponses,
-    transport: new DefaultChatTransport({
-      api: "/api/spotter/chat",
-      prepareSendMessagesRequest: ({ messages, body }) => ({
-        body: {
-          ...(body ?? {}),
-          // Only send our real session id when we have one. useChat's internal
-          // chat id is a UUID it generates locally; sending that to the server
-          // would trigger a "session not found" 404.
-          ...(activeSessionId ? { id: activeSessionId } : {}),
-          messages,
-          mode: "workspace",
-          workspaceContext,
-        },
-      }),
-    }),
+    transport,
     onFinish: ({ message }) => {
       const meta = (message as { metadata?: { sessionId?: string } }).metadata;
       const serverSessionId = meta?.sessionId;
