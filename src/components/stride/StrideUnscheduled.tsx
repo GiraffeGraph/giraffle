@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { dropTargetForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
-import type { CalendarTodo } from "./stride.types";
+import { isDragData, type CalendarTodo } from "./stride.types";
 import { StrideTodoCard } from "./StrideTodoCard";
 
 interface StrideUnscheduledProps {
@@ -21,10 +21,8 @@ function UnscheduledDropZone({ children }: { children: React.ReactNode }) {
     if (!el) return;
     return dropTargetForElements({
       element: el,
-      canDrop: ({ source }) => {
-        const d = source.data as Record<string, unknown>;
-        return d.type === "stride:todo";
-      },
+      canDrop: ({ source }) =>
+        isDragData(source.data) && source.data.type === "stride:todo",
       getData: () => ({ type: "stride:unscheduled-drop" }),
       onDragEnter: () => setIsOver(true),
       onDragLeave: () => setIsOver(false),

@@ -38,6 +38,14 @@ import {
 } from "@/server/api/notes";
 import { createNoteCategoryAction } from "@/server/api/categories";
 import { createSavannaFromNoteAction } from "@/server/api/savanna";
+import {
+  buildCategoryChipStyle,
+  buildFolderLabel,
+  buildSelectStyle,
+  extractHeadings,
+  sortCategories,
+  type TocHeading,
+} from "@/components/notes/NoteEditorPage.helpers";
 import { queueLocalMutation, resolveLocalMutation } from "@/lib/local-sync";
 
 interface NoteEditorPageProps {
@@ -1137,54 +1145,23 @@ export function NoteEditorPage({
 
           {backlinks.length > 0 ? (
             <div
-              style={{
-                marginTop: isMobileViewport ? "24px" : "32px",
-                padding: footerSectionPadding,
-              }}
+              className={`note-backlinks${isMobileViewport ? " note-backlinks--mobile" : ""}`}
+              style={{ padding: footerSectionPadding }}
             >
-              <details style={{ fontSize: "13px", color: "var(--md-sys-color-on-surface-variant)" }}>
-                <summary
-                  style={{
-                    cursor: "pointer",
-                    userSelect: "none",
-                    listStyle: "none",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "6px",
-                    padding: "4px 0",
-                  }}
-                >
-                  <span className="material-symbols-outlined" aria-hidden="true" style={{ fontSize: "16px" }}>
+              <details className="note-backlinks-details">
+                <summary className="note-backlinks-summary">
+                  <span className="material-symbols-outlined note-backlinks-icon" aria-hidden="true">
                     link
                   </span>
                   {backlinks.length} backlinks
                 </summary>
-                <ul
-                  style={{
-                    listStyle: "none",
-                    margin: "8px 0 0",
-                    padding: 0,
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "2px",
-                  }}
-                >
+                <ul className="note-backlinks-list">
                   {backlinks.map((backlink) => (
                     <li key={`${backlink.sourceNoteId}-${backlink.sourceBlockId ?? ""}-${backlink.targetRaw}`}>
                       <button
                         type="button"
+                        className="note-backlinks-link"
                         onClick={() => navigateToNote(backlink.sourceNoteId)}
-                        style={{
-                          background: "none",
-                          border: "none",
-                          padding: "4px 6px",
-                          borderRadius: "6px",
-                          cursor: "pointer",
-                          fontSize: "13px",
-                          color: "var(--md-sys-color-primary)",
-                          textAlign: "left",
-                          width: "100%",
-                        }}
                       >
                         {backlink.sourceNoteTitle}
                       </button>
@@ -1199,34 +1176,12 @@ export function NoteEditorPage({
         {/* end main content column */}
 
         {isTocVisible ? (
-          <aside style={{ width: "180px", flexShrink: 0 }}>
-            <div
-              style={{ position: "sticky", top: "56px", paddingTop: "64px" }}
-            >
+          <aside className="note-toc">
+            <div className="note-toc-sticky">
               {headings.length > 0 ? (
                 <nav aria-label="Table of contents">
-                  <div
-                    style={{
-                      fontSize: "11px",
-                      fontWeight: 600,
-                      letterSpacing: "0.08em",
-                      textTransform: "uppercase",
-                      color: "var(--md-sys-color-on-surface-variant)",
-                      marginBottom: "10px",
-                    }}
-                  >
-                    Table of contents
-                  </div>
-                  <ul
-                    style={{
-                      listStyle: "none",
-                      margin: 0,
-                      padding: 0,
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "1px",
-                    }}
-                  >
+                  <div className="note-toc-label">Table of contents</div>
+                  <ul className="note-toc-list">
                     {headings.map((heading, idx) => (
                       <li key={`${heading.blockId ?? heading.text}-${idx}`}>
                         <button
@@ -1235,27 +1190,8 @@ export function NoteEditorPage({
                             scrollToHeading(heading.blockId, heading.text)
                           }
                           title={heading.text}
-                          style={{
-                            display: "block",
-                            width: "100%",
-                            textAlign: "left",
-                            background: "transparent",
-                            color:
-                              activeHeadingIndex === idx
-                                ? "var(--md-sys-color-on-surface)"
-                                : "var(--md-sys-color-on-surface-variant)",
-                            border: "none",
-                            padding: "3px 0",
-                            paddingLeft: `${(heading.level - 1) * 10}px`,
-                            fontSize: "12px",
-                            lineHeight: "1.4",
-                            cursor: "pointer",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                            fontWeight: activeHeadingIndex === idx ? 500 : 400,
-                            transition: "color 0.15s",
-                          }}
+                          className={`note-toc-link${activeHeadingIndex === idx ? " note-toc-link--active" : ""}`}
+                          style={{ paddingLeft: `${(heading.level - 1) * 10}px` }}
                         >
                           {heading.text}
                         </button>
@@ -1288,93 +1224,3 @@ export function NoteEditorPage({
   );
 }
 
-function buildFolderLabel(
-  folder: { id: string; name: string; parentId: string | null },
-  folders: Array<{ id: string; name: string; parentId: string | null }>,
-) {
-  const foldersById = new Map(
-    folders.map((candidate) => [candidate.id, candidate]),
-  );
-  const labels = [folder.name];
-  let currentParentId = folder.parentId;
-
-  while (currentParentId) {
-    const parentFolder = foldersById.get(currentParentId);
-
-    if (!parentFolder) {
-      break;
-    }
-
-    labels.unshift(parentFolder.name);
-    currentParentId = parentFolder.parentId;
-  }
-
-  return labels.join(" / ");
-}
-
-function buildCategoryChipStyle(
-  isActive: boolean,
-  colors: { background: string; foreground: string },
-) {
-  return {
-    background: isActive
-      ? colors.background
-      : "var(--md-sys-color-surface-container-low)",
-    color: isActive
-      ? colors.foreground
-      : "var(--md-sys-color-on-surface-variant)",
-    border: "none",
-    padding: "6px 10px",
-    borderRadius: "999px",
-    fontSize: "12px",
-    cursor: "pointer",
-    display: "inline-flex",
-    alignItems: "center",
-    gap: "6px",
-    opacity: 1,
-  } satisfies CSSProperties;
-}
-
-function buildSelectStyle(): CSSProperties {
-  return {
-    width: "100%",
-    padding: "12px 16px",
-    borderRadius: "12px",
-    border: "1px solid var(--md-sys-color-outline)",
-    background: "transparent",
-    color: "var(--md-sys-color-on-surface)",
-    fontSize: "14px",
-  };
-}
-
-function sortCategories(categories: NoteCategorySummary[]) {
-  return [...categories].sort((left, right) =>
-    left.name.localeCompare(right.name, "tr"),
-  );
-}
-
-interface TocHeading {
-  level: number;
-  text: string;
-  blockId: string | null;
-}
-
-function extractHeadings(doc: TiptapDocument): TocHeading[] {
-  const headings: TocHeading[] = [];
-  for (const node of doc.content) {
-    if (node.type === "heading" && node.content) {
-      const level =
-        typeof node.attrs?.level === "number" ? node.attrs.level : 1;
-      const text = node.content
-        .filter((n): n is { type: "text"; text: string } => n.type === "text")
-        .map((n) => n.text)
-        .join("");
-      const blockId =
-        typeof node.attrs?.blockId === "string" ? node.attrs.blockId : null;
-      if (text.trim()) {
-        headings.push({ level, text, blockId });
-      }
-    }
-  }
-  return headings;
-}

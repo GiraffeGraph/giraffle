@@ -1,6 +1,7 @@
 "use server";
 
 import { db } from "@/lib/db";
+import { isRecord } from "@/lib/utils";
 import { extractWikilinksFromContent } from "./wikilink.parser";
 import type {
   BacklinkResult,
@@ -39,8 +40,8 @@ export async function extractAndSaveLinks(
   }[] = [];
 
   for (const block of blocks) {
-    const content = block.content as Record<string, unknown>;
-    const wikilinks = extractWikilinksFromContent(content);
+    if (!isRecord(block.content)) continue;
+    const wikilinks = extractWikilinksFromContent(block.content);
 
     for (const wikilink of wikilinks) {
       const exists = linksToCreate.some(

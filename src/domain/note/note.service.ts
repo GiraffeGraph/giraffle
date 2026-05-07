@@ -7,7 +7,7 @@ import { normalizeWikilinkTarget } from "@/domain/link/wikilink.parser";
 import { getAllFolders } from "@/domain/folder/folder.service";
 import { normalizeNoteCategoryColor } from "@/domain/category/category.types";
 import { recordOperation } from "@/domain/sync/operation-log.service";
-import { generateId, slugify } from "@/lib/utils";
+import { generateId, isRecord, slugify } from "@/lib/utils";
 import {
   DEFAULT_NOTE_TITLE,
   EISENHOWER_QUADRANTS,
@@ -1077,13 +1077,11 @@ function normalizeJsonValue(value: unknown): unknown {
     return value.map(normalizeJsonValue);
   }
 
-  if (value && typeof value === "object") {
-    return Object.keys(value as Record<string, unknown>)
+  if (isRecord(value)) {
+    return Object.keys(value)
       .sort()
       .reduce<Record<string, unknown>>((result, key) => {
-        result[key] = normalizeJsonValue(
-          (value as Record<string, unknown>)[key]
-        );
+        result[key] = normalizeJsonValue(value[key]);
         return result;
       }, {});
   }
@@ -1184,11 +1182,10 @@ async function getNextNotePosition(userId: string, folderId: string | null) {
 // ─── Tower Matrix ─────────────────────────────────────────────
 
 function extractBlockText(content: unknown): string {
-  if (!content || typeof content !== "object") return "";
-  const node = content as Record<string, unknown>;
-  if (node.type === "text" && typeof node.text === "string") return node.text;
-  if (Array.isArray(node.content)) {
-    return (node.content as unknown[]).map(extractBlockText).join("");
+  if (!isRecord(content)) return "";
+  if (content.type === "text" && typeof content.text === "string") return content.text;
+  if (Array.isArray(content.content)) {
+    return content.content.map(extractBlockText).join("");
   }
   return "";
 }

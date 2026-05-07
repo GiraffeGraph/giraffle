@@ -13,7 +13,8 @@ import {
   dropTargetForElements,
   monitorForElements,
 } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
-import type { CalendarTodo } from "./stride.types";
+import { isDragData, type CalendarTodo } from "./stride.types";
+import { isRecord } from "@/lib/utils";
 import { StrideDurationPicker } from "./StrideDurationPicker";
 
 export const HOUR_PX = 60; // 1 px = 1 minute
@@ -683,19 +684,18 @@ function FixedWeekView({
   useEffect(() => {
     return monitorForElements({
       onDragStart({ source }) {
-        const d = source.data as Record<string, unknown>;
-        if (d.type === "stride:todo" || d.type === "stride:unscheduled") {
-          setActiveTodoId(d.todoId as string);
+        if (isDragData(source.data)) {
+          setActiveTodoId(source.data.todoId);
         }
       },
       onDrag({ source, location }) {
-        const d = source.data as Record<string, unknown>;
-        if (d.type !== "stride:todo" && d.type !== "stride:unscheduled") return;
-        const todoId = d.todoId as string;
+        if (!isDragData(source.data)) return;
+        const { todoId } = source.data;
 
         const col = location.current.dropTargets[0];
         if (!col) { setDragOverlay(null); return; }
-        const colData = col.data as Record<string, unknown>;
+        if (!isRecord(col.data)) { setDragOverlay(null); return; }
+        const colData = col.data;
         if (colData.type !== "stride:slot") { setDragOverlay(null); return; }
 
         const hour = colData.hour as number;
@@ -905,18 +905,17 @@ function InfiniteWeekView({
   useEffect(() => {
     return monitorForElements({
       onDragStart({ source }) {
-        const d = source.data as Record<string, unknown>;
-        if (d.type === "stride:todo" || d.type === "stride:unscheduled") {
-          setActiveTodoId(d.todoId as string);
+        if (isDragData(source.data)) {
+          setActiveTodoId(source.data.todoId);
         }
       },
       onDrag({ source, location }) {
-        const d = source.data as Record<string, unknown>;
-        if (d.type !== "stride:todo" && d.type !== "stride:unscheduled") return;
-        const todoId = d.todoId as string;
+        if (!isDragData(source.data)) return;
+        const { todoId } = source.data;
         const col = location.current.dropTargets[0];
         if (!col) { setDragOverlay(null); return; }
-        const colData = col.data as Record<string, unknown>;
+        if (!isRecord(col.data)) { setDragOverlay(null); return; }
+        const colData = col.data;
         if (colData.type !== "stride:slot") { setDragOverlay(null); return; }
         const hour = colData.hour as number;
         const minute = (colData.minute as number) ?? 0;

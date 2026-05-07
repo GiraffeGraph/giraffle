@@ -8,12 +8,11 @@ import { db } from "@/lib/db";
 import { isRecord } from "@/lib/utils";
 
 function extractTextFromNode(node: unknown): string {
-  if (!node || typeof node !== "object") return "";
+  if (!isRecord(node)) return "";
 
-  const value = node as Record<string, unknown>;
-  const text = typeof value.text === "string" ? value.text : "";
-  const children = Array.isArray(value.content)
-    ? value.content.map((child) => extractTextFromNode(child)).join("")
+  const text = typeof node.text === "string" ? node.text : "";
+  const children = Array.isArray(node.content)
+    ? node.content.map((child) => extractTextFromNode(child)).join("")
     : "";
 
   return `${text}${children}`;

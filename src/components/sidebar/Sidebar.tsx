@@ -24,6 +24,7 @@ import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 import { ThemeSelector } from "@/components/theme/ThemeSelector";
 import { Button } from "@/components/ui/Button";
 import { useIsMobileViewport } from "@/components/ui/useIsMobileViewport";
+import { cn } from "@/lib/utils";
 import { createFolderAction, relocateFolderAction } from "@/server/api/folders";
 import {
   archiveNoteAction,
@@ -1011,7 +1012,13 @@ export function Sidebar({
 
   return (
     <aside
-      className={`md-nav-drawer md-nav-drawer--giraffle-sidebar sidebar${effectiveIsSidebarCompact ? " md-nav-drawer--compact compact" : ""}${isSidebarResizing ? " md-nav-drawer--resizing" : ""}${isMobileViewport ? " sidebar-mobile" : ""}${isMobileSidebarOpen ? " mobile-open" : ""}`}
+      className={cn(
+        "md-nav-drawer md-nav-drawer--giraffle-sidebar sidebar",
+        effectiveIsSidebarCompact && "md-nav-drawer--compact compact",
+        isSidebarResizing && "md-nav-drawer--resizing",
+        isMobileViewport && "sidebar-mobile",
+        isMobileSidebarOpen && "mobile-open"
+      )}
       style={{
         width: isMobileViewport
           ? "100%"

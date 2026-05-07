@@ -75,9 +75,108 @@
 }
 
 .note-header,
-.note-editor-container,
-.backlinks-section {
+.note-editor-container {
   max-width: 720px;
+}
+
+.note-backlinks {
+  margin-top: 32px;
+}
+
+.note-backlinks--mobile {
+  margin-top: 24px;
+}
+
+.note-backlinks-details {
+  font-size: 13px;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.note-backlinks-summary {
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+}
+
+.note-backlinks-icon {
+  font-size: 16px;
+}
+
+.note-backlinks-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.note-backlinks-link {
+  background: none;
+  border: none;
+  padding: 4px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--md-sys-color-primary);
+  text-align: left;
+  width: 100%;
+}
+
+.note-toc {
+  width: 180px;
+  flex-shrink: 0;
+}
+
+.note-toc-sticky {
+  position: sticky;
+  top: 56px;
+  padding-top: 64px;
+}
+
+.note-toc-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--md-sys-color-on-surface-variant);
+  margin-bottom: 10px;
+}
+
+.note-toc-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.note-toc-link {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  color: var(--md-sys-color-on-surface-variant);
+  border: none;
+  padding: 3px 0;
+  font-size: 12px;
+  line-height: 1.4;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 400;
+  transition: color 0.15s;
+}
+
+.note-toc-link--active {
+  color: var(--md-sys-color-on-surface);
+  font-weight: 500;
 }
 
 .note-breadcrumb-row {

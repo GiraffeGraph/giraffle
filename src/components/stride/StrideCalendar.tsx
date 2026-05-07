@@ -19,7 +19,8 @@ import {
   toggleCalendarTodoAction,
   updateCalendarTodoTextAction,
 } from "@/server/api/notes";
-import type { CalendarTodo, CalendarView } from "./stride.types";
+import { isDragData, type CalendarTodo, type CalendarView } from "./stride.types";
+import { isRecord } from "@/lib/utils";
 import { StrideHeader } from "./StrideHeader";
 import { StrideDayView } from "./StrideDayView";
 import { StrideWeekView } from "./StrideWeekView";
@@ -263,15 +264,13 @@ export function StrideCalendar({
       onDrop({ source, location }) {
         const dropTarget = location.current.dropTargets[0];
         if (!dropTarget) return;
-        const srcData = source.data as Record<string, unknown>;
-        const dstData = dropTarget.data as Record<string, unknown>;
+        if (!isDragData(source.data)) return;
+        if (!isRecord(dropTarget.data)) return;
 
-        if (
-          (srcData.type === "stride:todo" ||
-            srcData.type === "stride:unscheduled") &&
-          dstData.type === "stride:slot"
-        ) {
-          const todoId = srcData.todoId as string;
+        const { todoId } = source.data;
+        const dstData = dropTarget.data;
+
+        if (dstData.type === "stride:slot") {
           const slotDate = new Date(dstData.date as string);
           const hour = dstData.hour as number;
           const minute = typeof dstData.minute === "number" ? dstData.minute : 0;
@@ -283,12 +282,7 @@ export function StrideCalendar({
           handleDrop(todoId, slotDate);
         }
 
-        if (
-          (srcData.type === "stride:todo" ||
-            srcData.type === "stride:unscheduled") &&
-          dstData.type === "stride:unscheduled-drop"
-        ) {
-          const todoId = srcData.todoId as string;
+        if (dstData.type === "stride:unscheduled-drop") {
           handleUnschedule(todoId);
         }
       },

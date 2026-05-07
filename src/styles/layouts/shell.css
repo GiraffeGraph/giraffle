@@ -173,7 +173,6 @@ body::before {
 .dashboard-empty,
 .note-header,
 .note-editor-container,
-.backlinks-section,
 .template-picker-modal,
 .graph-header,
 .graph-canvas,
@@ -892,8 +891,7 @@ body::before {
 }
 
 .note-header,
-.note-editor-container,
-.backlinks-section {
+.note-editor-container {
   max-width: 760px;
   margin-left: auto;
   margin-right: auto;
@@ -962,8 +960,7 @@ body::before {
   color: var(--text-secondary);
 }
 
-.note-editor-container,
-.backlinks-section {
+.note-editor-container {
   margin-top: 0;
   border: none;
   border-radius: 0;
@@ -1042,34 +1039,6 @@ body::before {
 .slash-menu-item:hover,
 .slash-menu-item.active,
 .context-menu-item:hover:not(:disabled) {
-  background: var(--surface-glass-hover);
-}
-
-.backlinks-section {
-  margin-top: 42px;
-  padding: 22px 0 0;
-  border-top: 1px solid var(--border-soft);
-}
-
-.backlinks-header {
-  margin-bottom: 12px;
-}
-
-.backlinks-icon {
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  font-size: 11px;
-}
-
-.backlink-item {
-  padding: 10px 12px;
-  border: 1px solid var(--border-soft);
-  border-radius: 12px;
-  background: var(--surface-glass);
-}
-
-.backlink-item:hover {
   background: var(--surface-glass-hover);
 }
 

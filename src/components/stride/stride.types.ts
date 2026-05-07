@@ -19,16 +19,11 @@ export type DragData =
   | { type: "stride:todo"; todoId: string }
   | { type: "stride:unscheduled"; todoId: string };
 
+import { isRecord } from "@/lib/utils";
+
 export function isDragData(value: unknown): value is DragData {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    "type" in value &&
-    (
-      (value as DragData).type === "stride:todo" ||
-      (value as DragData).type === "stride:unscheduled"
-    )
-  );
+  if (!isRecord(value)) return false;
+  return value.type === "stride:todo" || value.type === "stride:unscheduled";
 }
 
 export type DropSlot = {

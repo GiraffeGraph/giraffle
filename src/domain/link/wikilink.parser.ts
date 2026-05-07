@@ -1,3 +1,4 @@
+import { isRecord } from "@/lib/utils";
 import type { WikilinkMatch } from "./link.types";
 
 // Matches [[Target]] or [[Target|Display Text]]
@@ -79,7 +80,7 @@ export function extractWikilinksFromContent(
     // Recurse into children
     if (Array.isArray(node.content)) {
       for (const child of node.content) {
-        walk(child as Record<string, unknown>);
+        if (isRecord(child)) walk(child);
       }
     }
   }

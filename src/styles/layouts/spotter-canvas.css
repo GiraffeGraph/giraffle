@@ -267,8 +267,7 @@
 }
 
 .note-header,
-.note-editor-container,
-.backlinks-section {
+.note-editor-container {
   max-width: 980px;
   margin-inline: auto;
 }

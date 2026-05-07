@@ -3,8 +3,7 @@
 
 @media (max-width: 900px) {
   .note-header,
-  .note-editor-container,
-  .backlinks-section {
+  .note-editor-container {
     max-width: 100%;
   }
 

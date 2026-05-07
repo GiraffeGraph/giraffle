@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { isRecord } from "@/lib/utils";
 
 const DEFAULT_LIMIT = 40;
 const MAX_SCAN_NOTES = 320;
@@ -1004,22 +1005,20 @@ function extractTextFromJson(value: unknown): string {
       return;
     }
 
-    if (typeof node !== "object") {
+    if (!isRecord(node)) {
       return;
     }
 
-    const record = node as Record<string, unknown>;
-
-    if (typeof record.text === "string") {
-      segments.push(record.text);
+    if (typeof node.text === "string") {
+      segments.push(node.text);
     }
 
-    if (record.content) {
-      visit(record.content);
+    if (node.content) {
+      visit(node.content);
     }
 
-    if (!record.content) {
-      for (const [key, child] of Object.entries(record)) {
+    if (!node.content) {
+      for (const [key, child] of Object.entries(node)) {
         if (key === "text" || key === "type") {
           continue;
         }
