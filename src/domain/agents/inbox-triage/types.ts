@@ -57,9 +57,7 @@ export const ProposedActionSchema = z.object({
 export type ProposedAction = z.infer<typeof ProposedActionSchema>;
 
 export const GeneratedActionSchema = ProposedActionSchema.omit({ id: true })
-  .extend({
-    confidence: z.number().min(0).max(1).optional(),
-  });
+  .strict();
 
 export const ProposedActionsOutputSchema = z.object({
   actions: z.array(GeneratedActionSchema).max(40),
