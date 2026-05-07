@@ -831,6 +831,16 @@ export function Sidebar({
         },
       },
       {
+        id: "action-agents",
+        group: "Navigation",
+        title: "Inbox Triage Agent",
+        description: "Review and apply durable inbox organization proposals",
+        icon: encodeMaterialSymbol("rule"),
+        onSelect: async () => {
+          router.push("/agents/inbox-triage");
+        },
+      },
+      {
         id: "action-graph",
         group: "Navigation",
         title: "Go to graph view",
@@ -1211,6 +1221,11 @@ export function Sidebar({
                         icon: "\uE156",
                         label: "Inbox",
                         badge: inboxCount > 0 ? inboxCount : undefined,
+                      },
+                      {
+                        path: "/agents/inbox-triage",
+                        icon: "rule",
+                        label: "Agents",
                       },
                       {
                         path: "/library",
