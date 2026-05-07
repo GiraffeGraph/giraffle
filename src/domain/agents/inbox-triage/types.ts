@@ -38,6 +38,7 @@ export const NoteSnapshotSchema = z.object({
 export type NoteSnapshot = z.infer<typeof NoteSnapshotSchema>;
 
 export const ProposedActionTypeSchema = z.enum([
+  "CREATE_FOLDER",
   "MOVE_NOTE",
   "ASSIGN_CATEGORY",
   "ARCHIVE_NOTE",
@@ -47,11 +48,14 @@ export type ProposedActionType = z.infer<typeof ProposedActionTypeSchema>;
 
 export const ProposedActionSchema = z.object({
   id: z.string(),
-  noteId: z.string(),
+  noteId: z.string().nullable(),
   type: ProposedActionTypeSchema,
   targetFolderId: z.string().nullable(),
+  targetFolderAlias: z.string().nullable(),
   targetCategoryId: z.string().nullable(),
   duplicateOfNoteId: z.string().nullable(),
+  newFolderName: z.string().nullable(),
+  folderAlias: z.string().nullable(),
   reason: z.string().min(1).max(800),
 });
 export type ProposedAction = z.infer<typeof ProposedActionSchema>;
@@ -75,6 +79,7 @@ export const ApprovalResumeSchema = z.object({
 export type ApprovalResume = z.infer<typeof ApprovalResumeSchema>;
 
 export const InboxTriageSummarySchema = z.object({
+  createdFolderCount: z.number().int().nonnegative(),
   movedCount: z.number().int().nonnegative(),
   categorizedCount: z.number().int().nonnegative(),
   archivedCount: z.number().int().nonnegative(),

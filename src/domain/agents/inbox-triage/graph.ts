@@ -13,6 +13,7 @@ import { getLangGraphCheckpointer } from "@/domain/agents/langgraph";
 import { persistedBlocksToDocument } from "@/domain/note/block-tree";
 import { blocksToMarkdown } from "@/domain/note/note.serializer";
 import { archiveNote, relocateNote, updateNote } from "@/domain/note/note.service";
+import { createFolder } from "@/domain/folder/folder.service";
 import type { PersistedBlockSource } from "@/domain/note/block-tree";
 import type {
   AgentRunStatus,
@@ -185,13 +186,16 @@ function buildProposalPrompt(state: InboxTriageState) {
 Return only useful, conservative triage actions. Prefer existing folders and categories. Do not invent IDs.
 
 Allowed action types:
-- MOVE_NOTE: move a note into an existing folder. Requires targetFolderId.
+- CREATE_FOLDER: create a top-level folder. Requires newFolderName and folderAlias. noteId must be null.
+- MOVE_NOTE: move a note into an existing folder or a newly proposed folder. Requires targetFolderId OR targetFolderAlias.
 - ASSIGN_CATEGORY: assign an existing category. Requires targetCategoryId.
 - ARCHIVE_NOTE: archive stale or clearly low-value notes.
 - FLAG_DUPLICATE: flag possible duplicates. Requires duplicateOfNoteId.
 
-Every action must include targetFolderId, targetCategoryId, and duplicateOfNoteId.
+Every action must include targetFolderId, targetFolderAlias, targetCategoryId, duplicateOfNoteId, newFolderName, and folderAlias.
 Set unused target fields to null.
+When using a new folder, emit one CREATE_FOLDER action and one or more MOVE_NOTE actions whose targetFolderAlias equals the CREATE_FOLDER folderAlias.
+Use short stable folderAlias values like "projects" or "research". Do not use folderAlias for existing folders.
 
 Do not propose more than two actions per note. Avoid archive unless the note is clearly disposable.
 
@@ -236,19 +240,58 @@ async function proposeActionsNode(state: InboxTriageState) {
 function validateActions(state: InboxTriageState): ProposedAction[] {
   const noteById = new Map(state.inboxNotes.map((note) => [note.id, note]));
   const folderIds = new Set(state.folders.map((folder) => folder.id));
+  const existingFolderNames = new Set(
+    state.folders.map((folder) => folder.name.trim().toLowerCase()).filter(Boolean),
+  );
   const categoryIds = new Set(state.categories.map((category) => category.id));
+  const proposedFolderAliases = new Set(
+    state.proposedActions
+      .filter((action) => action.type === "CREATE_FOLDER")
+      .map((action) => action.folderAlias?.trim().toLowerCase() ?? "")
+      .filter(Boolean),
+  );
   const seen = new Set<string>();
   const out: ProposedAction[] = [];
 
-  for (const action of state.proposedActions) {
+  for (let action of state.proposedActions) {
+    if (action.type === "CREATE_FOLDER") {
+      const name = action.newFolderName?.trim();
+      const alias = action.folderAlias?.trim();
+      if (action.noteId !== null || !name || !alias) continue;
+      if (name.length > 120 || alias.length > 80) continue;
+      const normalizedName = name.toLowerCase();
+      const normalizedAlias = alias.toLowerCase();
+      if (existingFolderNames.has(normalizedName)) continue;
+      const key = `CREATE_FOLDER:${normalizedAlias}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push({
+        ...action,
+        newFolderName: name,
+        folderAlias: normalizedAlias,
+        noteId: null,
+      });
+      continue;
+    }
+
+    if (!action.noteId) continue;
     const note = noteById.get(action.noteId);
     if (!note) continue;
 
     let key = `${action.type}:${action.noteId}`;
     if (action.type === "MOVE_NOTE") {
-      if (!action.targetFolderId || !folderIds.has(action.targetFolderId)) continue;
-      if (note.folderId === action.targetFolderId) continue;
-      key += `:${action.targetFolderId}`;
+      const targetAlias = action.targetFolderAlias?.trim().toLowerCase() ?? null;
+      const targetsExistingFolder =
+        action.targetFolderId && folderIds.has(action.targetFolderId);
+      const targetsCreatedFolder =
+        targetAlias && proposedFolderAliases.has(targetAlias);
+      if (!targetsExistingFolder && !targetsCreatedFolder) continue;
+      if (targetsExistingFolder && note.folderId === action.targetFolderId) continue;
+      key += `:${action.targetFolderId ?? targetAlias}`;
+      action = {
+        ...action,
+        targetFolderAlias: targetAlias,
+      };
     }
     if (action.type === "ASSIGN_CATEGORY") {
       if (!action.targetCategoryId || !categoryIds.has(action.targetCategoryId)) continue;
@@ -302,12 +345,15 @@ async function approvalNode(state: InboxTriageState) {
         targetFolderId: action.targetFolderId ?? null,
         targetFolderName:
           state.folders.find((folder) => folder.id === action.targetFolderId)?.name ?? null,
+        targetFolderAlias: action.targetFolderAlias ?? null,
         targetCategoryId: action.targetCategoryId ?? null,
         targetCategoryName:
           state.categories.find((category) => category.id === action.targetCategoryId)?.name ?? null,
         duplicateOfNoteId: action.duplicateOfNoteId ?? null,
         duplicateOfNoteTitle:
           state.inboxNotes.find((note) => note.id === action.duplicateOfNoteId)?.title ?? null,
+        newFolderName: action.newFolderName ?? null,
+        folderAlias: action.folderAlias ?? null,
       },
       reason: action.reason,
     })),
@@ -373,18 +419,23 @@ async function applyOneApprovedAction(input: {
     type: string;
     payload: unknown;
   };
+  folderAliasToId: Map<string, string>;
 }): Promise<"applied" | "skipped"> {
-  const { action, userId } = input;
+  const { action, folderAliasToId, userId } = input;
   if (!action.noteId) return "skipped";
   const payload = action.payload as {
     targetFolderId?: string | null;
+    targetFolderAlias?: string | null;
     targetCategoryId?: string | null;
     duplicateOfNoteId?: string | null;
   };
 
   if (action.type === "MOVE_NOTE") {
-    if (!payload.targetFolderId) return "skipped";
-    await relocateNote(userId, action.noteId, { folderId: payload.targetFolderId });
+    const targetFolderId =
+      payload.targetFolderId ??
+      (payload.targetFolderAlias ? folderAliasToId.get(payload.targetFolderAlias) : null);
+    if (!targetFolderId) return "skipped";
+    await relocateNote(userId, action.noteId, { folderId: targetFolderId });
     return "applied";
   }
 
@@ -406,11 +457,102 @@ async function applyOneApprovedAction(input: {
   return "skipped";
 }
 
+async function createApprovedFolders(input: {
+  userId: string;
+  runId: string;
+}): Promise<Map<string, string>> {
+  const folderAliasToId = new Map<string, string>();
+  const folderActions = await db.agentRunAction.findMany({
+    where: {
+      runId: input.runId,
+      type: "CREATE_FOLDER",
+      status: { in: ["approved", "applied"] },
+    },
+    orderBy: { createdAt: "asc" },
+    select: {
+      id: true,
+      payload: true,
+      appliedAt: true,
+      status: true,
+    },
+  });
+
+  for (const action of folderActions) {
+    const payload = action.payload as {
+      folderAlias?: string | null;
+      newFolderName?: string | null;
+      createdFolderId?: string | null;
+    };
+    const alias = payload.folderAlias?.trim().toLowerCase();
+    const folderName = payload.newFolderName?.trim();
+    if (!alias || !folderName) {
+      if (action.status === "approved") {
+        await db.agentRunAction.update({
+          where: { id: action.id },
+          data: { status: "skipped" },
+        });
+      }
+      continue;
+    }
+
+    if (payload.createdFolderId) {
+      folderAliasToId.set(alias, payload.createdFolderId);
+      continue;
+    }
+
+    if (action.status !== "approved") continue;
+
+    let folderId =
+      (
+        await db.folder.findFirst({
+          where: {
+            userId: input.userId,
+            parentId: null,
+            name: {
+              equals: folderName,
+              mode: "insensitive",
+            },
+          },
+          select: { id: true },
+        })
+      )?.id ?? null;
+
+    if (!folderId) {
+      folderId = await createFolder(input.userId, {
+        name: folderName,
+        icon: "folder",
+      });
+    }
+
+    folderAliasToId.set(alias, folderId);
+    await db.agentRunAction.update({
+      where: { id: action.id },
+      data: {
+        status: "applied",
+        appliedAt: action.appliedAt ?? new Date(),
+        payload: {
+          ...payload,
+          folderAlias: alias,
+          newFolderName: folderName,
+          createdFolderId: folderId,
+        },
+      },
+    });
+  }
+
+  return folderAliasToId;
+}
+
 async function applyApprovedActionsNode(state: InboxTriageState) {
+  const folderAliasToId = await createApprovedFolders({
+    userId: state.userId,
+    runId: state.runId,
+  });
   const actions = await db.agentRunAction.findMany({
     where: {
       runId: state.runId,
       status: "approved",
+      type: { not: "CREATE_FOLDER" },
       appliedAt: null,
     },
     orderBy: { createdAt: "asc" },
@@ -428,6 +570,7 @@ async function applyApprovedActionsNode(state: InboxTriageState) {
       const result = await applyOneApprovedAction({
         userId: state.userId,
         action,
+        folderAliasToId,
       });
       await db.agentRunAction.update({
         where: { id: action.id },
@@ -465,6 +608,7 @@ async function summarizeNode(state: InboxTriageState) {
   });
   const applied = actions.filter((action) => action.status === "applied");
   const summary: InboxTriageSummary = {
+    createdFolderCount: applied.filter((action) => action.type === "CREATE_FOLDER").length,
     movedCount: applied.filter((action) => action.type === "MOVE_NOTE").length,
     categorizedCount: applied.filter((action) => action.type === "ASSIGN_CATEGORY").length,
     archivedCount: applied.filter((action) => action.type === "ARCHIVE_NOTE").length,

@@ -13,8 +13,10 @@ interface AgentRunActionView {
   status: string;
   payload: {
     targetFolderName?: string | null;
+    targetFolderAlias?: string | null;
     targetCategoryName?: string | null;
     duplicateOfNoteTitle?: string | null;
+    newFolderName?: string | null;
   };
   reason: string;
   appliedAt: string | null;
@@ -32,8 +34,15 @@ interface InboxTriageRunView {
 }
 
 function actionTitle(action: AgentRunActionView) {
+  if (action.type === "CREATE_FOLDER") {
+    return `Create folder ${action.payload.newFolderName ?? "New folder"}`;
+  }
   if (action.type === "MOVE_NOTE") {
-    return `Move to ${action.payload.targetFolderName ?? "folder"}`;
+    return `Move to ${
+      action.payload.targetFolderName ??
+      action.payload.targetFolderAlias ??
+      "folder"
+    }`;
   }
   if (action.type === "ASSIGN_CATEGORY") {
     return `Set category ${action.payload.targetCategoryName ?? "category"}`;
@@ -181,7 +190,11 @@ export function InboxTriageAgentPage() {
                       </label>
                       <div className={styles.actionBody}>
                         <div className={styles.actionTopline}>
-                          <strong>{action.noteTitle ?? "Missing note"}</strong>
+                          <strong>
+                            {action.type === "CREATE_FOLDER"
+                              ? "Workspace"
+                              : action.noteTitle ?? "Missing note"}
+                          </strong>
                           <em>{statusLabel(action.status)}</em>
                         </div>
                         <h3>{actionTitle(action)}</h3>
