@@ -128,6 +128,12 @@ export async function runAgent(input: RunAgentInput): Promise<RunAgentResult> {
         sendSources: false,
         sendReasoning: false,
         originalMessages: input.uiMessages,
+        messageMetadata: ({ part }) => {
+          if (part.type === "start" && input.sessionId) {
+            return { sessionId: input.sessionId } as never;
+          }
+          return undefined;
+        },
         onFinish: async (event) => {
           if (input.onUIMessagesFinalized) {
             try {

@@ -80,10 +80,13 @@ export function SpotterWorkspace({
     sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithApprovalResponses,
     transport: new DefaultChatTransport({
       api: "/api/spotter/chat",
-      prepareSendMessagesRequest: ({ messages, id, body }) => ({
+      prepareSendMessagesRequest: ({ messages, body }) => ({
         body: {
           ...(body ?? {}),
-          id,
+          // Only send our real session id when we have one. useChat's internal
+          // chat id is a UUID it generates locally; sending that to the server
+          // would trigger a "session not found" 404.
+          ...(activeSessionId ? { id: activeSessionId } : {}),
           messages,
           mode: "workspace",
           workspaceContext,
@@ -91,12 +94,18 @@ export function SpotterWorkspace({
       }),
     }),
     onFinish: ({ message }) => {
-      // Keep the URL synced with the session id when the server creates one.
-      if (!activeSessionId && message.id && !embedded) {
-        // session id comes via response header, but useChat doesn't forward it;
-        // fall back to refreshing the route to let server reload session id from
-        // the persisted message.
-        router.refresh();
+      const meta = (message as { metadata?: { sessionId?: string } }).metadata;
+      const serverSessionId = meta?.sessionId;
+      if (serverSessionId && serverSessionId !== activeSessionId) {
+        setActiveSessionId(serverSessionId);
+        if (!embedded) {
+          window.history.replaceState(
+            null,
+            "",
+            `/spotter?session=${encodeURIComponent(serverSessionId)}`,
+          );
+          router.refresh();
+        }
       }
     },
   });
