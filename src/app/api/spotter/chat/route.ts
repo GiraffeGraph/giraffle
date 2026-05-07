@@ -1,6 +1,6 @@
 import { handleSpotterChatRequest, SPOTTER_CHAT_RATE_LIMIT } from "./handler";
 
-export const maxDuration = 30;
+export const maxDuration = 60;
 
 export async function POST(req: Request) {
   return handleSpotterChatRequest(req, {

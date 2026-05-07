@@ -1,3 +1,5 @@
+import type { UIMessage } from "ai";
+
 export interface SpotterWorkspaceProps {
   notes: Array<{
     id: string;
@@ -14,7 +16,7 @@ export interface SpotterWorkspaceProps {
   }>;
   embedded?: boolean;
   initialSessionId?: string | null;
-  initialMessages?: ChatMessage[];
+  initialMessages?: UIMessage[];
   initialPrompt?: string | null;
 }
 

@@ -3,7 +3,6 @@ import {
   convertToModelMessages,
   stepCountIs,
   streamText,
-  type ModelMessage,
   type StepResult,
   type ToolSet,
   type UIMessage,
@@ -12,11 +11,10 @@ import { resolveOpenAiConfigForUser } from "@/domain/integration/integration.ser
 import { recordToolAudit } from "@/domain/agent/audit";
 import { buildAgentToolset, type AgentToolset } from "@/domain/agent/registry";
 import { buildSystemPrompt, type SpotterMode } from "@/domain/agent/system-prompt";
+import { compactMessages, DEFAULT_COMPACTION } from "@/domain/agent/compaction";
 import { logger } from "@/lib/logger";
 
 const DEFAULT_MAX_STEPS = 12;
-const COMPACTION_TRIGGER = 30; // messages before we trim tool results
-const COMPACTION_KEEP_TAIL = 20; // most-recent count to keep verbose
 
 export interface RunAgentInput {
   userId: string;
@@ -83,35 +81,15 @@ export async function runAgent(input: RunAgentInput): Promise<RunAgentResult> {
       stopWhen: stepCountIs(DEFAULT_MAX_STEPS),
       abortSignal: input.abortSignal,
       prepareStep: async ({ messages, stepNumber }) => {
-        if (messages.length <= COMPACTION_TRIGGER) return {};
-        const head = messages.slice(0, 1);
-        const tail = messages.slice(-COMPACTION_KEEP_TAIL);
-        const middle = messages.slice(1, -COMPACTION_KEEP_TAIL);
-        const compacted: ModelMessage[] = middle.map((msg) => {
-          if (msg.role !== "tool") return msg;
-          const summary = JSON.stringify(msg.content).slice(0, 240);
-          return {
-            role: "tool",
-            content: [
-              {
-                type: "tool-result",
-                toolCallId:
-                  Array.isArray(msg.content) && msg.content[0] && "toolCallId" in msg.content[0]
-                    ? (msg.content[0] as { toolCallId: string }).toolCallId
-                    : "compacted",
-                toolName: "compacted",
-                output: { type: "text", value: `[truncated tool result] ${summary}` },
-              },
-            ],
-          } as ModelMessage;
-        });
+        const result = compactMessages(messages, DEFAULT_COMPACTION);
+        if (!result.compacted) return {};
         logger.info("agent_compacted_history", {
           userId: input.userId,
           stepNumber,
-          before: messages.length,
-          kept: head.length + compacted.length + tail.length,
+          before: result.before,
+          after: result.after,
         });
-        return { messages: [...head, ...compacted, ...tail] };
+        return { messages: result.messages };
       },
       onStepFinish: async (step: StepResult<ToolSet>) => {
         for (const call of step.toolCalls ?? []) {
@@ -149,6 +127,16 @@ export async function runAgent(input: RunAgentInput): Promise<RunAgentResult> {
       response: result.toUIMessageStreamResponse({
         sendSources: false,
         sendReasoning: false,
+        originalMessages: input.uiMessages,
+        onFinish: async (event) => {
+          if (input.onUIMessagesFinalized) {
+            try {
+              await input.onUIMessagesFinalized(event.messages);
+            } catch (error) {
+              logger.warn("agent_persist_failed", { userId: input.userId, error });
+            }
+          }
+        },
       }),
     };
   } catch (error) {

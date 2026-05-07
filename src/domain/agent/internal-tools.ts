@@ -448,6 +448,33 @@ export const INTERNAL_TOOL_DEFINITIONS: InternalToolDefinition[] = [
     },
   },
   {
+    name: "delegate",
+    destructive: false,
+    description:
+      "Delegate a focused sub-task to a fresh sub-agent. Provide a clear, self-contained prompt and an optional whitelist of tool names the sub-agent may use. The sub-agent runs with the same toolset minus delegate itself and returns a concise text summary. Use this to keep your own context small or to scope a parallel investigation.",
+    inputSchema: z
+      .object({
+        prompt: z.string().min(1).max(8_000),
+        allowedTools: z.array(z.string().min(1)).max(40).optional(),
+      })
+      .strict(),
+    execute: async (raw, { userId }) => {
+      const { runSubagent } = await import("@/domain/agent/subagent");
+      const input = raw as { prompt: string; allowedTools?: string[] };
+      const result = await runSubagent({
+        userId,
+        prompt: input.prompt,
+        allowedToolNames: input.allowedTools,
+      });
+      return {
+        text: result.text,
+        toolCallCount: result.toolCallCount,
+        steps: result.steps,
+        durationMs: result.durationMs,
+      };
+    },
+  },
+  {
     name: "folders_create",
     destructive: true,
     description: "Create a folder, optionally nested under a parent folder.",

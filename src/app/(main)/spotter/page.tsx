@@ -60,7 +60,7 @@ export default async function SpotterPage({
           activeSession?.messages.map((message) => ({
             id: message.id,
             role: message.role,
-            content: message.content,
+            parts: [{ type: "text" as const, text: message.content }],
           })) ?? []
         }
         initialPrompt={activeSession ? null : initialPrompt}

@@ -16,6 +16,11 @@ import {
   getApprovalMode,
   type ApprovalPolicy,
 } from "@/domain/agent/permissions";
+import {
+  buildProviderTools,
+  getProviderToolDefs,
+} from "@/domain/trail/providers";
+import type { TrailKind } from "@/domain/trail/trail.types";
 
 export type ToolSource = "internal" | "trail";
 
@@ -119,7 +124,56 @@ export async function buildAgentToolset(ctx: AgentToolContext): Promise<AgentToo
   }
 
   const trailTools = flattenMcpTools(filteredClients);
-  const tools: ToolSet = { ...internalTools, ...trailTools };
+
+  const providerTools: ToolSet = {};
+  const activeProviderTrails = await db.trail.findMany({
+    where: {
+      userId: ctx.userId,
+      status: "active",
+      kind: {
+        in: [
+          "github",
+          "google_drive",
+          "google_calendar",
+          "notion",
+          "linear",
+          "web_search",
+          "perplexity",
+        ],
+      },
+    },
+    select: { id: true, kind: true, label: true },
+  });
+  for (const trail of activeProviderTrails) {
+    const kind = trail.kind as TrailKind;
+    const defs = getProviderToolDefs(kind);
+    if (defs.length === 0) continue;
+    const prefix = `trail_${trail.id.slice(0, 8)}_`;
+    const built = buildProviderTools({
+      userId: ctx.userId,
+      trailId: trail.id,
+      trailKind: kind,
+      trailLabel: trail.label,
+      destructiveApproval: approval.mode === "ask",
+    });
+    for (const [name, def] of Object.entries(built)) {
+      if (!isTrailToolAllowed(allowMap, trail.id, name, "")) continue;
+      const prefixed = `${prefix}${name}`;
+      providerTools[prefixed] = def;
+      const meta = defs.find((d) => d.name === name);
+      catalog.push({
+        name: prefixed,
+        source: "trail",
+        trailId: trail.id,
+        trailKind: trail.kind,
+        trailLabel: trail.label,
+        destructive: meta?.destructive ?? false,
+        description: meta?.description ?? `${kind} tool`,
+      });
+    }
+  }
+
+  const tools: ToolSet = { ...internalTools, ...trailTools, ...providerTools };
 
   return {
     tools,

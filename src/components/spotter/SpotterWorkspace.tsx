@@ -1,14 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useChat } from "@ai-sdk/react";
+import {
+  DefaultChatTransport,
+  lastAssistantMessageIsCompleteWithApprovalResponses,
+} from "ai";
 import { useRouter } from "next/navigation";
 import { ConversationThread } from "./ConversationThread";
 import { PromptComposer } from "./PromptComposer";
 import styles from "./SpotterWorkspace.module.css";
-import {
-  type ChatMessage,
-  type SpotterWorkspaceProps,
-} from "./spotter.types";
+import type { SpotterWorkspaceProps } from "./spotter.types";
 
 export function SpotterWorkspace({
   notes,
@@ -20,67 +22,42 @@ export function SpotterWorkspace({
 }: SpotterWorkspaceProps) {
   const router = useRouter();
   const composerRef = useRef<HTMLTextAreaElement | null>(null);
+  const initialPromptRef = useRef<string | null>(null);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(
     initialSessionId,
   );
-  const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [draft, setDraft] = useState("");
-  const [isStreaming, setIsStreaming] = useState(false);
-  const [lastError, setLastError] = useState<string | null>(null);
-  const [lastSubmittedPrompt, setLastSubmittedPrompt] = useState("");
-  const initialPromptRef = useRef<string | null>(null);
-  const isEmpty = messages.length === 0 && !isStreaming;
 
   const folderMeta = useMemo(() => {
     const byId = new Map(
       folders.map((folder) => [
         folder.id,
-        {
-          ...folder,
-          path: "",
-        },
-      ])
+        { ...folder, path: "" },
+      ]),
     );
-
     const resolvePath = (folderId: string): string => {
       const current = byId.get(folderId);
-
-      if (!current) {
-        return "";
-      }
-
-      if (current.path) {
-        return current.path;
-      }
-
+      if (!current) return "";
+      if (current.path) return current.path;
       const parentPath = current.parentId ? resolvePath(current.parentId) : "";
       current.path = parentPath ? `${parentPath} / ${current.name}` : current.name;
       return current.path;
     };
-
-    for (const folder of folders) {
-      resolvePath(folder.id);
-    }
-
+    for (const folder of folders) resolvePath(folder.id);
     return byId;
   }, [folders]);
 
   const workspaceContext = useMemo(() => {
     const folderLines = folders
       .map((folder) => folderMeta.get(folder.id)?.path ?? folder.name)
-      .sort((left, right) => left.localeCompare(right, "en"))
-      .map((folderPath) => `- ${folderPath}`);
-
+      .sort((l, r) => l.localeCompare(r, "en"))
+      .map((p) => `- ${p}`);
     const noteLines = notes
       .map((note) => {
-        const folderPath = note.folderId
-          ? folderMeta.get(note.folderId)?.path ?? "Unfiled"
-          : "Unfiled";
-
-        return `- ${note.title} [${folderPath}]`;
+        const path = note.folderId ? folderMeta.get(note.folderId)?.path ?? "Unfiled" : "Unfiled";
+        return `- ${note.title} [${path}]`;
       })
-      .sort((left, right) => left.localeCompare(right, "en"));
-
+      .sort((l, r) => l.localeCompare(r, "en"));
     return [
       "Folders:",
       ...(folderLines.length > 0 ? folderLines : ["- No folders"]),
@@ -90,141 +67,95 @@ export function SpotterWorkspace({
     ].join("\n");
   }, [folderMeta, folders, notes]);
 
-  const sendPrompt = useCallback(
-    async (prompt: string) => {
-      const trimmed = prompt.trim();
-
-      if (!trimmed || isStreaming) {
-        return;
-      }
-
-      const userMessage: ChatMessage = {
-        id: `user-${Date.now()}`,
-        role: "user",
-        content: trimmed,
-      };
-      const assistantMessageId = `assistant-${Date.now()}`;
-      let nextSessionId = activeSessionId;
-
-      setLastError(null);
-      setLastSubmittedPrompt(trimmed);
-      setDraft("");
-      setIsStreaming(true);
-      setMessages((current) => [
-        ...current,
-        userMessage,
-        {
-          id: assistantMessageId,
-          role: "assistant",
-          content: "",
+  const {
+    messages,
+    sendMessage,
+    status,
+    error,
+    addToolApprovalResponse,
+    setMessages,
+  } = useChat({
+    id: activeSessionId ?? undefined,
+    messages: initialMessages,
+    sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithApprovalResponses,
+    transport: new DefaultChatTransport({
+      api: "/api/spotter/chat",
+      prepareSendMessagesRequest: ({ messages, id, body }) => ({
+        body: {
+          ...(body ?? {}),
+          id,
+          messages,
+          mode: "workspace",
+          workspaceContext,
         },
-      ]);
-
-      try {
-        const response = await fetch("/api/spotter/chat", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            sessionId: activeSessionId,
-            prompt: trimmed,
-            context: workspaceContext,
-          }),
-        });
-
-        if (!response.ok) {
-          const errorText = (await response.text().catch(() => "")).trim();
-          throw new Error(errorText || "Spotter request failed");
-        }
-
-        const reader = response.body?.getReader();
-        const decoder = new TextDecoder("utf-8");
-        let streamed = "";
-        const responseSessionId = response.headers.get("X-Spotter-Session-Id");
-
-        if (responseSessionId) {
-          nextSessionId = responseSessionId;
-          setActiveSessionId(responseSessionId);
-        }
-
-        if (reader) {
-          while (true) {
-            const { done, value } = await reader.read();
-
-            if (done) {
-              break;
-            }
-
-            streamed += decoder.decode(value, { stream: true });
-            setMessages((current) =>
-              current.map((message) =>
-                message.id === assistantMessageId
-                  ? {
-                      ...message,
-                      content: streamed,
-                    }
-                  : message,
-              ),
-            );
-          }
-        }
-
-        if (nextSessionId && !embedded) {
-          router.replace(`/spotter?session=${nextSessionId}`, { scroll: false });
-          router.refresh();
-        }
-      } catch (error) {
-        console.error("Spotter error", error);
-        const fallbackMessage =
-          error instanceof Error && error.message === "AI service is not configured"
-            ? "Spotter is not configured right now. Add an OpenAI API key from Settings → Self-host & Integrations, or ask the administrator to set OPENAI_API_KEY."
-            : "There was an error generating the response. Try again or narrow the context a bit more.";
-
-        setLastError(fallbackMessage);
-        setMessages((current) =>
-          current.map((message) =>
-            message.id === assistantMessageId
-              ? {
-                  ...message,
-                  content: fallbackMessage,
-                }
-              : message,
-          ),
-        );
-      } finally {
-        setIsStreaming(false);
+      }),
+    }),
+    onFinish: ({ message }) => {
+      // Keep the URL synced with the session id when the server creates one.
+      if (!activeSessionId && message.id && !embedded) {
+        // session id comes via response header, but useChat doesn't forward it;
+        // fall back to refreshing the route to let server reload session id from
+        // the persisted message.
+        router.refresh();
       }
     },
-    [activeSessionId, embedded, isStreaming, router, workspaceContext],
-  );
+  });
+
+  const isStreaming = status === "submitted" || status === "streaming";
+  const errorMessage =
+    error instanceof Error
+      ? error.message === "AI service is not configured"
+        ? "Spotter is not configured. Add an OpenAI API key from Settings → Self-host & Integrations."
+        : "There was an error generating the response. Try again."
+      : null;
+  const isEmpty = messages.length === 0 && !isStreaming;
 
   const handleSend = useCallback(() => {
-    void sendPrompt(draft);
-  }, [draft, sendPrompt]);
+    const trimmed = draft.trim();
+    if (!trimmed || isStreaming) return;
+    setDraft("");
+    void sendMessage({ text: trimmed });
+  }, [draft, isStreaming, sendMessage]);
+
+  const handleApproval = useCallback(
+    (id: string, approved: boolean) => {
+      addToolApprovalResponse({ id, approved });
+    },
+    [addToolApprovalResponse],
+  );
 
   const handleRetry = useCallback(() => {
-    if (!lastSubmittedPrompt || isStreaming) {
-      return;
-    }
-
-    void sendPrompt(lastSubmittedPrompt);
-  }, [isStreaming, lastSubmittedPrompt, sendPrompt]);
+    if (messages.length === 0) return;
+    const lastUser = [...messages].reverse().find((m) => m.role === "user");
+    if (!lastUser) return;
+    const text = (lastUser.parts ?? [])
+      .filter((p) => p.type === "text")
+      .map((p) => (p as { text: string }).text)
+      .join("");
+    if (text) void sendMessage({ text });
+  }, [messages, sendMessage]);
 
   useEffect(() => {
-    const trimmedPrompt = initialPrompt?.trim();
+    const trimmed = initialPrompt?.trim();
+    if (!trimmed) return;
+    if (initialPromptRef.current === trimmed) return;
+    initialPromptRef.current = trimmed;
+    void sendMessage({ text: trimmed });
+  }, [initialPrompt, sendMessage]);
 
-    if (!trimmedPrompt) {
-      return;
+  useEffect(() => {
+    if (initialSessionId && !activeSessionId) {
+      setActiveSessionId(initialSessionId);
     }
+  }, [initialSessionId, activeSessionId]);
 
-    if (initialPromptRef.current === trimmedPrompt) {
-      return;
+  // Keep setMessages reference to avoid lint warning when initialMessages changes.
+  useEffect(() => {
+    if (initialMessages.length > 0 && messages.length === 0) {
+      setMessages(initialMessages);
     }
-
-    initialPromptRef.current = trimmedPrompt;
-    void sendPrompt(trimmedPrompt);
-  }, [initialPrompt, sendPrompt]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className={`${styles.page} ${embedded ? styles.pageEmbedded : ""}`}>
@@ -234,31 +165,24 @@ export function SpotterWorkspace({
           className={`${styles.chatShell} ${isEmpty ? styles.chatShellEmpty : ""}`}
           aria-label="Spotter chat"
         >
-          {lastError ? (
+          {errorMessage && (
             <section className={styles.errorBanner} role="status" aria-live="polite">
               <div className={styles.errorBannerMain}>
                 <span className="material-symbols-outlined" aria-hidden="true">error</span>
-                <p>{lastError}</p>
+                <p>{errorMessage}</p>
               </div>
               <div className={styles.errorBannerActions}>
                 <button
                   type="button"
                   className={styles.errorBannerButton}
                   onClick={handleRetry}
-                  disabled={!lastSubmittedPrompt || isStreaming}
+                  disabled={isStreaming}
                 >
                   Retry
                 </button>
-                <button
-                  type="button"
-                  className={`${styles.errorBannerButton} ${styles.errorBannerButtonGhost}`}
-                  onClick={() => setLastError(null)}
-                >
-                  Dismiss
-                </button>
               </div>
             </section>
-          ) : null}
+          )}
 
           <div className={styles.threadViewport}>
             {isEmpty ? (
@@ -266,15 +190,18 @@ export function SpotterWorkspace({
                 <p className={styles.emptyEyebrow}>
                   {notes.length} notes and {folders.length} folders ready
                 </p>
-                <h1 className={styles.emptyTitle}>
-                  What should we spot today?
-                </h1>
+                <h1 className={styles.emptyTitle}>What should we spot today?</h1>
                 <p className={styles.emptyBody}>
-                  Write your question and I’ll spot connections across the titles and folders in your library.
+                  Spotter can search and edit your notes, browse folders, and call your connected
+                  Trails. Destructive actions ask for approval before running.
                 </p>
               </section>
             ) : (
-              <ConversationThread messages={messages} isStreaming={isStreaming} />
+              <ConversationThread
+                messages={messages}
+                isStreaming={isStreaming}
+                onApproval={handleApproval}
+              />
             )}
           </div>
 
