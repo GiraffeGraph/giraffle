@@ -1,5 +1,6 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import {
+  consumeStream,
   convertToModelMessages,
   stepCountIs,
   streamText,
@@ -166,6 +167,7 @@ export async function runAgent(input: RunAgentInput): Promise<RunAgentResult> {
             }
           }
         },
+        consumeSseStream: consumeStream,
       }),
     };
   } catch (error) {

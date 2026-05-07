@@ -6,7 +6,6 @@ import { getRequestId, logger } from "@/lib/logger";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { runAgent } from "@/domain/agent/loop";
 import {
-  appendSpotterMessage,
   assertSpotterSessionOwner,
   buildSpotterSessionTitle,
   createSpotterSession,
@@ -52,6 +51,41 @@ function extractTextFromUIMessage(message: UIMessage): string {
     .map((part) => part.text as string)
     .join("\n")
     .trim();
+}
+
+async function persistSpotterMessages(sessionId: string, messages: UIMessage[]) {
+  const persistable = messages
+    .filter((message) => message.role === "user" || message.role === "assistant")
+    .map((message) => ({
+      id: message.id,
+      sessionId,
+      role: message.role,
+      content: extractTextFromUIMessage(message),
+      parts: (message as unknown as { parts: unknown }).parts as never,
+    }));
+
+  if (persistable.length === 0) return;
+
+  const updateResults = await Promise.all(
+    persistable.map((message) =>
+      db.spotterMessage.updateMany({
+        where: { id: message.id, sessionId },
+        data: {
+          role: message.role,
+          content: message.content,
+          parts: message.parts,
+        },
+      }),
+    ),
+  );
+  const missingMessages = persistable.filter((_, index) => updateResults[index]?.count === 0);
+  if (missingMessages.length > 0) {
+    await db.spotterMessage.createMany({
+      data: missingMessages,
+      skipDuplicates: true,
+    });
+  }
+  await touchSpotterSession(sessionId);
 }
 
 export async function handleSpotterChatRequest(
@@ -112,6 +146,15 @@ export async function handleSpotterChatRequest(
       }
     }
 
+    if (activeSessionId) {
+      const latestUserMessage = [...uiMessages]
+        .reverse()
+        .find((message) => message.role === "user");
+      if (latestUserMessage) {
+        await persistSpotterMessages(activeSessionId, [latestUserMessage]);
+      }
+    }
+
     const result = await runAgent({
       userId,
       sessionId: activeSessionId,
@@ -122,28 +165,7 @@ export async function handleSpotterChatRequest(
       toolIntent: body.toolIntent,
       onUIMessagesFinalized: activeSessionId
         ? async (messages) => {
-            // Persist any new messages that aren't already stored. We compare
-            // against existing messages by id.
-            const existing = await db.spotterMessage.findMany({
-              where: { sessionId: activeSessionId },
-              select: { id: true },
-            });
-            const existingIds = new Set(existing.map((m) => m.id));
-            const newMessages = messages.filter((m) => !existingIds.has(m.id));
-
-            for (const m of newMessages) {
-              const textContent = extractTextFromUIMessage(m);
-              await db.spotterMessage.create({
-                data: {
-                  id: m.id,
-                  sessionId: activeSessionId,
-                  role: m.role,
-                  content: textContent,
-                  parts: (m as unknown as { parts: unknown }).parts as never,
-                },
-              });
-            }
-            await touchSpotterSession(activeSessionId);
+            await persistSpotterMessages(activeSessionId, messages);
           }
         : undefined,
     });
@@ -170,7 +192,3 @@ export async function handleSpotterChatRequest(
     return new Response("Unknown Spotter error.", { status: 500 });
   }
 }
-
-// Keep this exported helper to avoid breaking older callers; tools that just
-// want the legacy single-shot string can derive it from the streamed response.
-export { appendSpotterMessage };

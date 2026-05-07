@@ -2,7 +2,12 @@ import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/db", () => ({
   db: {
-    spotterMessage: { findMany: vi.fn(), create: vi.fn() },
+    spotterMessage: {
+      findMany: vi.fn(),
+      create: vi.fn(),
+      updateMany: vi.fn(),
+      createMany: vi.fn(),
+    },
   },
 }));
 
@@ -19,7 +24,6 @@ vi.mock("@/domain/agent/loop", () => ({
 }));
 
 vi.mock("@/domain/spotter/spotter.service", () => ({
-  appendSpotterMessage: vi.fn(),
   assertSpotterSessionOwner: vi.fn(),
   buildSpotterSessionTitle: (s: string) => s,
   createSpotterSession: vi.fn(),
@@ -29,6 +33,7 @@ vi.mock("@/domain/spotter/spotter.service", () => ({
 const { auth } = await import("@/lib/auth");
 const { consumeRateLimit } = await import("@/lib/rate-limit");
 const { runAgent } = await import("@/domain/agent/loop");
+const { db } = await import("@/lib/db");
 const {
   assertSpotterSessionOwner,
   createSpotterSession,
@@ -68,6 +73,8 @@ describe("POST /api/spotter/chat", () => {
       id: "sess-1",
       title: "hi",
     } as never);
+    vi.mocked(db.spotterMessage.updateMany).mockResolvedValue({ count: 0 } as never);
+    vi.mocked(db.spotterMessage.createMany).mockResolvedValue({ count: 1 } as never);
     vi.mocked(runAgent).mockResolvedValue({
       response: new Response("ok"),
     } as never);
