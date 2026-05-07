@@ -190,6 +190,9 @@ Allowed action types:
 - ARCHIVE_NOTE: archive stale or clearly low-value notes.
 - FLAG_DUPLICATE: flag possible duplicates. Requires duplicateOfNoteId.
 
+Every action must include targetFolderId, targetCategoryId, and duplicateOfNoteId.
+Set unused target fields to null.
+
 Do not propose more than two actions per note. Avoid archive unless the note is clearly disposable.
 
 Existing folders:

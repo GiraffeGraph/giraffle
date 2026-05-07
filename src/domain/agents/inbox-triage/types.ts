@@ -49,9 +49,9 @@ export const ProposedActionSchema = z.object({
   id: z.string(),
   noteId: z.string(),
   type: ProposedActionTypeSchema,
-  targetFolderId: z.string().nullable().optional(),
-  targetCategoryId: z.string().nullable().optional(),
-  duplicateOfNoteId: z.string().nullable().optional(),
+  targetFolderId: z.string().nullable(),
+  targetCategoryId: z.string().nullable(),
+  duplicateOfNoteId: z.string().nullable(),
   reason: z.string().min(1).max(800),
 });
 export type ProposedAction = z.infer<typeof ProposedActionSchema>;
