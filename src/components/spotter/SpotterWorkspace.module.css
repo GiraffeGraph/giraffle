@@ -509,6 +509,105 @@
   line-height: 1.75;
 }
 
+.markdownText {
+  display: grid;
+  gap: 12px;
+  white-space: normal;
+}
+
+.markdownText p,
+.markdownText ul,
+.markdownText ol,
+.markdownText h1,
+.markdownText h2,
+.markdownText h3 {
+  margin: 0;
+}
+
+.markdownText h1,
+.markdownText h2,
+.markdownText h3 {
+  color: var(--ng-text);
+  font-weight: 780;
+  line-height: 1.24;
+}
+
+.markdownText h1 {
+  font-size: 21px;
+}
+
+.markdownText h2 {
+  font-size: 18px;
+}
+
+.markdownText h3 {
+  font-size: 16px;
+}
+
+.markdownText p {
+  line-height: 1.75;
+}
+
+.markdownText ul,
+.markdownText ol {
+  display: grid;
+  gap: 7px;
+  padding-left: 22px;
+  line-height: 1.72;
+}
+
+.markdownText li::marker {
+  color: var(--ng-text-soft);
+}
+
+.markdownText strong {
+  color: var(--ng-text);
+  font-weight: 800;
+}
+
+.markdownText a {
+  color: var(--ng-accent-strong);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--ng-accent) 45%, transparent);
+  text-underline-offset: 3px;
+}
+
+.markdownText code {
+  padding: 1px 5px;
+  border: 1px solid var(--ng-border);
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--surface-1) 80%, transparent);
+  color: var(--ng-text-secondary);
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 0.88em;
+}
+
+.markdownCodeBlock {
+  display: grid;
+  gap: 6px;
+  max-height: 320px;
+  margin: 0;
+  padding: 10px;
+  border: 1px solid var(--ng-border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-1) 86%, transparent);
+  overflow: auto;
+  white-space: pre;
+}
+
+.markdownCodeBlock span {
+  color: var(--ng-text-soft);
+  font-size: 11px;
+  font-weight: 760;
+}
+
+.markdownCodeBlock code {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  white-space: pre;
+}
+
 .toolInvocation {
   margin: 8px 0;
   border: 1px solid color-mix(in srgb, var(--ng-border) 82%, transparent);

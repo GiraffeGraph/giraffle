@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import type { UIMessage } from "ai";
+import { MarkdownText } from "./MarkdownText";
 import styles from "./SpotterWorkspace.module.css";
 
 interface ConversationThreadProps {
@@ -167,7 +168,11 @@ export function ConversationThread({
                   )}
                   {parts.map((part, idx) => {
                     if (part.type === "text") {
-                      return <span key={idx}>{part.text}</span>;
+                      return message.role === "assistant" ? (
+                        <MarkdownText key={idx} text={part.text ?? ""} />
+                      ) : (
+                        <span key={idx}>{part.text}</span>
+                      );
                     }
                     if (isToolPart(part)) {
                       return (

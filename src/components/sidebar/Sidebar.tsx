@@ -6,6 +6,7 @@ import {
   monitorForElements,
 } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import Image from "next/image";
+import { createPortal } from "react-dom";
 import type { MouseEvent as ReactMouseEvent } from "react";
 import {
   useCallback,
@@ -1574,7 +1575,7 @@ export function Sidebar({
         />
       ) : null}
 
-      {spotterDialog ? (
+      {spotterDialog ? createPortal(
         <div
           className="sidebar-modal-backdrop"
           onClick={closeSpotterDialog}
@@ -1719,7 +1720,8 @@ export function Sidebar({
               </div>
             )}
           </div>
-        </div>
+        </div>,
+        document.body,
       ) : null}
 
       <ContextMenu
