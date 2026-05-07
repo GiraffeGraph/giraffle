@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { ConnectorDocPanel } from "@/components/trails/ConnectorDocPanel";
 import {
   TRAIL_KIND_CATALOG,
   type TrailDetail,
@@ -214,40 +215,42 @@ export function TrailsManager({ initialTrails, initialOauthEnabled = [] }: Props
               <div
                 key={meta.kind}
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  padding: 8,
+                  display: "grid",
+                  gap: 6,
+                  padding: 10,
                   border: "1px dashed var(--md-sys-color-outline-variant)",
                   borderRadius: 12,
                 }}
               >
-                <span className="material-symbols-outlined" style={{ fontSize: 18 }}>
-                  {meta.icon}
-                </span>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600 }}>{meta.label}</div>
-                  <div style={{ fontSize: 11, opacity: 0.65 }}>{meta.description}</div>
-                  <div style={{ fontSize: 11, opacity: 0.55 }}>
-                    {meta.authMode === "oauth" &&
-                      (oauthEnabled.includes(meta.kind)
-                        ? "OAuth"
-                        : "OAuth (server env not configured)")}
-                    {meta.authMode === "api_key" && "API key"}
-                    {meta.authMode === "url" && "URL + headers"}
-                    {installed > 0 && ` · ${installed} installed`}
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: 18 }}>
+                    {meta.icon}
+                  </span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600 }}>{meta.label}</div>
+                    <div style={{ fontSize: 11, opacity: 0.65 }}>{meta.description}</div>
+                    <div style={{ fontSize: 11, opacity: 0.55 }}>
+                      {meta.authMode === "oauth" &&
+                        (oauthEnabled.includes(meta.kind)
+                          ? "OAuth"
+                          : "OAuth (server env not configured)")}
+                      {meta.authMode === "api_key" && "API key"}
+                      {meta.authMode === "url" && "URL + headers"}
+                      {installed > 0 && ` · ${installed} installed`}
+                    </div>
                   </div>
+                  <Button
+                    variant="tonal"
+                    onClick={() => addTrail(meta.kind)}
+                    disabled={
+                      busy ||
+                      (meta.authMode === "oauth" && !oauthEnabled.includes(meta.kind))
+                    }
+                  >
+                    Add
+                  </Button>
                 </div>
-                <Button
-                  variant="tonal"
-                  onClick={() => addTrail(meta.kind)}
-                  disabled={
-                    busy ||
-                    (meta.authMode === "oauth" && !oauthEnabled.includes(meta.kind))
-                  }
-                >
-                  Add
-                </Button>
+                <ConnectorDocPanel kind={meta.kind} variant="compact" />
               </div>
             );
           })}
@@ -460,6 +463,8 @@ function TrailEditor({
           Delete
         </Button>
       </header>
+
+      <ConnectorDocPanel kind={detail.kind} variant="full" />
 
       <label style={{ display: "grid", gap: 4, fontSize: 13 }}>
         Label
