@@ -837,7 +837,7 @@ export function Sidebar({
         description: "Review and apply durable inbox organization proposals",
         icon: encodeMaterialSymbol("rule"),
         onSelect: async () => {
-          router.push("/agents/inbox-triage");
+          router.push("/agents");
         },
       },
       {
@@ -1223,7 +1223,7 @@ export function Sidebar({
                         badge: inboxCount > 0 ? inboxCount : undefined,
                       },
                       {
-                        path: "/agents/inbox-triage",
+                        path: "/agents",
                         icon: "rule",
                         label: "Agents",
                       },
