@@ -1,0 +1,24 @@
+gitingest \
+  -e "*.css" \
+  -e "*.module.css" \
+  -e "*.lock" \
+  -e "*.sql" \
+  -e "*.log" \
+  -e "package-lock.json" \
+  -e "pnpm-lock.yaml" \
+  -e "yarn.lock" \
+  -e ".github/*" \
+  -e ".claude/*" \
+  -e "scripts/*" \
+  -e "deploy/*" \
+  -e "prisma/migrations/*" \
+  -e "tests/*" \
+  -e "*.config.mjs" \
+  -e "*.config.mts" \
+  -e "*.d.ts" \
+  -e "next.config.ts" \
+  -e "vitest.config.mts" \
+  -e "eslint.config.mjs" \
+  -e "*.dockerignore" \
+  -e "docker-compose*.yml" \
+  -e "Dockerfile"
