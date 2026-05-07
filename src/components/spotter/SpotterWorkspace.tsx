@@ -5,12 +5,47 @@ import { useChat } from "@ai-sdk/react";
 import {
   DefaultChatTransport,
   lastAssistantMessageIsCompleteWithApprovalResponses,
+  type UIMessage,
 } from "ai";
-import { useRouter } from "next/navigation";
 import { ConversationThread } from "./ConversationThread";
-import { PromptComposer } from "./PromptComposer";
+import { PromptComposer, type ComposerToolIntent } from "./PromptComposer";
+import {
+  findSpotterCommand,
+  renderSpotterCommandHelp,
+} from "@/domain/spotter-commands/catalog";
 import styles from "./SpotterWorkspace.module.css";
 import type { SpotterWorkspaceProps } from "./spotter.types";
+
+interface SlashCommandResponse {
+  title: string;
+  content: string;
+  assistantText: string;
+  sessionId: string;
+  error?: never;
+}
+
+interface SlashCommandErrorResponse {
+  error: string;
+}
+
+function makeTextMessage(
+  role: "user" | "assistant",
+  text: string,
+  id = crypto.randomUUID(),
+): UIMessage {
+  return {
+    id,
+    role,
+    parts: [{ type: "text", text }],
+  } as UIMessage;
+}
+
+function parseSlashCommand(input: string): { name: string; args: string } | null {
+  if (!input.startsWith("/") || input.startsWith("//")) return null;
+  const match = input.match(/^\/([^\s]+)(?:\s+([\s\S]*))?$/);
+  if (!match) return null;
+  return { name: match[1]?.toLowerCase() ?? "", args: match[2]?.trim() ?? "" };
+}
 
 export function SpotterWorkspace({
   notes,
@@ -20,13 +55,14 @@ export function SpotterWorkspace({
   initialMessages = [],
   initialPrompt = null,
 }: SpotterWorkspaceProps) {
-  const router = useRouter();
   const composerRef = useRef<HTMLTextAreaElement | null>(null);
   const initialPromptRef = useRef<string | null>(null);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(
     initialSessionId,
   );
   const [draft, setDraft] = useState("");
+  const [selectedToolIntent, setSelectedToolIntent] = useState<ComposerToolIntent | null>(null);
+  const [commandPending, setCommandPending] = useState(false);
 
   const folderMeta = useMemo(() => {
     const byId = new Map(
@@ -67,6 +103,21 @@ export function SpotterWorkspace({
     ].join("\n");
   }, [folderMeta, folders, notes]);
 
+  const adoptSessionId = useCallback(
+    (serverSessionId: string) => {
+      if (serverSessionId === activeSessionId) return;
+      setActiveSessionId(serverSessionId);
+      if (!embedded) {
+        window.history.replaceState(
+          null,
+          "",
+          `/spotter?session=${encodeURIComponent(serverSessionId)}`,
+        );
+      }
+    },
+    [activeSessionId, embedded],
+  );
+
   const {
     messages,
     sendMessage,
@@ -75,7 +126,6 @@ export function SpotterWorkspace({
     addToolApprovalResponse,
     setMessages,
   } = useChat({
-    id: activeSessionId ?? undefined,
     messages: initialMessages,
     sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithApprovalResponses,
     transport: new DefaultChatTransport({
@@ -96,21 +146,11 @@ export function SpotterWorkspace({
     onFinish: ({ message }) => {
       const meta = (message as { metadata?: { sessionId?: string } }).metadata;
       const serverSessionId = meta?.sessionId;
-      if (serverSessionId && serverSessionId !== activeSessionId) {
-        setActiveSessionId(serverSessionId);
-        if (!embedded) {
-          window.history.replaceState(
-            null,
-            "",
-            `/spotter?session=${encodeURIComponent(serverSessionId)}`,
-          );
-          router.refresh();
-        }
-      }
+      if (serverSessionId) adoptSessionId(serverSessionId);
     },
   });
 
-  const isStreaming = status === "submitted" || status === "streaming";
+  const isStreaming = status === "submitted" || status === "streaming" || commandPending;
   const errorMessage =
     error instanceof Error
       ? error.message === "AI service is not configured"
@@ -119,12 +159,108 @@ export function SpotterWorkspace({
       : null;
   const isEmpty = messages.length === 0 && !isStreaming;
 
+  const appendLocalExchange = useCallback(
+    (userText: string, assistantText: string) => {
+      setMessages((current) => [
+        ...current,
+        makeTextMessage("user", userText),
+        makeTextMessage("assistant", assistantText),
+      ]);
+    },
+    [setMessages],
+  );
+
+  const runDirectCommand = useCallback(
+    async (name: string, args: string, originalText: string) => {
+      const userMessageId = crypto.randomUUID();
+      const assistantMessageId = crypto.randomUUID();
+      setMessages((current) => [
+        ...current,
+        makeTextMessage("user", originalText, userMessageId),
+      ]);
+      setCommandPending(true);
+      try {
+        const res = await fetch("/api/spotter/commands", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...(activeSessionId ? { id: activeSessionId } : {}),
+            command: name,
+            args,
+            userText: originalText,
+            userMessageId,
+            assistantMessageId,
+          }),
+        });
+        const payload = await res.json().catch(() => null) as
+          | SlashCommandResponse
+          | SlashCommandErrorResponse
+          | null;
+        if (!res.ok || !payload) {
+          const message = payload && "error" in payload
+            ? payload.error
+            : "Slash command failed.";
+          throw new Error(message);
+        }
+        if ("error" in payload) throw new Error(payload.error);
+        adoptSessionId(payload.sessionId);
+        setMessages((current) => [
+          ...current,
+          makeTextMessage("assistant", payload.assistantText, assistantMessageId),
+        ]);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Slash command failed.";
+        setMessages((current) => [
+          ...current,
+          makeTextMessage("assistant", `Command failed: ${message}`),
+        ]);
+      } finally {
+        setCommandPending(false);
+      }
+    },
+    [activeSessionId, adoptSessionId, setMessages],
+  );
+
   const handleSend = useCallback(() => {
     const trimmed = draft.trim();
     if (!trimmed || isStreaming) return;
     setDraft("");
-    void sendMessage({ text: trimmed });
-  }, [draft, isStreaming, sendMessage]);
+
+    const slash = parseSlashCommand(trimmed);
+    if (slash) {
+      const command = findSpotterCommand(slash.name);
+      if (!command) {
+        appendLocalExchange(trimmed, `Unknown command: /${slash.name}\n\nType /help for available commands.`);
+        return;
+      }
+      if (command.type === "local") {
+        appendLocalExchange(trimmed, renderSpotterCommandHelp());
+        return;
+      }
+      if (command.type === "macro") {
+        if (command.argumentHint && !slash.args.trim()) {
+          appendLocalExchange(trimmed, `Usage: /${command.name} ${command.argumentHint}`);
+          return;
+        }
+        const prompt = command.transformPrompt?.(slash.args) ?? slash.args;
+        if (!prompt.trim()) {
+          appendLocalExchange(trimmed, `Usage: /${command.name} ${command.argumentHint ?? "<text>"}`);
+          return;
+        }
+        void sendMessage({ text: prompt }, { body: { toolIntent: "web_search" } });
+        return;
+      }
+      void runDirectCommand(command.name, slash.args, trimmed);
+      return;
+    }
+
+    const toolIntent = selectedToolIntent;
+    setSelectedToolIntent(null);
+    void sendMessage(
+      { text: trimmed },
+      toolIntent ? { body: { toolIntent } } : undefined,
+    );
+  }, [appendLocalExchange, draft, isStreaming, runDirectCommand, selectedToolIntent, sendMessage]);
 
   const handleApproval = useCallback(
     (id: string, approved: boolean) => {
@@ -221,7 +357,9 @@ export function SpotterWorkspace({
               isStreaming={isStreaming}
               notesCount={notes.length}
               foldersCount={folders.length}
+              selectedToolIntent={selectedToolIntent}
               onDraftChange={setDraft}
+              onToolIntentChange={setSelectedToolIntent}
               onSend={handleSend}
             />
           </div>

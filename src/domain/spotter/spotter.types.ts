@@ -9,6 +9,7 @@ export interface SpotterStoredMessage {
   id: string;
   role: "user" | "assistant";
   content: string;
+  parts: unknown | null;
   createdAt: Date;
 }
 

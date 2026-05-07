@@ -42,6 +42,7 @@ const ChatBodySchema = z.object({
   mode: z.enum(["workspace", "inline"]).optional(),
   activeNoteContext: z.string().max(MAX_INLINE_CONTEXT_LENGTH).optional(),
   workspaceContext: z.string().max(MAX_INLINE_CONTEXT_LENGTH).optional(),
+  toolIntent: z.enum(["web_search"]).optional(),
 });
 
 function extractTextFromUIMessage(message: UIMessage): string {
@@ -118,6 +119,7 @@ export async function handleSpotterChatRequest(
       uiMessages,
       activeNoteContext: body.activeNoteContext,
       workspaceContext: body.workspaceContext,
+      toolIntent: body.toolIntent,
       onUIMessagesFinalized: activeSessionId
         ? async (messages) => {
             // Persist any new messages that aren't already stored. We compare

@@ -66,6 +66,28 @@ async function resolveNoteId(userId: string, input: { noteId?: string; slug?: st
   return found.id;
 }
 
+async function resolveNoteUpdateTarget(
+  userId: string,
+  input: { noteId?: string; lookupSlug?: string },
+) {
+  if (input.noteId && input.lookupSlug) {
+    const found = await db.note.findFirst({
+      where: { userId, slug: input.lookupSlug },
+      select: { id: true },
+    });
+    if (!found) throw new Error("Note not found");
+    if (found.id !== input.noteId) {
+      throw new Error("noteId and lookupSlug refer to different notes.");
+    }
+    return input.noteId;
+  }
+
+  return resolveNoteId(userId, {
+    noteId: input.noteId,
+    slug: input.lookupSlug,
+  });
+}
+
 const NoteIdOrSlug = z
   .object({
     noteId: z.string().min(1).optional(),
@@ -320,7 +342,7 @@ export const INTERNAL_TOOL_DEFINITIONS: InternalToolDefinition[] = [
     name: "notes_update",
     destructive: true,
     description:
-      "Update note metadata such as title, slug, publish/pin state, folder, category, icon, cover image, archive state, or quadrant.",
+      "Update note metadata such as title, slug, publish/pin state, folder, category, icon, cover image, archive state, or quadrant. Prefer noteId when available; lookupSlug may be used instead. If both are provided, they must identify the same note.",
     inputSchema: z
       .object({
         noteId: z.string().min(1).optional(),
@@ -336,18 +358,15 @@ export const INTERNAL_TOOL_DEFINITIONS: InternalToolDefinition[] = [
         isPublished: z.boolean().optional(),
         quadrant: z.enum(["DO", "SCHEDULE", "DELEGATE", "ELIMINATE"]).nullable().optional(),
       })
-      .refine((v) => Boolean(v.noteId) !== Boolean(v.lookupSlug), {
-        message: "Provide exactly one of noteId or lookupSlug.",
+      .refine((v) => Boolean(v.noteId) || Boolean(v.lookupSlug), {
+        message: "Provide noteId or lookupSlug.",
       }),
     execute: async (raw, { userId }) => {
       const input = raw as {
         noteId?: string;
         lookupSlug?: string;
       } & Partial<UpdateNoteInput>;
-      const noteId = await resolveNoteId(userId, {
-        noteId: input.noteId,
-        slug: input.lookupSlug,
-      });
+      const noteId = await resolveNoteUpdateTarget(userId, input);
       const patch = Object.fromEntries(
         Object.entries({
           title: input.title,

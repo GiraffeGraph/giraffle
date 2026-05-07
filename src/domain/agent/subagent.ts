@@ -49,7 +49,7 @@ export async function runSubagent(input: RunSubagentInput): Promise<RunSubagentR
 
   try {
     const result = await generateText({
-      model: provider(input.modelId ?? "gpt-4o-mini"),
+      model: provider(input.modelId ?? "gpt-5.4-mini"),
       tools,
       stopWhen: stepCountIs(SUBAGENT_MAX_STEPS),
       system:

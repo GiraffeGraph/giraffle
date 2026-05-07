@@ -1,8 +1,16 @@
+import type { UIMessage } from "ai";
 import { PageTopbar } from "@/components/ui/PageTopbar";
 import { SpotterWorkspace } from "@/components/spotter/SpotterWorkspace";
 import { getAllFoldersAction } from "@/server/api/folders";
 import { getNotesAction } from "@/server/api/notes";
 import { getSpotterSessionAction } from "@/server/api/spotter";
+
+function toMessageParts(parts: unknown, fallbackText: string): UIMessage["parts"] {
+  if (Array.isArray(parts) && parts.length > 0) {
+    return parts as UIMessage["parts"];
+  }
+  return [{ type: "text" as const, text: fallbackText }];
+}
 
 interface SpotterPageProps {
   searchParams: Promise<{ session?: string; prompt?: string }>;
@@ -60,7 +68,7 @@ export default async function SpotterPage({
           activeSession?.messages.map((message) => ({
             id: message.id,
             role: message.role,
-            parts: [{ type: "text" as const, text: message.content }],
+            parts: toMessageParts(message.parts, message.content),
           })) ?? []
         }
         initialPrompt={activeSession ? null : initialPrompt}

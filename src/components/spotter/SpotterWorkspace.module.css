@@ -51,12 +51,12 @@
 .chatShell {
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;
-  min-height: calc(100vh - 136px);
+  height: calc(100dvh - 136px);
+  min-height: 520px;
+  overflow: hidden;
 }
 
 .chatShellEmpty {
-  align-content: center;
-  grid-template-rows: auto auto;
   gap: 24px;
 }
 
@@ -138,11 +138,13 @@
   align-content: start;
   min-height: 0;
   padding: 18px 0 30px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .chatShellEmpty .threadViewport {
-  align-content: end;
-  padding: 0;
+  align-content: center;
+  padding: 0 0 24px;
 }
 
 .emptyState {
@@ -187,21 +189,116 @@
 }
 
 .composerDock {
-  position: sticky;
-  bottom: 18px;
+  position: relative;
   z-index: 5;
   display: grid;
   width: min(100%, 780px);
   margin: 0 auto;
-}
-
-.chatShellEmpty .composerDock {
-  position: relative;
-  bottom: auto;
+  padding-bottom: 2px;
 }
 
 .composerSection {
   display: grid;
+  gap: 8px;
+}
+
+.toolMenu,
+.commandMenu {
+  display: grid;
+  gap: 4px;
+  padding: 8px;
+  border: 1px solid var(--ng-border-strong);
+  border-radius: 8px;
+  background: var(--ng-panel-strong);
+  box-shadow: 0 14px 34px rgb(0 0 0 / 0.16);
+  backdrop-filter: blur(18px);
+}
+
+.toolMenu {
+  justify-self: start;
+  width: min(100%, 320px);
+}
+
+.toolMenuItem,
+.commandMenuItem {
+  display: grid;
+  grid-template-columns: minmax(160px, 0.42fr) minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  min-height: 36px;
+  padding: 7px 9px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--ng-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.toolMenuItem {
+  grid-template-columns: 24px minmax(0, 1fr);
+}
+
+.toolMenuItem :global(.material-symbols-outlined) {
+  color: var(--ng-text-secondary);
+  font-size: 20px;
+}
+
+.toolMenuItem strong,
+.toolMenuItem small {
+  display: block;
+}
+
+.toolMenuItem strong {
+  color: var(--ng-text);
+  font-size: 13px;
+  font-weight: 760;
+}
+
+.toolMenuItem small {
+  margin-top: 1px;
+  color: var(--ng-text-soft);
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+.toolMenuItem:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.toolMenuItem:hover:not(:disabled),
+.toolMenuItem:focus-visible:not(:disabled),
+.commandMenuItem:hover,
+.commandMenuItem:focus-visible {
+  border-color: color-mix(in srgb, var(--ng-accent) 30%, var(--ng-border));
+  background: color-mix(in srgb, var(--ng-accent) 12%, transparent);
+  outline: none;
+}
+
+.commandMenuName {
+  color: var(--ng-accent-strong);
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.commandMenuName em {
+  color: var(--ng-text-soft);
+  font-style: normal;
+  font-weight: 650;
+}
+
+.commandMenuDescription {
+  min-width: 0;
+  color: var(--ng-text-secondary);
+  font-size: 12px;
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .composerPanel {
@@ -268,6 +365,8 @@
   flex-wrap: wrap;
 }
 
+.composerToolButton,
+.selectedToolChip,
 .contextPill {
   display: inline-flex;
   align-items: center;
@@ -278,11 +377,41 @@
   border-radius: 8px;
   background: color-mix(in srgb, var(--ng-panel-muted) 82%, transparent);
   color: var(--ng-text-secondary);
+  font: inherit;
   font-size: 12px;
   font-weight: 680;
 }
 
-.contextPill :global(.material-symbols-outlined) {
+.composerToolButton {
+  width: 30px;
+  padding: 0;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.composerToolButtonActive,
+.composerToolButton:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--ng-accent) 34%, var(--ng-border));
+  background: color-mix(in srgb, var(--ng-accent) 14%, transparent);
+  color: var(--ng-accent-strong);
+}
+
+.selectedToolChip {
+  border-color: color-mix(in srgb, var(--ng-accent) 40%, var(--ng-border));
+  background: color-mix(in srgb, var(--ng-accent) 18%, transparent);
+  color: color-mix(in srgb, var(--ng-accent-strong) 88%, var(--ng-text));
+  cursor: pointer;
+}
+
+.composerToolButton:disabled,
+.selectedToolChip:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.contextPill :global(.material-symbols-outlined),
+.composerToolButton :global(.material-symbols-outlined),
+.selectedToolChip :global(.material-symbols-outlined) {
   font-size: 15px;
 }
 
@@ -380,6 +509,140 @@
   line-height: 1.75;
 }
 
+.toolInvocation {
+  margin: 8px 0;
+  border: 1px solid color-mix(in srgb, var(--ng-border) 82%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ng-panel-muted) 78%, transparent);
+  overflow: hidden;
+  white-space: normal;
+}
+
+.toolInvocationError {
+  border-color: color-mix(in srgb, #d05555 42%, var(--ng-border));
+}
+
+.toolSummary {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 5px 9px;
+  color: var(--ng-text-secondary);
+  cursor: pointer;
+  list-style: none;
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.toolSummary::-webkit-details-marker {
+  display: none;
+}
+
+.toolSummary::after {
+  content: "›";
+  justify-self: end;
+  color: var(--ng-text-soft);
+  font-size: 18px;
+  line-height: 1;
+  transform: rotate(0deg);
+  transition: transform 140ms ease;
+}
+
+.toolInvocation[open] .toolSummary::after {
+  transform: rotate(90deg);
+}
+
+.toolSummary :global(.material-symbols-outlined) {
+  color: var(--ng-text-soft);
+  font-size: 16px;
+}
+
+.toolName {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ng-text-secondary);
+  font-weight: 720;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.toolState {
+  padding: 1px 7px;
+  border: 1px solid var(--ng-border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-1) 72%, transparent);
+  color: var(--ng-text-soft);
+  font-size: 10px;
+  font-weight: 760;
+  text-transform: uppercase;
+}
+
+.toolDetails {
+  display: grid;
+  gap: 8px;
+  padding: 0 9px 9px 35px;
+}
+
+.toolBlock {
+  display: grid;
+  gap: 4px;
+}
+
+.toolBlockLabel {
+  color: var(--ng-text-soft);
+  font-size: 10px;
+  font-weight: 780;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.toolBlock pre {
+  max-height: 240px;
+  margin: 0;
+  padding: 8px;
+  border: 1px solid var(--ng-border);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--surface-1) 86%, transparent);
+  color: var(--ng-text-secondary);
+  overflow: auto;
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 11px;
+  line-height: 1.45;
+  white-space: pre;
+}
+
+.toolErrorText {
+  color: color-mix(in srgb, #e16f6f 86%, var(--ng-accent));
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.toolApprovalActions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.toolApprovalActions button {
+  min-height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--ng-border);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--ng-text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 720;
+  cursor: pointer;
+}
+
+.toolApprovalActions button:first-child {
+  border-color: color-mix(in srgb, var(--ng-accent) 38%, var(--ng-border));
+  background: color-mix(in srgb, var(--ng-accent) 20%, transparent);
+}
+
 .typingIndicator {
   display: inline-flex;
   align-items: center;
@@ -423,7 +686,7 @@
   }
 
   .chatShell {
-    min-height: calc(100vh - 132px);
+    height: calc(100dvh - 132px);
   }
 }
 
@@ -438,7 +701,8 @@
   }
 
   .chatShell {
-    min-height: calc(100vh - 118px);
+    height: calc(100dvh - 118px);
+    min-height: 480px;
   }
 
   .chatShellEmpty {
@@ -478,8 +742,13 @@
     font-size: 14px;
   }
 
-  .composerDock {
-    bottom: 12px;
+  .commandMenuItem {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+
+  .commandMenuDescription {
+    white-space: normal;
   }
 
   .composerPanel {

@@ -16,11 +16,14 @@ import { logger } from "@/lib/logger";
 
 const DEFAULT_MAX_STEPS = 12;
 
+export type SpotterToolIntent = "web_search";
+
 export interface RunAgentInput {
   userId: string;
   sessionId: string | null;
   mode: SpotterMode;
   uiMessages: UIMessage[];
+  toolIntent?: SpotterToolIntent;
   workspaceContext?: string;
   activeNoteContext?: string;
   abortSignal?: AbortSignal;
@@ -50,6 +53,11 @@ export async function runAgent(input: RunAgentInput): Promise<RunAgentResult> {
   });
 
   const toolset: AgentToolset = await buildAgentToolset({ userId: input.userId });
+  const forcedToolName = input.toolIntent === "web_search"
+    ? toolset.catalog.find((entry) => entry.source === "trail" && entry.trailKind === "web_search")?.name
+      ?? toolset.catalog.find((entry) => entry.source === "trail" && entry.trailKind === "perplexity")?.name
+      ?? null
+    : null;
 
   const system = buildSystemPrompt({
     mode: input.mode,
@@ -57,7 +65,11 @@ export async function runAgent(input: RunAgentInput): Promise<RunAgentResult> {
     workspaceContext: input.workspaceContext,
     activeNoteContext: input.activeNoteContext,
     trailErrors: toolset.trailErrors,
-  });
+  }) + (input.toolIntent === "web_search"
+    ? forcedToolName
+      ? `\n\nUser selected Search mode. You must use the forced web/search tool first, then answer from tool results. If results conflict, say so.`
+      : `\n\nUser selected Search mode, but no web_search or perplexity Trail is connected. Tell the user to connect a web_search or Perplexity Trail before answering current-information questions.`
+    : "");
 
   const modelMessages = await convertToModelMessages(input.uiMessages);
 
@@ -74,7 +86,7 @@ export async function runAgent(input: RunAgentInput): Promise<RunAgentResult> {
 
   try {
     const result = streamText({
-      model: provider(input.modelId ?? "gpt-4o-mini"),
+      model: provider(input.modelId ?? "gpt-5.4-mini"),
       system,
       messages: modelMessages,
       tools: toolset.tools satisfies ToolSet,
@@ -82,14 +94,25 @@ export async function runAgent(input: RunAgentInput): Promise<RunAgentResult> {
       abortSignal: input.abortSignal,
       prepareStep: async ({ messages, stepNumber }) => {
         const result = compactMessages(messages, DEFAULT_COMPACTION);
-        if (!result.compacted) return {};
-        logger.info("agent_compacted_history", {
-          userId: input.userId,
-          stepNumber,
-          before: result.before,
-          after: result.after,
-        });
-        return { messages: result.messages };
+        const stepConfig: {
+          messages?: typeof messages;
+          toolChoice?: { type: "tool"; toolName: string };
+          activeTools?: string[];
+        } = {};
+        if (result.compacted) {
+          logger.info("agent_compacted_history", {
+            userId: input.userId,
+            stepNumber,
+            before: result.before,
+            after: result.after,
+          });
+          stepConfig.messages = result.messages;
+        }
+        if (stepNumber === 0 && forcedToolName) {
+          stepConfig.toolChoice = { type: "tool", toolName: forcedToolName };
+          stepConfig.activeTools = [forcedToolName];
+        }
+        return stepConfig;
       },
       onStepFinish: async (step: StepResult<ToolSet>) => {
         for (const call of step.toolCalls ?? []) {

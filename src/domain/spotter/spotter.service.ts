@@ -65,6 +65,7 @@ export async function getSpotterSession(
           id: true,
           role: true,
           content: true,
+          parts: true,
           createdAt: true,
         },
       },

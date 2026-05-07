@@ -27,6 +27,32 @@ function isToolPart(part: UIPart): boolean {
   );
 }
 
+function stringifyValue(value: unknown): string {
+  if (typeof value === "string") return value;
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return String(value);
+  }
+}
+
+function getStateLabel(state: string): string {
+  switch (state) {
+    case "input-streaming":
+      return "running";
+    case "input-available":
+      return "called";
+    case "output-available":
+      return "done";
+    case "output-error":
+      return "error";
+    case "approval-requested":
+      return "approval";
+    default:
+      return state;
+  }
+}
+
 function ToolInvocation({
   part,
   onApproval,
@@ -39,82 +65,49 @@ function ToolInvocation({
     (part.type.startsWith("tool-") ? part.type.slice("tool-".length) : "tool");
   const state = part.state ?? "input-available";
   const isApproval = state === "approval-requested";
+  const isError = state === "output-error";
 
   return (
-    <div
-      style={{
-        border: "1px solid var(--md-sys-color-outline-variant)",
-        borderRadius: 12,
-        padding: 10,
-        margin: "6px 0",
-        fontSize: 12,
-        background: "var(--md-sys-color-surface-container-low)",
-      }}
+    <details
+      className={`${styles.toolInvocation} ${isError ? styles.toolInvocationError : ""}`}
+      open={isApproval || isError || undefined}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-        <span className="material-symbols-outlined" style={{ fontSize: 14 }}>
-          build
+      <summary className={styles.toolSummary}>
+        <span className="material-symbols-outlined" aria-hidden="true">
+          {isError ? "error" : isApproval ? "approval" : "build"}
         </span>
-        <strong>{name}</strong>
-        <span style={{ marginLeft: "auto", opacity: 0.6 }}>{state}</span>
+        <span className={styles.toolName}>{name}</span>
+        <span className={styles.toolState}>{getStateLabel(state)}</span>
+      </summary>
+
+      <div className={styles.toolDetails}>
+        {part.input !== undefined && (
+          <div className={styles.toolBlock}>
+            <div className={styles.toolBlockLabel}>Input</div>
+            <pre>{stringifyValue(part.input)}</pre>
+          </div>
+        )}
+        {state === "output-available" && part.output !== undefined && (
+          <div className={styles.toolBlock}>
+            <div className={styles.toolBlockLabel}>Output</div>
+            <pre>{stringifyValue(part.output)}</pre>
+          </div>
+        )}
+        {isError && (
+          <div className={styles.toolErrorText}>{part.errorText ?? "Tool error"}</div>
+        )}
+        {isApproval && part.approval?.id && onApproval && (
+          <div className={styles.toolApprovalActions}>
+            <button type="button" onClick={() => onApproval(part.approval!.id, true)}>
+              Approve
+            </button>
+            <button type="button" onClick={() => onApproval(part.approval!.id, false)}>
+              Deny
+            </button>
+          </div>
+        )}
       </div>
-      {part.input !== undefined && (
-        <pre
-          style={{
-            fontSize: 11,
-            background: "var(--md-sys-color-surface)",
-            padding: 6,
-            borderRadius: 6,
-            margin: "6px 0 0",
-            overflow: "auto",
-            maxHeight: 160,
-          }}
-        >
-          {JSON.stringify(part.input, null, 2)}
-        </pre>
-      )}
-      {state === "output-available" && part.output !== undefined && (
-        <pre
-          style={{
-            fontSize: 11,
-            opacity: 0.85,
-            background: "var(--md-sys-color-surface)",
-            padding: 6,
-            borderRadius: 6,
-            margin: "6px 0 0",
-            overflow: "auto",
-            maxHeight: 200,
-          }}
-        >
-          {typeof part.output === "string"
-            ? part.output
-            : JSON.stringify(part.output, null, 2)}
-        </pre>
-      )}
-      {state === "output-error" && (
-        <div style={{ color: "var(--md-sys-color-error)", marginTop: 6 }}>
-          {part.errorText ?? "Tool error"}
-        </div>
-      )}
-      {isApproval && part.approval?.id && onApproval && (
-        <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
-          <button
-            type="button"
-            onClick={() => onApproval(part.approval!.id, true)}
-            style={btnPrimary}
-          >
-            Approve
-          </button>
-          <button
-            type="button"
-            onClick={() => onApproval(part.approval!.id, false)}
-            style={btnSecondary}
-          >
-            Deny
-          </button>
-        </div>
-      )}
-    </div>
+    </details>
   );
 }
 
@@ -198,22 +191,3 @@ export function ConversationThread({
   );
 }
 
-const btnPrimary: React.CSSProperties = {
-  padding: "4px 10px",
-  borderRadius: 6,
-  border: "none",
-  cursor: "pointer",
-  background: "var(--md-sys-color-primary)",
-  color: "var(--md-sys-color-on-primary)",
-  fontSize: 12,
-};
-
-const btnSecondary: React.CSSProperties = {
-  padding: "4px 10px",
-  borderRadius: 6,
-  cursor: "pointer",
-  background: "transparent",
-  color: "var(--md-sys-color-on-surface)",
-  border: "1px solid var(--md-sys-color-outline-variant)",
-  fontSize: 12,
-};
