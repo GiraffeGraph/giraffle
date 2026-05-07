@@ -31,6 +31,7 @@ model User {
   mcpAccessTokens         McpAccessToken[]
   trails                  Trail[]
   trailLogs               TrailLog[]
+  agentRuns               AgentRun[]
 }
 
 model Account {
@@ -112,6 +113,7 @@ model Note {
   outgoingLinks Link[]                @relation("OutgoingLinks")
   incomingLinks Link[]                @relation("IncomingLinks")
   assets        MediaAsset[]
+  agentRunActions AgentRunAction[]
 
   @@index([folderId])
   @@index([categoryId])
@@ -351,6 +353,75 @@ model TrailLog {
   @@index([userId, createdAt])
   @@index([trailId, createdAt])
   @@index([sessionId, createdAt])
+}
+
+// ─── Durable Agents ──────────────────────────────────────────
+model AgentRun {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  status    String   @default("pending")
+  threadId  String   @unique
+  noteCount Int?
+  summary   String?
+  error     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  actions   AgentRunAction[]
+  events    AgentRunEvent[]
+  snapshots AgentRunNoteSnapshot[]
+
+  @@index([userId, createdAt])
+  @@index([userId, status])
+}
+
+model AgentRunAction {
+  id        String   @id @default(uuid())
+  runId     String
+  run       AgentRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  noteId    String?
+  note      Note?    @relation(fields: [noteId], references: [id], onDelete: SetNull)
+  type      String
+  status    String   @default("pending")
+  payload   Json     @default("{}")
+  reason    String
+  appliedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([runId, status])
+  @@index([noteId])
+  @@unique([runId, id])
+}
+
+model AgentRunEvent {
+  id        String   @id @default(uuid())
+  runId     String
+  run       AgentRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  kind      String
+  payload   Json     @default("{}")
+  createdAt DateTime @default(now())
+
+  @@index([runId, createdAt])
+}
+
+model AgentRunNoteSnapshot {
+  id         String   @id @default(uuid())
+  runId      String
+  run        AgentRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  noteId     String
+  title      String
+  content    String
+  folderId   String?
+  categoryId String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime
+
+  @@index([runId])
+  @@index([noteId])
+  @@unique([runId, noteId])
 }
 
 // ─── Spatial Canvas Models ────────────────────────────────────
