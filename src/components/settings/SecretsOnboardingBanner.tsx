@@ -1,22 +1,31 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 
 const STORAGE_KEY = "giraffle.secrets-onboarding-dismissed";
 
+const subscribe = (cb: () => void) => {
+  window.addEventListener("storage", cb);
+  return () => window.removeEventListener("storage", cb);
+};
+
+const getSnapshot = () => localStorage.getItem(STORAGE_KEY) === "1";
+const getServerSnapshot = () => false;
+
 export function SecretsOnboardingBanner() {
-  const [hidden, setHidden] = useState(true);
+  const persistedHidden = useSyncExternalStore(
+    subscribe,
+    getSnapshot,
+    getServerSnapshot,
+  );
+  const [localHidden, setLocalHidden] = useState(false);
 
-  useEffect(() => {
-    setHidden(localStorage.getItem(STORAGE_KEY) === "1");
-  }, []);
-
-  if (hidden) return null;
+  if (persistedHidden || localHidden) return null;
 
   const dismiss = () => {
     localStorage.setItem(STORAGE_KEY, "1");
-    setHidden(true);
+    setLocalHidden(true);
   };
 
   return (
