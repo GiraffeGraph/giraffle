@@ -50,3 +50,10 @@ yarn-error.log*
 next-env.d.ts
 .pi/
 skills
+
+# tauri
+/src-tauri/target/
+/src-tauri/gen/schemas/
+
+# claude code local
+/.claude/

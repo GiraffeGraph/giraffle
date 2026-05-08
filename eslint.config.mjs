@@ -13,6 +13,8 @@ const eslintConfig = defineConfig([
     "build/**",
     "coverage/**",
     "next-env.d.ts",
+    "src-tauri/**",
+    "tauri-shell/**",
   ]),
 ]);
 

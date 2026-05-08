@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Giraffle - Configure</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #0f1117;
+        --panel: #161922;
+        --border: #262a36;
+        --text: #e6e8ee;
+        --muted: #8a90a2;
+        --accent: #f5a524;
+        --accent-fg: #1a1300;
+        --error: #f87171;
+      }
+      @media (prefers-color-scheme: light) {
+        :root {
+          --bg: #f7f7f9;
+          --panel: #ffffff;
+          --border: #e3e5ec;
+          --text: #15171c;
+          --muted: #6b7280;
+          --accent: #d97706;
+          --accent-fg: #fff;
+          --error: #b91c1c;
+        }
+      }
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0;
+        height: 100%;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
+      body {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+      }
+      .card {
+        width: 100%;
+        max-width: 460px;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 28px 26px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+      }
+      h1 {
+        margin: 0 0 6px;
+        font-size: 18px;
+        letter-spacing: -0.01em;
+      }
+      p.lead {
+        margin: 0 0 18px;
+        font-size: 13px;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+      label {
+        display: block;
+        font-size: 12px;
+        color: var(--muted);
+        margin-bottom: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+      input[type="url"], input[type="text"] {
+        width: 100%;
+        padding: 10px 12px;
+        background: var(--bg);
+        color: var(--text);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-size: 14px;
+        outline: none;
+        transition: border-color 0.15s;
+      }
+      input:focus {
+        border-color: var(--accent);
+      }
+      .preset-row {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin-top: 10px;
+      }
+      .preset {
+        font-size: 12px;
+        padding: 6px 10px;
+        border: 1px solid var(--border);
+        background: transparent;
+        color: var(--muted);
+        border-radius: 999px;
+        cursor: pointer;
+        font-family: inherit;
+      }
+      .preset:hover { border-color: var(--accent); color: var(--text); }
+      button.primary {
+        width: 100%;
+        margin-top: 18px;
+        padding: 11px 14px;
+        background: var(--accent);
+        color: var(--accent-fg);
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: inherit;
+      }
+      button.primary:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+      .error {
+        margin-top: 10px;
+        color: var(--error);
+        font-size: 12px;
+        min-height: 16px;
+      }
+      .hint {
+        margin-top: 14px;
+        font-size: 11px;
+        color: var(--muted);
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>Giraffle</h1>
+      <p class="lead">App URL gir. Web (prod) veya local dev server kullanılabilir.</p>
+
+      <label for="url">App URL</label>
+      <input
+        id="url"
+        type="url"
+        placeholder="https://giraffle.app"
+        autocomplete="off"
+        autocapitalize="off"
+        spellcheck="false"
+      />
+      <div class="preset-row">
+        <button class="preset" data-url="http://localhost:3000">localhost:3000</button>
+        <button class="preset" data-url="http://localhost:3001">localhost:3001</button>
+      </div>
+
+      <button id="submit" class="primary">Aç</button>
+      <div id="error" class="error"></div>
+      <div class="hint">Daha sonra menüden değiştirebilirsin (⌘,)</div>
+    </div>
+
+    <script type="module">
+      const { invoke } = window.__TAURI__.core;
+      const input = document.getElementById('url');
+      const submit = document.getElementById('submit');
+      const errorEl = document.getElementById('error');
+
+      try {
+        const saved = await invoke('get_saved_url');
+        if (saved) input.value = saved;
+      } catch {}
+
+      input.focus();
+
+      document.querySelectorAll('.preset').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          input.value = btn.dataset.url;
+          input.focus();
+        });
+      });
+
+      async function go() {
+        const value = input.value.trim();
+        errorEl.textContent = '';
+        if (!value) {
+          errorEl.textContent = 'URL boş olamaz';
+          return;
+        }
+        submit.disabled = true;
+        submit.textContent = 'Açılıyor…';
+        try {
+          await invoke('save_url', { url: value });
+        } catch (e) {
+          errorEl.textContent = String(e);
+          submit.disabled = false;
+          submit.textContent = 'Aç';
+        }
+      }
+
+      submit.addEventListener('click', go);
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') go();
+      });
+    </script>
+  </body>
+</html>

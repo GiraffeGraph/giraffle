@@ -14,7 +14,10 @@
     "test:coverage": "vitest run --coverage",
     "verify": "npm run prisma:validate && npm run lint && npm run typecheck && npm run test:run && npm run build",
     "smoke:prod": "sh ./scripts/smoke-prod-stack.sh",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build"
   },
   "dependencies": {
     "@ai-sdk/mcp": "^1.0.40",
@@ -29,6 +32,8 @@
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@prisma/adapter-pg": "^7.7.0",
     "@prisma/client": "^7.7.0",
+    "@tauri-apps/api": "^2.11.0",
+    "@tauri-apps/plugin-store": "^2.4.3",
     "@tiptap/core": "^3.22.4",
     "@tiptap/extension-code-block": "^3.22.4",
     "@tiptap/extension-color": "^3.22.4",
@@ -60,6 +65,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@tauri-apps/cli": "^2.11.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@types/node": "^20",
     "@types/pg": "^8.20.0",
