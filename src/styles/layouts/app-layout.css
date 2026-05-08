@@ -49,6 +49,66 @@
   color: var(--accent);
 }
 
+/* Archive drop target — invite + accept states */
+
+.right-rail-btn--archive {
+  position: relative;
+  overflow: visible;
+}
+
+.right-rail-btn-drop-label {
+  position: absolute;
+  right: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%) translateX(6px);
+  white-space: nowrap;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  background: var(--accent);
+  color: var(--md-sys-color-on-primary, #fff);
+  box-shadow: 0 6px 18px -6px color-mix(in srgb, var(--accent) 60%, transparent);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.right-rail-btn--drop-target {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  animation: right-rail-archive-pulse 1.6s ease-in-out infinite;
+}
+
+.right-rail-btn--drop-over {
+  width: 44px;
+  height: 44px;
+  background: var(--accent);
+  color: var(--md-sys-color-on-primary, #fff);
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent),
+    0 12px 28px -10px color-mix(in srgb, var(--accent) 60%, transparent);
+  transform: scale(1.04);
+  animation: none;
+}
+
+.right-rail-btn--drop-over .right-rail-btn-drop-label {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+}
+
+@keyframes right-rail-archive-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 30%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 0%, transparent);
+  }
+}
+
 .right-rail-divider {
   width: 20px;
   height: 1px;

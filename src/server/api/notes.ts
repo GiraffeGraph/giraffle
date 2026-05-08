@@ -37,6 +37,7 @@ import { buildNoteExportArtifact } from "@/domain/note/note.export";
 import type {
   CreateNoteInput,
   EisenhowerQuadrant,
+  MatrixSlot,
   NoteReference,
   TiptapDocument,
   UpdateNoteInput,
@@ -229,7 +230,7 @@ export async function getNotesWithTodoSummaryAction() {
 
 export async function assignNoteToQuadrantAction(
   noteId: string,
-  quadrant: EisenhowerQuadrant | null
+  quadrant: MatrixSlot | null
 ) {
   const { userId } = await requireAuthenticatedUser();
   await updateNote(userId, noteId, { quadrant });

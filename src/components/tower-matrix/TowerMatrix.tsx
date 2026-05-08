@@ -22,9 +22,14 @@ import {
   getNoteTodosAction,
   toggleTodoAction,
 } from "@/server/api/notes";
-import type { EisenhowerQuadrant } from "@/domain/note/note.types";
+import type { EisenhowerQuadrant, MatrixSlot } from "@/domain/note/note.types";
 import { isSidebarNoteDragData } from "@/components/sidebar/sidebar.types";
-import { isRecord } from "@/lib/utils";
+import {
+  isTmNoteDragData,
+  isTmTodoDragData,
+  tmNoteDragData,
+  tmTodoDragData,
+} from "./dnd";
 
 // ─── Types ───────────────────────────────────────────────────
 
@@ -32,7 +37,7 @@ export type NoteWithTodoSummary = {
   id: string;
   title: string;
   icon: string | null;
-  quadrant: EisenhowerQuadrant | null;
+  quadrant: MatrixSlot | null;
   todoTotal: number;
   todoCompleted: number;
   todoByQuadrant: Record<EisenhowerQuadrant, number>;
@@ -104,20 +109,6 @@ function areTodoSummariesEqual(left: TodoSummary, right: TodoSummary) {
   );
 }
 
-// ─── Drag protocols ───────────────────────────────────────────
-
-const NOTE_DRAG = "tm:note" as const;
-const TODO_DRAG = "tm:todo" as const;
-
-function noteData(id: string) { return { type: NOTE_DRAG, id } as const; }
-function todoData(id: string) { return { type: TODO_DRAG, id } as const; }
-function isNote(d: unknown): d is { type: typeof NOTE_DRAG; id: string } {
-  return isRecord(d) && d.type === NOTE_DRAG && typeof d.id === "string";
-}
-function isTodo(d: unknown): d is { type: typeof TODO_DRAG; id: string } {
-  return isRecord(d) && d.type === TODO_DRAG && typeof d.id === "string";
-}
-
 // ─────────────────────────────────────────────────────────────
 // OUTER MATRIX
 // ─────────────────────────────────────────────────────────────
@@ -169,7 +160,7 @@ function NoteCard({
     return combine(
       draggable({
         element: el,
-        getInitialData: () => noteData(note.id),
+        getInitialData: () => tmNoteDragData(note.id),
         onDragStart: () => setIsDragging(true),
         onDrop: () => setIsDragging(false),
       })
@@ -211,7 +202,7 @@ function QuickAddNote({
   quadrant,
   onCreated,
 }: {
-  quadrant: EisenhowerQuadrant | null;
+  quadrant: MatrixSlot | null;
   onCreated: (note: NoteWithTodoSummary) => void;
 }) {
   const inputId = useId();
@@ -312,12 +303,12 @@ function OuterQuadrant({
       dropTargetForElements({
         element: el,
         canDrop: ({ source }) =>
-          isNote(source.data) || isSidebarNoteDragData(source.data),
+          isTmNoteDragData(source.data) || isSidebarNoteDragData(source.data),
         onDragEnter: () => setIsOver(true),
         onDragLeave: () => setIsOver(false),
         onDrop: ({ source }) => {
           setIsOver(false);
-          if (isNote(source.data)) onDrop(source.data.id, config.key);
+          if (isTmNoteDragData(source.data)) onDrop(source.data.id, config.key);
           else if (isSidebarNoteDragData(source.data))
             onDrop(source.data.noteId, config.key);
         },
@@ -347,6 +338,90 @@ function OuterQuadrant({
 }
 
 // ─────────────────────────────────────────────────────────────
+// BACKLOG STRIP (unassigned notes, horizontal pool)
+// ─────────────────────────────────────────────────────────────
+
+function BacklogStrip({
+  notes,
+  selectedNoteId,
+  onDrop,
+  onSelect,
+  onRemove,
+  onCreate,
+}: {
+  notes: NoteWithTodoSummary[];
+  selectedNoteId: string | null;
+  onDrop: (id: string, slot: "BACKLOG") => void;
+  onSelect: (n: NoteWithTodoSummary) => void;
+  onRemove: (id: string) => void;
+  onCreate: (note: NoteWithTodoSummary) => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [isOver, setIsOver] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    return combine(
+      dropTargetForElements({
+        element: el,
+        canDrop: ({ source }) =>
+          isTmNoteDragData(source.data) || isSidebarNoteDragData(source.data),
+        onDragEnter: () => setIsOver(true),
+        onDragLeave: () => setIsOver(false),
+        onDrop: ({ source }) => {
+          setIsOver(false);
+          if (isTmNoteDragData(source.data)) onDrop(source.data.id, "BACKLOG");
+          else if (isSidebarNoteDragData(source.data))
+            onDrop(source.data.noteId, "BACKLOG");
+        },
+      })
+    );
+  }, [onDrop]);
+
+  return (
+    <div
+      ref={ref}
+      className={`tm-backlog${isOver ? " tm-backlog--over" : ""}`}
+    >
+      <div className="tm-backlog-header">
+        <span className="material-symbols-outlined tm-backlog-icon">
+          inbox
+        </span>
+        <div className="tm-backlog-labels">
+          <span className="tm-backlog-label">Backlog</span>
+          <span className="tm-backlog-sublabel">Unassigned notes</span>
+        </div>
+        {notes.length > 0 && (
+          <span className="tm-backlog-count">{notes.length}</span>
+        )}
+      </div>
+      <div className="tm-backlog-body">
+        <div className="tm-backlog-add">
+          <QuickAddNote quadrant="BACKLOG" onCreated={onCreate} />
+        </div>
+        <div className="tm-backlog-scroll">
+          {notes.map((n) => (
+            <NoteCard
+              key={n.id}
+              note={n}
+              isSelected={n.id === selectedNoteId}
+              onSelect={onSelect}
+              onRemove={onRemove}
+            />
+          ))}
+          {notes.length === 0 && (
+            <p className="tm-empty-hint tm-empty-hint--inline">
+              Drag notes here or create one
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
 // INNER MATRIX (right panel — always mounted, content changes)
 // ─────────────────────────────────────────────────────────────
 
@@ -366,7 +441,7 @@ function TodoCard({
     return combine(
       draggable({
         element: el,
-        getInitialData: () => todoData(todo.id),
+        getInitialData: () => tmTodoDragData(todo.id),
         onDragStart: () => setIsDragging(true),
         onDrop: () => setIsDragging(false),
       })
@@ -419,12 +494,12 @@ function InnerQuadrant({
     return combine(
       dropTargetForElements({
         element: el,
-        canDrop: ({ source }) => isTodo(source.data),
+        canDrop: ({ source }) => isTmTodoDragData(source.data),
         onDragEnter: () => setIsOver(true),
         onDragLeave: () => setIsOver(false),
         onDrop: ({ source }) => {
           setIsOver(false);
-          if (isTodo(source.data)) onDrop(source.data.id, config.key);
+          if (isTmTodoDragData(source.data)) onDrop(source.data.id, config.key);
         },
       })
     );
@@ -699,12 +774,12 @@ function UnassignedTodoPool({
     return combine(
       dropTargetForElements({
         element: el,
-        canDrop: ({ source }) => isTodo(source.data),
+        canDrop: ({ source }) => isTmTodoDragData(source.data),
         onDragEnter: () => setIsOver(true),
         onDragLeave: () => setIsOver(false),
         onDrop: ({ source }) => {
           setIsOver(false);
-          if (isTodo(source.data)) onDrop(source.data.id, null);
+          if (isTmTodoDragData(source.data)) onDrop(source.data.id, null);
         },
       })
     );
@@ -746,11 +821,11 @@ export function TowerMatrix({ notes }: { notes: NoteWithTodoSummary[] }) {
   );
 
   const handleNoteDrop = useCallback(
-    (id: string, quadrant: EisenhowerQuadrant | null) => {
-      updateNoteItem(id, (note) => ({ ...note, quadrant }));
+    (id: string, slot: MatrixSlot | null) => {
+      updateNoteItem(id, (note) => ({ ...note, quadrant: slot }));
       startTransition(async () => {
         try {
-          await assignNoteToQuadrantAction(id, quadrant);
+          await assignNoteToQuadrantAction(id, slot);
         } catch {
           // Server will stay source of truth on next refresh.
         }
@@ -804,6 +879,8 @@ export function TowerMatrix({ notes }: { notes: NoteWithTodoSummary[] }) {
     });
   }, []);
 
+  const backlogNotes = noteItems.filter((n) => n.quadrant === "BACKLOG");
+
   return (
     <div className="tm-page">
       <div className="tm-left">
@@ -821,6 +898,14 @@ export function TowerMatrix({ notes }: { notes: NoteWithTodoSummary[] }) {
             />
           ))}
         </div>
+        <BacklogStrip
+          notes={backlogNotes}
+          selectedNoteId={selectedNote?.id ?? null}
+          onDrop={handleNoteDrop}
+          onSelect={handleNoteSelect}
+          onRemove={(id) => handleNoteDrop(id, null)}
+          onCreate={handleNoteCreate}
+        />
       </div>
 
       <div className="tm-right">

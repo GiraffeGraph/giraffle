@@ -11,10 +11,12 @@ import { generateId, isRecord, slugify } from "@/lib/utils";
 import {
   DEFAULT_NOTE_TITLE,
   EISENHOWER_QUADRANTS,
+  MATRIX_SLOTS,
 } from "./note.types";
 import type {
   BlockNodeContent,
   EisenhowerQuadrant,
+  MatrixSlot,
   CreateNoteInput,
   InsertBlockInput,
   NoteReference,
@@ -217,8 +219,8 @@ export async function getNotes(userId: string) {
 
   return rows.map((row) => ({
     ...row,
-    quadrant: (EISENHOWER_QUADRANTS as readonly string[]).includes(row.quadrant ?? "")
-      ? (row.quadrant as EisenhowerQuadrant)
+    quadrant: (MATRIX_SLOTS as readonly string[]).includes(row.quadrant ?? "")
+      ? (row.quadrant as MatrixSlot)
       : null,
   }));
 }
@@ -1195,7 +1197,11 @@ function extractBlockText(content: unknown): string {
  */
 export async function getNotesWithTodoSummary(userId: string) {
   const rows = await db.note.findMany({
-    where: { userId, isArchived: false },
+    where: {
+      userId,
+      isArchived: false,
+      quadrant: { in: MATRIX_SLOTS as unknown as string[] },
+    },
     orderBy: [{ isPinned: "desc" }, { position: "asc" }, { updatedAt: "desc" }],
     select: {
       id: true,
@@ -1224,8 +1230,8 @@ export async function getNotesWithTodoSummary(userId: string) {
       id: row.id,
       title: row.title,
       icon: row.icon,
-      quadrant: (EISENHOWER_QUADRANTS as readonly string[]).includes(row.quadrant ?? "")
-        ? (row.quadrant as EisenhowerQuadrant)
+      quadrant: (MATRIX_SLOTS as readonly string[]).includes(row.quadrant ?? "")
+        ? (row.quadrant as MatrixSlot)
         : null,
       todoTotal: todos.length,
       todoCompleted: todos.filter((t) => t.checked).length,

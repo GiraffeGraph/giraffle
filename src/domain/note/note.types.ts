@@ -33,6 +33,15 @@ export const EISENHOWER_QUADRANTS = [
   "ELIMINATE",
 ] as const satisfies EisenhowerQuadrant[];
 
+// Matrix slot = priority quadrant or backlog (parking lot for matrix-scoped notes
+// that haven't been prioritized yet). Notes with a null slot are not in matrix at all.
+export type MatrixSlot = EisenhowerQuadrant | "BACKLOG";
+
+export const MATRIX_SLOTS = [
+  ...EISENHOWER_QUADRANTS,
+  "BACKLOG",
+] as const satisfies MatrixSlot[];
+
 // ─── Block Content (Tiptap JSON-compatible) ───────────────────
 export interface BlockMark {
   type: string;
@@ -89,7 +98,7 @@ export interface Note {
   isPinned: boolean;
   isArchived: boolean;
   isPublished: boolean;
-  quadrant: EisenhowerQuadrant | null;
+  quadrant: MatrixSlot | null;
   createdAt: Date;
   updatedAt: Date;
   blocks?: Block[];
@@ -121,7 +130,7 @@ export interface UpdateNoteInput {
   isPinned?: boolean;
   isArchived?: boolean;
   isPublished?: boolean;
-  quadrant?: EisenhowerQuadrant | null;
+  quadrant?: MatrixSlot | null;
 }
 
 export interface BlockPlacementInput {
