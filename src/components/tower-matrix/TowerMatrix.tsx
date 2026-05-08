@@ -235,43 +235,19 @@ function QuickAddNote({
   }, [isAdding, onCreated, quadrant, value]);
 
   return (
-    <div className="tm-quick-add">
-      <label className="tm-quick-add-label" htmlFor={inputId}>
-        <span className="material-symbols-outlined" style={{ fontSize: 15 }}>
-          note_add
-        </span>
-        Add note
-      </label>
-      <div className="tm-quick-add-row">
-        <input
-          id={inputId}
-          className="tm-quick-add-input"
-          placeholder="Write a note title..."
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") { e.preventDefault(); submit(); }
-          }}
-          disabled={isAdding}
-        />
-        <button
-          className="tm-quick-add-btn"
-          type="button"
-          onClick={submit}
-          disabled={!value.trim() || isAdding}
-        >
-          {isAdding ? (
-            <span className="tm-quick-add-spinner" />
-          ) : (
-            <span className="material-symbols-outlined" style={{ fontSize: 16 }}>
-              add
-            </span>
-          )}
-        </button>
-      </div>
-      <p className="tm-quick-add-hint">
-        Press Enter to create directly in this area
-      </p>
+    <div className="tm-quick-add tm-quick-add--inline">
+      <input
+        id={inputId}
+        className="tm-quick-add-input"
+        placeholder="+ Note"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") { e.preventDefault(); submit(); }
+        }}
+        disabled={isAdding}
+      />
+      {isAdding && <span className="tm-quick-add-spinner" />}
     </div>
   );
 }
@@ -559,44 +535,20 @@ function QuickAddTodo({
   }, [value, isAdding, noteId, onAdded]);
 
   return (
-    <div className="tm-quick-add">
-      <label className="tm-quick-add-label" htmlFor={inputId}>
-        <span className="material-symbols-outlined" style={{ fontSize: 15 }}>
-          add_task
-        </span>
-        Add task
-      </label>
-      <div className="tm-quick-add-row">
-        <input
-          id={inputId}
-          ref={inputRef}
-          className="tm-quick-add-input"
-          placeholder="Write a task..."
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") { e.preventDefault(); submit(); }
-          }}
-          disabled={isAdding}
-        />
-        <button
-          className="tm-quick-add-btn"
-          type="button"
-          onClick={submit}
-          disabled={!value.trim() || isAdding}
-        >
-          {isAdding ? (
-            <span className="tm-quick-add-spinner" />
-          ) : (
-            <span className="material-symbols-outlined" style={{ fontSize: 16 }}>
-              add
-            </span>
-          )}
-        </button>
-      </div>
-      <p className="tm-quick-add-hint">
-        Press Enter to add · You can add multiple tasks
-      </p>
+    <div className="tm-quick-add tm-quick-add--inline">
+      <input
+        id={inputId}
+        ref={inputRef}
+        className="tm-quick-add-input"
+        placeholder="+ Task"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") { e.preventDefault(); submit(); }
+        }}
+        disabled={isAdding}
+      />
+      {isAdding && <span className="tm-quick-add-spinner" />}
     </div>
   );
 }
