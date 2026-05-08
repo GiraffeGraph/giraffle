@@ -134,7 +134,6 @@ export async function startInboxTriageRun(input: {
     userId: input.userId,
     limit,
     folders: [],
-    categories: [],
     inboxNotes: [],
     proposedActions: [],
     approvedActionIds: [],

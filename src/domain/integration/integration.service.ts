@@ -4,6 +4,7 @@ import {
   decryptSecretValue,
   encryptSecretValue,
 } from "@/lib/secret-box";
+import { getAppSetting } from "@/domain/app-settings/app-settings.service";
 import { recordOperation } from "@/domain/sync/operation-log.service";
 import type {
   IntegrationProvider,
@@ -181,18 +182,19 @@ export async function getUserIntegrationSettingsSummary(
     }
   }
 
-  const envApiKey = process.env.OPENAI_API_KEY?.trim() || null;
-
-  const envBaseUrl = process.env.OPENAI_BASE_URL?.trim() || null;
+  const [appApiKey, appBaseUrl] = await Promise.all([
+    getAppSetting("OPENAI_API_KEY"),
+    getAppSetting("OPENAI_BASE_URL"),
+  ]);
 
   const openaiSummary: OpenAiIntegrationSummary = {
-    apiKeyConfigured: Boolean(apiKeyRecord?.encryptedValue || envApiKey),
+    apiKeyConfigured: Boolean(apiKeyRecord?.encryptedValue || appApiKey),
     apiKeyPreview:
       apiKeyRecord?.valuePreview ??
-      (envApiKey ? buildSecretPreview(envApiKey) : null),
-    apiKeySource: apiKeyRecord?.encryptedValue ? "app" : envApiKey ? "env" : "none",
-    baseUrl: baseUrl || envBaseUrl,
-    baseUrlSource: baseUrlRecord?.encryptedValue ? "app" : envBaseUrl ? "env" : "none",
+      (appApiKey ? buildSecretPreview(appApiKey) : null),
+    apiKeySource: apiKeyRecord?.encryptedValue ? "user" : appApiKey ? "app" : "none",
+    baseUrl: baseUrl || appBaseUrl,
+    baseUrlSource: baseUrlRecord?.encryptedValue ? "user" : appBaseUrl ? "app" : "none",
     updatedAt: apiKeyRecord?.updatedAt ?? baseUrlRecord?.updatedAt ?? null,
   };
 
@@ -226,9 +228,14 @@ export async function resolveOpenAiConfigForUser(userId: string) {
     }
   }
 
+  const [appApiKey, appBaseUrl] = await Promise.all([
+    getAppSetting("OPENAI_API_KEY"),
+    getAppSetting("OPENAI_BASE_URL"),
+  ]);
+
   return {
-    apiKey: apiKey || process.env.OPENAI_API_KEY?.trim() || null,
-    baseUrl: baseUrl || process.env.OPENAI_BASE_URL?.trim() || null,
-    source: apiKey ? "app" : process.env.OPENAI_API_KEY?.trim() ? "env" : "none",
-  } as const;
+    apiKey: apiKey || appApiKey,
+    baseUrl: baseUrl || appBaseUrl,
+    source: apiKey ? ("user" as const) : appApiKey ? ("app" as const) : ("none" as const),
+  };
 }

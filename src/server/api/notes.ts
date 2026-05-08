@@ -48,7 +48,6 @@ import { requireAuthenticatedUser } from "@/lib/auth-session";
 export async function createNoteAction(input?: CreateNoteInput) {
   const { userId } = await requireAuthenticatedUser();
   const noteId = await createNote(userId, input);
-  revalidatePath("/dashboard");
   revalidatePath("/graph");
   revalidatePath("/inbox");
   return noteId;
@@ -67,7 +66,6 @@ export async function getNoteAction(noteId: string) {
 export async function updateNoteAction(noteId: string, input: UpdateNoteInput) {
   const { userId } = await requireAuthenticatedUser();
   await updateNote(userId, noteId, input);
-  revalidatePath("/dashboard");
   revalidatePath("/graph");
   revalidatePath("/inbox");
   revalidatePath(`/notes/${noteId}`);
@@ -81,7 +79,6 @@ export async function saveNoteContentAction(
 ) {
   const { userId } = await requireAuthenticatedUser();
   await saveNoteContent(userId, noteId, document);
-  revalidatePath("/dashboard");
   revalidatePath("/graph");
   revalidatePath(`/notes/${noteId}`);
   revalidatePath(`/p/${noteId}`);
@@ -90,7 +87,6 @@ export async function saveNoteContentAction(
 export async function archiveNoteAction(noteId: string) {
   const { userId } = await requireAuthenticatedUser();
   await archiveNote(userId, noteId);
-  revalidatePath("/dashboard");
   revalidatePath("/graph");
   revalidatePath("/inbox");
   revalidatePath("/archive");
@@ -104,7 +100,6 @@ export async function getArchivedNotesAction() {
 export async function restoreNoteAction(noteId: string) {
   const { userId } = await requireAuthenticatedUser();
   await restoreNote(userId, noteId);
-  revalidatePath("/dashboard");
   revalidatePath("/graph");
   revalidatePath("/inbox");
   revalidatePath("/archive");
@@ -116,7 +111,6 @@ export async function moveNoteAction(
 ) {
   const { userId } = await requireAuthenticatedUser();
   await moveNote(userId, noteId, direction);
-  revalidatePath("/dashboard");
   revalidatePath("/graph");
   revalidatePath("/inbox");
   revalidatePath(`/notes/${noteId}`);
@@ -131,7 +125,6 @@ export async function relocateNoteAction(
 ) {
   const { userId } = await requireAuthenticatedUser();
   await relocateNote(userId, noteId, placement);
-  revalidatePath("/dashboard");
   revalidatePath("/graph");
   revalidatePath("/inbox");
   revalidatePath(`/notes/${noteId}`);
@@ -140,7 +133,6 @@ export async function relocateNoteAction(
 export async function deleteNoteAction(noteId: string) {
   const { userId } = await requireAuthenticatedUser();
   await deleteNote(userId, noteId);
-  revalidatePath("/dashboard");
   revalidatePath("/graph");
   revalidatePath("/inbox");
 }
@@ -186,7 +178,6 @@ export async function createNoteFromWikilinkAction(
     folderId: folderId ?? undefined,
   });
 
-  revalidatePath("/dashboard");
   revalidatePath("/graph");
   revalidatePath("/inbox");
   revalidatePath(`/notes/${noteId}`);

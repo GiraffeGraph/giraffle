@@ -7,10 +7,7 @@ export async function resolveAgentModel(input: {
   modelId?: string;
 }): Promise<LanguageModel> {
   const openAiConfig = await resolveOpenAiConfigForUser(input.userId);
-  const apiKey =
-    openAiConfig.apiKey ||
-    process.env.OPENAI_API_KEY?.trim() ||
-    null;
+  const apiKey = openAiConfig.apiKey;
 
   if (!apiKey) {
     throw new Error("AI service is not configured");
@@ -18,7 +15,7 @@ export async function resolveAgentModel(input: {
 
   const provider = createOpenAI({
     apiKey,
-    baseURL: openAiConfig.baseUrl ?? process.env.OPENAI_BASE_URL?.trim() ?? undefined,
+    baseURL: openAiConfig.baseUrl ?? undefined,
   });
 
   return provider(input.modelId ?? "gpt-5.4-mini");

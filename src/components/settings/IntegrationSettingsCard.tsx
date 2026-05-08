@@ -40,7 +40,7 @@ export function IntegrationSettingsCard({
   const [isPending, startTransition] = useTransition();
   const [apiKey, setApiKey] = useState("");
   const [baseUrl, setBaseUrl] = useState(
-    openai.baseUrlSource === "app" ? (openai.baseUrl ?? "") : "",
+    openai.baseUrlSource === "user" ? (openai.baseUrl ?? "") : "",
   );
   const [feedback, setFeedback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -173,7 +173,7 @@ export function IntegrationSettingsCard({
                 type="button"
                 variant="outlined"
                 onClick={removeApiKey}
-                disabled={isPending || openai.apiKeySource !== "app"}
+                disabled={isPending || openai.apiKeySource !== "user"}
               >
                 Remove app key
               </Button>
@@ -208,7 +208,7 @@ export function IntegrationSettingsCard({
                 type="button"
                 variant="outlined"
                 onClick={resetBaseUrl}
-                disabled={isPending || openai.baseUrlSource !== "app"}
+                disabled={isPending || openai.baseUrlSource !== "user"}
               >
                 Reset base URL
               </Button>

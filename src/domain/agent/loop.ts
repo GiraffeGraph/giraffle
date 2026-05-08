@@ -38,10 +38,7 @@ export interface RunAgentResult {
 
 export async function runAgent(input: RunAgentInput): Promise<RunAgentResult> {
   const openAiConfig = await resolveOpenAiConfigForUser(input.userId);
-  const apiKey =
-    openAiConfig.apiKey ||
-    process.env.OPENAI_API_KEY?.trim() ||
-    null;
+  const apiKey = openAiConfig.apiKey;
   if (!apiKey) {
     return {
       response: new Response("AI service is not configured", { status: 503 }),
@@ -50,7 +47,7 @@ export async function runAgent(input: RunAgentInput): Promise<RunAgentResult> {
 
   const provider = createOpenAI({
     apiKey,
-    baseURL: openAiConfig.baseUrl ?? process.env.OPENAI_BASE_URL?.trim() ?? undefined,
+    baseURL: openAiConfig.baseUrl ?? undefined,
   });
 
   const toolset: AgentToolset = await buildAgentToolset({ userId: input.userId });

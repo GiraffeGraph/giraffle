@@ -3,7 +3,7 @@ import { logger } from "@/lib/logger";
 import { exchangeCodeForTokens } from "@/domain/trail/oauth/exchange";
 import {
   getOAuthConfig,
-  isOAuthEnabled,
+  resolveOAuthCredentials,
 } from "@/domain/trail/oauth/providers";
 import {
   buildCallbackUrl,
@@ -20,8 +20,8 @@ interface Ctx {
   params: Promise<{ provider: string }>;
 }
 
-function redirectToTrails(req: Request, message: string, ok: boolean) {
-  const origin = buildPublicOrigin(req);
+async function redirectToTrails(req: Request, message: string, ok: boolean) {
+  const origin = await buildPublicOrigin(req);
   const url = new URL("/trails", origin);
   url.searchParams.set("oauth", ok ? "success" : "error");
   url.searchParams.set("message", message.slice(0, 200));
@@ -31,7 +31,8 @@ function redirectToTrails(req: Request, message: string, ok: boolean) {
 export async function GET(req: Request, ctx: Ctx) {
   const { provider } = await ctx.params;
   const kind = provider as TrailKind;
-  if (!isOAuthEnabled(kind)) {
+  const credentials = await resolveOAuthCredentials(kind);
+  if (!credentials) {
     return redirectToTrails(req, "Provider not configured", false);
   }
   const config = getOAuthConfig(kind);
@@ -58,7 +59,7 @@ export async function GET(req: Request, ctx: Ctx) {
     const tokens = await exchangeCodeForTokens({
       config,
       code,
-      redirectUri: buildCallbackUrl(req, kind),
+      redirectUri: await buildCallbackUrl(req, kind),
     });
     await persistOAuthTokens({
       userId: state.userId,

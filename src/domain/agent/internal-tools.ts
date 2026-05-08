@@ -44,7 +44,6 @@ function serializeNoteMetadata(note: NonNullable<Awaited<ReturnType<typeof getNo
     icon: note.icon,
     coverImage: note.coverImage,
     folderId: note.folderId,
-    categoryId: note.categoryId,
     position: note.position,
     isPinned: note.isPinned,
     isArchived: note.isArchived,
@@ -287,7 +286,6 @@ export const INTERNAL_TOOL_DEFINITIONS: InternalToolDefinition[] = [
     inputSchema: z.object({
       title: z.string().min(1).max(220),
       folderId: z.string().min(1).optional(),
-      categoryId: z.string().min(1).optional(),
       icon: z.string().max(20).optional(),
       slug: z.string().min(1).max(220).optional(),
       isPinned: z.boolean().optional(),
@@ -299,7 +297,6 @@ export const INTERNAL_TOOL_DEFINITIONS: InternalToolDefinition[] = [
       const input = raw as {
         title: string;
         folderId?: string;
-        categoryId?: string;
         icon?: string;
         slug?: string;
         isPinned?: boolean;
@@ -310,7 +307,6 @@ export const INTERNAL_TOOL_DEFINITIONS: InternalToolDefinition[] = [
       const noteId = await createNote(userId, {
         title: input.title,
         folderId: input.folderId,
-        categoryId: input.categoryId,
         icon: input.icon,
       });
       const patch: UpdateNoteInput = {};
@@ -342,7 +338,7 @@ export const INTERNAL_TOOL_DEFINITIONS: InternalToolDefinition[] = [
     name: "notes_update",
     destructive: true,
     description:
-      "Update note metadata such as title, slug, publish/pin state, folder, category, icon, cover image, archive state, or quadrant. Prefer noteId when available; lookupSlug may be used instead. If both are provided, they must identify the same note.",
+      "Update note metadata such as title, slug, publish/pin state, folder, icon, cover image, archive state, or quadrant. Prefer noteId when available; lookupSlug may be used instead. If both are provided, they must identify the same note.",
     inputSchema: z
       .object({
         noteId: z.string().min(1).optional(),
@@ -352,7 +348,6 @@ export const INTERNAL_TOOL_DEFINITIONS: InternalToolDefinition[] = [
         icon: z.string().max(20).nullable().optional(),
         coverImage: z.string().max(2_000).nullable().optional(),
         folderId: z.string().min(1).nullable().optional(),
-        categoryId: z.string().min(1).nullable().optional(),
         isPinned: z.boolean().optional(),
         isArchived: z.boolean().optional(),
         isPublished: z.boolean().optional(),
@@ -374,7 +369,6 @@ export const INTERNAL_TOOL_DEFINITIONS: InternalToolDefinition[] = [
           icon: input.icon,
           coverImage: input.coverImage,
           folderId: input.folderId,
-          categoryId: input.categoryId,
           isPinned: input.isPinned,
           isArchived: input.isArchived,
           isPublished: input.isPublished,

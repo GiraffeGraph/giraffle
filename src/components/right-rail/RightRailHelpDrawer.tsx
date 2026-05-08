@@ -17,10 +17,6 @@ const QUICK_LINKS = [
 ] as const;
 
 const PAGE_HELP: Record<string, { title: string; items: string[] }> = {
-  "/dashboard": {
-    title: "Dashboard",
-    items: ["Command bar opens notes and tools.", "Use short commands for fast navigation."],
-  },
   "/settings": {
     title: "Settings",
     items: ["Manage provider keys, MCP tokens, updates, and sync logs.", "Self-host notes live here in Help now."],

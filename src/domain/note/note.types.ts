@@ -87,13 +87,6 @@ export interface Note {
   icon: string | null;
   coverImage: string | null;
   folderId: string | null;
-  categoryId?: string | null;
-  category?: {
-    id: string;
-    name: string;
-    color: string;
-    icon: string | null;
-  } | null;
   position: number;
   isPinned: boolean;
   isArchived: boolean;
@@ -116,7 +109,6 @@ export interface CreateNoteInput {
   title?: string;
   icon?: string;
   folderId?: string;
-  categoryId?: string;
 }
 
 export interface UpdateNoteInput {
@@ -125,7 +117,6 @@ export interface UpdateNoteInput {
   icon?: string | null;
   coverImage?: string | null;
   folderId?: string | null;
-  categoryId?: string | null;
   position?: number;
   isPinned?: boolean;
   isArchived?: boolean;

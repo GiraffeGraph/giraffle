@@ -35,13 +35,13 @@ function filterToolset(toolset: AgentToolset, allowed?: string[]): ToolSet {
 export async function runSubagent(input: RunSubagentInput): Promise<RunSubagentResult> {
   const start = Date.now();
   const config = await resolveOpenAiConfigForUser(input.userId);
-  const apiKey = config.apiKey || process.env.OPENAI_API_KEY?.trim() || null;
+  const apiKey = config.apiKey;
   if (!apiKey) {
     throw new Error("AI service is not configured");
   }
   const provider = createOpenAI({
     apiKey,
-    baseURL: config.baseUrl ?? process.env.OPENAI_BASE_URL?.trim() ?? undefined,
+    baseURL: config.baseUrl ?? undefined,
   });
   const toolset = await buildAgentToolset({ userId: input.userId });
   const tools = filterToolset(toolset, input.allowedToolNames);

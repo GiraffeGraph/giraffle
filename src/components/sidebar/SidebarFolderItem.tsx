@@ -71,7 +71,7 @@ export function SidebarFolderItem({
   onNoteTriggerMenu: (event: ReactMouseEvent<HTMLButtonElement>, note: SidebarNote) => void;
   onCreateSubFolder: (parentId: string, name: string) => Promise<void>;
 }) {
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
   const [isCreatingSubFolder, setIsCreatingSubFolder] = useState(false);
   const subFolderHandledRef = useRef(false);
   const rowRef = useRef<HTMLDivElement | null>(null);

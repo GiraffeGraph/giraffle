@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { getAppSetting } from "@/domain/app-settings/app-settings.service";
 import { decryptSecretValue, encryptSecretValue } from "@/lib/secret-box";
 
 export interface OAuthState {
@@ -32,16 +33,15 @@ export function decodeOAuthState(token: string): OAuthState | null {
   }
 }
 
-export function buildPublicOrigin(req: Request): string {
-  const env =
-    process.env.TRAIL_OAUTH_PUBLIC_ORIGIN?.trim() ||
-    process.env.NEXTAUTH_URL?.trim();
-  if (env) return env.replace(/\/$/, "");
+export async function buildPublicOrigin(req: Request): Promise<string> {
+  const appOverride = await getAppSetting("TRAIL_OAUTH_PUBLIC_ORIGIN");
+  const fromConfig = appOverride || process.env.NEXTAUTH_URL?.trim();
+  if (fromConfig) return fromConfig.replace(/\/$/, "");
   const url = new URL(req.url);
   return `${url.protocol}//${url.host}`;
 }
 
-export function buildCallbackUrl(req: Request, providerKind: string): string {
-  const origin = buildPublicOrigin(req);
+export async function buildCallbackUrl(req: Request, providerKind: string): Promise<string> {
+  const origin = await buildPublicOrigin(req);
   return `${origin}/api/trails/oauth/${providerKind}/callback`;
 }

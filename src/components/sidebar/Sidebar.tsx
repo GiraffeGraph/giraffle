@@ -541,7 +541,7 @@ export function Sidebar({
         tone: "danger" as const,
         onSelect: async () => {
           await archiveNoteAction(note.id);
-          if (currentNoteId === note.id) router.push("/dashboard");
+          if (currentNoteId === note.id) router.push("/spotter");
           router.refresh();
         },
       },
@@ -789,15 +789,6 @@ export function Sidebar({
         onSelect: async () => {
           closePalette();
           handleStartCreateFolder();
-        },
-      },      {
-        id: "action-dashboard",
-        group: "Navigation",
-        title: "Go to dashboard",
-        description: "Main workspace view",
-        icon: encodeMaterialSymbol("dashboard"),
-        onSelect: async () => {
-          router.push("/dashboard");
         },
       },
       {
@@ -1100,7 +1091,7 @@ export function Sidebar({
               ) : null}
               <div
                 className="sidebar-workspace-card"
-                onClick={() => router.push("/dashboard")}
+                onClick={() => router.push("/spotter")}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -1190,7 +1181,6 @@ export function Sidebar({
                 <div className="sidebar-primary-nav">
                   {(
                     [
-                      { path: "/dashboard", icon: "\uE88A", label: "Dashboard" },
                       {
                         path: "/savanna",
                         icon: "landscape",

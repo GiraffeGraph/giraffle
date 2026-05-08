@@ -96,7 +96,7 @@ export function FolderDetailPage({
         breadcrumbs={breadcrumbs}
         isCopyingLink={isCopyingLink}
         onOpenIconPicker={handleOpenIconPicker}
-        onGoDashboard={() => router.push("/dashboard")}
+        onGoDashboard={() => router.push("/spotter")}
         onSelectBreadcrumb={(folderId) => router.push(`/folders/${folderId}`)}
         onCopyFolderLink={handleCopyFolderLink}
       />

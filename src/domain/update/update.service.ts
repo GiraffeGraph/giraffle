@@ -1,4 +1,5 @@
 import { getAppRuntimeEnv } from "@/lib/env.server";
+import { getAppSetting } from "@/domain/app-settings/app-settings.service";
 import type { AppUpdateStatus } from "./update.types";
 
 const DEFAULT_GITHUB_REPOSITORY = "GiraffeGraph/giraffle";
@@ -42,7 +43,8 @@ export function compareVersions(left: string, right: string) {
 
 export async function getAppUpdateStatus(): Promise<AppUpdateStatus> {
   const app = getAppRuntimeEnv();
-  const repository = process.env.APP_UPDATE_REPOSITORY?.trim() || DEFAULT_GITHUB_REPOSITORY;
+  const repository =
+    (await getAppSetting("APP_UPDATE_REPOSITORY")) || DEFAULT_GITHUB_REPOSITORY;
   const checkedAt = new Date().toISOString();
 
   const baseStatus: AppUpdateStatus = {

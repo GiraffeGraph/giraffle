@@ -7,6 +7,8 @@ export const runtime = "nodejs";
 export async function GET() {
   const session = await auth();
   if (!session?.user?.id) return new Response("Unauthorized", { status: 401 });
-  const enabled = (Object.keys(OAUTH_PROVIDERS) as TrailKind[]).filter((k) => isOAuthEnabled(k));
+  const kinds = Object.keys(OAUTH_PROVIDERS) as TrailKind[];
+  const flags = await Promise.all(kinds.map((k) => isOAuthEnabled(k)));
+  const enabled = kinds.filter((_, idx) => flags[idx]);
   return Response.json({ enabled });
 }

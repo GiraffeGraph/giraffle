@@ -59,7 +59,6 @@ export const NoteMetadataSchema = z
     icon: z.string().nullable(),
     coverImage: z.string().nullable().optional(),
     folderId: z.string().nullable(),
-    categoryId: z.string().nullable().optional(),
     position: z.number().int().optional(),
     isPinned: z.boolean(),
     isArchived: z.boolean(),

@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import {
   getOAuthConfig,
-  isOAuthEnabled,
+  resolveOAuthCredentials,
 } from "@/domain/trail/oauth/providers";
 import { buildCallbackUrl, encodeOAuthState } from "@/domain/trail/oauth/state";
 import { updateTrail } from "@/domain/trail/trail.service";
@@ -21,7 +21,8 @@ export async function GET(req: Request, ctx: Ctx) {
 
   const { provider } = await ctx.params;
   const kind = provider as TrailKind;
-  if (!isOAuthEnabled(kind)) {
+  const credentials = await resolveOAuthCredentials(kind);
+  if (!credentials) {
     return new Response(`OAuth provider not configured: ${provider}`, { status: 400 });
   }
   const config = getOAuthConfig(kind);
@@ -37,8 +38,8 @@ export async function GET(req: Request, ctx: Ctx) {
   });
   if (!owned) return new Response("Trail not found", { status: 404 });
 
-  const clientId = process.env[config.clientIdEnv]!;
-  const callbackUrl = buildCallbackUrl(req, kind);
+  const clientId = credentials.clientId;
+  const callbackUrl = await buildCallbackUrl(req, kind);
   const state = encodeOAuthState({ userId, trailId });
 
   const params = new URLSearchParams({

@@ -20,19 +20,11 @@ export const WorkspaceFolderSchema = z.object({
 });
 export type WorkspaceFolder = z.infer<typeof WorkspaceFolderSchema>;
 
-export const WorkspaceCategorySchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  color: z.string().nullable(),
-});
-export type WorkspaceCategory = z.infer<typeof WorkspaceCategorySchema>;
-
 export const NoteSnapshotSchema = z.object({
   id: z.string(),
   title: z.string(),
   content: z.string(),
   folderId: z.string().nullable(),
-  categoryId: z.string().nullable(),
   updatedAt: z.string(),
 });
 export type NoteSnapshot = z.infer<typeof NoteSnapshotSchema>;
@@ -40,7 +32,6 @@ export type NoteSnapshot = z.infer<typeof NoteSnapshotSchema>;
 export const ProposedActionTypeSchema = z.enum([
   "CREATE_FOLDER",
   "MOVE_NOTE",
-  "ASSIGN_CATEGORY",
   "ARCHIVE_NOTE",
   "FLAG_DUPLICATE",
 ]);
@@ -52,7 +43,6 @@ export const ProposedActionSchema = z.object({
   type: ProposedActionTypeSchema,
   targetFolderId: z.string().nullable(),
   targetFolderAlias: z.string().nullable(),
-  targetCategoryId: z.string().nullable(),
   duplicateOfNoteId: z.string().nullable(),
   newFolderName: z.string().nullable(),
   folderAlias: z.string().nullable(),
@@ -81,7 +71,6 @@ export type ApprovalResume = z.infer<typeof ApprovalResumeSchema>;
 export const InboxTriageSummarySchema = z.object({
   createdFolderCount: z.number().int().nonnegative(),
   movedCount: z.number().int().nonnegative(),
-  categorizedCount: z.number().int().nonnegative(),
   archivedCount: z.number().int().nonnegative(),
   duplicateFlagCount: z.number().int().nonnegative(),
   skippedCount: z.number().int().nonnegative(),
@@ -94,7 +83,6 @@ export interface InboxTriageState {
   userId: string;
   limit: number;
   folders: WorkspaceFolder[];
-  categories: WorkspaceCategory[];
   inboxNotes: NoteSnapshot[];
   proposedActions: ProposedAction[];
   approvedActionIds: string[];

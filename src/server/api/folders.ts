@@ -35,7 +35,6 @@ export async function getFolderAction(folderId: string) {
 export async function createFolderAction(input: CreateFolderInput) {
   const { userId } = await requireAuthenticatedUser();
   const folderId = await createFolder(userId, input);
-  revalidatePath("/dashboard");
   return folderId;
 }
 
@@ -45,14 +44,12 @@ export async function updateFolderAction(
 ) {
   const { userId } = await requireAuthenticatedUser();
   await updateFolder(userId, folderId, input);
-  revalidatePath("/dashboard");
   revalidatePath(`/folders/${folderId}`);
 }
 
 export async function deleteFolderAction(folderId: string) {
   const { userId } = await requireAuthenticatedUser();
   await deleteFolder(userId, folderId);
-  revalidatePath("/dashboard");
 }
 
 export async function moveFolderAction(
@@ -61,7 +58,6 @@ export async function moveFolderAction(
 ) {
   const { userId } = await requireAuthenticatedUser();
   await moveFolder(userId, folderId, direction);
-  revalidatePath("/dashboard");
   revalidatePath("/graph");
 }
 
@@ -74,6 +70,5 @@ export async function relocateFolderAction(
 ) {
   const { userId } = await requireAuthenticatedUser();
   await relocateFolder(userId, folderId, placement);
-  revalidatePath("/dashboard");
   revalidatePath("/graph");
 }

@@ -43,7 +43,7 @@ const NAV_ITEMS = [
 export default async function HomePage() {
   const session = await auth();
   const isAuthenticated = Boolean(session?.user?.id);
-  const primaryHref  = isAuthenticated ? "/dashboard" : "/register";
+  const primaryHref  = isAuthenticated ? "/spotter" : "/register";
   const primaryLabel = isAuthenticated ? "Open workspace"    : "Get started — free";
   const secondaryHref  = isAuthenticated ? "/account" : "/login";
   const secondaryLabel = isAuthenticated ? "Account"  : "Sign in";

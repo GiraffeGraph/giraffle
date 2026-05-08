@@ -25,13 +25,12 @@ model User {
   passwordResetTokens PasswordResetToken[]
   operationLogs       OperationLog[]
   canvases            Canvas[]
-  noteCategories      NoteCategory[]
-  spotterSessions         SpotterSession[]
-  integrationSettings     UserIntegrationSetting[]
-  mcpAccessTokens         McpAccessToken[]
-  trails                  Trail[]
-  trailLogs               TrailLog[]
-  agentRuns               AgentRun[]
+  spotterSessions     SpotterSession[]
+  integrationSettings UserIntegrationSetting[]
+  mcpAccessTokens     McpAccessToken[]
+  trails              Trail[]
+  trailLogs           TrailLog[]
+  agentRuns           AgentRun[]
 }
 
 model Account {
@@ -72,72 +71,54 @@ model VerificationToken {
 
 // ─── Domain Models ────────────────────────────────────────────
 model Folder {
-  id          String                @id @default(uuid())
-  name        String
-  icon        String?
-  parentId    String?
-  parent      Folder?               @relation("FolderTree", fields: [parentId], references: [id], onDelete: Cascade)
-  children    Folder[]              @relation("FolderTree")
-  position    Int                   @default(0)
-  userId      String
-  user        User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  notes       Note[]
-  createdAt   DateTime              @default(now())
-  updatedAt   DateTime              @updatedAt
+  id        String   @id @default(uuid())
+  name      String
+  icon      String?
+  parentId  String?
+  parent    Folder?  @relation("FolderTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children  Folder[] @relation("FolderTree")
+  position  Int      @default(0)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notes     Note[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([parentId])
   @@index([userId])
 }
 
 model Note {
-  id          String        @id @default(uuid())
-  title       String        @default("Untitled")
-  slug        String?       @unique
+  id          String   @id @default(uuid())
+  title       String   @default("Untitled")
+  slug        String?  @unique
   icon        String?
   coverImage  String?
   folderId    String?
-  folder      Folder?       @relation(fields: [folderId], references: [id], onDelete: SetNull)
-  categoryId  String?
-  category    NoteCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  folder      Folder?  @relation(fields: [folderId], references: [id], onDelete: SetNull)
   userId      String
-  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  position    Int           @default(0)
-  isPinned    Boolean       @default(false)
-  isArchived  Boolean       @default(false)
-  isPublished Boolean       @default(false)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  position    Int      @default(0)
+  isPinned    Boolean  @default(false)
+  isArchived  Boolean  @default(false)
+  isPublished Boolean  @default(false)
   quadrant    String?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  blocks        Block[]
-  outgoingLinks Link[]                @relation("OutgoingLinks")
-  incomingLinks Link[]                @relation("IncomingLinks")
-  assets        MediaAsset[]
+  blocks          Block[]
+  outgoingLinks   Link[]           @relation("OutgoingLinks")
+  incomingLinks   Link[]           @relation("IncomingLinks")
+  assets          MediaAsset[]
   agentRunActions AgentRunAction[]
 
   @@index([folderId])
-  @@index([categoryId])
   @@index([userId])
   @@index([position])
   @@index([isArchived])
   @@index([isPinned])
   @@index([updatedAt])
   @@index([quadrant])
-}
-
-model NoteCategory {
-  id          String                @id @default(uuid())
-  name        String
-  color       String                @default("slate")
-  icon        String?
-  userId      String
-  user        User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  notes       Note[]
-  createdAt   DateTime              @default(now())
-  updatedAt   DateTime              @updatedAt
-
-  @@unique([userId, name])
-  @@index([userId, createdAt])
 }
 
 model Block {
@@ -272,6 +253,16 @@ model UserIntegrationSetting {
   @@index([userId, provider])
 }
 
+model AppSetting {
+  id             String   @id @default(uuid())
+  key            String   @unique
+  encryptedValue String
+  valuePreview   String?
+  updatedBy      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
 model SpotterMessage {
   id        String         @id @default(uuid())
   sessionId String
@@ -286,17 +277,17 @@ model SpotterMessage {
 
 // ─── Trails (Connectors) ──────────────────────────────────────
 model Trail {
-  id          String   @id @default(uuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  kind        String
-  label       String?
-  status      String   @default("disconnected")
-  config      Json     @default("{}")
-  lastError   String?
-  lastSyncAt  DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String    @id @default(uuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind       String
+  label      String?
+  status     String    @default("disconnected")
+  config     Json      @default("{}")
+  lastError  String?
+  lastSyncAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 
   credentials TrailCredential[]
   toolAllows  TrailToolAllow[]
@@ -335,20 +326,20 @@ model TrailToolAllow {
 }
 
 model TrailLog {
-  id         String   @id @default(uuid())
-  userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  trailId    String?
-  trail      Trail?   @relation(fields: [trailId], references: [id], onDelete: SetNull)
-  sessionId  String?
-  messageId  String?
-  toolName   String
-  status     String
-  input      Json?
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trailId       String?
+  trail         Trail?   @relation(fields: [trailId], references: [id], onDelete: SetNull)
+  sessionId     String?
+  messageId     String?
+  toolName      String
+  status        String
+  input         Json?
   outputSnippet String?
-  error      String?
-  durationMs Int?
-  createdAt  DateTime @default(now())
+  error         String?
+  durationMs    Int?
+  createdAt     DateTime @default(now())
 
   @@index([userId, createdAt])
   @@index([trailId, createdAt])
@@ -378,22 +369,22 @@ model AgentRun {
 }
 
 model AgentRunAction {
-  id        String   @id @default(uuid())
+  id        String    @id @default(uuid())
   runId     String
-  run       AgentRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  run       AgentRun  @relation(fields: [runId], references: [id], onDelete: Cascade)
   noteId    String?
-  note      Note?    @relation(fields: [noteId], references: [id], onDelete: SetNull)
+  note      Note?     @relation(fields: [noteId], references: [id], onDelete: SetNull)
   type      String
-  status    String   @default("pending")
-  payload   Json     @default("{}")
+  status    String    @default("pending")
+  payload   Json      @default("{}")
   reason    String
   appliedAt DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
+  @@unique([runId, id])
   @@index([runId, status])
   @@index([noteId])
-  @@unique([runId, id])
 }
 
 model AgentRunEvent {
@@ -408,20 +399,19 @@ model AgentRunEvent {
 }
 
 model AgentRunNoteSnapshot {
-  id         String   @id @default(uuid())
-  runId      String
-  run        AgentRun @relation(fields: [runId], references: [id], onDelete: Cascade)
-  noteId     String
-  title      String
-  content    String
-  folderId   String?
-  categoryId String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime
+  id        String   @id @default(uuid())
+  runId     String
+  run       AgentRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  noteId    String
+  title     String
+  content   String
+  folderId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime
 
+  @@unique([runId, noteId])
   @@index([runId])
   @@index([noteId])
-  @@unique([runId, noteId])
 }
 
 // ─── Spatial Canvas Models ────────────────────────────────────

@@ -3,6 +3,7 @@ import path from "node:path";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { getAppSetting } from "@/domain/app-settings/app-settings.service";
 import { generateId, slugify } from "@/lib/utils";
 
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
@@ -69,7 +70,8 @@ export async function POST(request: Request) {
   );
   const fileName = `${generateId()}-${baseName}${extension}`;
   const uploadRoot =
-    process.env.UPLOAD_DIR ?? path.join(process.cwd(), "public", "uploads");
+    (await getAppSetting("UPLOAD_DIR")) ??
+    path.join(process.cwd(), "public", "uploads");
   const targetDirectory = path.join(uploadRoot, relativeDirectory);
   const absolutePath = path.join(targetDirectory, fileName);
 

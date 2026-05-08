@@ -1,4 +1,5 @@
 import { logger } from "@/lib/logger";
+import { resolveOAuthCredentials } from "./providers";
 import type { OAuthProviderConfig, OAuthTokenResponse } from "./oauth.types";
 
 export interface ExchangeInput {
@@ -31,11 +32,11 @@ async function postTokenRequest(
   body: URLSearchParams,
   options: { useBasicAuth: boolean },
 ): Promise<OAuthTokenResponse> {
-  const clientId = process.env[config.clientIdEnv]?.trim();
-  const clientSecret = process.env[config.clientSecretEnv]?.trim();
-  if (!clientId || !clientSecret) {
+  const credentials = await resolveOAuthCredentials(config.kind);
+  if (!credentials) {
     throw new Error(`Missing OAuth credentials for ${config.kind}`);
   }
+  const { clientId, clientSecret } = credentials;
   if (options.useBasicAuth) {
     body.delete("client_id");
     body.delete("client_secret");

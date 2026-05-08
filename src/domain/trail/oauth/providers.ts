@@ -1,4 +1,6 @@
 import type { TrailKind } from "@/domain/trail/trail.types";
+import { getAppSetting } from "@/domain/app-settings/app-settings.service";
+import type { AppSettingKey } from "@/domain/app-settings/app-settings.types";
 import type { OAuthProviderConfig } from "./oauth.types";
 
 export const OAUTH_PROVIDERS: Partial<Record<TrailKind, OAuthProviderConfig>> = {
@@ -64,10 +66,23 @@ export const OAUTH_PROVIDERS: Partial<Record<TrailKind, OAuthProviderConfig>> = 
   },
 };
 
-export function isOAuthEnabled(kind: TrailKind): boolean {
+export async function resolveOAuthCredentials(
+  kind: TrailKind,
+): Promise<{ clientId: string; clientSecret: string } | null> {
   const cfg = OAUTH_PROVIDERS[kind];
-  if (!cfg) return false;
-  return Boolean(process.env[cfg.clientIdEnv] && process.env[cfg.clientSecretEnv]);
+  if (!cfg) return null;
+
+  const [clientId, clientSecret] = await Promise.all([
+    getAppSetting(cfg.clientIdEnv as AppSettingKey),
+    getAppSetting(cfg.clientSecretEnv as AppSettingKey),
+  ]);
+
+  if (!clientId || !clientSecret) return null;
+  return { clientId, clientSecret };
+}
+
+export async function isOAuthEnabled(kind: TrailKind): Promise<boolean> {
+  return (await resolveOAuthCredentials(kind)) !== null;
 }
 
 export function getOAuthConfig(kind: TrailKind): OAuthProviderConfig | null {

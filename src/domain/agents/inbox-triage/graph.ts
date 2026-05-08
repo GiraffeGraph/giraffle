@@ -12,7 +12,7 @@ import { resolveAgentModel } from "@/domain/agent/runtime";
 import { getLangGraphCheckpointer } from "@/domain/agents/langgraph";
 import { persistedBlocksToDocument } from "@/domain/note/block-tree";
 import { blocksToMarkdown } from "@/domain/note/note.serializer";
-import { archiveNote, relocateNote, updateNote } from "@/domain/note/note.service";
+import { archiveNote, relocateNote } from "@/domain/note/note.service";
 import { createFolder } from "@/domain/folder/folder.service";
 import type { PersistedBlockSource } from "@/domain/note/block-tree";
 import type {
@@ -22,7 +22,6 @@ import type {
   InboxTriageSummary,
   NoteSnapshot,
   ProposedAction,
-  WorkspaceCategory,
   WorkspaceFolder,
 } from "./types";
 import {
@@ -44,7 +43,6 @@ const InboxTriageAnnotation = Annotation.Root({
   userId: Annotation<string>(),
   limit: Annotation<number>(overwrite(() => 20)),
   folders: Annotation<WorkspaceFolder[]>(overwrite<WorkspaceFolder[]>(() => [])),
-  categories: Annotation<WorkspaceCategory[]>(overwrite<WorkspaceCategory[]>(() => [])),
   inboxNotes: Annotation<NoteSnapshot[]>(overwrite<NoteSnapshot[]>(() => [])),
   proposedActions: Annotation<ProposedAction[]>(overwrite<ProposedAction[]>(() => [])),
   approvedActionIds: Annotation<string[]>(overwrite<string[]>(() => [])),
@@ -78,27 +76,18 @@ async function loadWorkspaceNode(state: InboxTriageState) {
     data: { status: "running", error: null },
   });
 
-  const [folders, categories] = await Promise.all([
-    db.folder.findMany({
-      where: { userId: state.userId },
-      orderBy: [{ position: "asc" }, { name: "asc" }],
-      select: { id: true, name: true, parentId: true },
-    }),
-    db.noteCategory.findMany({
-      where: { userId: state.userId },
-      orderBy: [{ name: "asc" }, { createdAt: "asc" }],
-      select: { id: true, name: true, color: true },
-    }),
-  ]);
+  const folders = await db.folder.findMany({
+    where: { userId: state.userId },
+    orderBy: [{ position: "asc" }, { name: "asc" }],
+    select: { id: true, name: true, parentId: true },
+  });
 
   await recordRunEvent(state.runId, "workspace_loaded", {
     folderCount: folders.length,
-    categoryCount: categories.length,
   });
 
   return {
     folders,
-    categories,
     status: "running" satisfies AgentRunStatus,
   };
 }
@@ -116,7 +105,6 @@ async function loadInboxNotesNode(state: InboxTriageState) {
       id: true,
       title: true,
       folderId: true,
-      categoryId: true,
       updatedAt: true,
       blocks: {
         orderBy: [{ parentId: "asc" }, { position: "asc" }],
@@ -149,7 +137,6 @@ async function loadInboxNotesNode(state: InboxTriageState) {
       title: note.title,
       content: truncate(markdown || note.title, NOTE_CONTENT_LIMIT),
       folderId: note.folderId,
-      categoryId: note.categoryId,
       updatedAt: note.updatedAt.toISOString(),
     };
   });
@@ -162,7 +149,6 @@ async function loadInboxNotesNode(state: InboxTriageState) {
         title: note.title,
         content: note.content,
         folderId: note.folderId,
-        categoryId: note.categoryId,
         updatedAt: new Date(note.updatedAt),
       })),
       skipDuplicates: true,
@@ -183,16 +169,15 @@ async function loadInboxNotesNode(state: InboxTriageState) {
 function buildProposalPrompt(state: InboxTriageState) {
   return `You are organizing a notes workspace inbox.
 
-Return only useful, conservative triage actions. Prefer existing folders and categories. Do not invent IDs.
+Return only useful, conservative triage actions. Prefer existing folders. Do not invent IDs.
 
 Allowed action types:
 - CREATE_FOLDER: create a top-level folder. Requires newFolderName and folderAlias. noteId must be null.
 - MOVE_NOTE: move a note into an existing folder or a newly proposed folder. Requires targetFolderId OR targetFolderAlias.
-- ASSIGN_CATEGORY: assign an existing category. Requires targetCategoryId.
 - ARCHIVE_NOTE: archive stale or clearly low-value notes.
 - FLAG_DUPLICATE: flag possible duplicates. Requires duplicateOfNoteId.
 
-Every action must include targetFolderId, targetFolderAlias, targetCategoryId, duplicateOfNoteId, newFolderName, and folderAlias.
+Every action must include targetFolderId, targetFolderAlias, duplicateOfNoteId, newFolderName, and folderAlias.
 Set unused target fields to null.
 When using a new folder, emit one CREATE_FOLDER action and one or more MOVE_NOTE actions whose targetFolderAlias equals the CREATE_FOLDER folderAlias.
 Use short stable folderAlias values like "projects" or "research". Do not use folderAlias for existing folders.
@@ -201,9 +186,6 @@ Do not propose more than two actions per note. Avoid archive unless the note is 
 
 Existing folders:
 ${JSON.stringify(state.folders)}
-
-Existing categories:
-${JSON.stringify(state.categories)}
 
 Inbox notes:
 ${JSON.stringify(state.inboxNotes)}`;
@@ -243,7 +225,6 @@ function validateActions(state: InboxTriageState): ProposedAction[] {
   const existingFolderNames = new Set(
     state.folders.map((folder) => folder.name.trim().toLowerCase()).filter(Boolean),
   );
-  const categoryIds = new Set(state.categories.map((category) => category.id));
   const proposedFolderAliases = new Set(
     state.proposedActions
       .filter((action) => action.type === "CREATE_FOLDER")
@@ -293,11 +274,6 @@ function validateActions(state: InboxTriageState): ProposedAction[] {
         targetFolderAlias: targetAlias,
       };
     }
-    if (action.type === "ASSIGN_CATEGORY") {
-      if (!action.targetCategoryId || !categoryIds.has(action.targetCategoryId)) continue;
-      if (note.categoryId === action.targetCategoryId) continue;
-      key += `:${action.targetCategoryId}`;
-    }
     if (action.type === "FLAG_DUPLICATE") {
       if (!action.duplicateOfNoteId || action.duplicateOfNoteId === action.noteId) continue;
       if (!noteById.has(action.duplicateOfNoteId)) continue;
@@ -346,9 +322,6 @@ async function approvalNode(state: InboxTriageState) {
         targetFolderName:
           state.folders.find((folder) => folder.id === action.targetFolderId)?.name ?? null,
         targetFolderAlias: action.targetFolderAlias ?? null,
-        targetCategoryId: action.targetCategoryId ?? null,
-        targetCategoryName:
-          state.categories.find((category) => category.id === action.targetCategoryId)?.name ?? null,
         duplicateOfNoteId: action.duplicateOfNoteId ?? null,
         duplicateOfNoteTitle:
           state.inboxNotes.find((note) => note.id === action.duplicateOfNoteId)?.title ?? null,
@@ -426,7 +399,6 @@ async function applyOneApprovedAction(input: {
   const payload = action.payload as {
     targetFolderId?: string | null;
     targetFolderAlias?: string | null;
-    targetCategoryId?: string | null;
     duplicateOfNoteId?: string | null;
   };
 
@@ -436,12 +408,6 @@ async function applyOneApprovedAction(input: {
       (payload.targetFolderAlias ? folderAliasToId.get(payload.targetFolderAlias) : null);
     if (!targetFolderId) return "skipped";
     await relocateNote(userId, action.noteId, { folderId: targetFolderId });
-    return "applied";
-  }
-
-  if (action.type === "ASSIGN_CATEGORY") {
-    if (!payload.targetCategoryId) return "skipped";
-    await updateNote(userId, action.noteId, { categoryId: payload.targetCategoryId });
     return "applied";
   }
 
@@ -610,7 +576,6 @@ async function summarizeNode(state: InboxTriageState) {
   const summary: InboxTriageSummary = {
     createdFolderCount: applied.filter((action) => action.type === "CREATE_FOLDER").length,
     movedCount: applied.filter((action) => action.type === "MOVE_NOTE").length,
-    categorizedCount: applied.filter((action) => action.type === "ASSIGN_CATEGORY").length,
     archivedCount: applied.filter((action) => action.type === "ARCHIVE_NOTE").length,
     duplicateFlagCount: applied.filter((action) => action.type === "FLAG_DUPLICATE").length,
     skippedCount: actions.filter((action) => action.status === "skipped").length,

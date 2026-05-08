@@ -15,9 +15,9 @@ export default async function TrailsPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
   const trails = await listTrails(session.user.id);
-  const oauthEnabled = (Object.keys(OAUTH_PROVIDERS) as TrailKind[]).filter((k) =>
-    isOAuthEnabled(k),
-  );
+  const kinds = Object.keys(OAUTH_PROVIDERS) as TrailKind[];
+  const flags = await Promise.all(kinds.map((k) => isOAuthEnabled(k)));
+  const oauthEnabled = kinds.filter((_, idx) => flags[idx]);
 
   return (
     <>

@@ -12,12 +12,14 @@ export interface IntegrationSettingSummary {
   updatedAt: Date | null;
 }
 
+export type IntegrationSettingSource = "user" | "app" | "none";
+
 export interface OpenAiIntegrationSummary {
   apiKeyConfigured: boolean;
   apiKeyPreview: string | null;
-  apiKeySource: "app" | "env" | "none";
+  apiKeySource: IntegrationSettingSource;
   baseUrl: string | null;
-  baseUrlSource: "app" | "env" | "none";
+  baseUrlSource: IntegrationSettingSource;
   updatedAt: Date | null;
 }
 

@@ -44,9 +44,6 @@ function actionTitle(action: AgentRunActionView) {
       "folder"
     }`;
   }
-  if (action.type === "ASSIGN_CATEGORY") {
-    return `Set category ${action.payload.targetCategoryName ?? "category"}`;
-  }
   if (action.type === "ARCHIVE_NOTE") {
     return "Archive note";
   }
@@ -146,7 +143,7 @@ export function InboxTriageAgentPage() {
         <header className={styles.header}>
           <div>
             <h1>Inbox Triage</h1>
-            <p>Review proposed moves, categories, archive decisions, and duplicate flags before anything changes.</p>
+            <p>Review proposed moves, archive decisions, and duplicate flags before anything changes.</p>
           </div>
           <div className={styles.metric}>
             <span>{runView?.run.noteCount ?? 0}</span>
