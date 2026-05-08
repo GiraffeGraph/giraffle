@@ -2,6 +2,7 @@ use serde_json::json;
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu};
 use tauri::{AppHandle, Manager, WebviewUrl, WebviewWindowBuilder};
 use tauri_plugin_store::StoreExt;
+use tauri_plugin_updater::UpdaterExt;
 use url::Url;
 
 const STORE_FILE: &str = "config.json";
@@ -84,6 +85,35 @@ fn get_saved_url(app: AppHandle) -> Option<String> {
     load_saved_url(&app)
 }
 
+#[tauri::command]
+async fn check_for_updates(app: AppHandle) -> Result<Option<String>, String> {
+    let updater = app.updater().map_err(|e| e.to_string())?;
+    let Some(update) = updater.check().await.map_err(|e| e.to_string())? else {
+        return Ok(None);
+    };
+    let _version = update.version.clone();
+    update
+        .download_and_install(|_, _| {}, || {})
+        .await
+        .map_err(|e| e.to_string())?;
+    app.restart();
+}
+
+fn spawn_update_check(app: AppHandle) {
+    tauri::async_runtime::spawn(async move {
+        let Ok(updater) = app.updater() else { return };
+        let check = match updater.check().await {
+            Ok(Some(u)) => u,
+            _ => return,
+        };
+        if let Err(err) = check.download_and_install(|_, _| {}, || {}).await {
+            eprintln!("auto-update failed: {err}");
+            return;
+        }
+        app.restart();
+    });
+}
+
 fn build_menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
     let change_url = MenuItem::with_id(
         app,
@@ -93,6 +123,13 @@ fn build_menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
         Some("CmdOrCtrl+,"),
     )?;
     let reload = MenuItem::with_id(app, "reload", "Reload", true, Some("CmdOrCtrl+R"))?;
+    let check_update = MenuItem::with_id(
+        app,
+        "check_update",
+        "Check for Updates…",
+        true,
+        None::<&str>,
+    )?;
     let quit = PredefinedMenuItem::quit(app, None)?;
     let separator = PredefinedMenuItem::separator(app)?;
 
@@ -100,7 +137,7 @@ fn build_menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
         app,
         "Giraffle",
         true,
-        &[&change_url, &reload, &separator, &quit],
+        &[&change_url, &reload, &check_update, &separator, &quit],
     )?;
 
     let edit_submenu = Submenu::with_items(
@@ -125,7 +162,13 @@ fn build_menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_store::Builder::default().build())
-        .invoke_handler(tauri::generate_handler![save_url, reset_url, get_saved_url])
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .invoke_handler(tauri::generate_handler![
+            save_url,
+            reset_url,
+            get_saved_url,
+            check_for_updates
+        ])
         .setup(|app| {
             let handle = app.handle().clone();
 
@@ -143,6 +186,9 @@ pub fn run() {
                             win.eval("window.location.reload()").ok();
                         }
                     }
+                    "check_update" => {
+                        spawn_update_check(app.clone());
+                    }
                     _ => {}
                 }
             });
@@ -151,6 +197,8 @@ pub fn run() {
                 Some(url) => open_main_window(&handle, &url).map_err(|e| e.to_string())?,
                 None => open_config_window(&handle).map_err(|e| e.to_string())?,
             }
+
+            spawn_update_check(handle);
 
             Ok(())
         })
