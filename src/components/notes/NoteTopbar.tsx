@@ -362,17 +362,29 @@ export function NoteTopbar({
       }
       right={
         <>
-          {isMobileViewport ? null : (
+          {!isMobileViewport && saveStatusMeta.label !== "Saved" ? (
             <span
               style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
                 fontSize: "11px",
                 color: saveStatusMeta.color,
                 whiteSpace: "nowrap",
               }}
             >
+              <span
+                aria-hidden="true"
+                style={{
+                  width: "6px",
+                  height: "6px",
+                  borderRadius: "999px",
+                  background: saveStatusMeta.color,
+                }}
+              />
               {saveStatusMeta.label}
             </span>
-          )}
+          ) : null}
           {isMobileViewport ? (
             <button
               type="button"

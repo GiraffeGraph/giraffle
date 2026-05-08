@@ -692,17 +692,17 @@ export function NoteEditorPage({
     () => [
       {
         label: isPinned ? "Unpin" : "Pin",
-        hint: "Keep near top of note list or release",
+        tooltip: "Keep near top of note list or release",
         onSelect: handlePinToggle,
       },
       {
         label: isPublished ? "Unpublish" : "Publish",
-        hint: "Toggle public availability",
+        tooltip: "Toggle public availability",
         onSelect: handlePublishToggle,
       },
       {
         label: "Open in Savanna",
-        hint: "Spatial map centered on this note",
+        tooltip: "Spatial map centered on this note",
         onSelect: handleOpenInCanvas,
       },
       {
@@ -715,7 +715,7 @@ export function NoteEditorPage({
       },
       {
         label: "Copy note link",
-        hint: "Internal address",
+        tooltip: "Internal address",
         onSelect: handleCopyNoteLink,
       },
       {
@@ -806,6 +806,7 @@ export function NoteEditorPage({
               }}
             >
               <input
+                className="note-title-input"
                 value={title}
                 onChange={(event) => handleTitleChange(event.target.value)}
                 onBlur={handleTitleBlur}

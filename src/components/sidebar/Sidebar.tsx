@@ -503,12 +503,12 @@ export function Sidebar({
     }): ContextMenuItem[] => [
       {
         label: "Open note",
-        hint: "Open the selected note in the editor",
+        tooltip: "Open the selected note in the editor",
         onSelect: () => navigateToNote(note.id),
       },
       {
         label: note.isPinned ? "Unpin" : "Pin",
-        hint: "Keep the note at the top of ordered lists or release it",
+        tooltip: "Keep the note at the top of ordered lists or release it",
         onSelect: async () => {
           await updateNoteAction(note.id, { isPinned: !note.isPinned });
           router.refresh();
@@ -516,7 +516,7 @@ export function Sidebar({
       },
       {
         label: "Move up",
-        hint: "Move the note up by one position",
+        tooltip: "Move the note up by one position",
         onSelect: async () => {
           await moveNoteAction(note.id, "up");
           router.refresh();
@@ -524,7 +524,7 @@ export function Sidebar({
       },
       {
         label: "Move down",
-        hint: "Move the note down by one position",
+        tooltip: "Move the note down by one position",
         onSelect: async () => {
           await moveNoteAction(note.id, "down");
           router.refresh();
@@ -532,12 +532,12 @@ export function Sidebar({
       },
       {
         label: "Copy note link",
-        hint: "Copy the internal note address to the clipboard",
+        tooltip: "Copy the internal note address to the clipboard",
         onSelect: () => copyInternalLink(`/notes/${note.id}`),
       },
       {
         label: "Move to archive",
-        hint: "Remove the note from active lists",
+        tooltip: "Remove the note from active lists",
         tone: "danger" as const,
         onSelect: async () => {
           await archiveNoteAction(note.id);
@@ -553,12 +553,12 @@ export function Sidebar({
     (session: { id: string; title: string }): ContextMenuItem[] => [
       {
         label: "Open chat",
-        hint: "Open this Spotter session",
+        tooltip: "Open this Spotter session",
         onSelect: () => navigateToSpotterSession(session.id),
       },
       {
         label: "Rename chat",
-        hint: "Change the title of this Spotter session",
+        tooltip: "Change the title of this Spotter session",
         onSelect: () => {
           setSpotterTitleDraft(session.title);
           setSpotterDialog({ type: "rename", session });
@@ -566,7 +566,7 @@ export function Sidebar({
       },
       {
         label: "Delete chat",
-        hint: "Permanently delete this Spotter session",
+        tooltip: "Permanently delete this Spotter session",
         tone: "danger",
         onSelect: () => {
           setSpotterDialog({ type: "delete", session });
@@ -580,7 +580,7 @@ export function Sidebar({
     const items: ContextMenuItem[] = [
       {
         label: "New chat",
-        hint: "Start a fresh Spotter conversation",
+        tooltip: "Start a fresh Spotter conversation",
         onSelect: () => router.push("/spotter"),
       },
     ];
@@ -588,7 +588,7 @@ export function Sidebar({
     if (spotterSessions.length > 0) {
       items.push({
         label: "Delete all chats",
-        hint: `Permanently delete all ${spotterSessions.length} Spotter sessions`,
+        tooltip: `Permanently delete all ${spotterSessions.length} Spotter sessions`,
         tone: "danger",
         onSelect: () => {
           setSpotterDialog({

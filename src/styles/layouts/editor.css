@@ -79,6 +79,11 @@
   max-width: 720px;
 }
 
+.note-title-input::placeholder {
+  color: var(--md-sys-color-on-surface-variant);
+  opacity: 0.5;
+}
+
 .note-backlinks {
   margin-top: 32px;
 }
@@ -99,7 +104,13 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 0;
+  padding: 6px 10px;
+  border-radius: var(--radius-control-sm);
+  transition: background 0.15s;
+}
+
+.note-backlinks-summary:hover {
+  background: rgb(var(--accent-rgb) / 0.08);
 }
 
 .note-backlinks-icon {
@@ -108,23 +119,28 @@
 
 .note-backlinks-list {
   list-style: none;
-  margin: 8px 0 0;
+  margin: 6px 0 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
 }
 
 .note-backlinks-link {
   background: none;
   border: none;
-  padding: 4px 6px;
-  border-radius: 6px;
+  padding: 5px 10px;
+  border-radius: var(--radius-control-sm);
   cursor: pointer;
   font-size: 13px;
   color: var(--md-sys-color-primary);
   text-align: left;
   width: 100%;
+  transition: background 0.15s;
+}
+
+.note-backlinks-link:hover {
+  background: rgb(var(--accent-rgb) / 0.08);
 }
 
 .note-toc {
@@ -1550,6 +1566,8 @@
 }
 
 .slash-menu {
+  position: fixed;
+  z-index: 320;
   min-width: 240px;
   max-height: 320px;
   overflow-y: auto;
@@ -1557,6 +1575,11 @@
   display: flex;
   flex-direction: column;
   gap: 1px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-panel);
+  background: var(--surface-glass-strong);
+  box-shadow: var(--shadow-lift);
+  backdrop-filter: blur(18px);
 }
 
 .slash-menu-header {

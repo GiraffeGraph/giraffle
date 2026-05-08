@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 
 export interface ContextMenuItem {
   label: string;
-  hint?: string;
+  tooltip?: string;
   tone?: "default" | "danger";
   disabled?: boolean;
   onSelect: () => void | Promise<void>;
@@ -94,10 +94,10 @@ export function ContextMenu({
     >
       {items.map((item) => (
         <button
-          key={`${item.label}-${item.hint ?? ""}`}
+          key={`${item.label}-${item.tooltip ?? ""}`}
           type="button"
           role="menuitem"
-          title={item.hint}
+          title={item.tooltip}
           className={`context-menu-item ${
             item.tone === "danger" ? "danger" : ""
           }`}
