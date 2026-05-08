@@ -14,6 +14,7 @@ import "@/styles/components/text-field.css";
 import "@/styles/components/list.css";
 import "@/styles/components/chip.css";
 import "@/styles/components/dialog.css";
+import "@/styles/components/command-palette.css";
 import "@/styles/components/navigation.css";
 import "@/styles/layouts/app-layout.css";
 import "@/styles/layouts/sidebar.css";
