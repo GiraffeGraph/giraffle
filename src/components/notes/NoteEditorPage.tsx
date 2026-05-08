@@ -1,6 +1,6 @@
 "use client";
 
-import type { CSSProperties, MouseEvent as ReactMouseEvent } from "react";
+import type { MouseEvent as ReactMouseEvent } from "react";
 import {
   useCallback,
   useEffect,
@@ -14,15 +14,10 @@ import { SafeEditor } from "@/components/editor/SafeEditor";
 import { SidebarIconPicker } from "@/components/sidebar/SidebarIconPicker";
 
 import { NoteTopbar } from "@/components/notes/NoteTopbar";
+import { ReadingModeOverlay } from "@/components/notes/ReadingModeOverlay";
+import { PublishPopover } from "@/components/notes/PublishPopover";
 import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
-import { Button } from "@/components/ui/Button";
 import { useIsMobileViewport } from "@/components/ui/useIsMobileViewport";
-import { Card, CardContent } from "@/components/ui/Card";
-import {
-  NOTE_CATEGORY_COLOR_OPTIONS,
-  getNoteCategoryColorTokens,
-  type NoteCategorySummary,
-} from "@/domain/category/category.types";
 import type { BacklinkResult } from "@/domain/link/link.types";
 import { DEFAULT_NOTE_TITLE } from "@/domain/note/note.types";
 import type { NoteReference, TiptapDocument } from "@/domain/note/note.types";
@@ -36,14 +31,12 @@ import {
   saveNoteContentAction,
   searchNotesByTitleAction,
 } from "@/server/api/notes";
-import { createNoteCategoryAction } from "@/server/api/categories";
 import { createSavannaFromNoteAction } from "@/server/api/savanna";
 import {
-  buildCategoryChipStyle,
   buildFolderLabel,
-  buildSelectStyle,
   extractHeadings,
-  sortCategories,
+  splitDocumentIntoChunks,
+  type NoteChunk,
   type TocHeading,
 } from "@/components/notes/NoteEditorPage.helpers";
 import { queueLocalMutation, resolveLocalMutation } from "@/lib/local-sync";
@@ -55,7 +48,6 @@ interface NoteEditorPageProps {
     slug: string | null;
     icon: string | null;
     folderId: string | null;
-    category: NoteCategorySummary | null;
     isPinned: boolean;
     isPublished: boolean;
     document: TiptapDocument;
@@ -65,7 +57,6 @@ interface NoteEditorPageProps {
     name: string;
     parentId: string | null;
   }>;
-  categories: NoteCategorySummary[];
   backlinks: BacklinkResult[];
 }
 
@@ -74,17 +65,11 @@ type SaveStatus = "saved" | "saving" | "pending";
 export function NoteEditorPage({
   note,
   folders,
-  categories,
   backlinks,
 }: NoteEditorPageProps) {
   const [title, setTitle] = useState(note.title);
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(
     note.folderId,
-  );
-  const [availableCategories, setAvailableCategories] =
-    useState<NoteCategorySummary[]>(categories);
-  const [currentCategoryId, setCurrentCategoryId] = useState<string | null>(
-    note.category?.id ?? null,
   );
   const [slug, setSlug] = useState(note.slug);
   const [isPinned, setIsPinned] = useState(note.isPinned);
@@ -94,14 +79,9 @@ export function NoteEditorPage({
     y: number;
   } | null>(null);
   const [isExportPending, startExportTransition] = useTransition();
-  const [isCategoryPending, startCategoryTransition] = useTransition();
+  const [isPublishPending, startPublishTransition] = useTransition();
   const [isFolderMenuOpen, setIsFolderMenuOpen] = useState(false);
-  const [isMetaPanelOpen, setIsMetaPanelOpen] = useState(false);
-  const [isCreateCategoryOpen, setIsCreateCategoryOpen] = useState(false);
-  const [newCategoryName, setNewCategoryName] = useState("");
-  const [newCategoryColor, setNewCategoryColor] =
-    useState<(typeof NOTE_CATEGORY_COLOR_OPTIONS)[number]>("slate");
-  const [newCategoryIcon, setNewCategoryIcon] = useState("");
+  const [publishAnchor, setPublishAnchor] = useState<DOMRect | null>(null);
   const [noteIcon, setNoteIcon] = useState<string | null>(note.icon);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
   const [iconPickerPosition, setIconPickerPosition] = useState<{
@@ -113,6 +93,11 @@ export function NoteEditorPage({
   );
   const [activeHeadingIndex, setActiveHeadingIndex] = useState<number>(-1);
   const [isTocVisible, setIsTocVisible] = useState(false);
+  const [isReadingMode, setIsReadingMode] = useState(false);
+  const [chunkIndex, setChunkIndex] = useState(0);
+  const [latestDocument, setLatestDocument] = useState<TiptapDocument>(
+    note.document,
+  );
   const folderMenuRef = useRef<HTMLDivElement | null>(null);
   const titleSaveTimeoutRef = useRef<number | null>(null);
   const pendingTitleRef = useRef(note.title);
@@ -139,18 +124,6 @@ export function NoteEditorPage({
       folderOptions.find((folder) => folder.id === currentFolderId)?.name ??
       "Workspace",
     [currentFolderId, folderOptions],
-  );
-
-  const currentCategory = useMemo(
-    () =>
-      availableCategories.find(
-        (category) => category.id === currentCategoryId,
-      ) ?? null,
-    [availableCategories, currentCategoryId],
-  );
-  const currentCategoryTokens = useMemo(
-    () => getNoteCategoryColorTokens(currentCategory?.color),
-    [currentCategory?.color],
   );
 
   const effectiveTitle = title.trim() || DEFAULT_NOTE_TITLE;
@@ -233,6 +206,73 @@ export function NoteEditorPage({
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
   }, []);
+
+  const chunks = useMemo<NoteChunk[]>(
+    () => splitDocumentIntoChunks(latestDocument),
+    [latestDocument],
+  );
+
+  useEffect(() => {
+    if (chunkIndex > chunks.length - 1) {
+      setChunkIndex(Math.max(0, chunks.length - 1));
+    }
+  }, [chunkIndex, chunks.length]);
+
+  const toggleReadingMode = useCallback(() => {
+    setIsReadingMode((value) => {
+      const next = !value;
+      if (next) {
+        setChunkIndex(0);
+      }
+      return next;
+    });
+  }, []);
+
+  const goToPrevChunk = useCallback(() => {
+    setChunkIndex((index) => Math.max(0, index - 1));
+  }, []);
+
+  const goToNextChunk = useCallback(() => {
+    setChunkIndex((index) => Math.min(chunks.length - 1, index + 1));
+  }, [chunks.length]);
+
+  useEffect(() => {
+    const handler = (event: KeyboardEvent) => {
+      const isToggle =
+        (event.metaKey || event.ctrlKey) &&
+        event.shiftKey &&
+        event.key.toLowerCase() === "r";
+      if (isToggle) {
+        event.preventDefault();
+        toggleReadingMode();
+        return;
+      }
+
+      if (!isReadingMode) return;
+      const target = event.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        goToPrevChunk();
+      } else if (event.key === "ArrowRight") {
+        event.preventDefault();
+        goToNextChunk();
+      } else if (event.key === "Escape") {
+        event.preventDefault();
+        setIsReadingMode(false);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [goToNextChunk, goToPrevChunk, isReadingMode, toggleReadingMode]);
 
   useEffect(() => {
     if (headings.length === 0) return;
@@ -361,26 +401,6 @@ export function NoteEditorPage({
     [note.id],
   );
 
-  const handleCategoryChange = useCallback(
-    async (nextCategoryId: string | null) => {
-      const normalizedCategoryId = nextCategoryId || null;
-      setCurrentCategoryId(normalizedCategoryId);
-      const mutationId = queueLocalMutation({
-        entityType: "note",
-        entityId: note.id,
-        actionType: "set-category",
-        payload: { categoryId: normalizedCategoryId },
-      });
-
-      try {
-        await updateNoteAction(note.id, { categoryId: normalizedCategoryId });
-      } finally {
-        resolveLocalMutation(mutationId);
-      }
-    },
-    [note.id],
-  );
-
   const handleSelectFolder = useCallback(
     async (nextFolderId: string | null) => {
       setIsFolderMenuOpen(false);
@@ -389,17 +409,19 @@ export function NoteEditorPage({
     [handleFolderChange],
   );
 
-  const handlePublishToggle = useCallback(async () => {
+  const handlePublishToggle = useCallback(() => {
     const nextValue = !isPublished;
-    setIsPublished(nextValue);
-    const mutationId = queueLocalMutation({
-      entityType: "note",
-      entityId: note.id,
-      actionType: nextValue ? "publish" : "unpublish",
+    startPublishTransition(async () => {
+      setIsPublished(nextValue);
+      const mutationId = queueLocalMutation({
+        entityType: "note",
+        entityId: note.id,
+        actionType: nextValue ? "publish" : "unpublish",
+      });
+      await updateNoteAction(note.id, { isPublished: nextValue });
+      resolveLocalMutation(mutationId);
+      router.refresh();
     });
-    await updateNoteAction(note.id, { isPublished: nextValue });
-    resolveLocalMutation(mutationId);
-    router.refresh();
   }, [isPublished, note.id, router]);
 
   const handlePinToggle = useCallback(async () => {
@@ -484,47 +506,6 @@ export function NoteEditorPage({
     }
   }, [note.id, router]);
 
-  const handleCreateCategory = useCallback(() => {
-    const normalizedName = newCategoryName.trim();
-
-    if (!normalizedName) {
-      return;
-    }
-
-    startCategoryTransition(async () => {
-      const category = await createNoteCategoryAction({
-        name: normalizedName,
-        color: newCategoryColor,
-        icon: newCategoryIcon.trim() || null,
-      });
-
-      setAvailableCategories((currentValue) =>
-        sortCategories([
-          ...currentValue.filter((item) => item.id !== category.id),
-          category,
-        ]),
-      );
-      setCurrentCategoryId(category.id);
-      setNewCategoryName("");
-      setNewCategoryColor("slate");
-      setNewCategoryIcon("");
-      setIsCreateCategoryOpen(false);
-
-      const mutationId = queueLocalMutation({
-        entityType: "note",
-        entityId: note.id,
-        actionType: "set-category",
-        payload: { categoryId: category.id },
-      });
-
-      try {
-        await updateNoteAction(note.id, { categoryId: category.id });
-      } finally {
-        resolveLocalMutation(mutationId);
-      }
-    });
-  }, [newCategoryColor, newCategoryIcon, newCategoryName, note.id]);
-
   const flushDocumentSave = useCallback(async () => {
     if (documentSaveInFlightRef.current) {
       documentSaveQueuedRef.current = true;
@@ -569,6 +550,7 @@ export function NoteEditorPage({
       documentSaveQueuedRef.current = true;
       refreshSaveStatus();
       setHeadings(extractHeadings(content));
+      setLatestDocument(content);
 
       if (!documentSaveInFlightRef.current) {
         void flushDocumentSave();
@@ -669,8 +651,17 @@ export function NoteEditorPage({
     [note.id, router],
   );
 
-  const toggleMetaPanel = useCallback(() => {
-    setIsMetaPanelOpen((currentValue) => !currentValue);
+  const handleOpenPublishPopover = useCallback(
+    (event: ReactMouseEvent<HTMLButtonElement>) => {
+      event.preventDefault();
+      const rect = event.currentTarget.getBoundingClientRect();
+      setPublishAnchor((current) => (current ? null : rect));
+    },
+    [],
+  );
+
+  const handleClosePublishPopover = useCallback(() => {
+    setPublishAnchor(null);
   }, []);
 
   const openContextMenuAtPointer = useCallback(
@@ -701,60 +692,49 @@ export function NoteEditorPage({
     () => [
       {
         label: isPinned ? "Unpin" : "Pin",
-        hint: "Keep near the top of the note list or release it",
+        hint: "Keep near top of note list or release",
         onSelect: handlePinToggle,
       },
       {
         label: isPublished ? "Unpublish" : "Publish",
-        hint: "Change the publication status of the note",
+        hint: "Toggle public availability",
         onSelect: handlePublishToggle,
       },
       {
-        label: isMetaPanelOpen ? "Hide page settings" : "Page settings",
-        hint: "Open the publish path and secondary options",
-        onSelect: toggleMetaPanel,
-      },
-      {
         label: "Open in Savanna",
-        hint: "Create a spatial map centered on this note",
+        hint: "Spatial map centered on this note",
         onSelect: handleOpenInCanvas,
       },
       {
         label: "Move up",
-        hint: "Move it up by one position in its list",
         onSelect: () => handleMoveNote("up"),
       },
       {
         label: "Move down",
-        hint: "Move it down by one position in its list",
         onSelect: () => handleMoveNote("down"),
       },
       {
         label: "Copy note link",
-        hint: "Copy the internal note address to the clipboard",
+        hint: "Internal address",
         onSelect: handleCopyNoteLink,
       },
       {
         label: "Copy Markdown",
-        hint: "Copy the exported Markdown version",
         disabled: isExportPending,
         onSelect: () => handleCopyExport("markdown"),
       },
       {
         label: "Copy MDX",
-        hint: "Copy the exported MDX version",
         disabled: isExportPending,
         onSelect: () => handleCopyExport("mdx"),
       },
       {
         label: "Open published page",
-        hint: "Open the public view in a new tab",
         disabled: !isPublished,
         onSelect: handleOpenPublishedPage,
       },
       {
         label: "Move to archive",
-        hint: "Remove the note from active lists",
         tone: "danger",
         onSelect: handleArchiveNote,
       },
@@ -769,10 +749,8 @@ export function NoteEditorPage({
       handlePinToggle,
       handlePublishToggle,
       isExportPending,
-      isMetaPanelOpen,
       isPinned,
       isPublished,
-      toggleMetaPanel,
     ],
   );
 
@@ -795,8 +773,8 @@ export function NoteEditorPage({
         effectiveTitle={effectiveTitle}
         isPublished={isPublished}
         isPinned={isPinned}
-        isMetaPanelOpen={isMetaPanelOpen}
-        isExportPending={isExportPending}
+        isReadingMode={isReadingMode}
+        isPublishPopoverOpen={publishAnchor !== null}
         saveStatusMeta={saveStatusMeta}
         folderMenuRef={folderMenuRef}
         onOpenIconPicker={handleOpenIconPicker}
@@ -805,16 +783,9 @@ export function NoteEditorPage({
         onGoDashboard={() => router.push("/dashboard")}
         onContextMenu={openContextMenuAtPointer}
         onOpenContextMenuFromTrigger={openContextMenuFromTrigger}
-        onTogglePublish={handlePublishToggle}
+        onOpenPublishPopover={handleOpenPublishPopover}
         onTogglePin={handlePinToggle}
-        onToggleMetaPanel={toggleMetaPanel}
-        onOpenInCanvas={handleOpenInCanvas}
-        onMoveUp={() => handleMoveNote("up")}
-        onMoveDown={() => handleMoveNote("down")}
-        onCopyNoteLink={handleCopyNoteLink}
-        onCopyExport={handleCopyExport}
-        onOpenPublishedPage={handleOpenPublishedPage}
-        onArchive={handleArchiveNote}
+        onToggleReadingMode={toggleReadingMode}
       />
 
       <div
@@ -852,277 +823,6 @@ export function NoteEditorPage({
                 }}
               />
 
-              {currentCategory ? (
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                  <button
-                    type="button"
-                    style={{
-                      background: currentCategoryTokens.background,
-                      color: currentCategoryTokens.foreground,
-                      border: "none",
-                      padding: "2px 10px",
-                      borderRadius: "999px",
-                      fontSize: "12px",
-                      cursor: "pointer",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "6px",
-                    }}
-                    onClick={() => setIsMetaPanelOpen(true)}
-                  >
-                    <span aria-hidden="true">{currentCategory.icon ?? "•"}</span>
-                    <span>{currentCategory.name}</span>
-                  </button>
-                </div>
-              ) : null}
-
-              {isMetaPanelOpen ? (
-                <Card variant="outlined" style={{ marginTop: "8px" }}>
-                  <CardContent>
-                    <div
-                      style={{
-                        display: "grid",
-                        gap: "12px",
-                        paddingBottom: "16px",
-                        marginBottom: "16px",
-                        borderBottom:
-                          "1px solid var(--md-sys-color-outline-variant)",
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          gap: "12px",
-                          flexWrap: "wrap",
-                        }}
-                      >
-                        <div>
-                          <div
-                            style={{
-                              fontSize:
-                                "var(--md-sys-typescale-title-small-size)",
-                              fontWeight: 600,
-                              color: "var(--md-sys-color-on-surface)",
-                            }}
-                          >
-                            Category
-                          </div>
-                          <div
-                            style={{
-                              fontSize:
-                                "var(--md-sys-typescale-body-small-size)",
-                              color: "var(--md-sys-color-on-surface-variant)",
-                            }}
-                          >
-                            Place the note in a main group.
-                          </div>
-                        </div>
-                        <Button
-                          variant="text"
-                          onClick={() =>
-                            setIsCreateCategoryOpen(
-                              (currentValue) => !currentValue,
-                            )
-                          }
-                        >
-                          {isCreateCategoryOpen ? "Close" : "New category"}
-                        </Button>
-                      </div>
-
-                      <div
-                        style={{
-                          display: "flex",
-                          flexWrap: "wrap",
-                          gap: "8px",
-                        }}
-                      >
-                        <button
-                          type="button"
-                          onClick={() => void handleCategoryChange(null)}
-                          disabled={isCategoryPending}
-                          style={buildCategoryChipStyle(
-                            currentCategoryId === null,
-                            {
-                              background:
-                                "var(--md-sys-color-surface-container-highest)",
-                              foreground: "var(--md-sys-color-on-surface)",
-                            },
-                          )}
-                        >
-                          No category
-                        </button>
-                        {availableCategories.map((category) => (
-                          <button
-                            key={category.id}
-                            type="button"
-                            onClick={() =>
-                              void handleCategoryChange(category.id)
-                            }
-                            disabled={isCategoryPending}
-                            style={buildCategoryChipStyle(
-                              category.id === currentCategoryId,
-                              getNoteCategoryColorTokens(category.color),
-                            )}
-                          >
-                            <span aria-hidden="true">
-                              {category.icon ?? "•"}
-                            </span>
-                            <span>{category.name}</span>
-                          </button>
-                        ))}
-                      </div>
-
-                      {isCreateCategoryOpen ? (
-                        <div
-                          style={{
-                            display: "grid",
-                            gap: "12px",
-                            padding: "12px",
-                            borderRadius: "12px",
-                            background:
-                              "var(--md-sys-color-surface-container-low)",
-                          }}
-                        >
-                          <div
-                            className="md-text-field md-text-field--outlined md-text-field--has-value"
-                            style={{ width: "100%" }}
-                          >
-                            <div className="md-text-field-container">
-                              <input
-                                className="md-text-field-input"
-                                value={newCategoryName}
-                                onChange={(event) =>
-                                  setNewCategoryName(event.target.value)
-                                }
-                                placeholder=" "
-                              />
-                              <span className="md-text-field-label">
-                                Category name
-                              </span>
-                            </div>
-                          </div>
-
-                          <div
-                            style={{
-                              display: "grid",
-                              gridTemplateColumns: isMobileViewport
-                                ? "1fr"
-                                : "minmax(0, 1fr) 160px",
-                              gap: "12px",
-                            }}
-                          >
-                            <div
-                              className="md-text-field md-text-field--outlined md-text-field--has-value"
-                              style={{ width: "100%" }}
-                            >
-                              <div className="md-text-field-container">
-                                <input
-                                  className="md-text-field-input"
-                                  value={newCategoryIcon}
-                                  onChange={(event) =>
-                                    setNewCategoryIcon(event.target.value)
-                                  }
-                                  placeholder=" "
-                                />
-                                <span className="md-text-field-label">
-                                  Icon (optional)
-                                </span>
-                              </div>
-                            </div>
-
-                            <label
-                              style={{
-                                display: "grid",
-                                gap: "4px",
-                                fontSize:
-                                  "var(--md-sys-typescale-label-medium-size)",
-                                color: "var(--md-sys-color-on-surface-variant)",
-                              }}
-                            >
-                              <span>Color</span>
-                              <select
-                                value={newCategoryColor}
-                                onChange={(event) =>
-                                  setNewCategoryColor(
-                                    event.target
-                                      .value as (typeof NOTE_CATEGORY_COLOR_OPTIONS)[number],
-                                  )
-                                }
-                                style={buildSelectStyle()}
-                              >
-                                {NOTE_CATEGORY_COLOR_OPTIONS.map(
-                                  (colorOption) => (
-                                    <option
-                                      key={colorOption}
-                                      value={colorOption}
-                                    >
-                                      {colorOption}
-                                    </option>
-                                  ),
-                                )}
-                              </select>
-                            </label>
-                          </div>
-
-                          <div
-                            style={{
-                              display: "flex",
-                              justifyContent: "flex-end",
-                              gap: "8px",
-                            }}
-                          >
-                            <Button
-                              variant="filled"
-                              disabled={
-                                !newCategoryName.trim() || isCategoryPending
-                              }
-                              onClick={handleCreateCategory}
-                            >
-                              {isCategoryPending
-                                ? "Creating..."
-                                : "Create category"}
-                            </Button>
-                          </div>
-                        </div>
-                      ) : null}
-                    </div>
-
-                    <div
-                      className="md-text-field md-text-field--outlined md-text-field--has-value"
-                      style={{ width: "100%" }}
-                    >
-                      <div className="md-text-field-container">
-                        <input
-                          className="md-text-field-input"
-                          value={slug ?? ""}
-                          onChange={(event) => setSlug(event.target.value)}
-                          onBlur={(event) =>
-                            void handleSlugChange(event.target.value)
-                          }
-                          placeholder="publish-path"
-                          spellCheck={false}
-                        />
-                        <span className="md-text-field-label">
-                          Publish Path
-                        </span>
-                      </div>
-                    </div>
-                    <p
-                      style={{
-                        marginTop: "8px",
-                        fontSize: "var(--md-sys-typescale-body-small-size)",
-                        color: "var(--md-sys-color-on-surface-variant)",
-                      }}
-                    >
-                      {slug?.trim()
-                        ? `Published path: /published/${slug}`
-                        : "A path is created automatically when published."}
-                    </p>
-                  </CardContent>
-                </Card>
-              ) : null}
             </div>
           </div>
 
@@ -1220,6 +920,35 @@ export function NoteEditorPage({
         position={contextMenuPosition}
         onClose={closeContextMenu}
       />
+
+      {isReadingMode ? (
+        <ReadingModeOverlay
+          noteId={note.id}
+          noteTitle={effectiveTitle}
+          chunks={chunks}
+          chunkIndex={chunkIndex}
+          onPrev={goToPrevChunk}
+          onNext={goToNextChunk}
+          onSelect={setChunkIndex}
+          onClose={() => setIsReadingMode(false)}
+          searchWikilinkNotes={handleSearchWikilinks}
+          resolveWikilinkNote={handleResolveWikilink}
+          createWikilinkNote={handleCreateWikilink}
+          onNavigateToNote={handleNavigateToNote}
+        />
+      ) : null}
+
+      {publishAnchor ? (
+        <PublishPopover
+          anchorRect={publishAnchor}
+          isPublished={isPublished}
+          slug={slug}
+          isPending={isPublishPending}
+          onTogglePublish={handlePublishToggle}
+          onSlugChange={handleSlugChange}
+          onClose={handleClosePublishPopover}
+        />
+      ) : null}
     </>
   );
 }

@@ -14,8 +14,6 @@ const REQUIRED_ENV_KEYS = [
 const QUICK_LINKS = [
   { href: "/settings", label: "Settings", icon: "settings" },
   { href: "/graph", label: "Graph", icon: "hub" },
-  { href: "/library", label: "Library", icon: "library_books" },
-  { href: "/spotter", label: "Spotter", icon: "travel_explore" },
 ] as const;
 
 const PAGE_HELP: Record<string, { title: string; items: string[] }> = {
@@ -27,17 +25,9 @@ const PAGE_HELP: Record<string, { title: string; items: string[] }> = {
     title: "Settings",
     items: ["Manage provider keys, MCP tokens, updates, and sync logs.", "Self-host notes live here in Help now."],
   },
-  "/library": {
-    title: "Library",
-    items: ["Switch list, columns, icons, or gallery views.", "Select notes for bulk publish/archive."],
-  },
   "/graph": {
     title: "Graph",
     items: ["View note links and unresolved references.", "Open nodes to jump back into notes."],
-  },
-  "/spotter": {
-    title: "Spotter",
-    items: ["Ask questions over workspace context.", "MCP tokens allow external agents."],
   },
   "/stride": {
     title: "Stride",

@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { Editor } from "@/components/editor/Editor";
+import { PublishedNoteView } from "@/components/published/PublishedNoteView";
 import { getPublicNoteBySlugAction } from "@/server/api/notes";
 
 interface PublishedSlugPageProps {
@@ -24,15 +24,5 @@ export default async function PublishedSlugPage({
     notFound();
   }
 
-  return (
-    <div className="published-page">
-      <div className="published-shell">
-        <div className="published-meta">
-          <div className="published-label">Published Note</div>
-          <h1 className="published-title">{note.title}</h1>
-        </div>
-        <Editor initialContent={note.document} editable={false} />
-      </div>
-    </div>
-  );
+  return <PublishedNoteView title={note.title} document={note.document} />;
 }

@@ -338,9 +338,9 @@
   --surface-accent-blend-strong: var(--md-sys-color-surface-accent-blend-strong);
   --logo-accent-end:          #2c8c79;
   --page-grid-rgb:            117 99 73;
-  --code-block-bg-start:      #203038;
-  --code-block-bg-end:        #17242b;
-  --code-block-text:          #edf4f2;
+  --code-block-bg-start:      #f5efe2;
+  --code-block-bg-end:        #ece5d3;
+  --code-block-text:          #2a2418;
   --code-inline-color:        #244a49;
   --sidebar-width:            var(--md-layout-sidebar-width);
   --radius-sm:                12px;

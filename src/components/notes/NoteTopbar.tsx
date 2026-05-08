@@ -25,8 +25,8 @@ interface NoteTopbarProps {
   effectiveTitle: string;
   isPublished: boolean;
   isPinned: boolean;
-  isMetaPanelOpen: boolean;
-  isExportPending: boolean;
+  isReadingMode: boolean;
+  isPublishPopoverOpen: boolean;
   saveStatusMeta: SaveStatusMeta;
   folderMenuRef: RefObject<HTMLDivElement | null>;
   onOpenIconPicker: React.MouseEventHandler<HTMLButtonElement>;
@@ -35,16 +35,9 @@ interface NoteTopbarProps {
   onGoDashboard: () => void;
   onContextMenu: React.MouseEventHandler<HTMLElement>;
   onOpenContextMenuFromTrigger: React.MouseEventHandler<HTMLButtonElement>;
-  onTogglePublish: () => void;
+  onOpenPublishPopover: React.MouseEventHandler<HTMLButtonElement>;
   onTogglePin: () => void;
-  onToggleMetaPanel: () => void;
-  onOpenInCanvas: () => void;
-  onMoveUp: () => void;
-  onMoveDown: () => void;
-  onCopyNoteLink: () => void;
-  onCopyExport: (format: "markdown" | "mdx") => void;
-  onOpenPublishedPage: () => void;
-  onArchive: () => void;
+  onToggleReadingMode: () => void;
 }
 
 export function NoteTopbar({
@@ -58,8 +51,8 @@ export function NoteTopbar({
   effectiveTitle,
   isPublished,
   isPinned,
-  isMetaPanelOpen,
-  isExportPending,
+  isReadingMode,
+  isPublishPopoverOpen,
   saveStatusMeta,
   folderMenuRef,
   onOpenIconPicker,
@@ -68,16 +61,9 @@ export function NoteTopbar({
   onGoDashboard,
   onContextMenu,
   onOpenContextMenuFromTrigger,
-  onTogglePublish,
+  onOpenPublishPopover,
   onTogglePin,
-  onToggleMetaPanel,
-  onOpenInCanvas,
-  onMoveUp,
-  onMoveDown,
-  onCopyNoteLink,
-  onCopyExport,
-  onOpenPublishedPage,
-  onArchive,
+  onToggleReadingMode,
 }: NoteTopbarProps) {
   return (
     <TopbarShell
@@ -413,136 +399,107 @@ export function NoteTopbar({
               </span>
             </button>
           ) : (
-            [
-              {
-                icon: "share",
-                label: isPublished ? "Unpublish" : "Publish",
-                onClick: onTogglePublish,
-                active: isPublished,
-                disabled: false,
-                danger: false,
-              },
-              {
-                icon: "push_pin",
-                label: isPinned ? "Unpin" : "Pin",
-                onClick: onTogglePin,
-                active: isPinned,
-                disabled: false,
-                danger: false,
-              },
-              {
-                icon: "tune",
-                label: isMetaPanelOpen
-                  ? "Hide page settings"
-                  : "Page settings",
-                onClick: onToggleMetaPanel,
-                active: isMetaPanelOpen,
-                disabled: false,
-                danger: false,
-              },
-              {
-                icon: "hub",
-                label: "Open in Savanna",
-                onClick: onOpenInCanvas,
-                active: false,
-                disabled: false,
-                danger: false,
-              },
-              {
-                icon: "arrow_upward",
-                label: "Move up",
-                onClick: onMoveUp,
-                active: false,
-                disabled: false,
-                danger: false,
-              },
-              {
-                icon: "arrow_downward",
-                label: "Move down",
-                onClick: onMoveDown,
-                active: false,
-                disabled: false,
-                danger: false,
-              },
-              {
-                icon: "link",
-                label: "Copy note link",
-                onClick: onCopyNoteLink,
-                active: false,
-                disabled: false,
-                danger: false,
-              },
-              {
-                icon: "description",
-                label: "Copy Markdown",
-                onClick: () => onCopyExport("markdown"),
-                active: false,
-                disabled: isExportPending,
-                danger: false,
-              },
-              {
-                icon: "code",
-                label: "Copy MDX",
-                onClick: () => onCopyExport("mdx"),
-                active: false,
-                disabled: isExportPending,
-                danger: false,
-              },
-              {
-                icon: "open_in_new",
-                label: "Open published page",
-                onClick: onOpenPublishedPage,
-                active: false,
-                disabled: !isPublished,
-                danger: false,
-              },
-              {
-                icon: "archive",
-                label: "Move to archive",
-                onClick: onArchive,
-                active: false,
-                disabled: false,
-                danger: true,
-              },
-            ].map(({ icon, label, onClick, active, disabled, danger }) => (
-              <button
-                key={icon}
-                type="button"
-                title={label}
-                aria-label={label}
-                disabled={disabled}
-                onClick={() => void onClick()}
-                style={{
-                  background: active
-                    ? "var(--md-sys-color-secondary-container)"
-                    : "none",
-                  border: "none",
-                  color: danger
-                    ? "var(--md-sys-color-error)"
-                    : active
-                      ? "var(--md-sys-color-on-secondary-container)"
-                      : "var(--md-sys-color-on-surface-variant)",
-                  cursor: disabled ? "default" : "pointer",
-                  opacity: disabled ? 0.4 : 1,
-                  padding: "4px",
-                  borderRadius: "6px",
-                  display: "flex",
-                  alignItems: "center",
-                  lineHeight: 1,
-                }}
+            <>
+              <TopbarIconButton
+                icon="share"
+                label={
+                  isPublishPopoverOpen
+                    ? "Close publish settings"
+                    : isPublished
+                      ? "Publish settings"
+                      : "Publish"
+                }
+                active={isPublishPopoverOpen || isPublished}
+                onClick={onOpenPublishPopover}
+              />
+              <TopbarIconButton
+                icon="push_pin"
+                label={isPinned ? "Unpin" : "Pin"}
+                active={isPinned}
+                onClick={onTogglePin}
+              />
+              <TopbarIconButton
+                icon="menu_book"
+                label={isReadingMode ? "Exit reading mode" : "Reading mode"}
+                active={isReadingMode}
+                onClick={onToggleReadingMode}
+              />
+            </>
+          )}
+          {isMobileViewport ? null : (
+            <button
+              type="button"
+              title="More actions"
+              aria-label="More actions"
+              onClick={onOpenContextMenuFromTrigger}
+              style={{
+                background: "none",
+                border: "none",
+                color: "var(--md-sys-color-on-surface-variant)",
+                cursor: "pointer",
+                padding: "4px",
+                borderRadius: "6px",
+                display: "flex",
+                alignItems: "center",
+                lineHeight: 1,
+              }}
+            >
+              <span
+                className="material-symbols-outlined"
+                style={{ fontSize: "18px" }}
               >
-                <span
-                  className="material-symbols-outlined"
-                  style={{ fontSize: "18px" }}
-                >
-                  {icon}
-                </span>
-              </button>
-            ))
+                more_horiz
+              </span>
+            </button>
           )}
         </>
       }
     />
+  );
+}
+
+interface TopbarIconButtonProps {
+  icon: string;
+  label: string;
+  active?: boolean;
+  onClick: React.MouseEventHandler<HTMLButtonElement> | (() => void);
+}
+
+function TopbarIconButton({
+  icon,
+  label,
+  active = false,
+  onClick,
+}: TopbarIconButtonProps) {
+  return (
+    <button
+      type="button"
+      title={label}
+      aria-label={label}
+      onClick={onClick as React.MouseEventHandler<HTMLButtonElement>}
+      style={{
+        background: active
+          ? "var(--md-sys-color-secondary-container)"
+          : "none",
+        border: "none",
+        color: active
+          ? "var(--md-sys-color-on-secondary-container)"
+          : "var(--md-sys-color-on-surface-variant)",
+        cursor: "pointer",
+        padding: "4px",
+        borderRadius: "6px",
+        display: "flex",
+        alignItems: "center",
+        lineHeight: 1,
+      }}
+    >
+      <span
+        className="material-symbols-outlined"
+        style={{ fontSize: "18px" }}
+      >
+        {icon}
+      </span>
+    </button>
   );
 }
 

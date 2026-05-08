@@ -1775,37 +1775,6 @@ export function Editor({
 
           <div className="editor-bubble-divider" />
 
-          {/* Ask Spotter */}
-          <button
-            type="button"
-            className="editor-bubble-button editor-bubble-spotter"
-            onMouseDown={(event) => event.preventDefault()}
-            title="Ask Spotter"
-          >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 20 20"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              aria-hidden="true"
-            >
-              {/* ossicones */}
-              <rect x="6" y="0" width="2" height="4" rx="1" fill="currentColor" />
-              <rect x="12" y="0" width="2" height="4" rx="1" fill="currentColor" />
-              {/* head */}
-              <ellipse cx="10" cy="12" rx="7" ry="7.5" fill="currentColor" fillOpacity="0.15" />
-              <ellipse cx="10" cy="12" rx="7" ry="7.5" stroke="currentColor" strokeWidth="1.6" />
-              {/* spots */}
-              <circle cx="8" cy="10" r="1.4" fill="currentColor" />
-              <circle cx="12.5" cy="13" r="1.2" fill="currentColor" />
-              <circle cx="8" cy="14.5" r="1" fill="currentColor" />
-            </svg>
-            Ask Spotter
-          </button>
-
-          <div className="editor-bubble-divider" />
-
           {/* Color picker toggle */}
           <div style={{ position: "relative" }}>
             <button
@@ -1915,7 +1884,6 @@ export function Editor({
           items={wikilinkItems}
           command={handleWikilinkCommand}
           title="Wikilinks"
-          subtitle="Select an existing note or create a new one"
           style={{
             top: wikilinkMenu.position.top,
             left: wikilinkMenu.position.left,
@@ -1930,7 +1898,6 @@ export function Editor({
           items={slashItems}
           command={handleSlashCommand}
           title="Block commands"
-          subtitle="Use arrow keys to navigate, press Enter to insert"
           style={{
             top: slashMenu.position.top,
             left: slashMenu.position.left,

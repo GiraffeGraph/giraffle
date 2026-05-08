@@ -16,7 +16,6 @@ interface SlashCommandMenuProps<T extends CommandMenuItem> {
   command: (item: T) => void;
   style?: CSSProperties;
   title?: string;
-  subtitle?: string;
 }
 
 export function SlashCommandMenu<T extends CommandMenuItem>({
@@ -24,7 +23,6 @@ export function SlashCommandMenu<T extends CommandMenuItem>({
   command,
   style,
   title = "Commands",
-  subtitle = "Use arrow keys to navigate, press Enter to apply",
 }: SlashCommandMenuProps<T>) {
   const getItemKey = useCallback(
     (item: T, index: number) =>
@@ -91,27 +89,25 @@ export function SlashCommandMenu<T extends CommandMenuItem>({
     <div className="slash-menu" style={style}>
       <div className="slash-menu-header">
         <span className="slash-menu-eyebrow">{title}</span>
-        <span className="slash-menu-hint">{subtitle}</span>
       </div>
 
       <div className="slash-menu-list">
         {items.map((item, index) => (
           <button
             key={getItemKey(item, index)}
+            type="button"
+            title={item.description}
             className={`slash-menu-item ${index === selectedIndex ? "active" : ""}`}
             onClick={() => command(item)}
             onMouseEnter={() => setSelection({ itemsKey, index })}
           >
-            <span className="slash-menu-icon">{item.icon}</span>
-            <span className="slash-menu-text">
-              <span className="slash-menu-title-row">
-                <span className="slash-menu-title">{item.title}</span>
-                {item.shortcut ? (
-                  <span className="slash-menu-shortcut">{item.shortcut}</span>
-                ) : null}
-              </span>
-              <span className="slash-menu-description">{item.description}</span>
+            <span className="slash-menu-icon" aria-hidden="true">
+              {item.icon}
             </span>
+            <span className="slash-menu-title">{item.title}</span>
+            {item.shortcut ? (
+              <span className="slash-menu-shortcut">{item.shortcut}</span>
+            ) : null}
           </button>
         ))}
       </div>

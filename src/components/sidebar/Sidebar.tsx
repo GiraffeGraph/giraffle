@@ -811,26 +811,6 @@ export function Sidebar({
         },
       },
       {
-        id: "action-library",
-        group: "Navigation",
-        title: "Library",
-        description: "Open all notes and folders on one page",
-        icon: encodeMaterialSymbol("library_books"),
-        onSelect: async () => {
-          router.push("/library");
-        },
-      },
-      {
-        id: "action-spotter",
-        group: "Navigation",
-        title: "Ask Spotter",
-        description: "Open the insight spotter workspace",
-        icon: encodeMaterialSymbol("smart_toy"),
-        onSelect: async () => {
-          router.push("/spotter");
-        },
-      },
-      {
         id: "action-agents",
         group: "Navigation",
         title: "Inbox Triage Agent",
@@ -1226,11 +1206,6 @@ export function Sidebar({
                         path: "/agents",
                         icon: "rule",
                         label: "Agents",
-                      },
-                      {
-                        path: "/library",
-                        icon: "library_books",
-                        label: "Library",
                       },
                       {
                         path: "/tower-matrix",

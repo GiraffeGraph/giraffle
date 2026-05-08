@@ -1033,7 +1033,7 @@ body::before {
 
 .slash-menu-item,
 .context-menu-item {
-  border-radius: var(--radius-control);
+  border-radius: var(--radius-control-sm);
 }
 
 .slash-menu-item:hover,

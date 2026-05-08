@@ -63,8 +63,8 @@ export function ContextMenu({
       return undefined;
     }
 
-    const estimatedWidth = 250;
-    const estimatedHeight = Math.max(180, items.length * 60 + 16);
+    const estimatedWidth = 220;
+    const estimatedHeight = Math.max(120, items.length * 30 + 12);
     const left = Math.min(
       Math.max(12, position.x),
       window.innerWidth - estimatedWidth - 12
@@ -97,6 +97,7 @@ export function ContextMenu({
           key={`${item.label}-${item.hint ?? ""}`}
           type="button"
           role="menuitem"
+          title={item.hint}
           className={`context-menu-item ${
             item.tone === "danger" ? "danger" : ""
           }`}
@@ -107,9 +108,6 @@ export function ContextMenu({
           }}
         >
           <span className="context-menu-label">{item.label}</span>
-          {item.hint ? (
-            <span className="context-menu-hint">{item.hint}</span>
-          ) : null}
         </button>
       ))}
     </div>,
