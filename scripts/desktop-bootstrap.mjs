@@ -15,7 +15,7 @@
 
 import { spawn } from "node:child_process";
 import { createServer } from "node:net";
-import { mkdirSync, existsSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { randomBytes } from "node:crypto";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -70,8 +70,57 @@ function loadOrCreateSecret() {
   return secret;
 }
 
+async function clearStalePostmasterLock(pgDataDir) {
+  const lockPath = join(pgDataDir, "postmaster.pid");
+  if (!existsSync(lockPath)) return;
+  let pid;
+  try {
+    const contents = readFileSync(lockPath, "utf8");
+    pid = Number.parseInt(contents.split("\n")[0]?.trim(), 10);
+  } catch {
+    return;
+  }
+  if (!pid || Number.isNaN(pid)) return;
+  let alive = false;
+  try {
+    process.kill(pid, 0);
+    alive = true;
+  } catch {
+    alive = false;
+  }
+  if (alive) {
+    emit("status", { stage: "pg-stop-previous", pid });
+    try {
+      process.kill(pid, "SIGTERM");
+    } catch {}
+    const start = Date.now();
+    while (Date.now() - start < 5000) {
+      try {
+        process.kill(pid, 0);
+      } catch {
+        alive = false;
+        break;
+      }
+      await delay(100);
+    }
+    if (alive) {
+      try {
+        process.kill(pid, "SIGKILL");
+      } catch {}
+      await delay(200);
+    }
+  }
+  try {
+    rmSync(lockPath, { force: true });
+    emit("status", { stage: "pg-stale-lock-cleared", pid });
+  } catch (err) {
+    emit("warn", { message: "failed to remove stale postmaster.pid", detail: String(err) });
+  }
+}
+
 async function startEmbeddedPostgres() {
   const pgDataDir = join(DATA_DIR, "pgdata");
+  await clearStalePostmasterLock(pgDataDir);
   const pgPort = await pickPort();
   const user = "giraffle";
   const password = "giraffle_local";
@@ -194,6 +243,9 @@ function startNextServer({ port, databaseUrl, authSecret }) {
       DATABASE_URL: databaseUrl,
       AUTH_SECRET: authSecret,
       NEXTAUTH_URL: process.env.GIRAFFLE_NEXTAUTH_URL || url,
+      AUTH_URL: process.env.GIRAFFLE_NEXTAUTH_URL || url,
+      AUTH_DISABLE_SECURE_COOKIES: "true",
+      AUTH_TRUST_HOST: "true",
       UPLOAD_DIR: process.env.UPLOAD_DIR || join(DATA_DIR, "uploads"),
       NEXT_TELEMETRY_DISABLED: "1",
     },
