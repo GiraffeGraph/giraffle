@@ -44,63 +44,95 @@
       }
       .card {
         width: 100%;
-        max-width: 460px;
+        max-width: 500px;
         background: var(--panel);
         border: 1px solid var(--border);
         border-radius: 14px;
-        padding: 28px 26px;
+        padding: 26px 24px;
         box-shadow: 0 10px 30px rgba(0,0,0,0.18);
       }
       h1 {
-        margin: 0 0 6px;
+        margin: 0 0 4px;
         font-size: 18px;
         letter-spacing: -0.01em;
       }
       p.lead {
-        margin: 0 0 18px;
-        font-size: 13px;
+        margin: 0 0 16px;
+        font-size: 12px;
         color: var(--muted);
         line-height: 1.5;
       }
+      .mode-tabs {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 4px;
+        margin-bottom: 16px;
+      }
+      .mode-tab {
+        font-size: 12px;
+        padding: 8px 10px;
+        border: none;
+        background: transparent;
+        color: var(--muted);
+        border-radius: 6px;
+        cursor: pointer;
+        font-family: inherit;
+        font-weight: 500;
+      }
+      .mode-tab.active {
+        background: var(--panel);
+        color: var(--text);
+        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+      }
+      .panel {
+        display: none;
+      }
+      .panel.active {
+        display: block;
+      }
       label {
         display: block;
-        font-size: 12px;
+        font-size: 11px;
         color: var(--muted);
         margin-bottom: 6px;
+        margin-top: 12px;
         text-transform: uppercase;
         letter-spacing: 0.04em;
       }
-      input[type="url"], input[type="text"] {
+      input[type="url"], input[type="text"], input[type="password"] {
         width: 100%;
-        padding: 10px 12px;
+        padding: 9px 11px;
         background: var(--bg);
         color: var(--text);
         border: 1px solid var(--border);
         border-radius: 8px;
-        font-size: 14px;
+        font-size: 13px;
         outline: none;
         transition: border-color 0.15s;
+        font-family: inherit;
       }
       input:focus {
         border-color: var(--accent);
       }
-      .preset-row {
-        display: flex;
-        gap: 6px;
-        flex-wrap: wrap;
-        margin-top: 10px;
-      }
-      .preset {
-        font-size: 12px;
-        padding: 6px 10px;
-        border: 1px solid var(--border);
-        background: transparent;
+      .hint {
+        margin-top: 6px;
+        font-size: 11px;
         color: var(--muted);
-        border-radius: 999px;
-        cursor: pointer;
-        font-family: inherit;
+        line-height: 1.4;
       }
-      .preset:hover { border-color: var(--accent); color: var(--text); }
+      .desc {
+        font-size: 12px;
+        color: var(--muted);
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 10px 12px;
+        line-height: 1.5;
+      }
       button.primary {
         width: 100%;
         margin-top: 18px;
@@ -109,7 +141,7 @@
         color: var(--accent-fg);
         border: none;
         border-radius: 8px;
-        font-size: 14px;
+        font-size: 13px;
         font-weight: 600;
         cursor: pointer;
         font-family: inherit;
@@ -123,80 +155,152 @@
         color: var(--error);
         font-size: 12px;
         min-height: 16px;
+        word-break: break-word;
+        white-space: pre-wrap;
+        max-height: 200px;
+        overflow: auto;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
       }
-      .hint {
-        margin-top: 14px;
-        font-size: 11px;
+      .status {
+        margin-top: 10px;
+        font-size: 12px;
         color: var(--muted);
-        text-align: center;
+        min-height: 16px;
       }
     </style>
   </head>
   <body>
     <div class="card">
       <h1>Giraffle</h1>
-      <p class="lead">App URL gir. Web (prod) veya local dev server kullanılabilir.</p>
+      <p class="lead">Çalıştırma modunu seç. Local mod hiçbir şey gerektirmez; her şey bilgisayarında çalışır.</p>
 
-      <label for="url">App URL</label>
-      <input
-        id="url"
-        type="url"
-        placeholder="https://giraffle.app"
-        autocomplete="off"
-        autocapitalize="off"
-        spellcheck="false"
-      />
-      <div class="preset-row">
-        <button class="preset" data-url="http://localhost:3000">localhost:3000</button>
-        <button class="preset" data-url="http://localhost:3001">localhost:3001</button>
+      <div class="mode-tabs" role="tablist">
+        <button class="mode-tab active" data-mode="local">Local</button>
+        <button class="mode-tab" data-mode="external-db">Custom DB</button>
+        <button class="mode-tab" data-mode="remote">Remote</button>
       </div>
 
-      <button id="submit" class="primary">Aç</button>
+      <section class="panel active" data-panel="local">
+        <div class="desc">
+          Yerleşik Postgres + Next sunucusu app verisinin altında başlatılır. İnternet gerekmez.
+        </div>
+      </section>
+
+      <section class="panel" data-panel="external-db">
+        <div class="desc">
+          Sunucu local çalışır ama veritabanı kendi Postgres'inde tutulur.
+        </div>
+        <label for="ext-db">Database URL</label>
+        <input id="ext-db" type="text" placeholder="postgresql://user:pass@host:5432/db" autocomplete="off" spellcheck="false" />
+      </section>
+
+      <section class="panel" data-panel="remote">
+        <div class="desc">
+          Webview uzak Giraffle sunucusuna bağlanır. URL ve veritabanı bilgisi kayıt amaçlı saklanır.
+        </div>
+        <label for="rem-url">App URL</label>
+        <input id="rem-url" type="url" placeholder="https://giraffle.example.com" autocomplete="off" spellcheck="false" />
+        <label for="rem-db">Database URL</label>
+        <input id="rem-db" type="text" placeholder="postgresql://user:pass@host:5432/db" autocomplete="off" spellcheck="false" />
+      </section>
+
+      <button id="submit" class="primary">Başlat</button>
+      <div id="status" class="status"></div>
       <div id="error" class="error"></div>
-      <div class="hint">Daha sonra menüden değiştirebilirsin (⌘,)</div>
     </div>
 
     <script type="module">
       const { invoke } = window.__TAURI__.core;
-      const input = document.getElementById('url');
+      const { listen } = window.__TAURI__.event;
+
+      const tabs = document.querySelectorAll('.mode-tab');
+      const panels = document.querySelectorAll('.panel');
       const submit = document.getElementById('submit');
       const errorEl = document.getElementById('error');
+      const statusEl = document.getElementById('status');
+      const extDb = document.getElementById('ext-db');
+      const remUrl = document.getElementById('rem-url');
+      const remDb = document.getElementById('rem-db');
+
+      let mode = 'local';
+
+      function setMode(next) {
+        mode = next;
+        tabs.forEach((t) => t.classList.toggle('active', t.dataset.mode === next));
+        panels.forEach((p) => p.classList.toggle('active', p.dataset.panel === next));
+        errorEl.textContent = '';
+      }
+
+      tabs.forEach((t) => t.addEventListener('click', () => setMode(t.dataset.mode)));
 
       try {
-        const saved = await invoke('get_saved_url');
-        if (saved) input.value = saved;
+        const cfg = await invoke('get_config');
+        if (cfg.mode && ['local', 'external-db', 'remote'].includes(cfg.mode)) {
+          setMode(cfg.mode);
+        }
+        if (cfg.remote_url) remUrl.value = cfg.remote_url;
+        if (cfg.remote_db_url) {
+          extDb.value = cfg.remote_db_url;
+          remDb.value = cfg.remote_db_url;
+        }
       } catch {}
 
-      input.focus();
+      const recentLogs = [];
+      function pushLog(line) {
+        recentLogs.push(line);
+        if (recentLogs.length > 12) recentLogs.shift();
+      }
 
-      document.querySelectorAll('.preset').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          input.value = btn.dataset.url;
-          input.focus();
+      try {
+        await listen('giraffle://launch-status', (event) => {
+          const stage = event.payload?.stage ?? '';
+          const stages = {
+            'spawning': 'Sunucu başlatılıyor…',
+            'pg-initialise': 'Postgres ilk kurulum…',
+            'pg-start': 'Postgres başlatılıyor…',
+            'prisma-migrate': 'Veritabanı migration…',
+            'next-start': 'Next sunucusu başlatılıyor…',
+            'fatal': 'Hata',
+          };
+          statusEl.textContent = stages[stage] || stage;
+          if (stage === 'fatal') {
+            errorEl.textContent = (event.payload?.detail ?? 'Bilinmeyen hata') +
+              (recentLogs.length ? '\n\nSon log:\n' + recentLogs.join('\n') : '');
+            submit.disabled = false;
+            submit.textContent = 'Başlat';
+          }
         });
-      });
+        await listen('giraffle://bootstrap-log', (event) => pushLog(String(event.payload)));
+        await listen('giraffle://bootstrap-stderr', (event) => pushLog('[stderr] ' + String(event.payload)));
+      } catch {}
 
       async function go() {
-        const value = input.value.trim();
         errorEl.textContent = '';
-        if (!value) {
-          errorEl.textContent = 'URL boş olamaz';
-          return;
-        }
+        statusEl.textContent = '';
         submit.disabled = true;
-        submit.textContent = 'Açılıyor…';
+        submit.textContent = 'Başlatılıyor…';
         try {
-          await invoke('save_url', { url: value });
+          if (mode === 'local') {
+            await invoke('start_local');
+          } else if (mode === 'external-db') {
+            await invoke('start_external_db', { dbUrl: extDb.value.trim() });
+          } else if (mode === 'remote') {
+            await invoke('start_remote', {
+              url: remUrl.value.trim(),
+              dbUrl: remDb.value.trim(),
+            });
+          }
         } catch (e) {
-          errorEl.textContent = String(e);
+          errorEl.textContent = String(e) +
+            (recentLogs.length ? '\n\nSon log:\n' + recentLogs.join('\n') : '');
           submit.disabled = false;
-          submit.textContent = 'Aç';
+          submit.textContent = 'Başlat';
         }
       }
 
       submit.addEventListener('click', go);
-      input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') go();
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !submit.disabled) go();
       });
     </script>
   </body>

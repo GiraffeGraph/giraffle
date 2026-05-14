@@ -4,7 +4,9 @@
   "version": "0.3.1",
   "identifier": "com.giraffegraph.giraffle",
   "build": {
-    "frontendDist": "../tauri-shell"
+    "frontendDist": "../tauri-shell",
+    "beforeBuildCommand": "node scripts/prepare-desktop-runtime.mjs",
+    "beforeDevCommand": "node scripts/prepare-desktop-runtime.mjs --dev"
   },
   "app": {
     "withGlobalTauri": true,
@@ -24,6 +26,12 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
+    ],
+    "resources": [
+      "runtime/**/*"
+    ],
+    "externalBin": [
+      "binaries/node"
     ]
   },
   "plugins": {
