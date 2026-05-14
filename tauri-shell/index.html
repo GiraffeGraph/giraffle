@@ -41,7 +41,6 @@
       body {
         margin: 0;
         height: 100%;
-        background: transparent;
         color: var(--text);
         font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI",
           system-ui, sans-serif;
@@ -54,6 +53,18 @@
         flex-direction: column;
         height: 100vh;
         padding: 56px 48px 36px;
+        background:
+          radial-gradient(circle at 22% 12%, rgba(245, 165, 36, 0.16), transparent 55%),
+          radial-gradient(circle at 80% 88%, rgba(80, 110, 255, 0.12), transparent 60%),
+          linear-gradient(180deg, #0b0d12 0%, #11141b 100%);
+      }
+      @media (prefers-color-scheme: light) {
+        body {
+          background:
+            radial-gradient(circle at 22% 12%, rgba(245, 165, 36, 0.18), transparent 55%),
+            radial-gradient(circle at 80% 88%, rgba(80, 110, 255, 0.12), transparent 60%),
+            linear-gradient(180deg, #f7f7fa 0%, #eeeef3 100%);
+        }
       }
 
       .drag {
