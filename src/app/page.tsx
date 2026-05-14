@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
+import { db } from "@/lib/db";
 
 export const metadata: Metadata = {
   title: "Giraffle — Connected knowledge, owned by you",
@@ -41,6 +43,10 @@ const NAV_ITEMS = [
 ];
 
 export default async function HomePage() {
+  const userCount = await db.user.count();
+  if (userCount === 0) {
+    redirect("/onboarding");
+  }
   const session = await auth();
   const isAuthenticated = Boolean(session?.user?.id);
   const primaryHref  = isAuthenticated ? "/spotter" : "/register";

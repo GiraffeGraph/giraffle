@@ -3,247 +3,598 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Giraffle - Configure</title>
+    <title>Giraffle</title>
     <style>
       :root {
         color-scheme: light dark;
-        --bg: #0f1117;
-        --panel: #161922;
-        --border: #262a36;
-        --text: #e6e8ee;
-        --muted: #8a90a2;
+        --text: rgba(255, 255, 255, 0.94);
+        --text-soft: rgba(255, 255, 255, 0.62);
+        --text-muted: rgba(255, 255, 255, 0.4);
+        --border: rgba(255, 255, 255, 0.08);
+        --border-strong: rgba(255, 255, 255, 0.18);
+        --surface: rgba(255, 255, 255, 0.04);
+        --surface-hover: rgba(255, 255, 255, 0.07);
         --accent: #f5a524;
         --accent-fg: #1a1300;
-        --error: #f87171;
+        --error: #fca5a5;
+        --shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
       }
       @media (prefers-color-scheme: light) {
         :root {
-          --bg: #f7f7f9;
-          --panel: #ffffff;
-          --border: #e3e5ec;
-          --text: #15171c;
-          --muted: #6b7280;
+          --text: rgba(20, 20, 30, 0.92);
+          --text-soft: rgba(20, 20, 30, 0.6);
+          --text-muted: rgba(20, 20, 30, 0.4);
+          --border: rgba(20, 20, 30, 0.08);
+          --border-strong: rgba(20, 20, 30, 0.18);
+          --surface: rgba(255, 255, 255, 0.4);
+          --surface-hover: rgba(255, 255, 255, 0.62);
           --accent: #d97706;
           --accent-fg: #fff;
           --error: #b91c1c;
         }
       }
-      * { box-sizing: border-box; }
-      html, body {
+
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
         margin: 0;
         height: 100%;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-        background: var(--bg);
+        background: transparent;
         color: var(--text);
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI",
+          system-ui, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        overflow: hidden;
+        user-select: none;
       }
       body {
         display: flex;
+        flex-direction: column;
+        height: 100vh;
+        padding: 56px 48px 36px;
+      }
+
+      .drag {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 36px;
+        -webkit-app-region: drag;
+        app-region: drag;
+      }
+
+      .stage {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        position: relative;
+      }
+
+      .logo-wrap {
+        display: flex;
         align-items: center;
         justify-content: center;
-        padding: 24px;
+        margin-bottom: 18px;
+        opacity: 0;
+        transform: scale(0.86);
+        animation: logoFadeIn 0.9s cubic-bezier(0.2, 0.9, 0.3, 1) 0.05s forwards;
       }
-      .card {
-        width: 100%;
-        max-width: 500px;
-        background: var(--panel);
-        border: 1px solid var(--border);
+      .logo {
+        width: 96px;
+        height: 96px;
+        border-radius: 22px;
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4),
+          0 0 0 0.5px rgba(255, 255, 255, 0.18) inset;
+        object-fit: cover;
+      }
+      .logo.small {
+        width: 56px;
+        height: 56px;
         border-radius: 14px;
-        padding: 26px 24px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.18);
       }
-      h1 {
-        margin: 0 0 4px;
-        font-size: 18px;
-        letter-spacing: -0.01em;
+
+      .headline {
+        text-align: center;
+        opacity: 0;
+        transform: translateY(8px);
+        animation: fadeUp 0.7s cubic-bezier(0.2, 0.9, 0.3, 1) 0.2s forwards;
       }
-      p.lead {
-        margin: 0 0 16px;
-        font-size: 12px;
-        color: var(--muted);
+      .headline h1 {
+        margin: 0 0 6px;
+        font-size: 28px;
+        font-weight: 600;
+        letter-spacing: -0.025em;
+      }
+      .headline p {
+        margin: 0;
+        font-size: 14px;
+        color: var(--text-soft);
         line-height: 1.5;
+        max-width: 420px;
       }
-      .mode-tabs {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 6px;
-        background: var(--bg);
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        padding: 4px;
-        margin-bottom: 16px;
-      }
-      .mode-tab {
-        font-size: 12px;
-        padding: 8px 10px;
-        border: none;
-        background: transparent;
-        color: var(--muted);
-        border-radius: 6px;
-        cursor: pointer;
-        font-family: inherit;
-        font-weight: 500;
-      }
-      .mode-tab.active {
-        background: var(--panel);
-        color: var(--text);
-        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+
+      .panel-container {
+        flex: 1;
+        width: 100%;
+        max-width: 520px;
+        margin: 28px auto 0;
+        position: relative;
       }
       .panel {
-        display: none;
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        transform: translateX(24px);
+        transition: opacity 0.35s ease, transform 0.35s ease;
+        pointer-events: none;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
       }
       .panel.active {
-        display: block;
+        opacity: 1;
+        transform: translateX(0);
+        pointer-events: auto;
       }
-      label {
+      .panel.exit-left {
+        transform: translateX(-24px);
+      }
+
+      .mode-card {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        padding: 16px 18px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        cursor: pointer;
+        transition: background 0.15s ease, border-color 0.15s ease,
+          transform 0.15s ease;
+        text-align: left;
+        color: inherit;
+        font-family: inherit;
+        font-size: 14px;
+      }
+      .mode-card:hover {
+        background: var(--surface-hover);
+        border-color: var(--border-strong);
+      }
+      .mode-card.selected {
+        border-color: var(--accent);
+        background: rgba(245, 165, 36, 0.08);
+      }
+      .mode-card .icon {
+        font-size: 22px;
+        line-height: 1;
+        margin-top: 2px;
+      }
+      .mode-card .title {
+        font-weight: 600;
+        font-size: 14px;
+        margin-bottom: 3px;
+      }
+      .mode-card .desc {
+        font-size: 12px;
+        color: var(--text-soft);
+        line-height: 1.45;
+      }
+
+      label.field-label {
         display: block;
         font-size: 11px;
-        color: var(--muted);
+        color: var(--text-muted);
         margin-bottom: 6px;
-        margin-top: 12px;
         text-transform: uppercase;
-        letter-spacing: 0.04em;
+        letter-spacing: 0.06em;
+        font-weight: 500;
       }
-      input[type="url"], input[type="text"], input[type="password"] {
+      input[type="url"],
+      input[type="text"],
+      input[type="password"] {
         width: 100%;
-        padding: 9px 11px;
-        background: var(--bg);
+        padding: 10px 12px;
+        background: var(--surface);
         color: var(--text);
         border: 1px solid var(--border);
-        border-radius: 8px;
+        border-radius: 10px;
         font-size: 13px;
         outline: none;
-        transition: border-color 0.15s;
         font-family: inherit;
+        user-select: text;
+        transition: border-color 0.15s, background 0.15s;
+      }
+      input::placeholder {
+        color: var(--text-muted);
       }
       input:focus {
         border-color: var(--accent);
+        background: var(--surface-hover);
       }
-      .hint {
-        margin-top: 6px;
-        font-size: 11px;
-        color: var(--muted);
-        line-height: 1.4;
+
+      .footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-top: 24px;
       }
-      .desc {
-        font-size: 12px;
-        color: var(--muted);
-        background: var(--bg);
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        padding: 10px 12px;
-        line-height: 1.5;
+      .step-indicator {
+        display: flex;
+        gap: 6px;
       }
-      button.primary {
-        width: 100%;
-        margin-top: 18px;
-        padding: 11px 14px;
+      .step-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--border-strong);
+        transition: background 0.2s, transform 0.2s;
+      }
+      .step-dot.active {
+        background: var(--accent);
+        transform: scale(1.4);
+      }
+
+      .actions {
+        display: flex;
+        gap: 8px;
+      }
+      button.btn {
+        padding: 9px 18px;
+        border-radius: 9px;
+        border: none;
+        font-family: inherit;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: opacity 0.15s, transform 0.05s;
+      }
+      button.btn:active {
+        transform: scale(0.98);
+      }
+      button.btn.primary {
         background: var(--accent);
         color: var(--accent-fg);
-        border: none;
-        border-radius: 8px;
-        font-size: 13px;
         font-weight: 600;
-        cursor: pointer;
-        font-family: inherit;
       }
-      button.primary:disabled {
-        opacity: 0.6;
+      button.btn.primary:disabled {
+        opacity: 0.5;
         cursor: not-allowed;
       }
-      .error {
-        margin-top: 10px;
+      button.btn.ghost {
+        background: transparent;
+        color: var(--text-soft);
+        border: 1px solid var(--border);
+      }
+      button.btn.ghost:hover {
+        color: var(--text);
+        border-color: var(--border-strong);
+      }
+
+      .status-line {
+        margin-top: 16px;
+        font-size: 12px;
+        color: var(--text-soft);
+        text-align: center;
+        min-height: 18px;
+      }
+      .error-line {
+        margin-top: 6px;
         color: var(--error);
         font-size: 12px;
-        min-height: 16px;
-        word-break: break-word;
-        white-space: pre-wrap;
-        max-height: 200px;
+        max-height: 160px;
         overflow: auto;
+        white-space: pre-wrap;
+        word-break: break-word;
+        text-align: left;
         font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 11px;
+        line-height: 1.45;
       }
-      .status {
-        margin-top: 10px;
-        font-size: 12px;
-        color: var(--muted);
-        min-height: 16px;
+
+      .launching {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 16px;
+        padding-top: 28px;
+      }
+      .spinner {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        border: 2.5px solid var(--border-strong);
+        border-top-color: var(--accent);
+        animation: spin 0.9s linear infinite;
+      }
+
+      @keyframes logoFadeIn {
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+      @keyframes fadeUp {
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
       }
     </style>
   </head>
   <body>
-    <div class="card">
-      <h1>Giraffle</h1>
-      <p class="lead">Çalıştırma modunu seç. Local mod hiçbir şey gerektirmez; her şey bilgisayarında çalışır.</p>
+    <div class="drag"></div>
 
-      <div class="mode-tabs" role="tablist">
-        <button class="mode-tab active" data-mode="local">Local</button>
-        <button class="mode-tab" data-mode="external-db">Custom DB</button>
-        <button class="mode-tab" data-mode="remote">Remote</button>
+    <div class="stage">
+      <div class="logo-wrap" id="logo-wrap">
+        <img src="giraffle-logo.png" alt="Giraffle" class="logo" id="logo" />
+      </div>
+      <div class="headline" id="headline">
+        <h1 id="title">Giraffle'a hoş geldin</h1>
+        <p id="subtitle">Birkaç adımda kurulum tamam.</p>
       </div>
 
-      <section class="panel active" data-panel="local">
-        <div class="desc">
-          Yerleşik Postgres + Next sunucusu app verisinin altında başlatılır. İnternet gerekmez.
-        </div>
-      </section>
+      <div class="panel-container" id="panels">
+        <!-- Step 0: Welcome -->
+        <section class="panel active" data-step="welcome">
+          <div style="text-align: center; padding-top: 8px">
+            <p style="color: var(--text-soft); font-size: 13px; line-height: 1.6; max-width: 360px; margin: 0 auto;">
+              Tüm verin senin makinende kalır. İnternet bağlantısı gerekmeden çalışır. İstersen sonradan uzak bir sunucuya da bağlanabilirsin.
+            </p>
+          </div>
+        </section>
 
-      <section class="panel" data-panel="external-db">
-        <div class="desc">
-          Sunucu local çalışır ama veritabanı kendi Postgres'inde tutulur.
-        </div>
-        <label for="ext-db">Database URL</label>
-        <input id="ext-db" type="text" placeholder="postgresql://user:pass@host:5432/db" autocomplete="off" spellcheck="false" />
-      </section>
+        <!-- Step 1: Mode selection -->
+        <section class="panel" data-step="mode">
+          <button type="button" class="mode-card" data-mode="local">
+            <div class="icon">💻</div>
+            <div>
+              <div class="title">Local</div>
+              <div class="desc">Yerleşik Postgres + Next sunucusu. Hiçbir bağımlılık yok.</div>
+            </div>
+          </button>
+          <button type="button" class="mode-card" data-mode="external-db">
+            <div class="icon">🗄️</div>
+            <div>
+              <div class="title">Kendi Veritabanım</div>
+              <div class="desc">Sunucu local çalışır, Postgres'ini sen sağlarsın.</div>
+            </div>
+          </button>
+          <button type="button" class="mode-card" data-mode="remote">
+            <div class="icon">☁️</div>
+            <div>
+              <div class="title">Uzak Sunucu</div>
+              <div class="desc">Mevcut bir Giraffle deployment'ına bağlan.</div>
+            </div>
+          </button>
+        </section>
 
-      <section class="panel" data-panel="remote">
-        <div class="desc">
-          Webview uzak Giraffle sunucusuna bağlanır. URL ve veritabanı bilgisi kayıt amaçlı saklanır.
-        </div>
-        <label for="rem-url">App URL</label>
-        <input id="rem-url" type="url" placeholder="https://giraffle.example.com" autocomplete="off" spellcheck="false" />
-        <label for="rem-db">Database URL</label>
-        <input id="rem-db" type="text" placeholder="postgresql://user:pass@host:5432/db" autocomplete="off" spellcheck="false" />
-      </section>
+        <!-- Step 2a: External DB -->
+        <section class="panel" data-step="external-db">
+          <label class="field-label" for="ext-db">Database URL</label>
+          <input
+            id="ext-db"
+            type="text"
+            placeholder="postgresql://user:pass@host:5432/db"
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <p style="font-size: 12px; color: var(--text-soft); margin: 4px 0 0;">
+            Sunucu bu Postgres'e bağlanır. İlk açılışta otomatik migration uygulanır.
+          </p>
+        </section>
 
-      <button id="submit" class="primary">Başlat</button>
-      <div id="status" class="status"></div>
-      <div id="error" class="error"></div>
+        <!-- Step 2b: Remote -->
+        <section class="panel" data-step="remote">
+          <div>
+            <label class="field-label" for="rem-url">App URL</label>
+            <input
+              id="rem-url"
+              type="url"
+              placeholder="https://giraffle.example.com"
+              autocomplete="off"
+              spellcheck="false"
+            />
+          </div>
+          <div>
+            <label class="field-label" for="rem-db">Database URL</label>
+            <input
+              id="rem-db"
+              type="text"
+              placeholder="postgresql://user:pass@host:5432/db"
+              autocomplete="off"
+              spellcheck="false"
+            />
+          </div>
+        </section>
+
+        <!-- Step 3: Launching -->
+        <section class="panel" data-step="launching">
+          <div class="launching">
+            <div class="spinner"></div>
+            <div id="launch-status" class="status-line">Hazırlanıyor…</div>
+          </div>
+        </section>
+      </div>
+
+      <div class="footer" id="footer">
+        <div class="step-indicator" id="step-indicator">
+          <span class="step-dot active"></span>
+          <span class="step-dot"></span>
+          <span class="step-dot"></span>
+        </div>
+        <div class="actions" id="actions">
+          <button class="btn ghost" id="back-btn" style="display:none">Geri</button>
+          <button class="btn primary" id="next-btn">Başla</button>
+        </div>
+      </div>
+
+      <div class="error-line" id="error"></div>
     </div>
 
     <script type="module">
       const { invoke } = window.__TAURI__.core;
       const { listen } = window.__TAURI__.event;
 
-      const tabs = document.querySelectorAll('.mode-tab');
-      const panels = document.querySelectorAll('.panel');
-      const submit = document.getElementById('submit');
-      const errorEl = document.getElementById('error');
-      const statusEl = document.getElementById('status');
-      const extDb = document.getElementById('ext-db');
-      const remUrl = document.getElementById('rem-url');
-      const remDb = document.getElementById('rem-db');
+      const titleEl = document.getElementById("title");
+      const subtitleEl = document.getElementById("subtitle");
+      const stepDots = document.getElementById("step-indicator");
+      const backBtn = document.getElementById("back-btn");
+      const nextBtn = document.getElementById("next-btn");
+      const errorEl = document.getElementById("error");
+      const launchStatus = document.getElementById("launch-status");
+      const extDb = document.getElementById("ext-db");
+      const remUrl = document.getElementById("rem-url");
+      const remDb = document.getElementById("rem-db");
 
-      let mode = 'local';
+      const flow = {
+        local: ["welcome", "mode", "launching"],
+        "external-db": ["welcome", "mode", "external-db", "launching"],
+        remote: ["welcome", "mode", "remote", "launching"],
+      };
 
-      function setMode(next) {
-        mode = next;
-        tabs.forEach((t) => t.classList.toggle('active', t.dataset.mode === next));
-        panels.forEach((p) => p.classList.toggle('active', p.dataset.panel === next));
-        errorEl.textContent = '';
+      const stepCopy = {
+        welcome: {
+          title: "Giraffle'a hoş geldin",
+          subtitle: "Birkaç adımda kurulum tamam.",
+          cta: "Başla",
+        },
+        mode: {
+          title: "Nasıl çalıştırmak istersin?",
+          subtitle: "Sonradan menüden değiştirebilirsin (⌘,).",
+          cta: "Devam",
+        },
+        "external-db": {
+          title: "Veritabanını bağla",
+          subtitle: "Postgres URL'ini gir.",
+          cta: "Bağlan",
+        },
+        remote: {
+          title: "Uzak sunucu",
+          subtitle: "App URL ve veritabanı bilgisi gerekli.",
+          cta: "Bağlan",
+        },
+        launching: {
+          title: "Hazırlanıyor",
+          subtitle: "Sunucu başlatılıyor…",
+          cta: "Aç",
+        },
+      };
+
+      let mode = "local";
+      let stepIndex = 0;
+
+      function currentFlow() {
+        return flow[mode];
       }
 
-      tabs.forEach((t) => t.addEventListener('click', () => setMode(t.dataset.mode)));
+      function refresh() {
+        const steps = currentFlow();
+        const step = steps[stepIndex];
+        document.querySelectorAll(".panel").forEach((p) => {
+          p.classList.remove("active", "exit-left");
+          if (p.dataset.step === step) p.classList.add("active");
+        });
+        const copy = stepCopy[step];
+        titleEl.textContent = copy.title;
+        subtitleEl.textContent = copy.subtitle;
+        nextBtn.textContent = copy.cta;
+        backBtn.style.display = stepIndex > 0 && step !== "launching" ? "" : "none";
 
-      try {
-        const cfg = await invoke('get_config');
-        if (cfg.mode && ['local', 'external-db', 'remote'].includes(cfg.mode)) {
-          setMode(cfg.mode);
+        // Step dots
+        stepDots.innerHTML = "";
+        const total = steps.length - 1; // exclude launching
+        for (let i = 0; i < total; i++) {
+          const dot = document.createElement("span");
+          dot.className = "step-dot" + (i <= stepIndex && step !== "launching" ? " active" : "");
+          stepDots.appendChild(dot);
         }
-        if (cfg.remote_url) remUrl.value = cfg.remote_url;
-        if (cfg.remote_db_url) {
-          extDb.value = cfg.remote_db_url;
-          remDb.value = cfg.remote_db_url;
+        stepDots.style.visibility = step === "launching" ? "hidden" : "";
+        nextBtn.style.display = step === "launching" ? "none" : "";
+        backBtn.style.display = stepIndex > 0 && step !== "launching" ? "" : "none";
+
+        errorEl.textContent = "";
+      }
+
+      function selectMode(next) {
+        mode = next;
+        document.querySelectorAll(".mode-card").forEach((c) => {
+          c.classList.toggle("selected", c.dataset.mode === next);
+        });
+      }
+
+      document.querySelectorAll(".mode-card").forEach((card) => {
+        card.addEventListener("click", () => {
+          selectMode(card.dataset.mode);
+        });
+      });
+
+      backBtn.addEventListener("click", () => {
+        if (stepIndex > 0) {
+          stepIndex--;
+          refresh();
         }
-      } catch {}
+      });
+
+      function validate(step) {
+        if (step === "external-db") {
+          const v = extDb.value.trim();
+          if (!v) return "Veritabanı URL'i gerekli.";
+        }
+        if (step === "remote") {
+          if (!remUrl.value.trim()) return "App URL gerekli.";
+          if (!remDb.value.trim()) return "Veritabanı URL'i gerekli.";
+        }
+        return null;
+      }
+
+      async function launchCurrentMode() {
+        try {
+          if (mode === "local") {
+            await invoke("start_local");
+          } else if (mode === "external-db") {
+            await invoke("start_external_db", { dbUrl: extDb.value.trim() });
+          } else if (mode === "remote") {
+            await invoke("start_remote", {
+              url: remUrl.value.trim(),
+              dbUrl: remDb.value.trim(),
+            });
+          }
+        } catch (e) {
+          errorEl.textContent =
+            String(e) + (recentLogs.length ? "\n\nSon log:\n" + recentLogs.join("\n") : "");
+          stepIndex = currentFlow().indexOf("mode");
+          refresh();
+        }
+      }
+
+      nextBtn.addEventListener("click", () => {
+        const steps = currentFlow();
+        const step = steps[stepIndex];
+        const err = validate(step);
+        if (err) {
+          errorEl.textContent = err;
+          return;
+        }
+        if (stepIndex < steps.length - 1) {
+          stepIndex++;
+          refresh();
+          if (steps[stepIndex] === "launching") launchCurrentMode();
+        }
+      });
+
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && nextBtn.style.display !== "none") nextBtn.click();
+      });
 
       const recentLogs = [];
       function pushLog(line) {
@@ -252,56 +603,46 @@
       }
 
       try {
-        await listen('giraffle://launch-status', (event) => {
-          const stage = event.payload?.stage ?? '';
+        await listen("giraffle://launch-status", (event) => {
+          const stage = event.payload?.stage ?? "";
           const stages = {
-            'spawning': 'Sunucu başlatılıyor…',
-            'pg-initialise': 'Postgres ilk kurulum…',
-            'pg-start': 'Postgres başlatılıyor…',
-            'prisma-migrate': 'Veritabanı migration…',
-            'next-start': 'Next sunucusu başlatılıyor…',
-            'fatal': 'Hata',
+            spawning: "Sunucu başlatılıyor…",
+            "pg-stop-previous": "Önceki Postgres durduruluyor…",
+            "pg-stale-lock-cleared": "Eski kilit temizlendi.",
+            "pg-initialise": "Postgres ilk kurulum…",
+            "pg-start": "Postgres başlatılıyor…",
+            "prisma-migrate": "Veritabanı şeması yükleniyor…",
+            "next-start": "Uygulama sunucusu başlatılıyor…",
+            fatal: "Hata",
           };
-          statusEl.textContent = stages[stage] || stage;
-          if (stage === 'fatal') {
-            errorEl.textContent = (event.payload?.detail ?? 'Bilinmeyen hata') +
-              (recentLogs.length ? '\n\nSon log:\n' + recentLogs.join('\n') : '');
-            submit.disabled = false;
-            submit.textContent = 'Başlat';
+          launchStatus.textContent = stages[stage] || stage;
+          if (stage === "fatal") {
+            errorEl.textContent =
+              (event.payload?.detail ?? "Bilinmeyen hata") +
+              (recentLogs.length ? "\n\nSon log:\n" + recentLogs.join("\n") : "");
+            stepIndex = currentFlow().indexOf("mode");
+            refresh();
           }
         });
-        await listen('giraffle://bootstrap-log', (event) => pushLog(String(event.payload)));
-        await listen('giraffle://bootstrap-stderr', (event) => pushLog('[stderr] ' + String(event.payload)));
+        await listen("giraffle://bootstrap-log", (event) => pushLog(String(event.payload)));
+        await listen("giraffle://bootstrap-stderr", (event) =>
+          pushLog("[stderr] " + String(event.payload)),
+        );
       } catch {}
 
-      async function go() {
-        errorEl.textContent = '';
-        statusEl.textContent = '';
-        submit.disabled = true;
-        submit.textContent = 'Başlatılıyor…';
-        try {
-          if (mode === 'local') {
-            await invoke('start_local');
-          } else if (mode === 'external-db') {
-            await invoke('start_external_db', { dbUrl: extDb.value.trim() });
-          } else if (mode === 'remote') {
-            await invoke('start_remote', {
-              url: remUrl.value.trim(),
-              dbUrl: remDb.value.trim(),
-            });
-          }
-        } catch (e) {
-          errorEl.textContent = String(e) +
-            (recentLogs.length ? '\n\nSon log:\n' + recentLogs.join('\n') : '');
-          submit.disabled = false;
-          submit.textContent = 'Başlat';
+      try {
+        const cfg = await invoke("get_config");
+        if (cfg.mode && ["local", "external-db", "remote"].includes(cfg.mode)) {
+          selectMode(cfg.mode);
         }
-      }
+        if (cfg.remote_url) remUrl.value = cfg.remote_url;
+        if (cfg.remote_db_url) {
+          extDb.value = cfg.remote_db_url;
+          remDb.value = cfg.remote_db_url;
+        }
+      } catch {}
 
-      submit.addEventListener('click', go);
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !submit.disabled) go();
-      });
+      refresh();
     </script>
   </body>
 </html>

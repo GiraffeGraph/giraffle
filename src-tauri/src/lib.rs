@@ -90,13 +90,36 @@ fn open_config_window(app: &AppHandle) -> Result<(), String> {
         existing.set_focus().ok();
         return Ok(());
     }
-    WebviewWindowBuilder::new(app, CONFIG_LABEL, WebviewUrl::App("index.html".into()))
-        .title("Giraffle - Configure")
-        .inner_size(560.0, 460.0)
+    let mut builder = WebviewWindowBuilder::new(app, CONFIG_LABEL, WebviewUrl::App("index.html".into()))
+        .title("Giraffle")
+        .inner_size(720.0, 560.0)
+        .min_inner_size(620.0, 480.0)
         .resizable(false)
-        .center()
-        .build()
-        .map_err(|e| e.to_string())?;
+        .center();
+
+    #[cfg(target_os = "macos")]
+    {
+        builder = builder
+            .transparent(true)
+            .decorations(true)
+            .title_bar_style(tauri::TitleBarStyle::Overlay)
+            .hidden_title(true);
+    }
+
+    let window = builder.build().map_err(|e| e.to_string())?;
+
+    #[cfg(target_os = "macos")]
+    {
+        use window_vibrancy::{apply_vibrancy, NSVisualEffectMaterial, NSVisualEffectState};
+        let _ = apply_vibrancy(
+            &window,
+            NSVisualEffectMaterial::HudWindow,
+            Some(NSVisualEffectState::Active),
+            Some(16.0),
+        );
+    }
+
+    let _ = window;
     Ok(())
 }
 

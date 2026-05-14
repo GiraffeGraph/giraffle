@@ -11,6 +11,7 @@
   "app": {
     "withGlobalTauri": true,
     "windows": [],
+    "macOSPrivateApi": true,
     "security": {
       "csp": null,
       "capabilities": ["main-capability"]
