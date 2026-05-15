@@ -29,6 +29,7 @@ import {
   realpathSync,
   rmSync,
   statSync,
+  symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { dirname, join, resolve } from "node:path";
@@ -446,6 +447,72 @@ function stageNodeModules() {
   );
 }
 
+function stageMacosHelpers() {
+  if (process.platform !== "darwin") return;
+  const helpersDir = join(runtimeDir, "helpers");
+  mkdirSync(helpersDir, { recursive: true });
+
+  const wrap = (label, sourceBinary, bundleId) => {
+    if (!existsSync(sourceBinary)) {
+      log(`skip helper for ${label}: source missing at ${sourceBinary}`);
+      return;
+    }
+    const app = join(helpersDir, `${label}.app`);
+    const contents = join(app, "Contents");
+    const macos = join(contents, "MacOS");
+    if (existsSync(app)) rmSync(app, { recursive: true, force: true });
+    mkdirSync(macos, { recursive: true });
+    const destBinary = join(macos, label);
+    copyFileSync(sourceBinary, destBinary);
+    chmodSync(destBinary, 0o755);
+    const plist = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleExecutable</key><string>${label}</string>
+  <key>CFBundleIdentifier</key><string>${bundleId}</string>
+  <key>CFBundleName</key><string>${label}</string>
+  <key>CFBundlePackageType</key><string>APPL</string>
+  <key>LSUIElement</key><true/>
+  <key>NSHighResolutionCapable</key><true/>
+</dict>
+</plist>
+`;
+    writeFileSync(join(contents, "Info.plist"), plist);
+    log(`helper bundle: ${app}`);
+  };
+
+  const triple = rustTargetTriple();
+  wrap(
+    "node",
+    join(binariesDir, `node-${triple}`),
+    "com.giraffegraph.giraffle.node-helper",
+  );
+
+  // Wrap embedded-postgres binaries that run long-lived processes so they
+  // do not bounce in the Dock. Replace the original bin path with a symlink
+  // pointing into the helper bundle so embedded-postgres finds it where it
+  // expects, but macOS resolves the parent .app's Info.plist (LSUIElement).
+  const pgPkg = platformBinaryName();
+  if (pgPkg) {
+    const pgBinDir = join(
+      serverDir,
+      "node_modules",
+      pgPkg,
+      "native",
+      "bin",
+    );
+    for (const name of ["postgres", "initdb", "pg_ctl", "psql", "pg_isready"]) {
+      const src = join(pgBinDir, name);
+      if (!existsSync(src)) continue;
+      wrap(name, src, `com.giraffegraph.giraffle.${name}-helper`);
+      const wrapped = join(helpersDir, `${name}.app`, "Contents", "MacOS", name);
+      rmSync(src, { force: true });
+      symlinkSync(wrapped, src);
+    }
+  }
+}
+
 function summarise() {
   const totalSize = (() => {
     function walk(p) {
@@ -480,6 +547,7 @@ function main() {
   stageBootstrap();
   ensureNodeBinary();
   materialiseSymlinks(runtimeDir);
+  stageMacosHelpers();
   summarise();
 }
 

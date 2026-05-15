@@ -159,6 +159,19 @@ fn node_binary(app: &AppHandle) -> Result<PathBuf, String> {
 
     let mut candidates: Vec<PathBuf> = Vec::new();
 
+    // Prefer the helper-bundle wrapped node so LSUIElement hides it from
+    // the Dock. runtime_dir resolves to the staged runtime root.
+    if let Ok(runtime) = runtime_dir(app) {
+        candidates.push(
+            runtime
+                .join("helpers")
+                .join("node.app")
+                .join("Contents")
+                .join("MacOS")
+                .join("node"),
+        );
+    }
+
     // Tauri 2 places externalBin sidecars next to the main executable
     // (Contents/MacOS/ on macOS, the install dir on win/linux). In prod the
     // `-<triple>` suffix is stripped, in dev it's preserved.
