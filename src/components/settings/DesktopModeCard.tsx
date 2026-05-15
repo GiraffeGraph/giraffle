@@ -73,11 +73,48 @@ export function DesktopModeCard() {
     }
   };
 
-  if (!config) {
-    return null;
+  if (!config && !error) {
+    return (
+      <Card variant="outlined">
+        <CardHeader>
+          <CardTitle>Desktop Modu</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div style={{ fontSize: 13, color: "var(--md-sys-color-on-surface-variant)" }}>
+            Yapılandırma yükleniyor…
+          </div>
+        </CardContent>
+      </Card>
+    );
   }
 
-  const modeKey = (config.mode || "local") as DesktopMode;
+  if (!config && error) {
+    return (
+      <Card variant="outlined">
+        <CardHeader>
+          <CardTitle>Desktop Modu</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div style={{ display: "grid", gap: 8 }}>
+            <div style={{ fontSize: 13 }}>
+              Desktop yapılandırmasına ulaşılamadı. Bu Settings sayfası tarayıcıdaysa
+              normaldir; masaüstü uygulamasındaysan altta hata gözükür.
+            </div>
+            <pre style={{ fontSize: 11, color: "var(--md-sys-color-error)", whiteSpace: "pre-wrap" }}>
+              {error}
+            </pre>
+          </div>
+        </CardContent>
+        <CardActions>
+          <Button variant="filled" onClick={reconfigure} disabled={busy}>
+            {busy ? "Açılıyor…" : "Yeniden Yapılandır"}
+          </Button>
+        </CardActions>
+      </Card>
+    );
+  }
+
+  const modeKey = (config!.mode || "local") as DesktopMode;
   const info = MODE_LABEL[modeKey] ?? MODE_LABEL.local;
 
   return (
@@ -96,11 +133,11 @@ export function DesktopModeCard() {
               {info.description}
             </div>
           </div>
-          {modeKey === "remote" && config.remote_url ? (
-            <ModeDetail label="App URL" value={config.remote_url} />
+          {modeKey === "remote" && config!.remote_url ? (
+            <ModeDetail label="App URL" value={config!.remote_url} />
           ) : null}
-          {modeKey !== "local" && config.remote_db_url ? (
-            <ModeDetail label="Database URL" value={maskDbUrl(config.remote_db_url)} />
+          {modeKey !== "local" && config!.remote_db_url ? (
+            <ModeDetail label="Database URL" value={maskDbUrl(config!.remote_db_url)} />
           ) : null}
           {error ? (
             <div style={{ color: "var(--md-sys-color-error)", fontSize: 12 }}>{error}</div>

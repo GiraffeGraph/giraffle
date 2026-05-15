@@ -1,0 +1,49 @@
+"$schema" = "../gen/schemas/desktop-schema.json"
+
+[[permission]]
+identifier = "allow-get-config"
+description = "Read the persisted desktop runtime configuration."
+commands.allow = ["get_config"]
+
+[[permission]]
+identifier = "allow-start-local"
+description = "Boot the embedded Postgres + Next server in local mode."
+commands.allow = ["start_local"]
+
+[[permission]]
+identifier = "allow-start-external-db"
+description = "Boot the embedded server pointed at an external Postgres."
+commands.allow = ["start_external_db"]
+
+[[permission]]
+identifier = "allow-start-remote"
+description = "Connect to a remote Giraffle deployment."
+commands.allow = ["start_remote"]
+
+[[permission]]
+identifier = "allow-reset-config"
+description = "Reset the persisted desktop configuration and show the wizard."
+commands.allow = ["reset_config"]
+
+[[permission]]
+identifier = "allow-open-settings-window"
+description = "Open the desktop configuration window without resetting state."
+commands.allow = ["open_settings_window"]
+
+[[permission]]
+identifier = "allow-check-for-updates"
+description = "Trigger a Tauri auto-update check."
+commands.allow = ["check_for_updates"]
+
+[[set]]
+identifier = "default"
+description = "All desktop runtime commands."
+permissions = [
+  "allow-get-config",
+  "allow-start-local",
+  "allow-start-external-db",
+  "allow-start-remote",
+  "allow-reset-config",
+  "allow-open-settings-window",
+  "allow-check-for-updates",
+]
