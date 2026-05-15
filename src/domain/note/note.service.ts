@@ -28,6 +28,17 @@ import {
   documentToPersistedBlocks,
   persistedBlocksToDocument,
 } from "./block-tree";
+import { blocksToMarkdown } from "./note.serializer";
+
+const SEARCH_TEXT_MAX_LENGTH = 50_000;
+
+function deriveSearchText(document: TiptapDocument): string {
+  try {
+    return blocksToMarkdown(document).slice(0, SEARCH_TEXT_MAX_LENGTH);
+  } catch {
+    return "";
+  }
+}
 
 async function assertOwnedNote(noteId: string, userId: string) {
   const note = await db.note.findFirst({
@@ -374,16 +385,24 @@ export async function saveNoteContent(
 ): Promise<void> {
   await assertOwnedNote(noteId, userId);
 
+  const searchText = deriveSearchText(document);
+
   const blockChanges = await db.$transaction(async (tx) => {
     const changes = await replaceNoteBlocks(tx, noteId, document);
 
     if (!changes.hasChanges) {
+      // Even if the canonical blocks did not change, refresh the searchText
+      // so historic notes get backfilled the first time they are reopened.
+      await tx.note.update({
+        where: { id: noteId },
+        data: { searchText },
+      });
       return changes;
     }
 
     await tx.note.update({
       where: { id: noteId },
-      data: { updatedAt: new Date() },
+      data: { updatedAt: new Date(), searchText },
     });
 
     return changes;
