@@ -511,7 +511,7 @@
         return flow[mode];
       }
 
-      function refresh() {
+      function refresh({ preserveError = false } = {}) {
         const steps = currentFlow();
         const step = steps[stepIndex];
         document.querySelectorAll(".panel").forEach((p) => {
@@ -536,7 +536,7 @@
         nextBtn.style.display = step === "launching" ? "none" : "";
         backBtn.style.display = stepIndex > 0 && step !== "launching" ? "" : "none";
 
-        errorEl.textContent = "";
+        if (!preserveError) errorEl.textContent = "";
       }
 
       function selectMode(next) {
@@ -584,10 +584,11 @@
             });
           }
         } catch (e) {
+          stepIndex = currentFlow().indexOf("mode");
+          refresh({ preserveError: true });
           errorEl.textContent =
             String(e) + (recentLogs.length ? "\n\nSon log:\n" + recentLogs.join("\n") : "");
-          stepIndex = currentFlow().indexOf("mode");
-          refresh();
+          errorEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
         }
       }
 
@@ -631,11 +632,12 @@
           };
           launchStatus.textContent = stages[stage] || stage;
           if (stage === "fatal") {
+            stepIndex = currentFlow().indexOf("mode");
+            refresh({ preserveError: true });
             errorEl.textContent =
               (event.payload?.detail ?? "Bilinmeyen hata") +
               (recentLogs.length ? "\n\nSon log:\n" + recentLogs.join("\n") : "");
-            stepIndex = currentFlow().indexOf("mode");
-            refresh();
+            errorEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
           }
         });
         await listen("giraffle://bootstrap-log", (event) => pushLog(String(event.payload)));
