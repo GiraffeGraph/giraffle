@@ -45,6 +45,21 @@ export function BootstrapLogsCard() {
     }
   }, [logs]);
 
+  const download = useCallback(() => {
+    if (!logs) return;
+    const blob = new Blob([logs], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `giraffle-bootstrap-${new Date()
+      .toISOString()
+      .replace(/[:.]/g, "-")}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }, [logs]);
+
   return (
     <Card variant="outlined">
       <CardHeader>
@@ -79,6 +94,9 @@ export function BootstrapLogsCard() {
       <CardActions>
         <Button variant="outlined" onClick={fetchLogs} disabled={busy}>
           {busy ? "Yükleniyor…" : "Yenile"}
+        </Button>
+        <Button variant="outlined" onClick={download} disabled={!logs}>
+          İndir
         </Button>
         <Button variant="filled" onClick={copy} disabled={!logs}>
           {copied ? "Kopyalandı ✓" : "Panoya Kopyala"}

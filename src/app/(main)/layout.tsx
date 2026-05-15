@@ -1,4 +1,6 @@
+import { GlobalShortcuts } from "@/components/keyboard/GlobalShortcuts";
 import { RightRail } from "@/components/right-rail/RightRail";
+import { CommandPalette } from "@/components/search/CommandPalette";
 import { SecretsOnboardingBanner } from "@/components/settings/SecretsOnboardingBanner";
 import { Sidebar } from "@/components/sidebar/Sidebar";
 import { getAppSettingSource } from "@/domain/app-settings/app-settings.service";
@@ -31,6 +33,8 @@ export default async function MainLayout({
         <div className="main-content-inner">{children}</div>
       </main>
       <RightRail appVersion={app.version} />
+      <CommandPalette />
+      <GlobalShortcuts />
     </div>
   );
 }
