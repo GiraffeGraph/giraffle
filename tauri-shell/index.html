@@ -614,7 +614,7 @@
       const recentLogs = [];
       function pushLog(line) {
         recentLogs.push(line);
-        if (recentLogs.length > 12) recentLogs.shift();
+        if (recentLogs.length > 60) recentLogs.shift();
       }
 
       try {

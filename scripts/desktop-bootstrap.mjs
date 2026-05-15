@@ -205,11 +205,35 @@ function runMigrations(databaseUrl) {
         stdio: ["ignore", "pipe", "pipe"],
       },
     );
-    child.stdout.on("data", (chunk) => emit("prisma", { line: chunk.toString().trim() }));
-    child.stderr.on("data", (chunk) => emit("prisma-err", { line: chunk.toString().trim() }));
+    const stdoutBuf = [];
+    const stderrBuf = [];
+    child.stdout.on("data", (chunk) => {
+      const text = chunk.toString();
+      stdoutBuf.push(text);
+      emit("prisma", { line: text.trimEnd() });
+    });
+    child.stderr.on("data", (chunk) => {
+      const text = chunk.toString();
+      stderrBuf.push(text);
+      emit("prisma-err", { line: text.trimEnd() });
+    });
     child.on("exit", (code) => {
       if (code === 0) resolveFn();
-      else rejectFn(new Error(`prisma migrate deploy exited ${code}`));
+      else {
+        const stderr = stderrBuf.join("").trim();
+        const stdout = stdoutBuf.join("").trim();
+        const detail = [
+          `prisma migrate deploy exited ${code}`,
+          stderr && `stderr:\n${stderr}`,
+          stdout && `stdout:\n${stdout}`,
+        ]
+          .filter(Boolean)
+          .join("\n\n");
+        rejectFn(new Error(detail));
+      }
+    });
+    child.on("error", (err) => {
+      rejectFn(new Error(`prisma spawn failed: ${err.message}`));
     });
   });
 }
