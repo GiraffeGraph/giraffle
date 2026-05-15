@@ -84,6 +84,29 @@ function copyModule(name) {
   return true;
 }
 
+function readPkg(name) {
+  const pkgPath = join(repoRoot, "node_modules", name, "package.json");
+  if (!existsSync(pkgPath)) return null;
+  try {
+    return JSON.parse(readFileSync(pkgPath, "utf8"));
+  } catch {
+    return null;
+  }
+}
+
+function copyModuleWithDeps(name, seen = new Set()) {
+  if (seen.has(name)) return;
+  seen.add(name);
+  if (!copyModule(name)) return;
+  const pkg = readPkg(name);
+  if (!pkg) return;
+  const deps = {
+    ...(pkg.dependencies || {}),
+    ...(pkg.optionalDependencies || {}),
+  };
+  for (const dep of Object.keys(deps)) copyModuleWithDeps(dep, seen);
+}
+
 const PORTABLE_NODE_VERSION = process.env.GIRAFFLE_NODE_VERSION || "v22.20.0";
 
 function nodeDistribution() {
@@ -368,12 +391,18 @@ function stageNodeModules() {
     "@prisma/client",
     "@prisma/engines",
     "@prisma/adapter-pg",
+    "@prisma/config",
     "@prisma/debug",
+    "@prisma/dev",
+    "@prisma/driver-adapter-utils",
     "@prisma/get-platform",
     "@prisma/internals",
     "@prisma/fetch-engine",
     "@prisma/engines-version",
     "@prisma/generator-helper",
+    "@prisma/client-runtime-utils",
+    "@prisma/streams-local",
+    "@prisma/query-plan-executor",
     "embedded-postgres",
     "async-exit-hook",
     "pg",
@@ -396,7 +425,8 @@ function stageNodeModules() {
   const platformPkg = platformBinaryName();
   if (platformPkg) wanted.push(platformPkg);
 
-  for (const name of wanted) copyModule(name);
+  const seen = new Set();
+  for (const name of wanted) copyModuleWithDeps(name, seen);
 
   const pkgJson = JSON.parse(
     readFileSync(join(repoRoot, "package.json"), "utf8"),
