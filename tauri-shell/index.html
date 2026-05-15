@@ -45,14 +45,15 @@
         font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI",
           system-ui, sans-serif;
         -webkit-font-smoothing: antialiased;
-        overflow: hidden;
         user-select: none;
       }
+      html { overflow: hidden; }
       body {
         display: flex;
         flex-direction: column;
-        height: 100vh;
-        padding: 56px 48px 36px;
+        min-height: 100vh;
+        overflow-y: auto;
+        padding: 44px 40px 28px;
         background:
           radial-gradient(circle at 22% 12%, rgba(245, 165, 36, 0.16), transparent 55%),
           radial-gradient(circle at 80% 88%, rgba(80, 110, 255, 0.12), transparent 60%),
@@ -89,15 +90,15 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        margin-bottom: 18px;
+        margin-bottom: 12px;
         opacity: 0;
         transform: scale(0.86);
         animation: logoFadeIn 0.9s cubic-bezier(0.2, 0.9, 0.3, 1) 0.05s forwards;
       }
       .logo {
-        width: 96px;
-        height: 96px;
-        border-radius: 22px;
+        width: 72px;
+        height: 72px;
+        border-radius: 18px;
         box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4),
           0 0 0 0.5px rgba(255, 255, 255, 0.18) inset;
         object-fit: cover;
@@ -115,14 +116,14 @@
         animation: fadeUp 0.7s cubic-bezier(0.2, 0.9, 0.3, 1) 0.2s forwards;
       }
       .headline h1 {
-        margin: 0 0 6px;
-        font-size: 28px;
+        margin: 0 0 4px;
+        font-size: 22px;
         font-weight: 600;
         letter-spacing: -0.025em;
       }
       .headline p {
         margin: 0;
-        font-size: 14px;
+        font-size: 13px;
         color: var(--text-soft);
         line-height: 1.5;
         max-width: 420px;
@@ -131,12 +132,12 @@
       .panel-container {
         width: 100%;
         max-width: 520px;
-        margin: 28px auto 0;
+        margin: 18px auto 0;
       }
       .panel {
         display: none;
         flex-direction: column;
-        gap: 12px;
+        gap: 10px;
       }
       .panel.active {
         display: flex;
@@ -150,8 +151,8 @@
       .mode-card {
         display: flex;
         align-items: flex-start;
-        gap: 14px;
-        padding: 16px 18px;
+        gap: 12px;
+        padding: 12px 14px;
         background: var(--surface);
         border: 1px solid var(--border);
         border-radius: 14px;
@@ -224,7 +225,7 @@
         align-items: center;
         justify-content: space-between;
         gap: 10px;
-        margin: 24px auto 0;
+        margin: 18px auto 0;
         width: 100%;
         max-width: 520px;
       }
@@ -288,10 +289,9 @@
         min-height: 18px;
       }
       .error-line {
-        margin-top: 6px;
+        margin: 12px auto 0;
         color: var(--error);
-        font-size: 12px;
-        max-height: 160px;
+        max-height: 180px;
         overflow: auto;
         white-space: pre-wrap;
         word-break: break-word;
@@ -299,6 +299,15 @@
         font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
         font-size: 11px;
         line-height: 1.45;
+        width: 100%;
+        max-width: 520px;
+        padding: 0 2px;
+      }
+      .error-line:not(:empty) {
+        padding: 10px 12px;
+        background: rgba(252, 165, 165, 0.08);
+        border: 1px solid rgba(252, 165, 165, 0.3);
+        border-radius: 8px;
       }
 
       .launching {

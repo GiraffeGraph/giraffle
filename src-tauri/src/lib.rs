@@ -92,9 +92,9 @@ fn open_config_window(app: &AppHandle) -> Result<(), String> {
     }
     let builder = WebviewWindowBuilder::new(app, CONFIG_LABEL, WebviewUrl::App("index.html".into()))
         .title("Giraffle")
-        .inner_size(720.0, 560.0)
-        .min_inner_size(620.0, 480.0)
-        .resizable(false)
+        .inner_size(760.0, 680.0)
+        .min_inner_size(640.0, 560.0)
+        .resizable(true)
         .center();
 
     #[cfg(target_os = "macos")]
@@ -414,8 +414,8 @@ async fn start_local(
     app: AppHandle,
     server: State<'_, SharedServer>,
 ) -> Result<String, String> {
-    store_set(&app, MODE_KEY, json!("local"))?;
     let url = start_local_mode(app.clone(), server.inner().clone(), None).await?;
+    store_set(&app, MODE_KEY, json!("local"))?;
     open_main_window(&app, &url)?;
     if let Some(cfg) = app.get_webview_window(CONFIG_LABEL) {
         cfg.close().ok();
@@ -430,9 +430,9 @@ async fn start_external_db(
     db_url: String,
 ) -> Result<String, String> {
     let normalized = validate_db_url(&db_url)?;
+    let url = start_local_mode(app.clone(), server.inner().clone(), Some(normalized.clone())).await?;
     store_set(&app, MODE_KEY, json!("external-db"))?;
-    store_set(&app, REMOTE_DB_URL_KEY, json!(normalized.clone()))?;
-    let url = start_local_mode(app.clone(), server.inner().clone(), Some(normalized)).await?;
+    store_set(&app, REMOTE_DB_URL_KEY, json!(normalized))?;
     open_main_window(&app, &url)?;
     if let Some(cfg) = app.get_webview_window(CONFIG_LABEL) {
         cfg.close().ok();
@@ -450,10 +450,10 @@ async fn start_remote(
     let normalized_url = validate_url(&url)?;
     let normalized_db = validate_db_url(&db_url)?;
     ensure_server_stopped(server.inner()).await;
+    open_main_window(&app, &normalized_url)?;
     store_set(&app, MODE_KEY, json!("remote"))?;
     store_set(&app, REMOTE_URL_KEY, json!(normalized_url.clone()))?;
     store_set(&app, REMOTE_DB_URL_KEY, json!(normalized_db))?;
-    open_main_window(&app, &normalized_url)?;
     if let Some(cfg) = app.get_webview_window(CONFIG_LABEL) {
         cfg.close().ok();
     }
