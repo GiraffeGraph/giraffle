@@ -129,30 +129,22 @@
       }
 
       .panel-container {
-        flex: 1;
         width: 100%;
         max-width: 520px;
         margin: 28px auto 0;
-        position: relative;
       }
       .panel {
-        position: absolute;
-        inset: 0;
-        opacity: 0;
-        transform: translateX(24px);
-        transition: opacity 0.35s ease, transform 0.35s ease;
-        pointer-events: none;
-        display: flex;
+        display: none;
         flex-direction: column;
         gap: 12px;
       }
       .panel.active {
-        opacity: 1;
-        transform: translateX(0);
-        pointer-events: auto;
+        display: flex;
+        animation: panelFadeIn 0.3s ease;
       }
-      .panel.exit-left {
-        transform: translateX(-24px);
+      @keyframes panelFadeIn {
+        from { opacity: 0; transform: translateX(12px); }
+        to { opacity: 1; transform: translateX(0); }
       }
 
       .mode-card {
@@ -232,7 +224,9 @@
         align-items: center;
         justify-content: space-between;
         gap: 10px;
-        margin-top: 24px;
+        margin: 24px auto 0;
+        width: 100%;
+        max-width: 520px;
       }
       .step-indicator {
         display: flex;
