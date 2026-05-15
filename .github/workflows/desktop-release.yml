@@ -1,0 +1,74 @@
+name: Desktop release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to release (e.g. v0.7.0). Defaults to the current ref."
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  macos-arm64:
+    runs-on: macos-14
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.20.0"
+          cache: npm
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin
+
+      - name: Cargo cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install npm deps
+        run: npm ci
+        env:
+          PRISMA_HIDE_UPDATE_MESSAGE: "1"
+
+      - name: Build Tauri (app + dmg)
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          DATABASE_URL: "postgresql://build:build@127.0.0.1:5432/giraffle?schema=public"
+          AUTH_SECRET: "ci-build-placeholder"
+          NEXTAUTH_URL: "http://localhost:3000"
+          NEXT_TELEMETRY_DISABLED: "1"
+        run: npm run tauri:build -- --bundles app,dmg
+
+      - name: Generate updater manifest
+        run: |
+          TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          node scripts/build-updater-manifest.mjs "$TAG"
+        env:
+          GIRAFFLE_RELEASE_REPO: ${{ github.repository }}
+          GIRAFFLE_RELEASE_NOTES: ${{ github.event.head_commit.message }}
+
+      - name: Upload to GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --title "Giraffle $TAG" --generate-notes
+          gh release upload "$TAG" \
+            src-tauri/target/release/bundle/dmg/Giraffle_*_aarch64.dmg \
+            src-tauri/target/release/bundle/macos/Giraffle.app.tar.gz \
+            src-tauri/target/release/bundle/macos/Giraffle.app.tar.gz.sig \
+            src-tauri/target/release/bundle/macos/latest.json \
+            --clobber

@@ -152,6 +152,42 @@ export function DesktopModeCard() {
     }
   };
 
+  const openDataDir = async () => {
+    const invoke = getInvoke();
+    if (!invoke) return;
+    try {
+      await invoke("open_data_dir");
+    } catch (err) {
+      setApplyError(String(err));
+    }
+  };
+
+  const resetLocal = async () => {
+    const invoke = getInvoke();
+    if (!invoke) return;
+    if (
+      !window.confirm(
+        "Local Postgres verisi (pgdata) ve auth secret silinecek. Bu işlem geri alınamaz. Devam?",
+      )
+    ) {
+      return;
+    }
+    setBusy(true);
+    setApplyError(null);
+    setStage("Local veriler siliniyor…");
+    try {
+      await invoke("reset_local_data");
+      setStage("Yeniden başlatılıyor…");
+      const url = await invoke<string>("apply_mode", { mode: "local" });
+      window.location.replace(`${url.replace(/\/$/, "")}/settings`);
+    } catch (err) {
+      setApplyError(String(err));
+      setStage(null);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const currentMode = (config?.mode || "local") as DesktopMode;
   const isDirty =
     selected !== currentMode ||
@@ -232,6 +268,14 @@ export function DesktopModeCard() {
         <Button variant="outlined" onClick={openWizard} disabled={busy}>
           Wizard&apos;ı Aç
         </Button>
+        <Button variant="outlined" onClick={openDataDir} disabled={busy}>
+          Veri Klasörü
+        </Button>
+        {currentMode === "local" ? (
+          <Button variant="outlined" onClick={resetLocal} disabled={busy}>
+            Local Sıfırla
+          </Button>
+        ) : null}
         <Button variant="filled" onClick={apply} disabled={busy || !config || !isDirty}>
           {busy ? "Uygulanıyor…" : "Uygula"}
         </Button>

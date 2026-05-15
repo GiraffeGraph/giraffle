@@ -19,6 +19,7 @@ const REMOTE_URL_KEY: &str = "remote_url";
 const REMOTE_DB_URL_KEY: &str = "remote_db_url";
 const MAIN_LABEL: &str = "main";
 const CONFIG_LABEL: &str = "config";
+const LOG_RING_CAPACITY: usize = 400;
 
 #[derive(Default)]
 struct EmbeddedServer {
@@ -27,6 +28,22 @@ struct EmbeddedServer {
 }
 
 type SharedServer = Arc<Mutex<EmbeddedServer>>;
+
+#[derive(Default)]
+struct LogRing {
+    lines: std::collections::VecDeque<String>,
+}
+
+impl LogRing {
+    fn push(&mut self, line: String) {
+        if self.lines.len() >= LOG_RING_CAPACITY {
+            self.lines.pop_front();
+        }
+        self.lines.push_back(line);
+    }
+}
+
+type SharedLogRing = Arc<std::sync::Mutex<LogRing>>;
 
 #[derive(serde::Serialize, Clone)]
 struct LaunchStatus {
@@ -83,6 +100,31 @@ fn open_main_window(app: &AppHandle, url: &str) -> Result<(), String> {
         .build()
         .map_err(|e| e.to_string())?;
     Ok(())
+}
+
+fn open_main_window_splash(app: &AppHandle) -> Result<(), String> {
+    if app.get_webview_window(MAIN_LABEL).is_some() {
+        return Ok(());
+    }
+    WebviewWindowBuilder::new(app, MAIN_LABEL, WebviewUrl::App("splash.html".into()))
+        .title("Giraffle")
+        .inner_size(1280.0, 800.0)
+        .min_inner_size(800.0, 600.0)
+        .build()
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+fn navigate_main_window(app: &AppHandle, url: &str) -> Result<(), String> {
+    let parsed: Url = url.parse().map_err(|e: url::ParseError| e.to_string())?;
+    if let Some(win) = app.get_webview_window(MAIN_LABEL) {
+        let escaped = parsed.as_str().replace('\\', "\\\\").replace('\'', "\\'");
+        win.eval(&format!("window.location.replace('{}')", escaped))
+            .map_err(|e| e.to_string())?;
+        Ok(())
+    } else {
+        open_main_window(app, url)
+    }
 }
 
 fn open_config_window(app: &AppHandle) -> Result<(), String> {
@@ -234,6 +276,14 @@ fn current_triple() -> &'static str {
 }
 
 fn emit_status(app: &AppHandle, stage: &str, detail: Option<String>) {
+    push_log(
+        app,
+        format!(
+            "[status] {}{}",
+            stage,
+            detail.as_deref().map(|d| format!(": {d}")).unwrap_or_default()
+        ),
+    );
     let _ = app.emit(
         "giraffle://launch-status",
         LaunchStatus {
@@ -241,6 +291,14 @@ fn emit_status(app: &AppHandle, stage: &str, detail: Option<String>) {
             detail,
         },
     );
+}
+
+fn push_log(app: &AppHandle, line: String) {
+    if let Some(ring) = app.try_state::<SharedLogRing>() {
+        if let Ok(mut guard) = ring.lock() {
+            guard.push(line);
+        }
+    }
 }
 
 async fn spawn_bootstrap(
@@ -331,10 +389,12 @@ async fn spawn_bootstrap(
                         emit_status(&app_for_stdout, &stage, None);
                     }
                     _ => {
+                        push_log(&app_for_stdout, format!("[stdout] {}", line));
                         let _ = app_for_stdout.emit("giraffle://bootstrap-log", line.clone());
                     }
                 }
             } else {
+                push_log(&app_for_stdout, format!("[stdout] {}", line));
                 let _ = app_for_stdout.emit("giraffle://bootstrap-log", line);
             }
         }
@@ -346,6 +406,7 @@ async fn spawn_bootstrap(
         let mut reader = BufReader::new(stderr).lines();
         while let Ok(Some(line)) = reader.next_line().await {
             eprintln!("[bootstrap] {line}");
+            push_log(&app_for_stderr, format!("[stderr] {}", line));
             let _ = app_for_stderr.emit("giraffle://bootstrap-stderr", line.clone());
             let mut buf = stderr_buf_for_task.lock().await;
             buf.push(line);
@@ -555,6 +616,54 @@ async fn apply_mode(
 }
 
 #[tauri::command]
+fn get_bootstrap_logs(state: State<'_, SharedLogRing>) -> Result<String, String> {
+    let guard = state.lock().map_err(|e| e.to_string())?;
+    Ok(guard.lines.iter().cloned().collect::<Vec<_>>().join("\n"))
+}
+
+#[tauri::command]
+async fn reset_local_data(
+    app: AppHandle,
+    server: State<'_, SharedServer>,
+) -> Result<(), String> {
+    ensure_server_stopped(&server.inner().clone()).await;
+    let data = data_dir(&app)?;
+    for entry in ["pgdata", "migrations.fingerprint", "auth.secret"].iter() {
+        let target = data.join(entry);
+        if target.exists() {
+            let kind_is_dir = target.is_dir();
+            let result = if kind_is_dir {
+                std::fs::remove_dir_all(&target)
+            } else {
+                std::fs::remove_file(&target)
+            };
+            if let Err(err) = result {
+                return Err(format!("{} silinemedi: {}", target.display(), err));
+            }
+        }
+    }
+    Ok(())
+}
+
+#[tauri::command]
+async fn open_data_dir(app: AppHandle) -> Result<(), String> {
+    let data = data_dir(&app)?;
+    #[cfg(target_os = "macos")]
+    {
+        let _ = std::process::Command::new("open").arg(&data).spawn();
+    }
+    #[cfg(target_os = "linux")]
+    {
+        let _ = std::process::Command::new("xdg-open").arg(&data).spawn();
+    }
+    #[cfg(target_os = "windows")]
+    {
+        let _ = std::process::Command::new("explorer").arg(&data).spawn();
+    }
+    Ok(())
+}
+
+#[tauri::command]
 async fn check_for_updates(app: AppHandle) -> Result<Option<String>, String> {
     let updater = app.updater().map_err(|e| e.to_string())?;
     let Some(update) = updater.check().await.map_err(|e| e.to_string())? else {
@@ -631,11 +740,13 @@ fn build_menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let server: SharedServer = Arc::new(Mutex::new(EmbeddedServer::default()));
+    let log_ring: SharedLogRing = Arc::new(std::sync::Mutex::new(LogRing::default()));
 
     tauri::Builder::default()
         .plugin(tauri_plugin_store::Builder::default().build())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(server.clone())
+        .manage(log_ring.clone())
         .invoke_handler(tauri::generate_handler![
             get_config,
             start_local,
@@ -644,6 +755,9 @@ pub fn run() {
             apply_mode,
             reset_config,
             open_settings_window,
+            get_bootstrap_logs,
+            reset_local_data,
+            open_data_dir,
             check_for_updates
         ])
         .setup(move |app| {
@@ -678,11 +792,18 @@ pub fn run() {
             let mode = store_string(&handle, MODE_KEY).unwrap_or_default();
             let handle_for_setup = handle.clone();
             let server_for_setup = server.clone();
+            // Show splash immediately for any mode that needs bootstrap so the
+            // user does not wait on a blank screen during cold start.
+            if matches!(mode.as_str(), "local" | "external-db" | "remote") {
+                if let Err(err) = open_main_window_splash(&handle_for_setup) {
+                    eprintln!("splash open failed: {err}");
+                }
+            }
             tauri::async_runtime::spawn(async move {
                 let result: Result<(), String> = match mode.as_str() {
                     "local" => {
                         match start_local_mode(handle_for_setup.clone(), server_for_setup.clone(), None).await {
-                            Ok(url) => open_main_window(&handle_for_setup, &url),
+                            Ok(url) => navigate_main_window(&handle_for_setup, &url),
                             Err(err) => Err(err),
                         }
                     }
@@ -690,7 +811,7 @@ pub fn run() {
                         let db_url = store_string(&handle_for_setup, REMOTE_DB_URL_KEY);
                         match db_url {
                             Some(db) => match start_local_mode(handle_for_setup.clone(), server_for_setup.clone(), Some(db)).await {
-                                Ok(url) => open_main_window(&handle_for_setup, &url),
+                                Ok(url) => navigate_main_window(&handle_for_setup, &url),
                                 Err(err) => Err(err),
                             },
                             None => open_config_window(&handle_for_setup),
@@ -698,7 +819,7 @@ pub fn run() {
                     }
                     "remote" => {
                         match store_string(&handle_for_setup, REMOTE_URL_KEY) {
-                            Some(url) => open_main_window(&handle_for_setup, &url),
+                            Some(url) => navigate_main_window(&handle_for_setup, &url),
                             None => open_config_window(&handle_for_setup),
                         }
                     }
@@ -708,6 +829,9 @@ pub fn run() {
                 if let Err(err) = result {
                     eprintln!("setup failed: {err}");
                     emit_status(&handle_for_setup, "fatal", Some(err));
+                    if let Some(main) = handle_for_setup.get_webview_window(MAIN_LABEL) {
+                        main.close().ok();
+                    }
                     let _ = open_config_window(&handle_for_setup);
                 }
             });

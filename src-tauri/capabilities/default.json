@@ -26,6 +26,9 @@
     "allow-apply-mode",
     "allow-reset-config",
     "allow-open-settings-window",
+    "allow-get-bootstrap-logs",
+    "allow-reset-local-data",
+    "allow-open-data-dir",
     "allow-check-for-updates"
   ]
 }

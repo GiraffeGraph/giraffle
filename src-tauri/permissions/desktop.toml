@@ -36,6 +36,21 @@ description = "Switch desktop mode (local / external-db / remote) without openin
 commands.allow = ["apply_mode"]
 
 [[permission]]
+identifier = "allow-get-bootstrap-logs"
+description = "Read the in-memory bootstrap log ring buffer."
+commands.allow = ["get_bootstrap_logs"]
+
+[[permission]]
+identifier = "allow-reset-local-data"
+description = "Stop the embedded server and wipe pgdata / fingerprint / auth secret."
+commands.allow = ["reset_local_data"]
+
+[[permission]]
+identifier = "allow-open-data-dir"
+description = "Reveal the desktop data directory in the OS file manager."
+commands.allow = ["open_data_dir"]
+
+[[permission]]
 identifier = "allow-check-for-updates"
 description = "Trigger a Tauri auto-update check."
 commands.allow = ["check_for_updates"]
@@ -51,5 +66,8 @@ permissions = [
   "allow-apply-mode",
   "allow-reset-config",
   "allow-open-settings-window",
+  "allow-get-bootstrap-logs",
+  "allow-reset-local-data",
+  "allow-open-data-dir",
   "allow-check-for-updates",
 ]

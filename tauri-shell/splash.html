@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Giraffle</title>
+    <style>
+      :root {
+        color-scheme: dark light;
+        --text: rgba(255, 255, 255, 0.94);
+        --text-soft: rgba(255, 255, 255, 0.6);
+        --accent: #f5a524;
+      }
+      @media (prefers-color-scheme: light) {
+        :root {
+          --text: rgba(20, 20, 30, 0.92);
+          --text-soft: rgba(20, 20, 30, 0.55);
+          --accent: #d97706;
+        }
+      }
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        color: var(--text);
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI",
+          system-ui, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        user-select: none;
+        overflow: hidden;
+      }
+      body {
+        display: grid;
+        place-items: center;
+        background:
+          radial-gradient(circle at 22% 12%, rgba(245, 165, 36, 0.16), transparent 55%),
+          radial-gradient(circle at 80% 88%, rgba(80, 110, 255, 0.12), transparent 60%),
+          linear-gradient(180deg, #0b0d12 0%, #11141b 100%);
+      }
+      @media (prefers-color-scheme: light) {
+        body {
+          background:
+            radial-gradient(circle at 22% 12%, rgba(245, 165, 36, 0.18), transparent 55%),
+            radial-gradient(circle at 80% 88%, rgba(80, 110, 255, 0.12), transparent 60%),
+            linear-gradient(180deg, #f7f7fa 0%, #eeeef3 100%);
+        }
+      }
+      .drag {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 36px;
+        -webkit-app-region: drag;
+      }
+      .stage {
+        display: grid;
+        gap: 18px;
+        place-items: center;
+        text-align: center;
+        padding: 24px;
+      }
+      .logo {
+        width: 96px;
+        height: 96px;
+        border-radius: 22px;
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4),
+          0 0 0 0.5px rgba(255, 255, 255, 0.18) inset;
+        animation: fadeIn 0.6s cubic-bezier(0.2, 0.9, 0.3, 1);
+      }
+      h1 {
+        margin: 0;
+        font-size: 22px;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+      }
+      p {
+        margin: 0;
+        color: var(--text-soft);
+        font-size: 13px;
+        max-width: 360px;
+        line-height: 1.5;
+        min-height: 18px;
+      }
+      .spinner {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        border: 2.5px solid rgba(255, 255, 255, 0.12);
+        border-top-color: var(--accent);
+        animation: spin 0.9s linear infinite;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: scale(0.92);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="drag"></div>
+    <div class="stage">
+      <img src="giraffle-logo.png" alt="Giraffle" class="logo" />
+      <h1>Giraffle başlatılıyor</h1>
+      <p id="status">Sunucu hazırlanıyor…</p>
+      <div class="spinner"></div>
+    </div>
+    <script type="module">
+      try {
+        const { listen } = window.__TAURI__.event;
+        const statusEl = document.getElementById("status");
+        const map = {
+          spawning: "Sunucu başlatılıyor…",
+          "pg-stop-previous": "Önceki Postgres durduruluyor…",
+          "pg-stale-lock-cleared": "Eski kilit temizlendi.",
+          "pg-initialise": "Postgres ilk kurulum…",
+          "pg-start": "Postgres başlatılıyor…",
+          "prisma-migrate": "Şema yükleniyor…",
+          "prisma-skip": "Şema güncel.",
+          "next-start": "Uygulama sunucusu başlatılıyor…",
+        };
+        await listen("giraffle://launch-status", (event) => {
+          const stage = event.payload?.stage ?? "";
+          statusEl.textContent = map[stage] ?? stage;
+        });
+      } catch {}
+    </script>
+  </body>
+</html>

@@ -5,6 +5,7 @@ import {
   LOCAL_SYNC_QUEUE_STORAGE_KEY,
   type LocalSyncQueueItem,
 } from "@/lib/workspace-preferences";
+import { BootstrapLogsCard } from "@/components/settings/BootstrapLogsCard";
 import { DesktopModeCard, useIsTauri } from "@/components/settings/DesktopModeCard";
 import { IntegrationSettingsCard } from "@/components/settings/IntegrationSettingsCard";
 import { McpAccessTokensCard, type McpAccessTokenView } from "@/components/settings/McpAccessTokensCard";
@@ -179,6 +180,9 @@ export function SettingsWorkspace({
             >
               <SettingsSectionIntro title="Desktop" />
               <DesktopModeCard />
+              <div style={{ marginTop: 16 }}>
+                <BootstrapLogsCard />
+              </div>
             </section>
           ) : null}
 
