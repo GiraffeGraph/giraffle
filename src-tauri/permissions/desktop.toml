@@ -31,6 +31,11 @@ description = "Open the desktop configuration window without resetting state."
 commands.allow = ["open_settings_window"]
 
 [[permission]]
+identifier = "allow-apply-mode"
+description = "Switch desktop mode (local / external-db / remote) without opening the wizard."
+commands.allow = ["apply_mode"]
+
+[[permission]]
 identifier = "allow-check-for-updates"
 description = "Trigger a Tauri auto-update check."
 commands.allow = ["check_for_updates"]
@@ -43,6 +48,7 @@ permissions = [
   "allow-start-local",
   "allow-start-external-db",
   "allow-start-remote",
+  "allow-apply-mode",
   "allow-reset-config",
   "allow-open-settings-window",
   "allow-check-for-updates",

@@ -510,6 +510,51 @@ async fn open_settings_window(app: AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
+async fn apply_mode(
+    app: AppHandle,
+    server: State<'_, SharedServer>,
+    mode: String,
+    db_url: Option<String>,
+    url: Option<String>,
+) -> Result<String, String> {
+    match mode.as_str() {
+        "local" => {
+            let next = start_local_mode(app.clone(), server.inner().clone(), None).await?;
+            store_set(&app, MODE_KEY, json!("local"))?;
+            store_delete(&app, REMOTE_URL_KEY).ok();
+            store_delete(&app, REMOTE_DB_URL_KEY).ok();
+            Ok(next)
+        }
+        "external-db" => {
+            let db = db_url.ok_or_else(|| "Database URL gerekli.".to_string())?;
+            let normalized = validate_db_url(&db)?;
+            let next = start_local_mode(
+                app.clone(),
+                server.inner().clone(),
+                Some(normalized.clone()),
+            )
+            .await?;
+            store_set(&app, MODE_KEY, json!("external-db"))?;
+            store_set(&app, REMOTE_DB_URL_KEY, json!(normalized))?;
+            store_delete(&app, REMOTE_URL_KEY).ok();
+            Ok(next)
+        }
+        "remote" => {
+            let raw_url = url.ok_or_else(|| "App URL gerekli.".to_string())?;
+            let raw_db = db_url.ok_or_else(|| "Database URL gerekli.".to_string())?;
+            let normalized_url = validate_url(&raw_url)?;
+            let normalized_db = validate_db_url(&raw_db)?;
+            ensure_server_stopped(server.inner()).await;
+            store_set(&app, MODE_KEY, json!("remote"))?;
+            store_set(&app, REMOTE_URL_KEY, json!(normalized_url.clone()))?;
+            store_set(&app, REMOTE_DB_URL_KEY, json!(normalized_db))?;
+            Ok(normalized_url)
+        }
+        other => Err(format!("Bilinmeyen mod: {other}")),
+    }
+}
+
+#[tauri::command]
 async fn check_for_updates(app: AppHandle) -> Result<Option<String>, String> {
     let updater = app.updater().map_err(|e| e.to_string())?;
     let Some(update) = updater.check().await.map_err(|e| e.to_string())? else {
@@ -596,6 +641,7 @@ pub fn run() {
             start_local,
             start_external_db,
             start_remote,
+            apply_mode,
             reset_config,
             open_settings_window,
             check_for_updates

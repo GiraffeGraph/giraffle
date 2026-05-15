@@ -358,18 +358,11 @@ async function main() {
 
   const fingerprint = migrationFingerprint();
   const stored = readStoredFingerprint();
-  if (stored === fingerprint) {
-    emit("status", { stage: "prisma-skip", reason: "fingerprint match" });
-  } else {
-    try {
-      await runMigrations(databaseUrl);
-      writeStoredFingerprint(fingerprint);
-    } catch (err) {
-      await pgStop();
-      fatal("prisma migrate deploy failed", { detail: String(err) });
-    }
-  }
+  const migrationsNeeded = stored !== fingerprint;
 
+  // Start Next in parallel with prisma. Next standalone does not touch the DB
+  // during boot; first request will land after migrations are done because we
+  // wait for both before emitting `ready`.
   const port = await pickPort();
   const { child, url } = startNextServer({ port, databaseUrl, authSecret });
 
@@ -393,15 +386,27 @@ async function main() {
     process.exit(code ?? 1);
   });
 
-  try {
-    await waitForHttp(url + "/api/health/ready");
-  } catch {
-    // Health endpoint may not exist; fall back to root probe.
+  const migrationsPromise = migrationsNeeded
+    ? runMigrations(databaseUrl).then(() => writeStoredFingerprint(fingerprint))
+    : (emit("status", { stage: "prisma-skip", reason: "fingerprint match" }),
+      Promise.resolve());
+
+  const nextReadyPromise = (async () => {
     try {
+      await waitForHttp(url + "/api/health/ready");
+    } catch {
       await waitForHttp(url);
-    } catch (err) {
-      fatal("Next server did not start", { detail: String(err) });
     }
+  })();
+
+  try {
+    await Promise.all([migrationsPromise, nextReadyPromise]);
+  } catch (err) {
+    await pgStop();
+    try {
+      child.kill("SIGTERM");
+    } catch {}
+    fatal("bootstrap step failed", { detail: String(err) });
   }
 
   emit("ready", { url });

@@ -23,6 +23,7 @@
     "allow-start-local",
     "allow-start-external-db",
     "allow-start-remote",
+    "allow-apply-mode",
     "allow-reset-config",
     "allow-open-settings-window",
     "allow-check-for-updates"

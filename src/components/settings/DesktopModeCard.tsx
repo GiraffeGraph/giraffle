@@ -12,22 +12,25 @@ interface DesktopConfig {
   remote_db_url: string;
 }
 
-const MODE_LABEL: Record<DesktopMode, { title: string; description: string }> = {
-  local: {
+const MODE_OPTIONS: { id: DesktopMode; title: string; description: string }[] = [
+  {
+    id: "local",
     title: "Local",
     description: "Yerleşik Postgres + Next sunucusu. Hiçbir bağımlılık yok.",
   },
-  "external-db": {
+  {
+    id: "external-db",
     title: "Kendi Veritabanım",
     description: "Sunucu local çalışır, Postgres bağlantısını sen sağlarsın.",
   },
-  remote: {
+  {
+    id: "remote",
     title: "Uzak Sunucu",
     description: "Mevcut bir Giraffle deployment'ına bağlanır.",
   },
-};
+];
 
-type TauriInvoke = (cmd: string) => Promise<unknown>;
+type TauriInvoke = <T = unknown>(cmd: string, args?: Record<string, unknown>) => Promise<T>;
 
 function getInvoke(): TauriInvoke | null {
   if (typeof window === "undefined") return null;
@@ -36,86 +39,124 @@ function getInvoke(): TauriInvoke | null {
   return tauri?.core?.invoke ?? null;
 }
 
+export function useIsTauri(): boolean {
+  const [isTauri, setIsTauri] = useState(false);
+  useEffect(() => {
+    if (getInvoke() != null) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setIsTauri(true);
+    }
+  }, []);
+  return isTauri;
+}
+
 export function DesktopModeCard() {
   const [config, setConfig] = useState<DesktopConfig | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  const [selected, setSelected] = useState<DesktopMode>("local");
+  const [dbUrl, setDbUrl] = useState("");
+  const [remoteUrl, setRemoteUrl] = useState("");
   const [busy, setBusy] = useState(false);
+  const [applyError, setApplyError] = useState<string | null>(null);
+  const [stage, setStage] = useState<string | null>(null);
 
   useEffect(() => {
     const invoke = getInvoke();
     if (!invoke) return;
     let cancelled = false;
-    invoke("get_config")
+    invoke<DesktopConfig>("get_config")
       .then((value) => {
         if (cancelled) return;
-        setConfig(value as DesktopConfig);
+        setConfig(value);
+        if (value.mode === "local" || value.mode === "external-db" || value.mode === "remote") {
+          setSelected(value.mode);
+        }
+        if (value.remote_url) setRemoteUrl(value.remote_url);
+        if (value.remote_db_url) setDbUrl(value.remote_db_url);
       })
       .catch((err) => {
         if (cancelled) return;
-        setError(String(err));
+        setLoadError(String(err));
       });
     return () => {
       cancelled = true;
     };
   }, []);
 
-  const reconfigure = async () => {
+  useEffect(() => {
+    const tauri = (window as unknown as {
+      __TAURI__?: {
+        event?: {
+          listen?: (
+            event: string,
+            cb: (e: { payload: { stage: string; detail?: string } }) => void,
+          ) => Promise<() => void>;
+        };
+      };
+    }).__TAURI__;
+    const listen = tauri?.event?.listen;
+    if (!listen) return;
+    let unsub: (() => void) | null = null;
+    listen("giraffle://launch-status", (event) => {
+      const map: Record<string, string> = {
+        spawning: "Sunucu başlatılıyor…",
+        "pg-stop-previous": "Önceki Postgres durduruluyor…",
+        "pg-stale-lock-cleared": "Eski kilit temizlendi.",
+        "pg-initialise": "Postgres ilk kurulum…",
+        "pg-start": "Postgres başlatılıyor…",
+        "prisma-migrate": "Şema yükleniyor…",
+        "prisma-skip": "Şema güncel, atlandı.",
+        "next-start": "Uygulama sunucusu başlatılıyor…",
+      };
+      setStage(map[event.payload.stage] ?? event.payload.stage);
+    }).then((fn) => {
+      unsub = fn;
+    });
+    return () => {
+      if (unsub) unsub();
+    };
+  }, []);
+
+  const apply = async () => {
     const invoke = getInvoke();
     if (!invoke) return;
     setBusy(true);
-    setError(null);
+    setApplyError(null);
+    setStage("Hazırlanıyor…");
     try {
-      await invoke("open_settings_window");
+      const url = await invoke<string>("apply_mode", {
+        mode: selected,
+        dbUrl: selected === "local" ? null : dbUrl.trim(),
+        url: selected === "remote" ? remoteUrl.trim() : null,
+      });
+      setStage("Yönlendiriliyor…");
+      // Navigate to the new server, landing back on /settings so the user
+      // sees the freshly applied mode.
+      window.location.replace(`${url.replace(/\/$/, "")}/settings`);
     } catch (err) {
-      setError(String(err));
+      setApplyError(String(err));
+      setStage(null);
     } finally {
       setBusy(false);
     }
   };
 
-  if (!config && !error) {
-    return (
-      <Card variant="outlined">
-        <CardHeader>
-          <CardTitle>Desktop Modu</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div style={{ fontSize: 13, color: "var(--md-sys-color-on-surface-variant)" }}>
-            Yapılandırma yükleniyor…
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
+  const openWizard = async () => {
+    const invoke = getInvoke();
+    if (!invoke) return;
+    try {
+      await invoke("open_settings_window");
+    } catch (err) {
+      setApplyError(String(err));
+    }
+  };
 
-  if (!config && error) {
-    return (
-      <Card variant="outlined">
-        <CardHeader>
-          <CardTitle>Desktop Modu</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div style={{ display: "grid", gap: 8 }}>
-            <div style={{ fontSize: 13 }}>
-              Desktop yapılandırmasına ulaşılamadı. Bu Settings sayfası tarayıcıdaysa
-              normaldir; masaüstü uygulamasındaysan altta hata gözükür.
-            </div>
-            <pre style={{ fontSize: 11, color: "var(--md-sys-color-error)", whiteSpace: "pre-wrap" }}>
-              {error}
-            </pre>
-          </div>
-        </CardContent>
-        <CardActions>
-          <Button variant="filled" onClick={reconfigure} disabled={busy}>
-            {busy ? "Açılıyor…" : "Yeniden Yapılandır"}
-          </Button>
-        </CardActions>
-      </Card>
-    );
-  }
-
-  const modeKey = (config!.mode || "local") as DesktopMode;
-  const info = MODE_LABEL[modeKey] ?? MODE_LABEL.local;
+  const currentMode = (config?.mode || "local") as DesktopMode;
+  const isDirty =
+    selected !== currentMode ||
+    (selected !== "local" && dbUrl.trim() !== (config?.remote_db_url ?? "")) ||
+    (selected === "remote" && remoteUrl.trim() !== (config?.remote_url ?? ""));
 
   return (
     <Card variant="outlined">
@@ -123,61 +164,172 @@ export function DesktopModeCard() {
         <CardTitle>Desktop Modu</CardTitle>
       </CardHeader>
       <CardContent>
-        <div style={{ display: "grid", gap: 12 }}>
-          <div>
-            <div style={{ fontSize: 12, color: "var(--md-sys-color-on-surface-variant)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-              Aktif mod
-            </div>
-            <div style={{ fontSize: 16, fontWeight: 600, marginTop: 4 }}>{info.title}</div>
-            <div style={{ fontSize: 13, color: "var(--md-sys-color-on-surface-variant)", marginTop: 2 }}>
-              {info.description}
-            </div>
+        {!config && !loadError ? (
+          <div style={{ fontSize: 13, color: "var(--md-sys-color-on-surface-variant)" }}>
+            Yapılandırma yükleniyor…
           </div>
-          {modeKey === "remote" && config!.remote_url ? (
-            <ModeDetail label="App URL" value={config!.remote_url} />
-          ) : null}
-          {modeKey !== "local" && config!.remote_db_url ? (
-            <ModeDetail label="Database URL" value={maskDbUrl(config!.remote_db_url)} />
-          ) : null}
-          {error ? (
-            <div style={{ color: "var(--md-sys-color-error)", fontSize: 12 }}>{error}</div>
-          ) : null}
-        </div>
+        ) : null}
+
+        {loadError ? (
+          <div style={{ display: "grid", gap: 8, marginBottom: 12 }}>
+            <div style={{ fontSize: 13 }}>
+              Desktop yapılandırmasına ulaşılamadı. Tarayıcıda açtıysan normaldir;
+              masaüstü uygulamasındaysan altta hata gözükür.
+            </div>
+            <pre style={{ fontSize: 11, color: "var(--md-sys-color-error)", whiteSpace: "pre-wrap" }}>
+              {loadError}
+            </pre>
+          </div>
+        ) : null}
+
+        {config ? (
+          <div style={{ display: "grid", gap: 14 }}>
+            <ModeRadioGroup selected={selected} onChange={setSelected} />
+
+            {selected === "external-db" ? (
+              <Field
+                label="Database URL"
+                value={dbUrl}
+                onChange={setDbUrl}
+                placeholder="postgresql://user:pass@host:5432/db"
+                monospace
+              />
+            ) : null}
+
+            {selected === "remote" ? (
+              <>
+                <Field
+                  label="App URL"
+                  value={remoteUrl}
+                  onChange={setRemoteUrl}
+                  placeholder="https://giraffle.example.com"
+                />
+                <Field
+                  label="Database URL"
+                  value={dbUrl}
+                  onChange={setDbUrl}
+                  placeholder="postgresql://user:pass@host:5432/db"
+                  monospace
+                />
+              </>
+            ) : null}
+
+            {stage ? (
+              <div style={{ fontSize: 12, color: "var(--md-sys-color-on-surface-variant)" }}>
+                {stage}
+              </div>
+            ) : null}
+
+            {applyError ? (
+              <pre style={{ fontSize: 11, color: "var(--md-sys-color-error)", whiteSpace: "pre-wrap" }}>
+                {applyError}
+              </pre>
+            ) : null}
+          </div>
+        ) : null}
       </CardContent>
       <CardActions>
-        <Button variant="filled" onClick={reconfigure} disabled={busy}>
-          {busy ? "Açılıyor…" : "Yeniden Yapılandır"}
+        <Button variant="outlined" onClick={openWizard} disabled={busy}>
+          Wizard&apos;ı Aç
+        </Button>
+        <Button variant="filled" onClick={apply} disabled={busy || !config || !isDirty}>
+          {busy ? "Uygulanıyor…" : "Uygula"}
         </Button>
       </CardActions>
     </Card>
   );
 }
 
-function ModeDetail({ label, value }: { label: string; value: string }) {
+function ModeRadioGroup({
+  selected,
+  onChange,
+}: {
+  selected: DesktopMode;
+  onChange: (mode: DesktopMode) => void;
+}) {
   return (
-    <div>
-      <div style={{ fontSize: 11, color: "var(--md-sys-color-on-surface-variant)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-        {label}
-      </div>
-      <code style={{ fontSize: 12, wordBreak: "break-all" }}>{value}</code>
+    <div style={{ display: "grid", gap: 8 }}>
+      {MODE_OPTIONS.map((opt) => {
+        const active = opt.id === selected;
+        return (
+          <button
+            key={opt.id}
+            type="button"
+            onClick={() => onChange(opt.id)}
+            style={{
+              textAlign: "left",
+              border: active
+                ? "1px solid var(--md-sys-color-primary)"
+                : "1px solid var(--md-sys-color-outline-variant)",
+              borderRadius: 10,
+              padding: "10px 12px",
+              background: active ? "rgba(245,165,36,0.06)" : "transparent",
+              color: "inherit",
+              cursor: "pointer",
+              fontFamily: "inherit",
+            }}
+          >
+            <div style={{ fontSize: 14, fontWeight: 600 }}>{opt.title}</div>
+            <div
+              style={{
+                fontSize: 12,
+                color: "var(--md-sys-color-on-surface-variant)",
+                marginTop: 2,
+              }}
+            >
+              {opt.description}
+            </div>
+          </button>
+        );
+      })}
     </div>
   );
 }
 
-function maskDbUrl(url: string): string {
-  try {
-    const parsed = new URL(url);
-    if (parsed.password) parsed.password = "***";
-    return parsed.toString();
-  } catch {
-    return url;
-  }
-}
-
-export function useIsTauri(): boolean {
-  const [isTauri, setIsTauri] = useState(false);
-  useEffect(() => {
-    setIsTauri(getInvoke() != null);
-  }, []);
-  return isTauri;
+function Field({
+  label,
+  value,
+  onChange,
+  placeholder,
+  monospace,
+}: {
+  label: string;
+  value: string;
+  onChange: (next: string) => void;
+  placeholder?: string;
+  monospace?: boolean;
+}) {
+  return (
+    <label style={{ display: "grid", gap: 4 }}>
+      <span
+        style={{
+          fontSize: 11,
+          color: "var(--md-sys-color-on-surface-variant)",
+          textTransform: "uppercase",
+          letterSpacing: "0.06em",
+        }}
+      >
+        {label}
+      </span>
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        spellCheck={false}
+        autoComplete="off"
+        style={{
+          padding: "8px 10px",
+          border: "1px solid var(--md-sys-color-outline-variant)",
+          borderRadius: 8,
+          background: "transparent",
+          color: "inherit",
+          fontFamily: monospace
+            ? "ui-monospace, SFMono-Regular, Menlo, monospace"
+            : "inherit",
+          fontSize: 13,
+        }}
+      />
+    </label>
+  );
 }
