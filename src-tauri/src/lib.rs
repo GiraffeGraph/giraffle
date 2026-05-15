@@ -158,6 +158,17 @@ fn node_binary(app: &AppHandle) -> Result<PathBuf, String> {
     let exe_name = if cfg!(windows) { "node.exe" } else { "node" };
 
     let mut candidates: Vec<PathBuf> = Vec::new();
+
+    // Tauri 2 places externalBin sidecars next to the main executable
+    // (Contents/MacOS/ on macOS, the install dir on win/linux). In prod the
+    // `-<triple>` suffix is stripped, in dev it's preserved.
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(parent) = exe.parent() {
+            candidates.push(parent.join(exe_name));
+            candidates.push(parent.join(&suffixed));
+        }
+    }
+
     if let Ok(resource_dir) = app.path().resource_dir() {
         candidates.push(resource_dir.join(exe_name));
         candidates.push(resource_dir.join("bin").join(exe_name));
