@@ -19,6 +19,12 @@
     "core:event:default",
     "store:default",
     "updater:default",
-    "desktop:default"
+    "allow-get-config",
+    "allow-start-local",
+    "allow-start-external-db",
+    "allow-start-remote",
+    "allow-reset-config",
+    "allow-open-settings-window",
+    "allow-check-for-updates"
   ]
 }
