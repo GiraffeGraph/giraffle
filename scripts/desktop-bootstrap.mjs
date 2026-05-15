@@ -15,8 +15,16 @@
 
 import { spawn } from "node:child_process";
 import { createServer } from "node:net";
-import { mkdirSync, existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { randomBytes } from "node:crypto";
+import {
+  mkdirSync,
+  existsSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
+import { createHash, randomBytes } from "node:crypto";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { createRequire } from "node:module";
@@ -245,9 +253,63 @@ async function waitForHttp(url, timeoutMs = 30_000) {
       const res = await fetch(url, { method: "GET" });
       if (res.status < 500) return;
     } catch {}
-    await delay(250);
+    await delay(100);
   }
   throw new Error(`server did not become ready within ${timeoutMs}ms`);
+}
+
+function migrationFingerprint() {
+  const hash = createHash("sha256");
+  const schemaPath = join(RESOURCE_DIR, "prisma", "schema.prisma");
+  if (existsSync(schemaPath)) hash.update(readFileSync(schemaPath));
+  const migrationsDir = join(RESOURCE_DIR, "prisma", "migrations");
+  if (existsSync(migrationsDir)) {
+    const walk = (dir) => {
+      let entries;
+      try {
+        entries = readdirSync(dir).sort();
+      } catch {
+        return;
+      }
+      for (const entry of entries) {
+        const full = join(dir, entry);
+        let st;
+        try {
+          st = statSync(full);
+        } catch {
+          continue;
+        }
+        if (st.isDirectory()) {
+          walk(full);
+        } else {
+          hash.update(full);
+          hash.update(readFileSync(full));
+        }
+      }
+    };
+    walk(migrationsDir);
+  }
+  return hash.digest("hex");
+}
+
+function fingerprintPath() {
+  return join(DATA_DIR, "migrations.fingerprint");
+}
+
+function readStoredFingerprint() {
+  try {
+    return readFileSync(fingerprintPath(), "utf8").trim();
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredFingerprint(value) {
+  try {
+    writeFileSync(fingerprintPath(), value);
+  } catch (err) {
+    emit("warn", { message: "failed to persist migration fingerprint", detail: String(err) });
+  }
 }
 
 function startNextServer({ port, databaseUrl, authSecret }) {
@@ -294,11 +356,18 @@ async function main() {
     if (!databaseUrl) fatal("GIRAFFLE_DATABASE_URL required for external-db mode");
   }
 
-  try {
-    await runMigrations(databaseUrl);
-  } catch (err) {
-    await pgStop();
-    fatal("prisma migrate deploy failed", { detail: String(err) });
+  const fingerprint = migrationFingerprint();
+  const stored = readStoredFingerprint();
+  if (stored === fingerprint) {
+    emit("status", { stage: "prisma-skip", reason: "fingerprint match" });
+  } else {
+    try {
+      await runMigrations(databaseUrl);
+      writeStoredFingerprint(fingerprint);
+    } catch (err) {
+      await pgStop();
+      fatal("prisma migrate deploy failed", { detail: String(err) });
+    }
   }
 
   const port = await pickPort();

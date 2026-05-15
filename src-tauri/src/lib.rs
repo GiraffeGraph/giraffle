@@ -505,6 +505,11 @@ async fn reset_config(
 }
 
 #[tauri::command]
+async fn open_settings_window(app: AppHandle) -> Result<(), String> {
+    open_config_window(&app)
+}
+
+#[tauri::command]
 async fn check_for_updates(app: AppHandle) -> Result<Option<String>, String> {
     let updater = app.updater().map_err(|e| e.to_string())?;
     let Some(update) = updater.check().await.map_err(|e| e.to_string())? else {
@@ -519,6 +524,8 @@ async fn check_for_updates(app: AppHandle) -> Result<Option<String>, String> {
 
 fn spawn_update_check(app: AppHandle) {
     tauri::async_runtime::spawn(async move {
+        // Defer to keep the network call off the critical startup path.
+        tokio::time::sleep(std::time::Duration::from_secs(30)).await;
         let Ok(updater) = app.updater() else { return };
         let check = match updater.check().await {
             Ok(Some(u)) => u,
@@ -590,6 +597,7 @@ pub fn run() {
             start_external_db,
             start_remote,
             reset_config,
+            open_settings_window,
             check_for_updates
         ])
         .setup(move |app| {

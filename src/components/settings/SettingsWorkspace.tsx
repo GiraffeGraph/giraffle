@@ -5,6 +5,7 @@ import {
   LOCAL_SYNC_QUEUE_STORAGE_KEY,
   type LocalSyncQueueItem,
 } from "@/lib/workspace-preferences";
+import { DesktopModeCard, useIsTauri } from "@/components/settings/DesktopModeCard";
 import { IntegrationSettingsCard } from "@/components/settings/IntegrationSettingsCard";
 import { McpAccessTokensCard, type McpAccessTokenView } from "@/components/settings/McpAccessTokensCard";
 import { UpdateCenterCard } from "@/components/update/UpdateCenterCard";
@@ -38,7 +39,7 @@ type OperationLogView = {
   appliedAt: string | null;
 };
 
-type SettingsTabId = "hosting" | "integrations" | "access" | "sync";
+type SettingsTabId = "hosting" | "desktop" | "integrations" | "access" | "sync";
 
 type SettingsTab = {
   id: SettingsTabId;
@@ -60,6 +61,7 @@ export function SettingsWorkspace({
 }: SettingsWorkspaceProps) {
   const tabsId = useId();
   const [activeTab, setActiveTab] = useState<SettingsTabId>("hosting");
+  const isTauri = useIsTauri();
   const [queuedItems, setQueuedItems] = useState<LocalSyncQueueItem[]>(() => {
     if (typeof window === "undefined") {
       return [];
@@ -86,6 +88,17 @@ export function SettingsWorkspace({
       icon: "deployed_code",
       badge: updateStatus?.updateAvailable ? "Update" : `v${appVersion}`,
     },
+    ...(isTauri
+      ? ([
+          {
+            id: "desktop",
+            label: "Desktop",
+            description: "Local / external / remote mode",
+            icon: "desktop_windows",
+            badge: "App",
+          },
+        ] as SettingsTab[])
+      : []),
     {
       id: "integrations",
       label: "AI Provider",
@@ -155,6 +168,19 @@ export function SettingsWorkspace({
             <SettingsSectionIntro title="Updates" />
             {updateStatus ? <UpdateCenterCard status={updateStatus} /> : null}
           </section>
+
+          {isTauri ? (
+            <section
+              id={`${tabsId}-desktop-panel`}
+              role="tabpanel"
+              aria-labelledby={`${tabsId}-desktop-tab`}
+              hidden={activeTab !== "desktop"}
+              className={styles.panel}
+            >
+              <SettingsSectionIntro title="Desktop" />
+              <DesktopModeCard />
+            </section>
+          ) : null}
 
           <section
             id={`${tabsId}-integrations-panel`}
