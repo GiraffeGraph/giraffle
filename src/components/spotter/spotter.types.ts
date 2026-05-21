@@ -18,6 +18,7 @@ export interface SpotterWorkspaceProps {
   initialSessionId?: string | null;
   initialMessages?: UIMessage[];
   initialPrompt?: string | null;
+  initialTitle?: string | null;
 }
 
 export interface ChatMessage {

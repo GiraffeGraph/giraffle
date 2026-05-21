@@ -16,6 +16,7 @@ import "@/styles/components/chip.css";
 import "@/styles/components/dialog.css";
 import "@/styles/components/command-palette.css";
 import "@/styles/components/navigation.css";
+import "@/styles/components/editor-tabs.css";
 import "@/styles/layouts/app-layout.css";
 import "@/styles/layouts/sidebar.css";
 import "@/styles/layouts/pages.css";

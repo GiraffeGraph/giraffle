@@ -64,6 +64,7 @@ export default async function SpotterPage({
       <SpotterWorkspace
         key={activeSession?.id ?? "new"}
         initialSessionId={activeSession?.id ?? null}
+        initialTitle={activeSession?.title ?? null}
         initialMessages={
           activeSession?.messages.map((message) => ({
             id: message.id,

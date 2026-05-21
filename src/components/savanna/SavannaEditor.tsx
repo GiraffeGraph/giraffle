@@ -10,6 +10,7 @@ import { isSidebarNoteDragData } from "@/components/sidebar/sidebar.types";
 import { saveSavannaStateAction } from "@/server/api/savanna";
 import { isRecord } from "@/lib/utils";
 import { NotePreviewPanel } from "./NotePreviewPanel";
+import { useRegisterTab } from "@/components/tabs/use-register-tab";
 import type { AppState, ExcalidrawImperativeAPI, ExcalidrawProps } from "@excalidraw/excalidraw/types";
 import type { ExcalidrawElement } from "@excalidraw/excalidraw/element/types";
 
@@ -80,6 +81,13 @@ function pickPersistedAppState(appState: AppState) {
 
 export function SavannaEditor({ canvas, notes }: SavannaEditorProps) {
   const router = useRouter();
+  useRegisterTab({
+    kind: "savanna",
+    id: canvas.id,
+    href: `/savanna/${canvas.id}`,
+    title: canvas.title || "Untitled canvas",
+    icon: null,
+  });
   const [excalidrawAPI, setExcalidrawAPI] = useState<ExcalidrawImperativeAPI | null>(null);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
   const [theme, setTheme] = useState<ExcalidrawTheme>("light");

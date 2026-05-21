@@ -1,0 +1,141 @@
+.editor-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: stretch;
+  min-height: 34px;
+  border-bottom: 1px solid var(--border-soft, var(--md-sys-color-outline-variant));
+  background: color-mix(in srgb, var(--bg-page, #fff) 88%, transparent);
+  backdrop-filter: blur(14px);
+}
+
+.editor-tabs-scroller {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: stretch;
+  gap: 1px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.editor-tabs-scroller::-webkit-scrollbar {
+  display: none;
+}
+
+.editor-tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: 220px;
+  padding: 0 8px 0 10px;
+  height: 34px;
+  border: none;
+  border-right: 1px solid var(--border-soft, var(--md-sys-color-outline-variant));
+  background: transparent;
+  color: var(--text-secondary, var(--md-sys-color-on-surface-variant));
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  transition: background var(--transition-fast, 120ms ease),
+    color var(--transition-fast, 120ms ease);
+}
+
+.editor-tab:hover {
+  background: color-mix(
+    in srgb,
+    var(--surface-hover, var(--md-sys-color-surface-container)) 80%,
+    transparent
+  );
+  color: var(--text-primary, var(--md-sys-color-on-surface));
+}
+
+.editor-tab.active {
+  background: var(--shell-main-bg, var(--md-sys-color-surface));
+  color: var(--text-primary, var(--md-sys-color-on-surface));
+}
+
+.editor-tab.active::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background: var(--accent, var(--md-sys-color-primary));
+}
+
+.editor-tab-savanna .editor-tab-icon {
+  color: color-mix(in srgb, var(--accent, #d97706) 70%, var(--text-tertiary));
+}
+
+.editor-tab-spotter .editor-tab-icon {
+  color: color-mix(in srgb, var(--md-sys-color-tertiary, #7c3aed) 70%, var(--text-tertiary));
+}
+
+.editor-tab.dragging {
+  opacity: 0.5;
+}
+
+.editor-tab-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  color: var(--text-tertiary, var(--md-sys-color-on-surface-variant));
+}
+
+.editor-tab-icon .material-symbols-outlined {
+  font-size: 14px;
+}
+
+.editor-tab-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.editor-tab-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  color: var(--text-tertiary, var(--md-sys-color-on-surface-variant));
+  opacity: 0;
+  transition: opacity var(--transition-fast, 120ms ease),
+    background var(--transition-fast, 120ms ease),
+    color var(--transition-fast, 120ms ease);
+}
+
+.editor-tab:hover .editor-tab-close,
+.editor-tab.active .editor-tab-close,
+.editor-tab:focus-within .editor-tab-close {
+  opacity: 1;
+}
+
+.editor-tab-close:hover {
+  background: color-mix(
+    in srgb,
+    var(--surface-hover, var(--md-sys-color-surface-container-high)) 70%,
+    transparent
+  );
+  color: var(--text-primary, var(--md-sys-color-on-surface));
+}
+
+@media (max-width: 900px) {
+  .editor-tabs {
+    display: none;
+  }
+}

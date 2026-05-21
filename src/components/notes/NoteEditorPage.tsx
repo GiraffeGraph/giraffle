@@ -40,6 +40,7 @@ import {
   type TocHeading,
 } from "@/components/notes/NoteEditorPage.helpers";
 import { queueLocalMutation, resolveLocalMutation } from "@/lib/local-sync";
+import { useRegisterTab } from "@/components/tabs/use-register-tab";
 
 interface NoteEditorPageProps {
   note: {
@@ -127,6 +128,14 @@ export function NoteEditorPage({
   );
 
   const effectiveTitle = title.trim() || DEFAULT_NOTE_TITLE;
+
+  useRegisterTab({
+    kind: "note",
+    id: note.id,
+    href: `/notes/${note.id}`,
+    title: effectiveTitle,
+    icon: noteIcon,
+  });
   const saveStatusMeta = useMemo(() => {
     switch (saveStatus) {
       case "saving":

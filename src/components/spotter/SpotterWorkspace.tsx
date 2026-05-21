@@ -15,6 +15,7 @@ import {
 } from "@/domain/spotter-commands/catalog";
 import styles from "./SpotterWorkspace.module.css";
 import type { SpotterWorkspaceProps } from "./spotter.types";
+import { useRegisterTab } from "@/components/tabs/use-register-tab";
 
 interface SlashCommandResponse {
   title: string;
@@ -54,6 +55,7 @@ export function SpotterWorkspace({
   initialSessionId = null,
   initialMessages = [],
   initialPrompt = null,
+  initialTitle = null,
 }: SpotterWorkspaceProps) {
   const composerRef = useRef<HTMLTextAreaElement | null>(null);
   const initialPromptRef = useRef<string | null>(null);
@@ -62,6 +64,18 @@ export function SpotterWorkspace({
   const adoptSessionIdRef = useRef<(serverSessionId: string) => void>(() => {});
   const [activeSessionId, setActiveSessionId] = useState<string | null>(
     initialSessionId,
+  );
+
+  useRegisterTab(
+    activeSessionId
+      ? {
+          kind: "spotter",
+          id: activeSessionId,
+          href: `/spotter?session=${activeSessionId}`,
+          title: initialTitle?.trim() || "Chat",
+          icon: null,
+        }
+      : null,
   );
   const [draft, setDraft] = useState("");
   const [selectedToolIntent, setSelectedToolIntent] = useState<ComposerToolIntent | null>(null);

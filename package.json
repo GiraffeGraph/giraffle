@@ -1,6 +1,6 @@
 {
   "name": "giraffle",
-  "version": "0.9.1",
+  "version": "0.9.2",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -17,7 +17,7 @@
     "postinstall": "prisma generate",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build"
+    "tauri:build": "CI=true tauri build"
   },
   "dependencies": {
     "@ai-sdk/mcp": "^1.0.40",
