@@ -17,7 +17,8 @@
     "postinstall": "prisma generate",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
-    "tauri:build": "CI=true tauri build"
+    "tauri:build": "CI=true tauri build",
+    "release:macos": "bash scripts/release-macos.sh"
   },
   "dependencies": {
     "@ai-sdk/mcp": "^1.0.40",
