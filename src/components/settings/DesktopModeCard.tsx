@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { confirmDialog } from "@/components/ui/ConfirmDialog";
 import { Card, CardActions, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 
 type DesktopMode = "local" | "external-db" | "remote";
@@ -165,13 +166,14 @@ export function DesktopModeCard() {
   const resetLocal = async () => {
     const invoke = getInvoke();
     if (!invoke) return;
-    if (
-      !window.confirm(
+    const ok = await confirmDialog({
+      title: "Local veriyi sıfırla",
+      message:
         "Local Postgres verisi (pgdata) ve auth secret silinecek. Bu işlem geri alınamaz. Devam?",
-      )
-    ) {
-      return;
-    }
+      confirmLabel: "Sıfırla",
+      destructive: true,
+    });
+    if (!ok) return;
     setBusy(true);
     setApplyError(null);
     setStage("Local veriler siliniyor…");

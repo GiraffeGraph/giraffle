@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createSavannaAction, deleteSavannaAction, renameSavannaAction } from "@/server/api/savanna";
+import { confirmDialog } from "@/components/ui/ConfirmDialog";
 
 type SavannaSummary = {
   id: string;
@@ -139,8 +140,14 @@ export function SavannaListPage({ savannas }: { savannas: SavannaSummary[] }) {
                   type="button"
                   className="savanna-card-action-btn savanna-card-action-btn--danger"
                   title="Delete"
-                  onClick={() => {
-                    if (confirm(`Delete "${savanna.title}"?`)) handleDelete(savanna.id);
+                  onClick={async () => {
+                    const ok = await confirmDialog({
+                      title: "Delete savanna?",
+                      message: `"${savanna.title}" will be permanently removed.`,
+                      confirmLabel: "Delete",
+                      destructive: true,
+                    });
+                    if (ok) handleDelete(savanna.id);
                   }}
                 >
                   <span className="material-symbols-outlined">delete</span>

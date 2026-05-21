@@ -3,6 +3,7 @@ import { RightRail } from "@/components/right-rail/RightRail";
 import { CommandPalette } from "@/components/search/CommandPalette";
 import { Sidebar } from "@/components/sidebar/Sidebar";
 import { EditorTabs } from "@/components/tabs/EditorTabs";
+import { ConfirmDialogHost } from "@/components/ui/ConfirmDialog";
 import { getFoldersAction } from "@/server/api/folders";
 import { getNotesAction } from "@/server/api/notes";
 import { getAppRuntimeEnv } from "@/lib/env.server";
@@ -32,6 +33,7 @@ export default async function MainLayout({
       <RightRail appVersion={app.version} />
       <CommandPalette />
       <GlobalShortcuts />
+      <ConfirmDialogHost />
     </div>
   );
 }

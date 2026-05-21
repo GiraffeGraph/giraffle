@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "@/components/ui/ConfirmDialog";
 import type { Editor as TiptapEditor } from "@tiptap/core";
 import { Fragment, Slice } from "@tiptap/pm/model";
 import type { EditorView } from "@tiptap/pm/view";
@@ -640,9 +641,11 @@ export function Editor({
           return;
         }
 
-        const shouldCreate = window.confirm(
-          `Create the note "${wikilinkTarget}" from this wikilink?`
-        );
+        const shouldCreate = await confirmDialog({
+          title: "Create note?",
+          message: `Create the note "${wikilinkTarget}" from this wikilink?`,
+          confirmLabel: "Create",
+        });
 
         if (!shouldCreate) {
           return;

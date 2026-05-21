@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { confirmDialog } from "@/components/ui/ConfirmDialog";
 import { ConnectorDocPanel } from "@/components/trails/ConnectorDocPanel";
 import {
   TRAIL_KIND_CATALOG,
@@ -145,7 +146,13 @@ export function TrailsManager({ initialTrails, initialOauthEnabled = [] }: Props
 
   const removeTrail = useCallback(
     async (id: string) => {
-      if (!window.confirm("Delete this trail?")) return;
+      const ok = await confirmDialog({
+        title: "Delete trail?",
+        message: "This trail will be permanently removed.",
+        confirmLabel: "Delete",
+        destructive: true,
+      });
+      if (!ok) return;
       setBusy(true);
       try {
         const res = await fetch(`/api/trails/${id}`, { method: "DELETE" });

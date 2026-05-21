@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
+import { confirmDialog } from "@/components/ui/ConfirmDialog";
 import {
   Card,
   CardActions,
@@ -121,8 +122,14 @@ function SecretRow({ item }: { item: SecretItem }) {
     });
   };
 
-  const remove = () => {
-    if (!confirm(`Delete ${item.key} from the database?`)) return;
+  const remove = async () => {
+    const ok = await confirmDialog({
+      title: "Delete secret?",
+      message: `Delete ${item.key} from the database?`,
+      confirmLabel: "Delete",
+      destructive: true,
+    });
+    if (!ok) return;
 
     startTransition(async () => {
       try {

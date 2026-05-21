@@ -1,6 +1,6 @@
 [package]
 name = "giraffle"
-version = "0.9.2"
+version = "0.9.3"
 description = "Giraffle desktop shell"
 authors = ["Yahya Efe Kuruçay"]
 edition = "2021"
