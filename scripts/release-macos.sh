@@ -67,11 +67,25 @@ if ! gh release view "$TAG" >/dev/null 2>&1; then
 fi
 
 echo "==> Uploading assets"
-gh release upload "$TAG" \
+upload_with_retry() {
+  local attempt=1
+  local max=3
+  while (( attempt <= max )); do
+    if gh release upload "$TAG" "$@" --clobber; then
+      return 0
+    fi
+    echo "  upload attempt $attempt failed, retrying in 5s..."
+    sleep 5
+    attempt=$((attempt + 1))
+  done
+  echo "ERROR: upload failed after $max attempts" >&2
+  return 1
+}
+
+upload_with_retry \
   "$DMG_PATH" \
   "$APP_TARBALL" \
   "$APP_SIG" \
-  "$MANIFEST" \
-  --clobber
+  "$MANIFEST"
 
 echo "==> Done: https://github.com/$(gh repo view --json nameWithOwner -q .nameWithOwner)/releases/tag/$TAG"
