@@ -50,6 +50,20 @@ import {
 } from "./extensions";
 import { ColorPicker, type ColorPickerTab } from "./toolbar/ColorPicker";
 import { SlashCommandMenu } from "./toolbar/SlashCommandMenu";
+import {
+  shouldRenderMarkdownPaste,
+  insertMarkdownPaste,
+} from "./markdown-paste";
+import {
+  resolveColorSelectionRange,
+  getClosestBlockElement,
+  getSelectionBlockId,
+  focusBlockById,
+  findBlockLocation,
+  getBlockId,
+  getChildBlocks,
+  cloneBlockTree,
+} from "./block-helpers";
 
 /* ─── State types ─────────────────────────────────────────────── */
 
@@ -88,59 +102,6 @@ interface BlockDropIndicatorState {
   mode: "before" | "after";
 }
 
-const MARKDOWN_BLOCK_PATTERNS = [
-  /^#{1,6}\s+.+/m,
-  /^[-*+]\s+.+/m,
-  /^\d+\.\s+.+/m,
-  /^-\s+\[[ xX]\]\s+.+/m,
-  /^>\s+.+/m,
-  /^```[\s\S]*```/m,
-  /^\s*([-*_])\1\1+\s*$/m,
-  /^!\[[^\]]*\]\([^)]+\)/m,
-  /^\|.+\|\s*\n\|\s*[-: ]+\|/m,
-  /^<details>\s*$/m,
-] as const;
-
-const MARKDOWN_INLINE_PATTERN =
-  /(\*\*[^*\n]+\*\*|__[^_\n]+__|~~[^~\n]+~~|`[^`\n]+`|\[[^\]\n]+\]\([^\)\n]+\)|\[\[[^\]\n]+\]\]|\*[^*\n]+\*|_[^_\n]+_)/;
-
-function shouldRenderMarkdownPaste(text: string, html: string): boolean {
-  const trimmed = text.trim();
-
-  if (!trimmed) {
-    return false;
-  }
-
-  if (MARKDOWN_BLOCK_PATTERNS.some((pattern) => pattern.test(trimmed))) {
-    return true;
-  }
-
-  if (MARKDOWN_INLINE_PATTERN.test(trimmed)) {
-    return true;
-  }
-
-  return !html.trim() && trimmed.includes("\n\n");
-}
-
-function insertMarkdownPaste(view: EditorView, text: string): boolean {
-  const document = markdownToBlocks(text);
-
-  if (document.content.length === 0) {
-    return false;
-  }
-
-  try {
-    const nodes = document.content.map((node) =>
-      view.state.schema.nodeFromJSON(node)
-    );
-    const slice = new Slice(Fragment.fromArray(nodes), 0, 0);
-    view.dispatch(view.state.tr.replaceSelection(slice).scrollIntoView());
-    return true;
-  } catch (error) {
-    console.error("[Editor] failed to render pasted markdown", error);
-    return false;
-  }
-}
 
 /* ─── Props ───────────────────────────────────────────────────── */
 
@@ -2043,187 +2004,3 @@ export function Editor({
   );
 }
 
-/* ─── Utility Functions ────────────────────────────────────────── */
-
-function resolveColorSelectionRange(
-  editor: TiptapEditor,
-  range: { from: number; to: number } | null
-) {
-  const fallbackRange = range ?? {
-    from: editor.state.selection.from,
-    to: editor.state.selection.to,
-  };
-
-  if (fallbackRange.from !== fallbackRange.to) {
-    return fallbackRange;
-  }
-
-  const resolvedPosition = editor.state.doc.resolve(fallbackRange.from);
-
-  if (!resolvedPosition.parent.isTextblock) {
-    return fallbackRange;
-  }
-
-  const text = resolvedPosition.parent.textContent ?? "";
-
-  if (!text.trim()) {
-    return fallbackRange;
-  }
-
-  let cursor = Math.max(
-    0,
-    Math.min(resolvedPosition.parentOffset, text.length)
-  );
-
-  if (cursor === text.length && cursor > 0) {
-    cursor -= 1;
-  }
-
-  const isBoundary = (character: string | undefined) =>
-    !character || /\s/.test(character);
-
-  if (isBoundary(text[cursor]) && cursor > 0 && !isBoundary(text[cursor - 1])) {
-    cursor -= 1;
-  }
-
-  if (isBoundary(text[cursor])) {
-    return fallbackRange;
-  }
-
-  let start = cursor;
-  let end = cursor + 1;
-
-  while (start > 0 && !isBoundary(text[start - 1])) {
-    start -= 1;
-  }
-
-  while (end < text.length && !isBoundary(text[end])) {
-    end += 1;
-  }
-
-  if (start === end) {
-    return fallbackRange;
-  }
-
-  const offset = resolvedPosition.start();
-
-  return {
-    from: offset + start,
-    to: offset + end,
-  };
-}
-
-function getClosestBlockElement(
-  target: HTMLElement,
-  rootElement: HTMLElement
-): HTMLElement | null {
-  const blockElement = target.closest("[data-block-id]");
-
-  if (!(blockElement instanceof HTMLElement)) {
-    return null;
-  }
-
-  if (!rootElement.contains(blockElement)) {
-    return null;
-  }
-
-  return blockElement;
-}
-
-function getSelectionBlockId(editor: TiptapEditor) {
-  const { $from } = editor.state.selection;
-
-  for (let depth = $from.depth; depth >= 0; depth -= 1) {
-    const node = $from.node(depth);
-    const blockId = node.attrs?.blockId;
-
-    if (typeof blockId === "string") {
-      return blockId;
-    }
-  }
-
-  return null;
-}
-
-function focusBlockById(editor: TiptapEditor, blockId: string) {
-  const blockElement = document.querySelector(
-    `[data-block-id="${blockId}"]`
-  );
-
-  if (!(blockElement instanceof HTMLElement)) {
-    editor.commands.focus("end");
-    return;
-  }
-
-  try {
-    const position = editor.view.posAtDOM(blockElement, 0);
-    editor.chain().focus().setTextSelection(position + 1).run();
-  } catch {
-    editor.commands.focus("end");
-  }
-}
-
-function findBlockLocation(
-  blocks: BlockNodeContent[],
-  blockId: string,
-  parentBlockId: string | null = null
-): {
-  block: BlockNodeContent;
-  parentBlockId: string | null;
-  siblings: BlockNodeContent[];
-  index: number;
-} | null {
-  for (const [index, block] of blocks.entries()) {
-    if (getBlockId(block) === blockId) {
-      return {
-        block,
-        parentBlockId,
-        siblings: blocks,
-        index,
-      };
-    }
-
-    const childBlocks = getChildBlocks(block);
-
-    if (childBlocks.length === 0) {
-      continue;
-    }
-
-    const nestedResult = findBlockLocation(
-      childBlocks,
-      blockId,
-      getBlockId(block) ?? null
-    );
-
-    if (nestedResult) {
-      return nestedResult;
-    }
-  }
-
-  return null;
-}
-
-function getBlockId(block: BlockNodeContent) {
-  return typeof block.attrs?.blockId === "string" ? block.attrs.blockId : null;
-}
-
-function getChildBlocks(node: BlockNodeContent) {
-  return (node.content ?? []).filter(
-    (child): child is BlockNodeContent => child.type !== "text"
-  );
-}
-
-function cloneBlockTree(block: BlockNodeContent): BlockNodeContent {
-  const nextBlockId = generateId();
-
-  return {
-    ...block,
-    attrs: {
-      ...(block.attrs ?? {}),
-      blockId: nextBlockId,
-    },
-    content: (block.content ?? []).map((child) =>
-      child.type === "text" ? { ...child } : cloneBlockTree(child)
-    ),
-  };
-}
