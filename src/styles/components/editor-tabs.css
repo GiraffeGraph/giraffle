@@ -134,6 +134,96 @@
   color: var(--text-primary, var(--md-sys-color-on-surface));
 }
 
+.editor-tab.pinned {
+  padding-right: 10px;
+}
+
+.editor-tab-pin {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  color: var(--text-tertiary, var(--md-sys-color-on-surface-variant));
+}
+
+.editor-tabs-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 34px;
+  border: none;
+  background: transparent;
+  color: var(--text-tertiary, var(--md-sys-color-on-surface-variant));
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color var(--transition-fast, 120ms ease),
+    background var(--transition-fast, 120ms ease);
+}
+
+.editor-tabs-action:hover {
+  background: color-mix(
+    in srgb,
+    var(--surface-hover, var(--md-sys-color-surface-container)) 80%,
+    transparent
+  );
+  color: var(--text-primary, var(--md-sys-color-on-surface));
+}
+
+.editor-tabs-empty {
+  justify-content: flex-start;
+}
+
+.editor-tabs-context-menu {
+  position: fixed;
+  z-index: 9999;
+  min-width: 160px;
+  padding: 4px;
+  border: 1px solid var(--border-soft, var(--md-sys-color-outline-variant));
+  border-radius: 8px;
+  background: var(--shell-main-bg, var(--md-sys-color-surface));
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  font-size: 12px;
+  font-family: inherit;
+}
+
+.editor-tabs-context-menu button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-primary, var(--md-sys-color-on-surface));
+  font: inherit;
+  cursor: pointer;
+}
+
+.editor-tabs-context-menu button:hover:not(:disabled) {
+  background: color-mix(
+    in srgb,
+    var(--accent, var(--md-sys-color-primary)) 15%,
+    transparent
+  );
+}
+
+.editor-tabs-context-menu button:disabled {
+  color: var(--text-tertiary, var(--md-sys-color-on-surface-variant));
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.editor-tabs-context-divider {
+  height: 1px;
+  margin: 2px 4px;
+  background: var(--border-soft, var(--md-sys-color-outline-variant));
+}
+
 @media (max-width: 900px) {
   .editor-tabs {
     display: none;

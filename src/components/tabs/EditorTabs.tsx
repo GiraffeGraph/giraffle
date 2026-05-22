@@ -1,9 +1,17 @@
 "use client";
 
 import type { DragEvent, MouseEvent as ReactMouseEvent } from "react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { renderStoredIcon } from "@/components/sidebar/sidebar-icon-utils";
+import { createNoteAction } from "@/server/api/notes";
 import {
   DEFAULT_KIND_ICON,
   editorTabsStore,
@@ -30,6 +38,39 @@ function CloseIcon() {
   );
 }
 
+function PinIcon() {
+  return (
+    <svg
+      width="11"
+      height="11"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-hidden="true"
+    >
+      <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z" />
+    </svg>
+  );
+}
+
+function PlusIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <line x1="12" y1="5" x2="12" y2="19" />
+      <line x1="5" y1="12" x2="19" y2="12" />
+    </svg>
+  );
+}
+
 function deriveActiveKey(
   pathname: string | null,
   search: URLSearchParams | null,
@@ -46,6 +87,12 @@ function deriveActiveKey(
   return null;
 }
 
+interface ContextMenuState {
+  key: string;
+  x: number;
+  y: number;
+}
+
 export function EditorTabs() {
   const { tabs, activeKey } = useEditorTabs();
   const router = useRouter();
@@ -57,6 +104,8 @@ export function EditorTabs() {
   );
   const effectiveActiveKey = routeKey ?? activeKey;
   const [dragKey, setDragKey] = useState<string | null>(null);
+  const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
+  const [, startTransition] = useTransition();
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const activeBtnRef = useRef<HTMLButtonElement | null>(null);
 
@@ -74,6 +123,19 @@ export function EditorTabs() {
     });
   }, [effectiveActiveKey]);
 
+  useEffect(() => {
+    if (!contextMenu) return;
+    const close = () => setContextMenu(null);
+    window.addEventListener("click", close);
+    window.addEventListener("blur", close);
+    window.addEventListener("resize", close);
+    return () => {
+      window.removeEventListener("click", close);
+      window.removeEventListener("blur", close);
+      window.removeEventListener("resize", close);
+    };
+  }, [contextMenu]);
+
   const openTab = useCallback(
     (tab: EditorTab) => {
       if (tab.key === routeKey) return;
@@ -86,6 +148,8 @@ export function EditorTabs() {
     (key: string, e?: ReactMouseEvent) => {
       e?.preventDefault();
       e?.stopPropagation();
+      const target = editorTabsStore.getTabs().find((t) => t.key === key);
+      if (target?.pinned) return;
       const wasActive = (routeKey ?? activeKey) === key;
       const { next } = editorTabsStore.closeTab(key);
       if (wasActive) {
@@ -103,6 +167,14 @@ export function EditorTabs() {
       }
     },
     [closeTab],
+  );
+
+  const onContextMenu = useCallback(
+    (e: ReactMouseEvent, key: string) => {
+      e.preventDefault();
+      setContextMenu({ key, x: e.clientX, y: e.clientY });
+    },
+    [],
   );
 
   const onDragStart = useCallback(
@@ -152,6 +224,13 @@ export function EditorTabs() {
     el.scrollLeft += e.deltaY;
   }, []);
 
+  const handleNewNote = useCallback(() => {
+    startTransition(async () => {
+      const id = await createNoteAction();
+      router.push(`/notes/${id}`);
+    });
+  }, [router]);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const mod = e.metaKey || e.ctrlKey;
@@ -161,6 +240,8 @@ export function EditorTabs() {
       if (key === "w" && !e.altKey) {
         const target = editorTabsStore.getActiveKey();
         if (!target) return;
+        const targetTab = editorTabsStore.getTabs().find((t) => t.key === target);
+        if (targetTab?.pinned) return;
         e.preventDefault();
         e.stopPropagation();
         const wasActive = target === routeKey;
@@ -209,7 +290,26 @@ export function EditorTabs() {
       );
   }, [routeKey, router]);
 
-  if (tabs.length === 0) return null;
+  if (tabs.length === 0) {
+    return (
+      <div className="editor-tabs editor-tabs-empty" aria-label="Tabs">
+        <button
+          type="button"
+          className="editor-tabs-action"
+          title="New note"
+          aria-label="New note"
+          onClick={handleNewNote}
+        >
+          <PlusIcon />
+        </button>
+      </div>
+    );
+  }
+
+  const menuTab = contextMenu
+    ? tabs.find((t) => t.key === contextMenu.key)
+    : null;
+  const hasNonPinned = tabs.some((t) => !t.pinned);
 
   return (
     <div className="editor-tabs" role="tablist" aria-label="Open tabs">
@@ -231,10 +331,13 @@ export function EditorTabs() {
               draggable
               className={`editor-tab editor-tab-${tab.kind}${
                 isActive ? " active" : ""
-              }${dragKey === tab.key ? " dragging" : ""}`}
+              }${dragKey === tab.key ? " dragging" : ""}${
+                tab.pinned ? " pinned" : ""
+              }`}
               onClick={() => openTab(tab)}
               onAuxClick={(e) => onMouseDown(e, tab.key)}
               onMouseDown={(e) => onMouseDown(e, tab.key)}
+              onContextMenu={(e) => onContextMenu(e, tab.key)}
               onDragStart={(e) => onDragStart(e, tab.key)}
               onDragOver={onDragOver}
               onDrop={(e) => onDrop(e, tab.key)}
@@ -256,19 +359,92 @@ export function EditorTabs() {
               <span className="editor-tab-label">
                 {tab.title || "Untitled"}
               </span>
-              <span
-                className="editor-tab-close"
-                role="button"
-                tabIndex={-1}
-                aria-label={`Close ${tab.title || "Untitled"}`}
-                onClick={(e) => closeTab(tab.key, e)}
-              >
-                <CloseIcon />
-              </span>
+              {tab.pinned ? (
+                <span className="editor-tab-pin" aria-label="Pinned">
+                  <PinIcon />
+                </span>
+              ) : (
+                <span
+                  className="editor-tab-close"
+                  role="button"
+                  tabIndex={-1}
+                  aria-label={`Close ${tab.title || "Untitled"}`}
+                  onClick={(e) => closeTab(tab.key, e)}
+                >
+                  <CloseIcon />
+                </span>
+              )}
             </button>
           );
         })}
       </div>
+      <button
+        type="button"
+        className="editor-tabs-action"
+        title="New note"
+        aria-label="New note"
+        onClick={handleNewNote}
+      >
+        <PlusIcon />
+      </button>
+
+      {contextMenu && menuTab ? (
+        <div
+          role="menu"
+          className="editor-tabs-context-menu"
+          style={{ top: contextMenu.y, left: contextMenu.x }}
+          onClick={(e) => e.stopPropagation()}
+          onContextMenu={(e) => e.preventDefault()}
+        >
+          <button
+            type="button"
+            role="menuitem"
+            disabled={!!menuTab.pinned}
+            onClick={() => {
+              closeTab(contextMenu.key);
+              setContextMenu(null);
+            }}
+          >
+            Close
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            disabled={!hasNonPinned}
+            onClick={() => {
+              editorTabsStore.closeOthers(contextMenu.key);
+              const targetHref = menuTab.href;
+              router.push(targetHref);
+              setContextMenu(null);
+            }}
+          >
+            Close Others
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            disabled={!hasNonPinned}
+            onClick={() => {
+              editorTabsStore.closeAll();
+              router.push("/spotter");
+              setContextMenu(null);
+            }}
+          >
+            Close All
+          </button>
+          <div className="editor-tabs-context-divider" />
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              editorTabsStore.togglePin(contextMenu.key);
+              setContextMenu(null);
+            }}
+          >
+            {menuTab.pinned ? "Unpin" : "Pin"}
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }

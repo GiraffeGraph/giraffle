@@ -66,17 +66,6 @@ export function SpotterWorkspace({
     initialSessionId,
   );
 
-  useRegisterTab(
-    activeSessionId
-      ? {
-          kind: "spotter",
-          id: activeSessionId,
-          href: `/spotter?session=${activeSessionId}`,
-          title: initialTitle?.trim() || "Chat",
-          icon: null,
-        }
-      : null,
-  );
   const [draft, setDraft] = useState("");
   const [selectedToolIntent, setSelectedToolIntent] = useState<ComposerToolIntent | null>(null);
   const [commandPending, setCommandPending] = useState(false);
@@ -195,6 +184,33 @@ export function SpotterWorkspace({
         : "There was an error generating the response. Try again."
       : null;
   const isEmpty = messages.length === 0 && !isStreaming;
+
+  const derivedSpotterTitle = useMemo(() => {
+    if (initialTitle?.trim()) return initialTitle.trim();
+    const firstUser = messages.find((m) => m.role === "user");
+    if (!firstUser) return "Chat";
+    const text = firstUser.parts
+      .map((part) =>
+        part.type === "text" && typeof part.text === "string" ? part.text : "",
+      )
+      .join(" ")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (!text) return "Chat";
+    return text.length > 40 ? `${text.slice(0, 40)}…` : text;
+  }, [initialTitle, messages]);
+
+  useRegisterTab(
+    activeSessionId
+      ? {
+          kind: "spotter",
+          id: activeSessionId,
+          href: `/spotter?session=${activeSessionId}`,
+          title: derivedSpotterTitle,
+          icon: null,
+        }
+      : null,
+  );
 
   const appendLocalExchange = useCallback(
     (userText: string, assistantText: string) => {

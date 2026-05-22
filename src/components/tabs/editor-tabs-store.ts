@@ -10,6 +10,7 @@ export interface EditorTab {
   href: string;
   title: string;
   icon: string | null;
+  pinned?: boolean;
 }
 
 interface EditorTabsState {
@@ -27,6 +28,14 @@ let state: EditorTabsState = EMPTY_STATE;
 let cachedSnapshot: EditorTabsState = state;
 let hydrated = false;
 const closedStack: EditorTab[] = [];
+
+function trimRespectingPinned(tabs: EditorTab[]): EditorTab[] {
+  if (tabs.length <= MAX_TABS) return tabs;
+  const pinned = tabs.filter((t) => t.pinned);
+  const unpinned = tabs.filter((t) => !t.pinned);
+  const room = Math.max(0, MAX_TABS - pinned.length);
+  return [...pinned, ...unpinned.slice(-room)];
+}
 
 function emit() {
   cachedSnapshot = state;
@@ -105,14 +114,47 @@ export const editorTabsStore = {
       if (sameMeta && state.activeKey === tab.key) return;
       const tabs = state.tabs.map((t) =>
         t.key === tab.key
-          ? { ...t, title: tab.title, icon: tab.icon, href: tab.href, kind: tab.kind }
+          ? {
+              ...t,
+              title: tab.title,
+              icon: tab.icon,
+              href: tab.href,
+              kind: tab.kind,
+            }
           : t,
       );
       setState({ tabs, activeKey: tab.key });
       return;
     }
-    const tabs = [...state.tabs, tab].slice(-MAX_TABS);
-    setState({ tabs, activeKey: tab.key });
+    const pinnedCount = state.tabs.filter((t) => t.pinned).length;
+    const next = [...state.tabs];
+    next.splice(pinnedCount, 0, tab);
+    const trimmed = next.length > MAX_TABS ? trimRespectingPinned(next) : next;
+    setState({ tabs: trimmed, activeKey: tab.key });
+  },
+
+  togglePin(key: string) {
+    hydrate();
+    const tabs = state.tabs.map((t) =>
+      t.key === key ? { ...t, pinned: !t.pinned } : t,
+    );
+    tabs.sort((a, b) => (a.pinned ? 0 : 1) - (b.pinned ? 0 : 1));
+    setState({ tabs, activeKey: state.activeKey });
+  },
+
+  closeOthers(key: string) {
+    hydrate();
+    const tabs = state.tabs.filter((t) => t.key === key || t.pinned);
+    setState({ tabs, activeKey: key });
+  },
+
+  closeAll() {
+    hydrate();
+    const tabs = state.tabs.filter((t) => t.pinned);
+    setState({
+      tabs,
+      activeKey: tabs.find((t) => t.key === state.activeKey)?.key ?? null,
+    });
   },
 
   closeTab(key: string): { next: EditorTab | null } {
@@ -146,10 +188,14 @@ export const editorTabsStore = {
     hydrate();
     const from = state.tabs.findIndex((t) => t.key === key);
     if (from === -1) return;
-    const clamped = Math.max(0, Math.min(state.tabs.length - 1, toIndex));
+    const moved = state.tabs[from];
+    const pinnedCount = state.tabs.filter((t) => t.pinned).length;
+    const min = moved.pinned ? 0 : pinnedCount;
+    const max = moved.pinned ? pinnedCount - 1 : state.tabs.length - 1;
+    const clamped = Math.max(min, Math.min(max, toIndex));
     if (from === clamped) return;
     const tabs = [...state.tabs];
-    const [moved] = tabs.splice(from, 1);
+    tabs.splice(from, 1);
     tabs.splice(clamped, 0, moved);
     setState({ tabs, activeKey: state.activeKey });
   },

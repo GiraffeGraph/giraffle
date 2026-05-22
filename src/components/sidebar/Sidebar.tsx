@@ -252,12 +252,7 @@ export function Sidebar({
   }, [isSpotterDialogSubmitting]);
   const navigateToNote = useCallback(
     (noteId: string) => {
-      const href = `/notes/${noteId}`;
-      if (typeof window !== "undefined") {
-        window.location.assign(href);
-        return;
-      }
-      router.push(href);
+      router.push(`/notes/${noteId}`);
     },
     [router],
   );
