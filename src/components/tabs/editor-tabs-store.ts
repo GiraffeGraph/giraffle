@@ -126,20 +126,19 @@ export const editorTabsStore = {
       setState({ tabs, activeKey: tab.key });
       return;
     }
-    const pinnedCount = state.tabs.filter((t) => t.pinned).length;
-    const next = [...state.tabs];
-    next.splice(pinnedCount, 0, tab);
+    const next = [...state.tabs, tab];
     const trimmed = next.length > MAX_TABS ? trimRespectingPinned(next) : next;
     setState({ tabs: trimmed, activeKey: tab.key });
   },
 
   togglePin(key: string) {
     hydrate();
-    const tabs = state.tabs.map((t) =>
+    const updated = state.tabs.map((t) =>
       t.key === key ? { ...t, pinned: !t.pinned } : t,
     );
-    tabs.sort((a, b) => (a.pinned ? 0 : 1) - (b.pinned ? 0 : 1));
-    setState({ tabs, activeKey: state.activeKey });
+    const pinned = updated.filter((t) => t.pinned);
+    const unpinned = updated.filter((t) => !t.pinned);
+    setState({ tabs: [...pinned, ...unpinned], activeKey: state.activeKey });
   },
 
   closeOthers(key: string) {

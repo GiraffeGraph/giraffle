@@ -185,9 +185,14 @@ export function SpotterWorkspace({
       : null;
   const isEmpty = messages.length === 0 && !isStreaming;
 
+  const firstUserMessageId = useMemo(
+    () => messages.find((m) => m.role === "user")?.id ?? null,
+    [messages],
+  );
   const derivedSpotterTitle = useMemo(() => {
     if (initialTitle?.trim()) return initialTitle.trim();
-    const firstUser = messages.find((m) => m.role === "user");
+    if (!firstUserMessageId) return "Chat";
+    const firstUser = messages.find((m) => m.id === firstUserMessageId);
     if (!firstUser) return "Chat";
     const text = firstUser.parts
       .map((part) =>
@@ -198,7 +203,8 @@ export function SpotterWorkspace({
       .trim();
     if (!text) return "Chat";
     return text.length > 40 ? `${text.slice(0, 40)}…` : text;
-  }, [initialTitle, messages]);
+    // messages dep needed for parts lookup; firstUserMessageId stays stable post-first-user-message
+  }, [initialTitle, firstUserMessageId, messages]);
 
   useRegisterTab(
     activeSessionId

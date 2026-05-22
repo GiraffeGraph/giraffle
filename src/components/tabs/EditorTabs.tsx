@@ -107,7 +107,7 @@ export function EditorTabs() {
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   const [, startTransition] = useTransition();
   const scrollerRef = useRef<HTMLDivElement | null>(null);
-  const activeBtnRef = useRef<HTMLButtonElement | null>(null);
+  const activeTabRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (routeKey && routeKey !== activeKey) {
@@ -116,7 +116,7 @@ export function EditorTabs() {
   }, [routeKey, activeKey]);
 
   useEffect(() => {
-    activeBtnRef.current?.scrollIntoView({
+    activeTabRef.current?.scrollIntoView({
       behavior: "smooth",
       block: "nearest",
       inline: "nearest",
@@ -134,6 +134,25 @@ export function EditorTabs() {
       window.removeEventListener("blur", close);
       window.removeEventListener("resize", close);
     };
+  }, [contextMenu]);
+
+  const contextMenuRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!contextMenu) return;
+    const el = contextMenuRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const margin = 8;
+    let x = contextMenu.x;
+    let y = contextMenu.y;
+    if (x + rect.width + margin > window.innerWidth) {
+      x = window.innerWidth - rect.width - margin;
+    }
+    if (y + rect.height + margin > window.innerHeight) {
+      y = window.innerHeight - rect.height - margin;
+    }
+    el.style.left = `${Math.max(margin, x)}px`;
+    el.style.top = `${Math.max(margin, y)}px`;
   }, [contextMenu]);
 
   const openTab = useCallback(
@@ -178,7 +197,7 @@ export function EditorTabs() {
   );
 
   const onDragStart = useCallback(
-    (e: DragEvent<HTMLButtonElement>, key: string) => {
+    (e: DragEvent<HTMLElement>, key: string) => {
       setDragKey(key);
       e.dataTransfer.effectAllowed = "move";
       try {
@@ -189,7 +208,7 @@ export function EditorTabs() {
   );
 
   const onDragOver = useCallback(
-    (e: DragEvent<HTMLButtonElement>) => {
+    (e: DragEvent<HTMLElement>) => {
       if (!dragKey) return;
       e.preventDefault();
       e.dataTransfer.dropEffect = "move";
@@ -198,7 +217,7 @@ export function EditorTabs() {
   );
 
   const onDrop = useCallback(
-    (e: DragEvent<HTMLButtonElement>, overKey: string) => {
+    (e: DragEvent<HTMLElement>, overKey: string) => {
       e.preventDefault();
       if (!dragKey || dragKey === overKey) {
         setDragKey(null);
@@ -322,12 +341,12 @@ export function EditorTabs() {
           const isActive = tab.key === effectiveActiveKey;
           const iconValue = tab.icon ?? DEFAULT_KIND_ICON[tab.kind];
           return (
-            <button
+            <div
               key={tab.key}
-              ref={isActive ? activeBtnRef : undefined}
-              type="button"
+              ref={isActive ? activeTabRef : undefined}
               role="tab"
               aria-selected={isActive}
+              tabIndex={isActive ? 0 : -1}
               draggable
               className={`editor-tab editor-tab-${tab.kind}${
                 isActive ? " active" : ""
@@ -335,6 +354,12 @@ export function EditorTabs() {
                 tab.pinned ? " pinned" : ""
               }`}
               onClick={() => openTab(tab)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  openTab(tab);
+                }
+              }}
               onAuxClick={(e) => onMouseDown(e, tab.key)}
               onMouseDown={(e) => onMouseDown(e, tab.key)}
               onContextMenu={(e) => onContextMenu(e, tab.key)}
@@ -364,17 +389,17 @@ export function EditorTabs() {
                   <PinIcon />
                 </span>
               ) : (
-                <span
+                <button
+                  type="button"
                   className="editor-tab-close"
-                  role="button"
-                  tabIndex={-1}
                   aria-label={`Close ${tab.title || "Untitled"}`}
                   onClick={(e) => closeTab(tab.key, e)}
+                  onMouseDown={(e) => e.stopPropagation()}
                 >
                   <CloseIcon />
-                </span>
+                </button>
               )}
-            </button>
+            </div>
           );
         })}
       </div>
@@ -390,6 +415,7 @@ export function EditorTabs() {
 
       {contextMenu && menuTab ? (
         <div
+          ref={contextMenuRef}
           role="menu"
           className="editor-tabs-context-menu"
           style={{ top: contextMenu.y, left: contextMenu.x }}
@@ -426,7 +452,8 @@ export function EditorTabs() {
             disabled={!hasNonPinned}
             onClick={() => {
               editorTabsStore.closeAll();
-              router.push("/spotter");
+              const remaining = editorTabsStore.getTabs();
+              router.push(remaining[0]?.href ?? "/spotter");
               setContextMenu(null);
             }}
           >

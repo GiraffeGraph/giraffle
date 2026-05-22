@@ -568,6 +568,21 @@ export function NoteEditorPage({
     [flushDocumentSave, refreshSaveStatus],
   );
 
+  useEffect(() => {
+    return () => {
+      if (titleSaveTimeoutRef.current !== null) {
+        window.clearTimeout(titleSaveTimeoutRef.current);
+        titleSaveTimeoutRef.current = null;
+      }
+      if (titleSaveQueuedRef.current && !titleSaveInFlightRef.current) {
+        void flushTitleSave();
+      }
+      if (documentSaveQueuedRef.current && !documentSaveInFlightRef.current) {
+        void flushDocumentSave();
+      }
+    };
+  }, [flushTitleSave, flushDocumentSave]);
+
   const handleSearchWikilinks = useCallback(async (query: string) => {
     return searchNotesByTitleAction(query);
   }, []);
