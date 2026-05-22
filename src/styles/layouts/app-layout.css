@@ -49,6 +49,48 @@
   color: var(--accent);
 }
 
+.sync-queue-badge {
+  position: relative;
+  cursor: default;
+  color: var(--accent);
+}
+
+.sync-queue-badge:hover {
+  background: transparent;
+  color: var(--accent);
+}
+
+.sync-queue-badge .material-symbols-outlined {
+  animation: sync-queue-spin 2.4s linear infinite;
+  transform-origin: center;
+}
+
+.sync-queue-badge:hover .material-symbols-outlined {
+  animation-play-state: paused;
+}
+
+.sync-queue-badge-count {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
+  border-radius: 7px;
+  background: var(--accent);
+  color: var(--accent-on, #fff);
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 14px;
+  text-align: center;
+  pointer-events: none;
+}
+
+@keyframes sync-queue-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 /* Archive drop target — invite + accept states */
 
 .right-rail-btn--archive {

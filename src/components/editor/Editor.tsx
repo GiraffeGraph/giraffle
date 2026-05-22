@@ -64,43 +64,15 @@ import {
   getChildBlocks,
   cloneBlockTree,
 } from "./block-helpers";
+import { useWikilinkSearch } from "./use-wikilink-search";
 
-/* ─── State types ─────────────────────────────────────────────── */
-
-interface SlashMenuState {
-  query: string;
-  range: { from: number; to: number };
-  position: { top: number; left: number };
-}
-
-interface WikilinkMenuState {
-  query: string;
-  target: string;
-  range: { from: number; to: number };
-  position: { top: number; left: number };
-}
-
-interface WikilinkMenuItem {
-  title: string;
-  description: string;
-  icon: string;
-  menuKey?: string;
-  note?: NoteReference;
-  createTarget?: string;
-}
-
-interface BlockToolbarState {
-  blockId: string;
-  position: { top: number; left: number };
-}
-
-interface BlockDropIndicatorState {
-  top: number;
-  left: number;
-  width: number;
-  targetBlockId: string;
-  mode: "before" | "after";
-}
+import type {
+  SlashMenuState,
+  WikilinkMenuState,
+  WikilinkMenuItem,
+  BlockToolbarState,
+  BlockDropIndicatorState,
+} from "./editor-types";
 
 
 /* ─── Props ───────────────────────────────────────────────────── */
@@ -137,7 +109,7 @@ export function Editor({
   const [wikilinkMenu, setWikilinkMenu] = useState<WikilinkMenuState | null>(
     null
   );
-  const [wikilinkItems, setWikilinkItems] = useState<WikilinkMenuItem[]>([]);
+  // wikilinkItems derived from wikilinkMenu via useWikilinkSearch hook below.
   const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
   const [blockToolbar, setBlockToolbar] = useState<BlockToolbarState | null>(
     null
@@ -246,7 +218,6 @@ export function Editor({
     (instance: TiptapEditor) => {
       if (!editable) {
         setWikilinkMenu(null);
-        setWikilinkItems([]);
         return;
       }
 
@@ -255,7 +226,6 @@ export function Editor({
 
       if (!selection.empty) {
         setWikilinkMenu(null);
-        setWikilinkItems([]);
         return;
       }
 
@@ -265,7 +235,6 @@ export function Editor({
 
       if (!match) {
         setWikilinkMenu(null);
-        setWikilinkItems([]);
         return;
       }
 
@@ -274,7 +243,6 @@ export function Editor({
       const containerRect = editorRootRef.current?.getBoundingClientRect();
       const caretRect = view.coordsAtPos(selection.from);
 
-      setWikilinkItems([]);
       setWikilinkMenu({
         query,
         target,
@@ -329,56 +297,11 @@ export function Editor({
     [blockToolbar?.blockId, clearBlockToolbarIntent]
   );
 
-  /* ─── Wikilink search effect ───────────────────────────────── */
-
-  useEffect(() => {
-    if (!wikilinkMenu || !searchWikilinkNotes) {
-      return;
-    }
-
-    const currentTarget = wikilinkMenu.target.trim();
-    let isCancelled = false;
-
-    const timeoutId = setTimeout(async () => {
-      const matchingNotes = await searchWikilinkNotes(currentTarget);
-
-      if (isCancelled) {
-        return;
-      }
-
-      const normalizedTarget = currentTarget.toLowerCase();
-      const items: WikilinkMenuItem[] = matchingNotes.map((note) => ({
-        title: note.title,
-        description: "Link to an existing note",
-        icon: "[[",
-        menuKey: `note:${note.id}`,
-        note,
-      }));
-
-      if (
-        createWikilinkNote &&
-        currentTarget.length > 0 &&
-        !matchingNotes.some(
-          (note) => note.title.toLowerCase() === normalizedTarget
-        )
-      ) {
-        items.push({
-          title: `"${currentTarget}"" note`,
-          description: "Create the note and insert a resolved wikilink",
-          icon: "+",
-          menuKey: `create:${normalizedTarget}`,
-          createTarget: currentTarget,
-        });
-      }
-
-      setWikilinkItems(items);
-    }, 120);
-
-    return () => {
-      isCancelled = true;
-      clearTimeout(timeoutId);
-    };
-  }, [createWikilinkNote, searchWikilinkNotes, wikilinkMenu]);
+  const wikilinkItems = useWikilinkSearch(
+    wikilinkMenu?.target ?? null,
+    searchWikilinkNotes,
+    createWikilinkNote,
+  );
 
   /* ─── Tiptap editor instance ───────────────────────────────── */
 

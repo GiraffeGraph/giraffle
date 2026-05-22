@@ -1,10 +1,20 @@
 "use client";
 
+import { useSyncExternalStore } from "react";
 import { generateId } from "@/lib/utils";
 import {
   LOCAL_SYNC_QUEUE_STORAGE_KEY,
   type LocalSyncQueueItem,
 } from "@/lib/workspace-preferences";
+
+const listeners = new Set<() => void>();
+let cachedCount = 0;
+let cachedCountLoaded = false;
+let storageListenerAttached = false;
+
+function emit() {
+  for (const l of listeners) l();
+}
 
 function readQueue(): LocalSyncQueueItem[] {
   if (typeof window === "undefined") {
@@ -26,8 +36,50 @@ function writeQueue(queue: LocalSyncQueueItem[]) {
 
   window.localStorage.setItem(
     LOCAL_SYNC_QUEUE_STORAGE_KEY,
-    JSON.stringify(queue)
+    JSON.stringify(queue),
   );
+  cachedCount = queue.length;
+  cachedCountLoaded = true;
+  emit();
+}
+
+function ensureCachedCount() {
+  if (cachedCountLoaded) return;
+  cachedCount = readQueue().length;
+  cachedCountLoaded = true;
+}
+
+function ensureStorageListener() {
+  if (storageListenerAttached || typeof window === "undefined") return;
+  storageListenerAttached = true;
+  window.addEventListener("storage", (e) => {
+    if (e.key !== LOCAL_SYNC_QUEUE_STORAGE_KEY) return;
+    cachedCount = readQueue().length;
+    cachedCountLoaded = true;
+    emit();
+  });
+}
+
+function subscribe(listener: () => void) {
+  ensureCachedCount();
+  ensureStorageListener();
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+function getSnapshot() {
+  ensureCachedCount();
+  return cachedCount;
+}
+
+function getServerSnapshot() {
+  return 0;
+}
+
+export function useLocalSyncQueueCount(): number {
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
 
 export function queueLocalMutation(input: {

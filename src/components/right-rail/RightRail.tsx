@@ -8,6 +8,7 @@ import {
 } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import { combine } from "@atlaskit/pragmatic-drag-and-drop/combine";
 import { RightRailHelpDrawer } from "@/components/right-rail/RightRailHelpDrawer";
+import { SyncQueueBadge } from "@/components/right-rail/SyncQueueBadge";
 import { GraphIcon } from "@/components/sidebar/GraphIcon";
 import { ThemeSelector } from "@/components/theme/ThemeSelector";
 import { useIsMobileViewport } from "@/components/ui/useIsMobileViewport";
@@ -166,6 +167,7 @@ export function RightRail({ appVersion }: { appVersion: string }) {
         ))}
 
         <div className="right-rail-bottom">
+          <SyncQueueBadge />
           <button
             type="button"
             className={`right-rail-btn${helpOpen ? " active" : ""}`}
