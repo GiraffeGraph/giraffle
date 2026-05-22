@@ -391,11 +391,14 @@ export function EditorTabs() {
               ) : (
                 <button
                   type="button"
-                  className="editor-tab-close"
+                  className={`editor-tab-close${tab.dirty ? " has-dirty" : ""}`}
                   aria-label={`Close ${tab.title || "Untitled"}`}
                   onClick={(e) => closeTab(tab.key, e)}
                   onMouseDown={(e) => e.stopPropagation()}
                 >
+                  {tab.dirty ? (
+                    <span className="editor-tab-dirty-dot" aria-label="Unsaved" />
+                  ) : null}
                   <CloseIcon />
                 </button>
               )}

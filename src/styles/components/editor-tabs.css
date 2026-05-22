@@ -106,13 +106,18 @@
 }
 
 .editor-tab-close {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 18px;
   height: 18px;
+  padding: 0;
+  border: none;
+  background: transparent;
   border-radius: 4px;
   color: var(--text-tertiary, var(--md-sys-color-on-surface-variant));
+  cursor: pointer;
   opacity: 0;
   transition: opacity var(--transition-fast, 120ms ease),
     background var(--transition-fast, 120ms ease),
@@ -121,8 +126,40 @@
 
 .editor-tab:hover .editor-tab-close,
 .editor-tab.active .editor-tab-close,
-.editor-tab:focus-within .editor-tab-close {
+.editor-tab:focus-within .editor-tab-close,
+.editor-tab-close.has-dirty {
   opacity: 1;
+}
+
+.editor-tab-dirty-dot {
+  position: absolute;
+  inset: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.editor-tab-dirty-dot::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent, var(--md-sys-color-primary));
+}
+
+.editor-tab-close.has-dirty svg {
+  opacity: 0;
+  transition: opacity var(--transition-fast, 120ms ease);
+}
+
+.editor-tab-close.has-dirty:hover svg,
+.editor-tab-close.has-dirty:focus-visible svg {
+  opacity: 1;
+}
+
+.editor-tab-close.has-dirty:hover .editor-tab-dirty-dot,
+.editor-tab-close.has-dirty:focus-visible .editor-tab-dirty-dot {
+  opacity: 0;
 }
 
 .editor-tab-close:hover {

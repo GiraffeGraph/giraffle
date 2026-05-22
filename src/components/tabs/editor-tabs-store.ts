@@ -11,6 +11,7 @@ export interface EditorTab {
   title: string;
   icon: string | null;
   pinned?: boolean;
+  dirty?: boolean;
 }
 
 interface EditorTabsState {
@@ -45,7 +46,11 @@ function emit() {
 function persist() {
   if (typeof window === "undefined") return;
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    const sanitized: EditorTabsState = {
+      activeKey: state.activeKey,
+      tabs: state.tabs.map(({ dirty: _dirty, ...rest }) => rest),
+    };
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitized));
   } catch {}
 }
 
@@ -175,6 +180,16 @@ export const editorTabsStore = {
     }
     setState({ tabs, activeKey });
     return { next };
+  },
+
+  setDirty(key: string, dirty: boolean) {
+    hydrate();
+    const existing = state.tabs.find((t) => t.key === key);
+    if (!existing || !!existing.dirty === dirty) return;
+    const tabs = state.tabs.map((t) =>
+      t.key === key ? { ...t, dirty } : t,
+    );
+    setState({ tabs, activeKey: state.activeKey });
   },
 
   setActive(key: string | null) {

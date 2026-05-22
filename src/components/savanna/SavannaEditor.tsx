@@ -11,6 +11,7 @@ import { saveSavannaStateAction } from "@/server/api/savanna";
 import { isRecord } from "@/lib/utils";
 import { NotePreviewPanel } from "./NotePreviewPanel";
 import { useRegisterTab } from "@/components/tabs/use-register-tab";
+import { editorTabsStore } from "@/components/tabs/editor-tabs-store";
 import type { AppState, ExcalidrawImperativeAPI, ExcalidrawProps } from "@excalidraw/excalidraw/types";
 import type { ExcalidrawElement } from "@excalidraw/excalidraw/element/types";
 
@@ -126,29 +127,60 @@ export function SavannaEditor({ canvas, notes }: SavannaEditorProps) {
 
   const noteById = useMemo(() => new Map(notes.map((note) => [note.id, note])), [notes]);
 
-  const handleChange = useCallback(
-    (elements: readonly ExcalidrawElement[], appState: AppState) => {
-      setSaveStatus("unsaved");
-
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-
-      saveTimerRef.current = setTimeout(async () => {
-        setSaveStatus("saving");
-        try {
-          await saveSavannaStateAction(
-            canvas.id,
-            [...elements],
-            pickPersistedAppState(appState),
-          );
-          setSaveStatus("saved");
-        } catch (error) {
-          console.error("Savanna save error:", error);
-          setSaveStatus("unsaved");
-        }
-      }, 1200);
+  const runSave = useCallback(
+    async (elements: readonly ExcalidrawElement[], appState: AppState) => {
+      setSaveStatus("saving");
+      try {
+        await saveSavannaStateAction(
+          canvas.id,
+          [...elements],
+          pickPersistedAppState(appState),
+        );
+        setSaveStatus("saved");
+      } catch (error) {
+        console.error("Savanna save error:", error);
+        setSaveStatus("unsaved");
+      }
     },
     [canvas.id],
   );
+
+  const handleChange = useCallback(
+    (elements: readonly ExcalidrawElement[], appState: AppState) => {
+      setSaveStatus("unsaved");
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = setTimeout(() => {
+        void runSave(elements, appState);
+      }, 1200);
+    },
+    [runSave],
+  );
+
+  useEffect(() => {
+    editorTabsStore.setDirty(`savanna:${canvas.id}`, saveStatus !== "saved");
+  }, [canvas.id, saveStatus]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey)) return;
+      if (e.key.toLowerCase() !== "s" || e.shiftKey || e.altKey) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = null;
+      }
+      if (!excalidrawAPI) return;
+      void runSave(excalidrawAPI.getSceneElements(), excalidrawAPI.getAppState());
+    };
+    document.addEventListener("keydown", onKey, { capture: true });
+    return () =>
+      document.removeEventListener(
+        "keydown",
+        onKey,
+        { capture: true } as AddEventListenerOptions,
+      );
+  }, [excalidrawAPI, runSave]);
 
   const addNoteToCanvas = useCallback(
     async (note: SavannaNote, viewportPoint?: ViewportPoint) => {

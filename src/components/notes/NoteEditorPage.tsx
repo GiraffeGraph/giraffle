@@ -41,6 +41,7 @@ import {
 } from "@/components/notes/NoteEditorPage.helpers";
 import { queueLocalMutation, resolveLocalMutation } from "@/lib/local-sync";
 import { useRegisterTab } from "@/components/tabs/use-register-tab";
+import { editorTabsStore } from "@/components/tabs/editor-tabs-store";
 
 interface NoteEditorPageProps {
   note: {
@@ -581,6 +582,32 @@ export function NoteEditorPage({
         void flushDocumentSave();
       }
     };
+  }, [flushTitleSave, flushDocumentSave]);
+
+  useEffect(() => {
+    editorTabsStore.setDirty(`note:${note.id}`, saveStatus !== "saved");
+  }, [note.id, saveStatus]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey)) return;
+      if (e.key.toLowerCase() !== "s" || e.shiftKey || e.altKey) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (titleSaveTimeoutRef.current !== null) {
+        window.clearTimeout(titleSaveTimeoutRef.current);
+        titleSaveTimeoutRef.current = null;
+      }
+      void flushTitleSave();
+      void flushDocumentSave();
+    };
+    document.addEventListener("keydown", onKey, { capture: true });
+    return () =>
+      document.removeEventListener(
+        "keydown",
+        onKey,
+        { capture: true } as AddEventListenerOptions,
+      );
   }, [flushTitleSave, flushDocumentSave]);
 
   const handleSearchWikilinks = useCallback(async (query: string) => {
