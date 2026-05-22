@@ -4,6 +4,7 @@ import { CommandPalette } from "@/components/search/CommandPalette";
 import { Sidebar } from "@/components/sidebar/Sidebar";
 import { EditorTabs } from "@/components/tabs/EditorTabs";
 import { ConfirmDialogHost } from "@/components/ui/ConfirmDialog";
+import { UpdateNotifier } from "@/components/update/UpdateNotifier";
 import { getFoldersAction } from "@/server/api/folders";
 import { getNotesAction } from "@/server/api/notes";
 import { getAppRuntimeEnv } from "@/lib/env.server";
@@ -34,6 +35,7 @@ export default async function MainLayout({
       <CommandPalette />
       <GlobalShortcuts />
       <ConfirmDialogHost />
+      <UpdateNotifier />
     </div>
   );
 }

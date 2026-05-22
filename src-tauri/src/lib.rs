@@ -663,6 +663,39 @@ async fn open_data_dir(app: AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+#[derive(serde::Serialize)]
+struct UpdateInfo {
+    version: String,
+    current_version: String,
+    body: Option<String>,
+}
+
+#[tauri::command]
+async fn get_update_info(app: AppHandle) -> Result<Option<UpdateInfo>, String> {
+    let updater = app.updater().map_err(|e| e.to_string())?;
+    let Some(update) = updater.check().await.map_err(|e| e.to_string())? else {
+        return Ok(None);
+    };
+    Ok(Some(UpdateInfo {
+        version: update.version.clone(),
+        current_version: update.current_version.clone(),
+        body: update.body.clone(),
+    }))
+}
+
+#[tauri::command]
+async fn install_update(app: AppHandle) -> Result<(), String> {
+    let updater = app.updater().map_err(|e| e.to_string())?;
+    let Some(update) = updater.check().await.map_err(|e| e.to_string())? else {
+        return Err("No update available".into());
+    };
+    update
+        .download_and_install(|_, _| {}, || {})
+        .await
+        .map_err(|e| e.to_string())?;
+    app.restart();
+}
+
 #[tauri::command]
 async fn check_for_updates(app: AppHandle) -> Result<Option<String>, String> {
     let updater = app.updater().map_err(|e| e.to_string())?;
@@ -758,7 +791,9 @@ pub fn run() {
             get_bootstrap_logs,
             reset_local_data,
             open_data_dir,
-            check_for_updates
+            check_for_updates,
+            get_update_info,
+            install_update
         ])
         .setup(move |app| {
             let handle = app.handle().clone();
@@ -836,7 +871,10 @@ pub fn run() {
                 }
             });
 
-            spawn_update_check(handle);
+            // Auto-update is surfaced by the frontend UpdateNotifier component
+            // via get_update_info + install_update, so the user can confirm
+            // before download/restart. The menu still exposes a manual path.
+            let _ = handle;
 
             Ok(())
         })

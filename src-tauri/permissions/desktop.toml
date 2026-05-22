@@ -55,6 +55,16 @@ identifier = "allow-check-for-updates"
 description = "Trigger a Tauri auto-update check."
 commands.allow = ["check_for_updates"]
 
+[[permission]]
+identifier = "allow-get-update-info"
+description = "Check for updates without installing; returns available version info."
+commands.allow = ["get_update_info"]
+
+[[permission]]
+identifier = "allow-install-update"
+description = "Download and install the latest update, then restart."
+commands.allow = ["install_update"]
+
 [[set]]
 identifier = "default"
 description = "All desktop runtime commands."
@@ -70,4 +80,6 @@ permissions = [
   "allow-reset-local-data",
   "allow-open-data-dir",
   "allow-check-for-updates",
+  "allow-get-update-info",
+  "allow-install-update",
 ]

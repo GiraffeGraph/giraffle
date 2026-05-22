@@ -29,6 +29,8 @@
     "allow-get-bootstrap-logs",
     "allow-reset-local-data",
     "allow-open-data-dir",
-    "allow-check-for-updates"
+    "allow-check-for-updates",
+    "allow-get-update-info",
+    "allow-install-update"
   ]
 }
