@@ -296,7 +296,10 @@
 }
 
 .sidebar-folder-tree {
-  padding-left: 12px;
+  /* Align top-level folder icons under the section header's folder icon:
+     header item pad (7) + chevron (10) + gap (7) = 24; folder-main pad-left is
+     6, so 18 here lands the icon at 24. */
+  padding-left: 18px;
 }
 
 .sidebar-folder-children {
