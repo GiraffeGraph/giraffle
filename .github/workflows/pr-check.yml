@@ -13,6 +13,11 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    # prisma.config.ts reads env("DATABASE_URL"); postinstall `prisma generate`
+    # and `prisma validate` need it set or they throw PrismaConfigEnvError.
+    # A dummy URL is enough — these steps only parse the URL, never connect.
+    env:
+      DATABASE_URL: postgresql://giraffle:giraffle@localhost:5432/giraffle?schema=public
     steps:
       - name: Checkout
         uses: actions/checkout@v4
