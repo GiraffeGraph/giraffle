@@ -1,5 +1,14 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import packageJson from "../../../package.json";
+
+vi.mock("@/lib/db", () => ({
+  db: {
+    appSetting: {
+      findUnique: vi.fn().mockResolvedValue(null),
+    },
+  },
+}));
+
 import { compareVersions, getAppUpdateStatus } from "@/domain/update/update.service";
 
 describe("update.service", () => {
@@ -21,9 +30,9 @@ describe("update.service", () => {
       vi.fn().mockResolvedValue({
         ok: true,
         json: async () => ({
-          tag_name: "v0.2.0",
-          name: "v0.2.0",
-          html_url: "https://github.com/GiraffeGraph/giraffle/releases/tag/v0.2.0",
+          tag_name: "v99.0.0",
+          name: "v99.0.0",
+          html_url: "https://github.com/GiraffeGraph/giraffle/releases/tag/v99.0.0",
           published_at: "2026-04-12T10:00:00.000Z",
           body: "- New feature\n- Bug fixes",
         }),
@@ -33,7 +42,7 @@ describe("update.service", () => {
     const status = await getAppUpdateStatus();
 
     expect(status.currentVersion).toBe(packageJson.version);
-    expect(status.latestVersion).toBe("0.2.0");
+    expect(status.latestVersion).toBe("99.0.0");
     expect(status.updateAvailable).toBe(true);
     expect(status.error).toBeNull();
   });

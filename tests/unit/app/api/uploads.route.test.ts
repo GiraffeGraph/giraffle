@@ -17,6 +17,9 @@ vi.mock("@/lib/db", () => ({
     mediaAsset: {
       create: vi.fn(),
     },
+    appSetting: {
+      findUnique: vi.fn(),
+    },
   },
 }));
 
@@ -38,6 +41,7 @@ describe("POST /api/uploads", () => {
     vi.mocked(auth).mockResolvedValue({ user: { id: "user-1" } } as never);
     vi.mocked(db.note.findFirst).mockResolvedValue({ id: "note-1" } as never);
     vi.mocked(db.mediaAsset.create).mockResolvedValue({ id: "asset-row-1" } as never);
+    vi.mocked(db.appSetting.findUnique).mockResolvedValue(null as never);
   });
 
   it("returns 401 when the upload is unauthenticated", async () => {
