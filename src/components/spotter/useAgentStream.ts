@@ -67,22 +67,20 @@ export function useAgentStream(): UseAgentStream {
     const controller = new AbortController();
     abortRef.current = controller;
 
-    // Track the assistant text item we merge consecutive text chunks into.
-    let assistantId: string | null = null;
+    // Whether the current assistant turn's text bubble is still open (i.e. the
+    // last item should keep receiving text). Mutated only OUTSIDE setItems so
+    // the updater stays pure/idempotent under React StrictMode + concurrency.
+    let assistantOpen = false;
 
     const appendText = (text: string) => {
       setItems((prev) => {
-        if (assistantId) {
-          return prev.map((it) =>
-            it.id === assistantId && it.role === "assistant"
-              ? { ...it, text: it.text + text }
-              : it,
-          );
+        const last = prev[prev.length - 1];
+        if (assistantOpen && last?.role === "assistant") {
+          return [...prev.slice(0, -1), { ...last, text: last.text + text }];
         }
-        const id = nextId();
-        assistantId = id;
-        return [...prev, { id, role: "assistant", text }];
+        return [...prev, { id: nextId(), role: "assistant", text }];
       });
+      assistantOpen = true;
     };
 
     try {
@@ -108,11 +106,11 @@ export function useAgentStream(): UseAgentStream {
             appendText(ev.text);
             break;
           case "thinking":
-            assistantId = null;
+            assistantOpen = false;
             setItems((prev) => [...prev, { id: nextId(), role: "thinking", text: ev.text }]);
             break;
           case "tool_call":
-            assistantId = null;
+            assistantOpen = false;
             setItems((prev) => [
               ...prev,
               {
