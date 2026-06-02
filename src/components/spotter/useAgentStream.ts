@@ -160,7 +160,9 @@ export function useAgentStream(): UseAgentStream {
             });
             break;
           case "rate_limit":
-            setItems((prev) => [...prev, { id: nextId(), role: "error", message: ev.message }]);
+            // Informational telemetry — the agent CLI backs off and retries on
+            // its own. Surfacing it as a persistent red error (with no "resumed"
+            // event to clear it) is misleading, so we don't render it.
             break;
           case "done":
             if (ev.sessionId) sessionRef.current = ev.sessionId;
