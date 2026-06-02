@@ -16,6 +16,7 @@ const BodySchema = z.object({
 
 const AGENT_TOKEN_TTL_MS = 10 * 60_000;
 const SIGKILL_GRACE_MS = 2_500;
+const STDERR_CAP = 4_000;
 
 // Pin the MCP endpoint the spawned agent connects to. Deriving it from the
 // request URL would let a spoofed Host header redirect the live bearer token to
@@ -65,10 +66,21 @@ export async function POST(req: Request) {
     return new Response("Failed to launch agent CLI", { status: 500 });
   }
 
+  // Only the first STDERR_CAP bytes are ever surfaced; bound the buffer so a
+  // chatty/looping agent can't grow it without limit.
   let stderr = "";
   child.stderr.on("data", (chunk: Buffer) => {
-    stderr += chunk.toString();
+    if (stderr.length < STDERR_CAP) stderr += chunk.toString().slice(0, STDERR_CAP - stderr.length);
   });
+
+  // Revoke the ephemeral token exactly once, no matter which path ends the run
+  // (clean exit, error, or client disconnect) — shared by the stream + cancel.
+  let revoked = false;
+  const revokeOnce = async () => {
+    if (revoked) return;
+    revoked = true;
+    await revokeMcpAccessToken(userId, ephemeralToken.id).catch(() => {});
+  };
 
   // Terminate the process politely, then force-kill if it ignores SIGTERM so a
   // wedged agent can't hold its live MCP token for the full TTL.
@@ -83,6 +95,8 @@ export async function POST(req: Request) {
   };
 
   const encoder = new TextEncoder();
+  const onAbort = () => killChild();
+
   const stream = new ReadableStream<Uint8Array>({
     start(controller) {
       let settled = false;
@@ -95,12 +109,11 @@ export async function POST(req: Request) {
         }
       };
 
-      // Revoke the ephemeral token exactly once, regardless of which path ends
-      // the run (clean exit, error, or client disconnect).
       const finish = async () => {
         if (settled) return;
         settled = true;
-        await revokeMcpAccessToken(userId, ephemeralToken.id).catch(() => {});
+        req.signal.removeEventListener("abort", onAbort);
+        await revokeOnce();
         try {
           controller.close();
         } catch {
@@ -108,33 +121,44 @@ export async function POST(req: Request) {
         }
       };
 
-      child.stdout.on("data", (chunk: Buffer) => safeEnqueue(chunk));
+      child.stdout.on("data", (chunk: Buffer) => {
+        safeEnqueue(chunk);
+        // Apply backpressure: pause the pipe when the client isn't draining.
+        if ((controller.desiredSize ?? 1) <= 0) child.stdout.pause();
+      });
       child.on("error", async (error) => {
         logger.error("spotter_agent_error", { requestId, userId, error });
-        safeEnqueue(
-          encoder.encode(
-            JSON.stringify({ type: "giraffle_error", message: "Agent process error" }) + "\n",
-          ),
-        );
+        if (!settled) {
+          safeEnqueue(
+            encoder.encode(
+              JSON.stringify({ type: "giraffle_error", message: "Agent process error" }) + "\n",
+            ),
+          );
+        }
         await finish();
       });
       child.on("close", async (code) => {
-        if (code && code !== 0) {
-          logger.warn("spotter_agent_nonzero_exit", { requestId, userId, code, stderr: stderr.slice(0, 2_000) });
+        if (!settled && code && code !== 0) {
+          logger.warn("spotter_agent_nonzero_exit", { requestId, userId, code, stderr: stderr.slice(0, STDERR_CAP) });
           safeEnqueue(
             encoder.encode(
-              JSON.stringify({ type: "giraffle_error", code, message: stderr.slice(0, 2_000) || `Agent exited ${code}` }) + "\n",
+              JSON.stringify({ type: "giraffle_error", code, message: stderr.slice(0, STDERR_CAP) || `Agent exited ${code}` }) + "\n",
             ),
           );
         }
         await finish();
       });
 
-      req.signal.addEventListener("abort", () => killChild());
+      req.signal.addEventListener("abort", onAbort);
+    },
+    pull() {
+      // Client drained; resume the paused stdout pipe.
+      child.stdout.resume();
     },
     cancel() {
+      req.signal.removeEventListener("abort", onAbort);
       killChild();
-      void revokeMcpAccessToken(userId, ephemeralToken.id).catch(() => {});
+      void revokeOnce();
     },
   });
 
