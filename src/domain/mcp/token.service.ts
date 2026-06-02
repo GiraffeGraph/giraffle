@@ -108,11 +108,7 @@ export async function listMcpAccessTokens(
   return rows.map(toSummary);
 }
 
-export async function revokeMcpAccessToken(
-  userId: string,
-  tokenId: string,
-  opts: { audit?: boolean } = {},
-) {
+export async function revokeMcpAccessToken(userId: string, tokenId: string) {
   // Atomic conditional update: only the caller that flips revokedAt from null
   // wins, so concurrent revokes (e.g. agent stream close + client disconnect)
   // can't double-write the operation log.
@@ -130,14 +126,12 @@ export async function revokeMcpAccessToken(
     return false; // already revoked
   }
 
-  if (opts.audit !== false) {
-    await recordOperation({
-      userId,
-      entityType: "mcp-access-token",
-      entityId: tokenId,
-      actionType: "revoke",
-    });
-  }
+  await recordOperation({
+    userId,
+    entityType: "mcp-access-token",
+    entityId: tokenId,
+    actionType: "revoke",
+  });
 
   return true;
 }
