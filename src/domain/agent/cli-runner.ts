@@ -57,7 +57,8 @@ function assertNotFlag(value: string, label: string): string {
   return value;
 }
 
-export function spawnAgentRun(opts: AgentRunOptions): AgentChildProcess {
+/** Build the agent CLI argv (pure; validates against option injection). */
+export function buildAgentArgs(opts: AgentRunOptions, permissionMode = PERMISSION_MODE): string[] {
   const model = assertNotFlag(opts.model || "sonnet", "model");
   const resume = opts.resume ? assertNotFlag(opts.resume, "resume") : null;
   const mcpConfig = JSON.stringify({
@@ -80,7 +81,7 @@ export function spawnAgentRun(opts: AgentRunOptions): AgentChildProcess {
     mcpConfig,
     "--strict-mcp-config",
     "--permission-mode",
-    PERMISSION_MODE,
+    permissionMode,
     "--model",
     model,
   ];
@@ -89,7 +90,11 @@ export function spawnAgentRun(opts: AgentRunOptions): AgentChildProcess {
     args.push("--resume", resume);
   }
 
-  return spawn(AGENT_CMD, args, {
+  return args;
+}
+
+export function spawnAgentRun(opts: AgentRunOptions): AgentChildProcess {
+  return spawn(AGENT_CMD, buildAgentArgs(opts), {
     stdio: ["ignore", "pipe", "pipe"],
     env: buildAgentEnv(),
   });
