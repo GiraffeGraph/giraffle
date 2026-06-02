@@ -1,35 +1,10 @@
-import type { UIMessage } from "ai";
 import { PageTopbar } from "@/components/ui/PageTopbar";
-import { SpotterWorkspace } from "@/components/spotter/SpotterWorkspace";
+import { AgentPanel } from "@/components/spotter/AgentPanel";
 import { getAllFoldersAction } from "@/server/api/folders";
 import { getNotesAction } from "@/server/api/notes";
-import { getSpotterSessionAction } from "@/server/api/spotter";
 
-function toMessageParts(parts: unknown, fallbackText: string): UIMessage["parts"] {
-  if (Array.isArray(parts) && parts.length > 0) {
-    return parts as UIMessage["parts"];
-  }
-  return [{ type: "text" as const, text: fallbackText }];
-}
-
-interface SpotterPageProps {
-  searchParams: Promise<{ session?: string; prompt?: string }>;
-}
-
-export default async function SpotterPage({
-  searchParams,
-}: SpotterPageProps) {
-  const { session, prompt } = await searchParams;
-  const activeSessionId = typeof session === "string" ? session : null;
-  const initialPrompt =
-    typeof prompt === "string" && prompt.trim().length > 0
-      ? prompt.trim()
-      : null;
-  const [notes, folders, activeSession] = await Promise.all([
-    getNotesAction(),
-    getAllFoldersAction(),
-    activeSessionId ? getSpotterSessionAction(activeSessionId) : null,
-  ]);
+export default async function SpotterPage() {
+  const [notes, folders] = await Promise.all([getNotesAction(), getAllFoldersAction()]);
 
   const topbarActions = (
     <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
@@ -61,32 +36,7 @@ export default async function SpotterPage({
   return (
     <>
       <PageTopbar icon="smart_toy" label="Spotter" actions={topbarActions} />
-      <SpotterWorkspace
-        key={activeSession?.id ?? "new"}
-        initialSessionId={activeSession?.id ?? null}
-        initialTitle={activeSession?.title ?? null}
-        initialMessages={
-          activeSession?.messages.map((message) => ({
-            id: message.id,
-            role: message.role,
-            parts: toMessageParts(message.parts, message.content),
-          })) ?? []
-        }
-        initialPrompt={activeSession ? null : initialPrompt}
-        notes={notes.map((note) => ({
-          id: note.id,
-          title: note.title,
-          icon: note.icon,
-          folderId: note.folderId ?? null,
-          updatedAtLabel: note.updatedAt.toISOString(),
-        }))}
-        folders={folders.map((folder) => ({
-          id: folder.id,
-          name: folder.name,
-          icon: folder.icon,
-          parentId: folder.parentId ?? null,
-        }))}
-      />
+      <AgentPanel />
     </>
   );
 }
