@@ -85,26 +85,33 @@ async function handleMcpRequest(request: Request) {
     );
   }
 
-  const server = createGiraffleMcpServer();
-  const transport = new WebStandardStreamableHTTPServerTransport({
-    sessionIdGenerator: undefined,
-    enableJsonResponse: true,
-  });
+  try {
+    const server = createGiraffleMcpServer();
+    const transport = new WebStandardStreamableHTTPServerTransport({
+      sessionIdGenerator: undefined,
+      enableJsonResponse: true,
+    });
 
-  await server.connect(transport);
+    await server.connect(transport);
 
-  const response = await transport.handleRequest(request, {
-    authInfo: {
-      token: token.token,
-      clientId: token.tokenId,
-      scopes: ["notes:read", "notes:write", "folders:read", "folders:write"],
-      extra: {
-        userId: token.userId,
-        tokenId: token.tokenId,
-        tokenName: token.name,
+    return await transport.handleRequest(request, {
+      authInfo: {
+        token: token.token,
+        clientId: token.tokenId,
+        scopes: ["notes:read", "notes:write", "folders:read", "folders:write"],
+        extra: {
+          userId: token.userId,
+          tokenId: token.tokenId,
+          tokenName: token.name,
+        },
       },
-    },
-  });
-
-  return response;
+    });
+  } catch {
+    // Defense-in-depth: never leak an unhandled transport/server error as a raw
+    // 500; return a well-formed JSON-RPC error instead.
+    return Response.json(
+      { jsonrpc: "2.0", error: { code: -32603, message: "Internal MCP error." }, id: null },
+      { status: 500 },
+    );
+  }
 }
