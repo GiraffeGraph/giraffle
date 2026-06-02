@@ -28,10 +28,11 @@ export async function deleteSavanna(userId: string, id: string): Promise<void> {
 }
 
 export async function renameSavanna(userId: string, id: string, title: string): Promise<void> {
-  await db.canvas.updateMany({
+  const result = await db.canvas.updateMany({
     where: { id, userId },
     data: { title: title.trim() || DEFAULT_TITLE },
   });
+  if (result.count === 0) throw new Error(`Savanna not found: ${id}`);
 }
 
 export async function getSavanna(userId: string, id: string) {
