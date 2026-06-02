@@ -74,8 +74,8 @@ export const strideTools: InternalToolDefinition[] = [
     description:
       "List scheduled Stride tasks (taskItems with a due date) within a date range. Provide ISO 8601 start and end timestamps.",
     inputSchema: z.object({
-      start: z.string().min(1),
-      end: z.string().min(1),
+      start: z.string().min(1).max(40),
+      end: z.string().min(1).max(40),
     }),
     execute: async (raw, { userId }) => {
       const input = raw as { start: string; end: string };
@@ -108,7 +108,7 @@ export const strideTools: InternalToolDefinition[] = [
       "Create a scheduled Stride task in the user's Daily note. Provide text, an ISO 8601 dueDate, and an estimated durationMinutes.",
     inputSchema: z.object({
       text: z.string().min(1).max(2_000),
-      dueDate: z.string().min(1),
+      dueDate: z.string().min(1).max(40),
       durationMinutes: z.number().int().min(1).max(1_440).default(60),
     }),
     execute: async (raw, { userId }) => {
@@ -129,7 +129,7 @@ export const strideTools: InternalToolDefinition[] = [
       "Set or clear a task's due date. Pass an ISO 8601 dueDate to schedule, or null to move it back to the unscheduled backlog.",
     inputSchema: z.object({
       blockId: z.string().min(1),
-      dueDate: z.string().min(1).nullable(),
+      dueDate: z.string().min(1).max(40).nullable(),
     }),
     execute: async (raw, { userId }) => {
       const input = raw as { blockId: string; dueDate: string | null };
