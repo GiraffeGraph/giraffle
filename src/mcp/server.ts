@@ -33,11 +33,13 @@ function summarize(name: string, output: unknown): string {
     if (typeof obj.title === "string" && typeof obj.id === "string") {
       return `${name}: ${obj.title} (${obj.id})`;
     }
-    if (Array.isArray((obj as { hits?: unknown }).hits)) {
-      return `${name}: ${(obj as { hits: unknown[] }).hits.length} hit(s)`;
-    }
-    if (Array.isArray((obj as { backlinks?: unknown }).backlinks)) {
-      return `${name}: ${(obj as { backlinks: unknown[] }).backlinks.length} backlink(s)`;
+    // Generic array-count summary for collection-returning tools (hits,
+    // backlinks, todos, notes, canvases, tasks, …) so every list tool gets an
+    // informative text line instead of a bare "ok".
+    for (const [key, value] of Object.entries(obj)) {
+      if (Array.isArray(value)) {
+        return `${name}: ${value.length} ${key}`;
+      }
     }
   }
   return `${name}: ok`;
