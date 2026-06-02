@@ -139,10 +139,10 @@ export async function POST(req: Request) {
       });
       child.on("close", async (code) => {
         if (!settled && code && code !== 0) {
-          logger.warn("spotter_agent_nonzero_exit", { requestId, userId, code, stderr: stderr.slice(0, STDERR_CAP) });
+          logger.warn("spotter_agent_nonzero_exit", { requestId, userId, code, stderr });
           safeEnqueue(
             encoder.encode(
-              JSON.stringify({ type: "giraffle_error", code, message: stderr.slice(0, STDERR_CAP) || `Agent exited ${code}` }) + "\n",
+              JSON.stringify({ type: "giraffle_error", code, message: stderr || `Agent exited ${code}` }) + "\n",
             ),
           );
         }
