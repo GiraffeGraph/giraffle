@@ -39,6 +39,9 @@ export async function createMcpAccessToken(
   input: {
     name?: string;
     expiresAt?: Date | null;
+    // Ephemeral per-run agent tokens set this false to keep the operation log
+    // free of create/revoke churn (one pair per agent run otherwise).
+    audit?: boolean;
   } = {},
 ): Promise<CreatedMcpAccessToken> {
   const name = input.name?.trim() || DEFAULT_TOKEN_NAME;
@@ -65,17 +68,19 @@ export async function createMcpAccessToken(
     },
   });
 
-  await recordOperation({
-    userId,
-    entityType: "mcp-access-token",
-    entityId: row.id,
-    actionType: "create",
-    payload: {
-      name: row.name,
-      tokenPrefix: row.tokenPrefix,
-      expiresAt: row.expiresAt?.toISOString() ?? null,
-    },
-  });
+  if (input.audit !== false) {
+    await recordOperation({
+      userId,
+      entityType: "mcp-access-token",
+      entityId: row.id,
+      actionType: "create",
+      payload: {
+        name: row.name,
+        tokenPrefix: row.tokenPrefix,
+        expiresAt: row.expiresAt?.toISOString() ?? null,
+      },
+    });
+  }
 
   return {
     ...toSummary(row),
@@ -103,7 +108,11 @@ export async function listMcpAccessTokens(
   return rows.map(toSummary);
 }
 
-export async function revokeMcpAccessToken(userId: string, tokenId: string) {
+export async function revokeMcpAccessToken(
+  userId: string,
+  tokenId: string,
+  opts: { audit?: boolean } = {},
+) {
   // Atomic conditional update: only the caller that flips revokedAt from null
   // wins, so concurrent revokes (e.g. agent stream close + client disconnect)
   // can't double-write the operation log.
@@ -121,12 +130,14 @@ export async function revokeMcpAccessToken(userId: string, tokenId: string) {
     return false; // already revoked
   }
 
-  await recordOperation({
-    userId,
-    entityType: "mcp-access-token",
-    entityId: tokenId,
-    actionType: "revoke",
-  });
+  if (opts.audit !== false) {
+    await recordOperation({
+      userId,
+      entityType: "mcp-access-token",
+      entityId: tokenId,
+      actionType: "revoke",
+    });
+  }
 
   return true;
 }

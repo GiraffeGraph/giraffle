@@ -55,13 +55,14 @@ export async function POST(req: Request) {
   const ephemeralToken = await createMcpAccessToken(userId, {
     name: "Spotter agent (auto)",
     expiresAt: new Date(Date.now() + AGENT_TOKEN_TTL_MS),
+    audit: false,
   });
 
   let child: ReturnType<typeof spawnAgentRun>;
   try {
     child = spawnAgentRun({ prompt, mcpUrl, mcpToken: ephemeralToken.token, resume, model });
   } catch (error) {
-    await revokeMcpAccessToken(userId, ephemeralToken.id).catch(() => {});
+    await revokeMcpAccessToken(userId, ephemeralToken.id, { audit: false }).catch(() => {});
     logger.error("spotter_agent_spawn_failed", { requestId, userId, error });
     return new Response("Failed to launch agent CLI", { status: 500 });
   }
@@ -79,7 +80,7 @@ export async function POST(req: Request) {
   const revokeOnce = async () => {
     if (revoked) return;
     revoked = true;
-    await revokeMcpAccessToken(userId, ephemeralToken.id).catch(() => {});
+    await revokeMcpAccessToken(userId, ephemeralToken.id, { audit: false }).catch(() => {});
   };
 
   // Terminate the process politely, then force-kill if it ignores SIGTERM so a
