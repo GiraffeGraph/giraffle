@@ -14,9 +14,13 @@ export function AgentPanel() {
   const { items, isStreaming, send, stop, reset } = useAgentStream();
   const [draft, setDraft] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
+  // Auto-follow only when the user is already near the bottom, so scrolling up
+  // to read an earlier tool result isn't yanked back down mid-stream.
+  const atBottomRef = useRef(true);
 
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    const el = scrollRef.current;
+    if (el && atBottomRef.current) el.scrollTop = el.scrollHeight;
   }, [items]);
 
   const submit = () => {
@@ -37,7 +41,14 @@ export function AgentPanel() {
         </Button>
       </header>
 
-      <div ref={scrollRef} style={styles.timeline}>
+      <div
+        ref={scrollRef}
+        style={styles.timeline}
+        onScroll={(e) => {
+          const el = e.currentTarget;
+          atBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+        }}
+      >
         {items.length === 0 ? (
           <div style={styles.empty}>
             Ask the agent to work across your notes, Stride, Tower Matrix, and Savanna — it drives
