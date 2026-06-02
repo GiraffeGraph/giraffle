@@ -230,9 +230,8 @@ Then open `http://localhost:3000` for a production smoke test, or point your dom
 - `NEXTAUTH_URL`
 - `LOG_LEVEL`
 - `APP_PORT`
-- optional: `APP_ENCRYPTION_KEY` to encrypt app-managed provider settings stored from inside the UI
-- optional: `OPENAI_API_KEY` to enable AI-assisted routes
-- optional: `OPENAI_BASE_URL` for OpenAI-compatible gateways or self-hosted inference
+- optional: `APP_ENCRYPTION_KEY` to encrypt app-managed settings stored from inside the UI
+- optional: Spotter agent vars (`GIRAFFLE_AGENT_CMD`, `GIRAFFLE_AGENT_PERMISSION_MODE`, `GIRAFFLE_MCP_BASE_URL`) — see [docs/agent.md](docs/agent.md)
 - optional: `DEPLOYMENT_ID` for version-skew protection during rolling deploys
 - `POSTGRES_USER`
 - `POSTGRES_PASSWORD`
@@ -297,7 +296,7 @@ That adds nginx on port `80` in front of the app. The default stack intentionall
 - Uploads are written to `/app/public/uploads` and persisted through the `giraffle_uploads` Docker volume.
 - By default the app is public on `APP_PORT` and reachable directly, usually `http://localhost:3000`.
 - nginx is optional and only starts when `docker-compose.proxy.yml` is included.
-- Users can save their own OpenAI API key and base URL from `Settings → Self-host & Integrations`; when no app key is saved, Giraffle falls back to server env values.
+- AI is provided by a local CLI agent (Claude Code) over Giraffle's MCP server — Giraffle holds no model API key. See [docs/agent.md](docs/agent.md).
 
 ## Auth Baseline
 
