@@ -104,23 +104,22 @@ export async function listMcpAccessTokens(
 }
 
 export async function revokeMcpAccessToken(userId: string, tokenId: string) {
-  const existing = await db.mcpAccessToken.findFirst({
-    where: { id: tokenId, userId },
-    select: { id: true, revokedAt: true },
-  });
-
-  if (!existing) {
-    throw new Error("MCP access token not found");
-  }
-
-  if (existing.revokedAt) {
-    return false;
-  }
-
-  await db.mcpAccessToken.update({
-    where: { id: tokenId },
+  // Atomic conditional update: only the caller that flips revokedAt from null
+  // wins, so concurrent revokes (e.g. agent stream close + client disconnect)
+  // can't double-write the operation log.
+  const result = await db.mcpAccessToken.updateMany({
+    where: { id: tokenId, userId, revokedAt: null },
     data: { revokedAt: new Date() },
   });
+
+  if (result.count === 0) {
+    const exists = await db.mcpAccessToken.findFirst({
+      where: { id: tokenId, userId },
+      select: { id: true },
+    });
+    if (!exists) throw new Error("MCP access token not found");
+    return false; // already revoked
+  }
 
   await recordOperation({
     userId,
