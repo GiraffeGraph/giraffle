@@ -2,8 +2,7 @@
 
 import { confirmDialog } from "@/components/ui/ConfirmDialog";
 import type { Editor as TiptapEditor } from "@tiptap/core";
-import { Fragment, Slice } from "@tiptap/pm/model";
-import type { EditorView } from "@tiptap/pm/view";
+import { Fragment } from "@tiptap/pm/model";
 import CodeBlock from "@tiptap/extension-code-block";
 import Color from "@tiptap/extension-color";
 import Highlight from "@tiptap/extension-highlight";
@@ -34,7 +33,6 @@ import type {
   NoteReference,
   TiptapDocument,
 } from "@/domain/note/note.types";
-import { markdownToBlocks } from "@/domain/note/note.serializer";
 import { generateId } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import {
@@ -61,7 +59,6 @@ import {
   focusBlockById,
   findBlockLocation,
   getBlockId,
-  getChildBlocks,
   cloneBlockTree,
 } from "./block-helpers";
 import { useWikilinkSearch } from "./use-wikilink-search";
