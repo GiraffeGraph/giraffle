@@ -8,7 +8,13 @@ import {
   updateNote,
 } from "@/domain/note/note.service";
 import type { EisenhowerQuadrant, MatrixSlot } from "@/domain/note/note.types";
+import { db } from "@/lib/db";
 import type { InternalToolDefinition } from "../internal-tools";
+
+async function assertOwnedNote(userId: string, noteId: string): Promise<void> {
+  const found = await db.note.findFirst({ where: { id: noteId, userId }, select: { id: true } });
+  if (!found) throw new Error(`Note not found: ${noteId}`);
+}
 
 /**
  * Tower Matrix = Eisenhower prioritization. Notes carry a MatrixSlot
@@ -43,6 +49,7 @@ export const towerMatrixTools: InternalToolDefinition[] = [
     }),
     execute: async (raw, { userId }) => {
       const input = raw as { noteId: string };
+      await assertOwnedNote(userId, input.noteId);
       const tasks = await getNoteTodoBlocks(userId, input.noteId);
       return { noteId: input.noteId, tasks };
     },
@@ -72,6 +79,7 @@ export const towerMatrixTools: InternalToolDefinition[] = [
     }),
     execute: async (raw, { userId }) => {
       const input = raw as { noteId: string; text: string };
+      await assertOwnedNote(userId, input.noteId);
       await addTodoToNote(userId, input.noteId, input.text);
       return { noteId: input.noteId, text: input.text, added: true };
     },

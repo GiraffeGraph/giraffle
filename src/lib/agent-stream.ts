@@ -30,9 +30,10 @@ interface RawBlock {
 /** Strip the `mcp__giraffle__giraffle-` noise so tool names read cleanly. */
 export function prettyToolName(name: string): string {
   return name
-    .replace(/^mcp__[^_]+__/, "")
-    .replace(/^giraffle-/, "")
-    .replace(/-/g, " ");
+    .replace(/^mcp__.+?__/, "")
+    .replace(/^giraffle[-_]/, "")
+    .replace(/[-_]/g, " ")
+    .trim();
 }
 
 function previewContent(content: unknown): string {
