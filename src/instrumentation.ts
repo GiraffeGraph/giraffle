@@ -13,7 +13,6 @@ export async function register() {
   logger.info("server_startup", {
     requestIdHeader: REQUEST_ID_HEADER,
     authConfigured: Boolean(config.auth.secret),
-    aiEnabled: config.ai.enabled,
   });
 
   for (const warning of config.warnings) {

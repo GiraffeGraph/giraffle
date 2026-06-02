@@ -28,16 +28,10 @@ export interface DatabaseRuntimeEnv {
   url: string;
 }
 
-export interface AiRuntimeEnv {
-  apiKey: string | null;
-  enabled: boolean;
-}
-
 export interface StartupValidationResult {
   app: AppRuntimeEnv;
   auth: AuthRuntimeEnv;
   database: DatabaseRuntimeEnv;
-  ai: AiRuntimeEnv;
   warnings: string[];
 }
 
@@ -133,20 +127,10 @@ export function getDatabaseRuntimeEnv(rawEnv: RawEnv = process.env) {
   } satisfies DatabaseRuntimeEnv;
 }
 
-export function getAiRuntimeEnv(rawEnv: RawEnv = process.env) {
-  const apiKey = readTrimmed(rawEnv, "OPENAI_API_KEY");
-
-  return {
-    apiKey,
-    enabled: Boolean(apiKey),
-  } satisfies AiRuntimeEnv;
-}
-
 export function validateStartupEnv(rawEnv: RawEnv = process.env) {
   const app = getAppRuntimeEnv(rawEnv);
   const auth = getAuthRuntimeEnv(rawEnv);
   const database = getDatabaseRuntimeEnv(rawEnv);
-  const ai = getAiRuntimeEnv(rawEnv);
   const errors: string[] = [];
   const warnings: string[] = [];
 
@@ -158,12 +142,6 @@ export function validateStartupEnv(rawEnv: RawEnv = process.env) {
     errors.push("NEXTAUTH_URL is required in production");
   }
 
-  if (!ai.enabled) {
-    warnings.push(
-      "OPENAI_API_KEY is not configured. AI routes will rely on app-managed provider settings or return 503.",
-    );
-  }
-
   if (errors.length > 0) {
     throw new Error(`Invalid runtime configuration:\n- ${errors.join("\n- ")}`);
   }
@@ -172,7 +150,6 @@ export function validateStartupEnv(rawEnv: RawEnv = process.env) {
     app,
     auth,
     database,
-    ai,
     warnings,
   } satisfies StartupValidationResult;
 }
