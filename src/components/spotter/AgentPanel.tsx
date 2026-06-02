@@ -55,12 +55,15 @@ export function AgentPanel() {
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
+            // Don't submit mid-IME-composition (e.g. Turkish/CJK input) — Enter
+            // there commits the candidate, it isn't a send.
+            if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
               e.preventDefault();
               submit();
             }
           }}
           placeholder="Tell the agent what to do…"
+          aria-label="Agent prompt"
           rows={3}
         />
         {isStreaming ? (
@@ -132,7 +135,12 @@ function Collapsible({
   const [open, setOpen] = useState(false);
   return (
     <div style={{ ...styles.collapsible, ...(muted ? styles.collapsibleMuted : {}) }}>
-      <button type="button" style={styles.collapsibleToggle} onClick={() => setOpen((o) => !o)}>
+      <button
+        type="button"
+        style={styles.collapsibleToggle}
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+      >
         <span aria-hidden>{open ? "▾" : "▸"}</span> {summary}
       </button>
       {open ? (
