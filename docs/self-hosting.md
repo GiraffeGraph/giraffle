@@ -38,8 +38,7 @@ Optional but recommended:
 - `APP_IMAGE`
 - `APP_PORT`
 - `APP_ENCRYPTION_KEY`
-- `OPENAI_API_KEY`
-- `OPENAI_BASE_URL`
+- Spotter agent: `GIRAFFLE_AGENT_CMD`, `GIRAFFLE_AGENT_PERMISSION_MODE`, `GIRAFFLE_MCP_BASE_URL` (see [agent.md](agent.md))
 - `DEPLOYMENT_ID`
 - `APP_UPDATE_REPOSITORY`
 
@@ -106,22 +105,16 @@ See also:
 - `docs/deploy.md`
 - `README.md`
 
-## In-app provider keys
+## AI agent
 
-Giraffle now supports encrypted app-managed integration settings from **Settings → Self-host & Integrations**.
+Giraffle holds no model API key. AI runs through a local CLI agent (Claude Code)
+over Giraffle's MCP server; see [agent.md](agent.md). External MCP clients use a
+token from **Settings → MCP Access**.
 
-Today this is used for:
+## App-managed settings
 
-- OpenAI API key
-- OpenAI-compatible base URL
-
-Behavior:
-
-- if a user saves an API key in Settings, Giraffle uses that key first
-- if no app key exists, Giraffle falls back to server env values like `OPENAI_API_KEY`
-- values are encrypted before they are stored in PostgreSQL
-
-For best results, set:
+Encrypted app-managed settings (upload dir, log level, update repo) are stored in
+PostgreSQL and managed from **Settings**. For best results, set:
 
 ```env
 APP_ENCRYPTION_KEY=your-long-random-secret
