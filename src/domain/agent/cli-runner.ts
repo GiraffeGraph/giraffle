@@ -50,7 +50,16 @@ function buildAgentEnv(): NodeJS.ProcessEnv {
   return env as NodeJS.ProcessEnv;
 }
 
+// Reject argv values that would be parsed as CLI flags (option injection),
+// defense-in-depth for model/resume which may originate from request input.
+function assertNotFlag(value: string, label: string): string {
+  if (/^-/.test(value)) throw new Error(`Invalid ${label}`);
+  return value;
+}
+
 export function spawnAgentRun(opts: AgentRunOptions): AgentChildProcess {
+  const model = assertNotFlag(opts.model || "sonnet", "model");
+  const resume = opts.resume ? assertNotFlag(opts.resume, "resume") : null;
   const mcpConfig = JSON.stringify({
     mcpServers: {
       giraffle: {
@@ -73,11 +82,11 @@ export function spawnAgentRun(opts: AgentRunOptions): AgentChildProcess {
     "--permission-mode",
     PERMISSION_MODE,
     "--model",
-    opts.model || "sonnet",
+    model,
   ];
 
-  if (opts.resume) {
-    args.push("--resume", opts.resume);
+  if (resume) {
+    args.push("--resume", resume);
   }
 
   return spawn(AGENT_CMD, args, {

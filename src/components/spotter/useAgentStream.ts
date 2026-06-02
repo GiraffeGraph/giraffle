@@ -127,17 +127,18 @@ export function useAgentStream(): UseAgentStream {
             ]);
             break;
           case "tool_result":
-            // Match by tool id; if the result carries no id, fall back to the
-            // last still-running tool so its row doesn't hang forever.
             setItems((prev) => {
               let targetId: string | null = null;
               if (ev.toolUseId) {
+                // Match strictly by id; a provided-but-unmatched id must NOT
+                // resolve some other running tool (would mislabel parallel calls).
                 const match = prev.find(
                   (it) => it.role === "tool" && it.status === "running" && it.toolId === ev.toolUseId,
                 );
                 targetId = match?.id ?? null;
-              }
-              if (!targetId) {
+              } else {
+                // No id on the result: fall back to the last still-running tool
+                // so its row doesn't hang forever.
                 for (let i = prev.length - 1; i >= 0; i -= 1) {
                   const it = prev[i];
                   if (it.role === "tool" && it.status === "running") {
