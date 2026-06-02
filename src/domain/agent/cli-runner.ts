@@ -1,4 +1,5 @@
 import { spawn, type ChildProcessByStdio } from "node:child_process";
+import { tmpdir } from "node:os";
 import type { Readable } from "node:stream";
 
 export type AgentChildProcess = ChildProcessByStdio<null, Readable, Readable>;
@@ -80,6 +81,11 @@ export function buildAgentArgs(opts: AgentRunOptions, permissionMode = PERMISSIO
     "--mcp-config",
     mcpConfig,
     "--strict-mcp-config",
+    // Disable the agent's built-in filesystem/bash toolset. It should drive the
+    // Giraffle workspace ONLY through the giraffle MCP tools — never read/write
+    // the server's source tree or run shell commands, even under bypassPermissions.
+    "--tools",
+    "",
     "--permission-mode",
     permissionMode,
     "--model",
@@ -97,5 +103,7 @@ export function spawnAgentRun(opts: AgentRunOptions): AgentChildProcess {
   return spawn(AGENT_CMD, buildAgentArgs(opts), {
     stdio: ["ignore", "pipe", "pipe"],
     env: buildAgentEnv(),
+    // Neutral working directory — never the server's source tree.
+    cwd: tmpdir(),
   });
 }

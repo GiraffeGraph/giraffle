@@ -14,6 +14,8 @@ describe("buildAgentArgs", () => {
     expect(args[1]).toBe("do the thing");
     expect(args).toContain("stream-json");
     expect(args).toContain("--strict-mcp-config");
+    // Built-in filesystem/bash toolset disabled — MCP tools only.
+    expect(args[args.indexOf("--tools") + 1]).toBe("");
     expect(args[args.indexOf("--permission-mode") + 1]).toBe("bypassPermissions");
     expect(args[args.indexOf("--model") + 1]).toBe("sonnet");
 
