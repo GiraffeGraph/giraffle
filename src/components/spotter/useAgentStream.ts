@@ -98,6 +98,10 @@ export function useAgentStream(): UseAgentStream {
       }
 
       const applyEvent = (ev: AgentEvent) => {
+        // Ignore events from a run that has been superseded by stop()/reset()/a
+        // new send(); their already-buffered chunks must not mutate the new
+        // timeline or resume the stale session.
+        if (abortRef.current !== controller) return;
         switch (ev.kind) {
           case "session":
             sessionRef.current = ev.sessionId;
