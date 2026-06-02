@@ -28,6 +28,12 @@ export interface AgentRunOptions {
 
 const AGENT_CMD = process.env.GIRAFFLE_AGENT_CMD || "claude";
 const PERMISSION_MODE = process.env.GIRAFFLE_AGENT_PERMISSION_MODE || "bypassPermissions";
+// Built-in tools the agent may use, on top of the giraffle MCP tools. Default
+// allows web research but NOT Bash/Read/Write/Edit, so the agent can look things
+// up without touching the server's filesystem or shell. Set to "default" for the
+// full Claude Code toolset, "" for MCP-only, or a custom comma-separated list.
+// (Skills still resolve via /name regardless of this setting.)
+const AGENT_TOOLS = process.env.GIRAFFLE_AGENT_TOOLS ?? "WebSearch,WebFetch";
 
 /**
  * The agent runs under bypassPermissions by default and can therefore call any
@@ -81,11 +87,10 @@ export function buildAgentArgs(opts: AgentRunOptions, permissionMode = PERMISSIO
     "--mcp-config",
     mcpConfig,
     "--strict-mcp-config",
-    // Disable the agent's built-in filesystem/bash toolset. It should drive the
-    // Giraffle workspace ONLY through the giraffle MCP tools — never read/write
-    // the server's source tree or run shell commands, even under bypassPermissions.
+    // Constrain the built-in toolset (default: web research only, no
+    // filesystem/bash). MCP tools remain available regardless. See AGENT_TOOLS.
     "--tools",
-    "",
+    AGENT_TOOLS,
     "--permission-mode",
     permissionMode,
     "--model",

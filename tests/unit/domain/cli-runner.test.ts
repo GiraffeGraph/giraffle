@@ -14,8 +14,10 @@ describe("buildAgentArgs", () => {
     expect(args[1]).toBe("do the thing");
     expect(args).toContain("stream-json");
     expect(args).toContain("--strict-mcp-config");
-    // Built-in filesystem/bash toolset disabled — MCP tools only.
-    expect(args[args.indexOf("--tools") + 1]).toBe("");
+    // Built-in toolset constrained to web research by default (no Bash/Write).
+    const tools = args[args.indexOf("--tools") + 1];
+    expect(tools).toBe("WebSearch,WebFetch");
+    expect(tools).not.toMatch(/Bash|Write|Edit/);
     expect(args[args.indexOf("--permission-mode") + 1]).toBe("bypassPermissions");
     expect(args[args.indexOf("--model") + 1]).toBe("sonnet");
 
