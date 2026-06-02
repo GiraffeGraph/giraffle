@@ -171,7 +171,9 @@ export async function resolveMcpBearerToken(authorizationHeader: string | null) 
     return null;
   }
 
-  await db.mcpAccessToken.update({
+  // updateMany (not update) so a concurrent hard-delete of an ephemeral token
+  // between the read above and here is a no-op rather than a P2025 → 500.
+  await db.mcpAccessToken.updateMany({
     where: { id: row.id },
     data: { lastUsedAt: new Date() },
   });
