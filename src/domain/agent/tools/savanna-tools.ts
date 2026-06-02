@@ -59,6 +59,16 @@ export const savannaTools: InternalToolDefinition[] = [
         elementCount: elementCount(canvas.elements),
       };
       if (!input.includeElements) return base;
+      // Guard the MCP token budget: very large canvases would blow the payload,
+      // so refuse to inline the full element array past a sane cap.
+      const ELEMENT_CAP = 1_500;
+      if (base.elementCount > ELEMENT_CAP) {
+        return {
+          ...base,
+          elementsOmitted: true,
+          reason: `Canvas has ${base.elementCount} elements (cap ${ELEMENT_CAP}); too large to inline.`,
+        };
+      }
       return { ...base, elements: canvas.elements, appState: canvas.appState };
     },
   },
