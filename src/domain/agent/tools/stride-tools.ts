@@ -42,6 +42,8 @@ function serializeTodo(t: CalendarTodo) {
   };
 }
 
+const MAX_RANGE_MS = 366 * 24 * 60 * 60 * 1000;
+
 function parseDate(value: string, label: string): Date {
   // A bare YYYY-MM-DD parses as UTC midnight, which the Stride UI (local-time
   // day boundaries) would show on the previous day west of UTC. Pin date-only
@@ -77,11 +79,15 @@ export const strideTools: InternalToolDefinition[] = [
     }),
     execute: async (raw, { userId }) => {
       const input = raw as { start: string; end: string };
-      const todos = await getTodosForCalendar(
-        userId,
-        parseDate(input.start, "start"),
-        parseDate(input.end, "end"),
-      );
+      const start = parseDate(input.start, "start");
+      const end = parseDate(input.end, "end");
+      if (start.getTime() >= end.getTime()) {
+        throw new Error("start must be before end");
+      }
+      if (end.getTime() - start.getTime() > MAX_RANGE_MS) {
+        throw new Error("Date range too large; query at most ~1 year at a time");
+      }
+      const todos = await getTodosForCalendar(userId, start, end);
       return { todos: (todos as CalendarTodo[]).map(serializeTodo) };
     },
   },

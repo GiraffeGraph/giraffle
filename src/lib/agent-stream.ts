@@ -78,9 +78,12 @@ export function parseAgentEvent(raw: unknown): AgentEvent[] {
   }
 
   if (type === "assistant") {
-    const message = obj.message as { content?: RawBlock[] } | undefined;
+    const message = obj.message as { content?: unknown } | undefined;
+    const blocks: RawBlock[] = Array.isArray(message?.content)
+      ? (message!.content as RawBlock[])
+      : [];
     const out: AgentEvent[] = [];
-    for (const block of message?.content ?? []) {
+    for (const block of blocks) {
       if (block.type === "thinking" && typeof block.thinking === "string") {
         out.push({ kind: "thinking", text: block.thinking });
       } else if (block.type === "text" && typeof block.text === "string") {
@@ -99,9 +102,12 @@ export function parseAgentEvent(raw: unknown): AgentEvent[] {
   }
 
   if (type === "user") {
-    const message = obj.message as { content?: RawBlock[] } | undefined;
+    const message = obj.message as { content?: unknown } | undefined;
+    const blocks: RawBlock[] = Array.isArray(message?.content)
+      ? (message!.content as RawBlock[])
+      : [];
     const out: AgentEvent[] = [];
-    for (const block of message?.content ?? []) {
+    for (const block of blocks) {
       if (block.type === "tool_result") {
         out.push({
           kind: "tool_result",
@@ -126,6 +132,8 @@ export function parseAgentEvent(raw: unknown): AgentEvent[] {
  * Splits a streaming text buffer into complete NDJSON lines, returning parsed
  * agent events plus the unconsumed remainder. Call repeatedly as chunks arrive.
  */
+const MAX_LINE_BYTES = 5_000_000;
+
 export function drainNdjson(buffer: string): { events: AgentEvent[]; rest: string } {
   const events: AgentEvent[] = [];
   let rest = buffer;
@@ -133,12 +141,15 @@ export function drainNdjson(buffer: string): { events: AgentEvent[]; rest: strin
   while ((idx = rest.indexOf("\n")) !== -1) {
     const line = rest.slice(0, idx).trim();
     rest = rest.slice(idx + 1);
-    if (!line) continue;
+    if (!line || line.length > MAX_LINE_BYTES) continue; // skip empty/oversized lines
     try {
       events.push(...parseAgentEvent(JSON.parse(line)));
     } catch {
       // Partial or non-JSON line; skip.
     }
   }
+  // Safety valve: if no newline has arrived and the partial line is already
+  // pathologically large, drop it rather than buffer without bound.
+  if (rest.length > MAX_LINE_BYTES) rest = "";
   return { events, rest };
 }

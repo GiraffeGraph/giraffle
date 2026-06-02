@@ -28,8 +28,10 @@ export const towerMatrixTools: InternalToolDefinition[] = [
       "List all matrix-scoped notes with their slot (DO/SCHEDULE/DELEGATE/ELIMINATE/BACKLOG) and per-quadrant task counts.",
     inputSchema: z.object({}),
     execute: async (_raw, { userId }) => {
-      const notes = await getNotesWithTodoSummary(userId);
-      return { notes };
+      const all = await getNotesWithTodoSummary(userId);
+      // Bound the payload so a large matrix can't blow the MCP token budget.
+      const LIMIT = 200;
+      return { notes: all.slice(0, LIMIT), truncated: all.length > LIMIT, total: all.length };
     },
   },
   {
