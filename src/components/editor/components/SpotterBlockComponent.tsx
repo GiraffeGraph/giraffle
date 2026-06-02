@@ -54,16 +54,21 @@ export function SpotterBlockComponent(props: NodeViewProps) {
       };
 
       if (reader) {
-        for (;;) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-          const { events, rest } = drainNdjson(buffer);
-          buffer = rest;
-          applyEvents(events);
+        try {
+          for (;;) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const { events, rest } = drainNdjson(buffer);
+            buffer = rest;
+            applyEvents(events);
+          }
+          // Flush any final line that arrived without a trailing newline.
+          applyEvents(drainNdjson(buffer + decoder.decode()).events);
+        } finally {
+          // Release the reader / abort the body on any exit path (incl. throw).
+          await reader.cancel().catch(() => {});
         }
-        // Flush any final line that arrived without a trailing newline.
-        applyEvents(drainNdjson(buffer + decoder.decode()).events);
       }
 
       updateAttributes({ status: "done" });
