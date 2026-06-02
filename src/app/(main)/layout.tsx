@@ -2,6 +2,7 @@ import { GlobalShortcuts } from "@/components/keyboard/GlobalShortcuts";
 import { RightRail } from "@/components/right-rail/RightRail";
 import { CommandPalette } from "@/components/search/CommandPalette";
 import { Sidebar } from "@/components/sidebar/Sidebar";
+import { SpotterDock } from "@/components/spotter/SpotterDock";
 import { EditorTabs } from "@/components/tabs/EditorTabs";
 import { ConfirmDialogHost } from "@/components/ui/ConfirmDialog";
 import { UpdateNotifier } from "@/components/update/UpdateNotifier";
@@ -33,6 +34,7 @@ export default async function MainLayout({
       </main>
       <RightRail appVersion={app.version} />
       <CommandPalette />
+      <SpotterDock />
       <GlobalShortcuts />
       <ConfirmDialogHost />
       <UpdateNotifier />
