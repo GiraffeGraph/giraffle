@@ -54,6 +54,28 @@ const MCP_NAME_BY_INTERNAL: Record<string, string> = {
   notes_move: "giraffle-move-note",
   folders_create: "giraffle-create-folder",
   folders_list: "giraffle-list-folder",
+  // Stride (calendar scheduling)
+  stride_list_scheduled: "giraffle-stride-list-scheduled",
+  stride_list_unscheduled: "giraffle-stride-list-unscheduled",
+  stride_create_task: "giraffle-stride-create-task",
+  stride_schedule_task: "giraffle-stride-schedule-task",
+  stride_set_duration: "giraffle-stride-set-duration",
+  stride_toggle_task: "giraffle-stride-toggle-task",
+  stride_update_task_text: "giraffle-stride-update-task-text",
+  stride_delete_task: "giraffle-stride-delete-task",
+  // Tower Matrix (Eisenhower)
+  tower_list_matrix: "giraffle-tower-list-matrix",
+  tower_list_note_tasks: "giraffle-tower-list-note-tasks",
+  tower_assign_note: "giraffle-tower-assign-note",
+  tower_add_task: "giraffle-tower-add-task",
+  tower_assign_task: "giraffle-tower-assign-task",
+  tower_toggle_task: "giraffle-tower-toggle-task",
+  // Savanna (canvas)
+  savanna_list: "giraffle-savanna-list",
+  savanna_get: "giraffle-savanna-get",
+  savanna_create: "giraffle-savanna-create",
+  savanna_rename: "giraffle-savanna-rename",
+  savanna_delete: "giraffle-savanna-delete",
 };
 
 export function createGiraffleMcpServer() {

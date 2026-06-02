@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 
 const ROUTES: Record<string, string> = {
   s: "/spotter",
-  t: "/trails",
   n: "/notes",
   h: "/",
   c: "/savanna",
@@ -15,7 +14,6 @@ const ROUTES: Record<string, string> = {
 const SHORTCUT_HELP: { keys: string; label: string }[] = [
   { keys: "⌘K  /  /", label: "Komut paleti" },
   { keys: "g  s", label: "Spotter" },
-  { keys: "g  t", label: "Trails" },
   { keys: "g  n", label: "Notlar" },
   { keys: "g  c", label: "Savanna" },
   { keys: "g  r", label: "Stride" },

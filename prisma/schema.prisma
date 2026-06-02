@@ -26,10 +26,7 @@ model User {
   operationLogs       OperationLog[]
   canvases            Canvas[]
   spotterSessions     SpotterSession[]
-  integrationSettings UserIntegrationSetting[]
   mcpAccessTokens     McpAccessToken[]
-  trails              Trail[]
-  trailLogs           TrailLog[]
 }
 
 model Account {
@@ -237,21 +234,6 @@ model McpAccessToken {
   @@index([userId, revokedAt])
 }
 
-model UserIntegrationSetting {
-  id             String   @id @default(uuid())
-  userId         String
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  provider       String
-  settingKey     String
-  encryptedValue String
-  valuePreview   String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  @@unique([userId, provider, settingKey])
-  @@index([userId, provider])
-}
-
 model AppSetting {
   id             String   @id @default(uuid())
   key            String   @unique
@@ -271,77 +253,6 @@ model SpotterMessage {
   parts     Json?
   createdAt DateTime       @default(now())
 
-  @@index([sessionId, createdAt])
-}
-
-// ─── Trails (Connectors) ──────────────────────────────────────
-model Trail {
-  id         String    @id @default(uuid())
-  userId     String
-  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  kind       String
-  label      String?
-  status     String    @default("disconnected")
-  config     Json      @default("{}")
-  lastError  String?
-  lastSyncAt DateTime?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-
-  credentials TrailCredential[]
-  toolAllows  TrailToolAllow[]
-  logs        TrailLog[]
-
-  @@unique([userId, kind, label])
-  @@index([userId, status])
-}
-
-model TrailCredential {
-  id              String    @id @default(uuid())
-  trailId         String
-  trail           Trail     @relation(fields: [trailId], references: [id], onDelete: Cascade)
-  scope           String    @default("default")
-  encryptedSecret String
-  metadata        Json      @default("{}")
-  expiresAt       DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-
-  @@unique([trailId, scope])
-  @@index([trailId])
-}
-
-model TrailToolAllow {
-  id        String   @id @default(uuid())
-  trailId   String
-  trail     Trail    @relation(fields: [trailId], references: [id], onDelete: Cascade)
-  toolName  String
-  allowed   Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([trailId, toolName])
-  @@index([trailId])
-}
-
-model TrailLog {
-  id            String   @id @default(uuid())
-  userId        String
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  trailId       String?
-  trail         Trail?   @relation(fields: [trailId], references: [id], onDelete: SetNull)
-  sessionId     String?
-  messageId     String?
-  toolName      String
-  status        String
-  input         Json?
-  outputSnippet String?
-  error         String?
-  durationMs    Int?
-  createdAt     DateTime @default(now())
-
-  @@index([userId, createdAt])
-  @@index([trailId, createdAt])
   @@index([sessionId, createdAt])
 }
 

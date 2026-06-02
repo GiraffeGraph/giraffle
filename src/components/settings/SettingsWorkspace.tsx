@@ -7,22 +7,16 @@ import {
 } from "@/lib/workspace-preferences";
 import { BootstrapLogsCard } from "@/components/settings/BootstrapLogsCard";
 import { DesktopModeCard, useIsTauri } from "@/components/settings/DesktopModeCard";
-import { IntegrationSettingsCard } from "@/components/settings/IntegrationSettingsCard";
 import { McpAccessTokensCard, type McpAccessTokenView } from "@/components/settings/McpAccessTokensCard";
 import { UpdateCenterCard } from "@/components/update/UpdateCenterCard";
 import { Button } from "@/components/ui/Button";
 import { Card, CardHeader, CardTitle, CardContent, CardActions } from "@/components/ui/Card";
-import type { OpenAiIntegrationSummary } from "@/domain/integration/integration.types";
 import type { AppUpdateStatus } from "@/domain/update/update.types";
 import styles from "./SettingsWorkspace.module.css";
 
 export interface SettingsWorkspaceProps {
   appVersion: string;
   updateStatus?: AppUpdateStatus;
-  openaiIntegration: Omit<OpenAiIntegrationSummary, "updatedAt"> & {
-    updatedAt: string | null;
-  };
-  encryptionAvailable: boolean;
   mcpAccessTokens: McpAccessTokenView[];
   operationLogs: OperationLogView[];
   embedded?: boolean;
@@ -40,7 +34,7 @@ type OperationLogView = {
   appliedAt: string | null;
 };
 
-type SettingsTabId = "hosting" | "desktop" | "integrations" | "access" | "sync";
+type SettingsTabId = "hosting" | "desktop" | "access" | "sync";
 
 type SettingsTab = {
   id: SettingsTabId;
@@ -53,8 +47,6 @@ type SettingsTab = {
 export function SettingsWorkspace({
   appVersion,
   updateStatus,
-  openaiIntegration,
-  encryptionAvailable,
   mcpAccessTokens,
   operationLogs,
   embedded = false,
@@ -101,13 +93,6 @@ export function SettingsWorkspace({
         ] as SettingsTab[])
       : []),
     {
-      id: "integrations",
-      label: "AI Provider",
-      description: "OpenAI key and base URL",
-      icon: "hub",
-      badge: openaiIntegration.apiKeySource,
-    },
-    {
       id: "access",
       label: "MCP Access",
       description: "External agent tokens",
@@ -128,7 +113,6 @@ export function SettingsWorkspace({
       {showHeading ? (
         <SettingsHero
           appVersion={appVersion}
-          apiKeySource={openaiIntegration.apiKeySource}
           tokenCount={mcpAccessTokens.length}
         />
       ) : null}
@@ -187,20 +171,6 @@ export function SettingsWorkspace({
           ) : null}
 
           <section
-            id={`${tabsId}-integrations-panel`}
-            role="tabpanel"
-            aria-labelledby={`${tabsId}-integrations-tab`}
-            hidden={activeTab !== "integrations"}
-            className={styles.panel}
-          >
-            <SettingsSectionIntro title="AI Provider" />
-            <IntegrationSettingsCard
-              openai={openaiIntegration}
-              encryptionAvailable={encryptionAvailable}
-            />
-          </section>
-
-          <section
             id={`${tabsId}-access-panel`}
             role="tabpanel"
             aria-labelledby={`${tabsId}-access-tab`}
@@ -235,11 +205,9 @@ export function SettingsWorkspace({
 
 function SettingsHero({
   appVersion,
-  apiKeySource,
   tokenCount,
 }: {
   appVersion: string;
-  apiKeySource: string;
   tokenCount: number;
 }) {
   return (
@@ -250,7 +218,6 @@ function SettingsHero({
       </div>
       <div className={styles.heroMeta} aria-label="Settings summary">
         <SummaryMeta label="Version" value={`v${appVersion}`} />
-        <SummaryMeta label="OpenAI key" value={apiKeySource} />
         <SummaryMeta label="MCP tokens" value={String(tokenCount)} />
       </div>
     </header>

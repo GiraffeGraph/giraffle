@@ -20,7 +20,6 @@ import { isSidebarNoteDragData } from "@/components/sidebar/sidebar.types";
 const NAV_ITEMS_TOP = [
   { path: "/search", icon: "\uE8B6", label: "Search" },
   { path: "/publish", icon: "\uE255", label: "Publish" },
-  { path: "/trails", icon: "route", label: "Trails" },
 ] as const;
 
 const NAV_ITEMS_BOTTOM = [

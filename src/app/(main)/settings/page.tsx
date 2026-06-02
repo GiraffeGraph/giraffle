@@ -1,19 +1,16 @@
 import { SettingsWorkspace } from "@/components/settings/SettingsWorkspace";
 import { PageTopbar } from "@/components/ui/PageTopbar";
-import { getUserIntegrationSettingsSummary } from "@/domain/integration/integration.service";
 import { listMcpAccessTokens } from "@/domain/mcp/token.service";
 import { getRecentOperationLogs } from "@/domain/sync/operation-log.service";
 import { getAppUpdateStatus } from "@/domain/update/update.service";
 import { requireAuthenticatedUser } from "@/lib/auth-session";
 import { getAppRuntimeEnv } from "@/lib/env.server";
-import { canUseSecretBox } from "@/lib/secret-box";
 
 export default async function SettingsPage() {
   const { userId } = await requireAuthenticatedUser();
-  const [operationLogs, updateStatus, integrationSummary, mcpAccessTokens] = await Promise.all([
+  const [operationLogs, updateStatus, mcpAccessTokens] = await Promise.all([
     getRecentOperationLogs(userId, 30),
     getAppUpdateStatus(),
-    getUserIntegrationSettingsSummary(userId),
     listMcpAccessTokens(userId),
   ]);
   const app = getAppRuntimeEnv();
@@ -25,11 +22,6 @@ export default async function SettingsPage() {
         <SettingsWorkspace
           appVersion={app.version}
           updateStatus={updateStatus}
-          openaiIntegration={{
-            ...integrationSummary.openai,
-            updatedAt: integrationSummary.openai.updatedAt?.toISOString() ?? null,
-          }}
-          encryptionAvailable={canUseSecretBox()}
           mcpAccessTokens={mcpAccessTokens.map((token) => ({
             ...token,
             lastUsedAt: token.lastUsedAt?.toISOString() ?? null,
