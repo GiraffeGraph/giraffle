@@ -97,6 +97,9 @@ fn open_main_window(app: &AppHandle, url: &str) -> Result<(), String> {
         .title("Giraffle")
         .inner_size(1280.0, 800.0)
         .min_inner_size(800.0, 600.0)
+        // Let the webview's HTML5 drag-and-drop work (pragmatic-drag-and-drop / kanban).
+        // Tauri's native OS file-drop handler otherwise swallows these events.
+        .disable_drag_drop_handler()
         .build()
         .map_err(|e| e.to_string())?;
     Ok(())
@@ -110,6 +113,7 @@ fn open_main_window_splash(app: &AppHandle) -> Result<(), String> {
         .title("Giraffle")
         .inner_size(1280.0, 800.0)
         .min_inner_size(800.0, 600.0)
+        .disable_drag_drop_handler()
         .build()
         .map_err(|e| e.to_string())?;
     Ok(())

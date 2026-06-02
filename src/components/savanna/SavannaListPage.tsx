@@ -101,13 +101,12 @@ export function SavannaListPage({ savannas }: { savannas: SavannaSummary[] }) {
         <div className="savanna-grid">
           {savannas.map((savanna) => (
             <div key={savanna.id} className="savanna-card">
-              <button
-                type="button"
-                className="savanna-card-body"
-                onClick={() => router.push(`/savanna/${savanna.id}`)}
-              >
-                <span className="material-symbols-outlined savanna-card-icon">landscape</span>
-                {renamingId === savanna.id ? (
+              {renamingId === savanna.id ? (
+                // While renaming, render a plain div instead of a <button>.
+                // An <input> nested inside a <button> is invalid HTML and, in
+                // WKWebView, Space bubbles up and activates the button (navigating away).
+                <div className="savanna-card-body">
+                  <span className="material-symbols-outlined savanna-card-icon">landscape</span>
                   <input
                     className="savanna-card-rename-input"
                     value={renameValue}
@@ -115,18 +114,28 @@ export function SavannaListPage({ savannas }: { savannas: SavannaSummary[] }) {
                     onChange={(e) => setRenameValue(e.target.value)}
                     onBlur={() => commitRename(savanna.id)}
                     onKeyDown={(e) => {
+                      e.stopPropagation();
                       if (e.key === "Enter") commitRename(savanna.id);
                       if (e.key === "Escape") setRenamingId(null);
                     }}
-                    onClick={(e) => e.stopPropagation()}
                   />
-                ) : (
+                  <span className="savanna-card-meta">
+                    {elementCount(savanna.elements)} element{elementCount(savanna.elements) !== 1 ? "s" : ""} · updated {relativeTime(new Date(savanna.updatedAt))}
+                  </span>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  className="savanna-card-body"
+                  onClick={() => router.push(`/savanna/${savanna.id}`)}
+                >
+                  <span className="material-symbols-outlined savanna-card-icon">landscape</span>
                   <span className="savanna-card-title">{savanna.title}</span>
-                )}
-                <span className="savanna-card-meta">
-                  {elementCount(savanna.elements)} element{elementCount(savanna.elements) !== 1 ? "s" : ""} · updated {relativeTime(new Date(savanna.updatedAt))}
-                </span>
-              </button>
+                  <span className="savanna-card-meta">
+                    {elementCount(savanna.elements)} element{elementCount(savanna.elements) !== 1 ? "s" : ""} · updated {relativeTime(new Date(savanna.updatedAt))}
+                  </span>
+                </button>
+              )}
               <div className="savanna-card-actions">
                 <button
                   type="button"
