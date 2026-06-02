@@ -152,7 +152,6 @@ export const strideTools: InternalToolDefinition[] = [
     }),
     execute: async (raw, { userId }) => {
       const input = raw as { blockId: string; durationMinutes: number };
-      await assertOwnedTaskBlock(userId, input.blockId);
       await setTodoDuration(userId, input.blockId, input.durationMinutes);
       return { blockId: input.blockId, durationMinutes: input.durationMinutes };
     },
@@ -167,7 +166,6 @@ export const strideTools: InternalToolDefinition[] = [
     }),
     execute: async (raw, { userId }) => {
       const input = raw as { blockId: string; checked: boolean };
-      await assertOwnedTaskBlock(userId, input.blockId);
       await toggleCalendarTodo(userId, input.blockId, input.checked);
       return { blockId: input.blockId, checked: input.checked };
     },
