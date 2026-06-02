@@ -96,6 +96,19 @@ const NoteIdOrSlug = z
     message: "Provide exactly one of noteId or slug.",
   });
 
+function documentHasBlockId(document: TiptapDocument, blockId: string): boolean {
+  const walk = (nodes: unknown): boolean => {
+    if (!Array.isArray(nodes)) return false;
+    for (const n of nodes) {
+      const node = n as { attrs?: { blockId?: unknown }; content?: unknown };
+      if (node?.attrs?.blockId === blockId) return true;
+      if (walk(node?.content)) return true;
+    }
+    return false;
+  };
+  return walk(document.content);
+}
+
 export const INTERNAL_TOOL_DEFINITIONS: InternalToolDefinition[] = [
   {
     name: "notes_search",
@@ -414,6 +427,12 @@ export const INTERNAL_TOOL_DEFINITIONS: InternalToolDefinition[] = [
       const note = await getNote(userId, noteId);
       if (!note || note.isArchived) throw new Error("Note not found");
       let document: TiptapDocument = note.document;
+      // A missing afterBlockId would otherwise silently append at the end (and,
+      // because the list is reversed for after-insert, in reverse order). Fail
+      // loudly instead of corrupting the document.
+      if (input.afterBlockId && !documentHasBlockId(document, input.afterBlockId)) {
+        throw new Error(`afterBlockId not found: ${input.afterBlockId}`);
+      }
       const mdBlocks = input.markdown?.trim() ? markdownToBlocks(input.markdown).content : [];
       const inputBlocks = input.blocks ?? [];
       const blocks = [...mdBlocks, ...inputBlocks];
