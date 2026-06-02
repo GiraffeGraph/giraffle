@@ -11,11 +11,32 @@ interface RateLimitEntry {
 
 const rateLimitStore = new Map<string, RateLimitEntry>();
 
+// Ephemeral keys (e.g. per-run MCP token ids) would otherwise accumulate
+// forever. Periodically drop entries with no active block and no recent
+// activity; a re-created entry starts fresh, which is the correct post-TTL
+// state anyway.
+const SWEEP_INTERVAL_MS = 60_000;
+const ENTRY_TTL_MS = 10 * 60_000;
+let lastSweep = 0;
+
+function sweep(now: number) {
+  if (now - lastSweep < SWEEP_INTERVAL_MS) return;
+  lastSweep = now;
+  for (const [key, entry] of rateLimitStore) {
+    const blocked = entry.blockedUntil !== null && entry.blockedUntil > now;
+    const lastAttempt = entry.attempts.length ? entry.attempts[entry.attempts.length - 1] : 0;
+    if (!blocked && now - lastAttempt > ENTRY_TTL_MS) {
+      rateLimitStore.delete(key);
+    }
+  }
+}
+
 export function consumeRateLimit(
   key: string,
   options: RateLimitOptions
 ): { allowed: boolean; retryAfterMs: number } {
   const now = Date.now();
+  sweep(now);
   const entry = rateLimitStore.get(key) ?? {
     attempts: [],
     blockedUntil: null,
