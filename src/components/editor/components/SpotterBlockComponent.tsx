@@ -18,7 +18,9 @@ export function SpotterBlockComponent(props: NodeViewProps) {
     updateAttributes({ status: "thinking", output: "" });
 
     try {
-      const context = editor.getText();
+      // Cap the note context so prompt + context stays under the route's 20k
+      // limit (otherwise the request 400s and the block just shows "error").
+      const context = editor.getText().slice(0, 16_000);
 
       const response = await fetch("/api/spotter/agent", {
         method: "POST",
