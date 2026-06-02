@@ -26,7 +26,6 @@ const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 // Infinite-mode constants
 const INF_DAY_W = 180;
 const INF_GUTTER_W = 52;
-const INF_HEADER_H = 64;
 const INF_INITIAL_DAYS = 28;
 const INF_INITIAL_OFFSET = -14; // days before anchor week start
 const INF_PAGE = 14;

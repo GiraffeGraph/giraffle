@@ -15,7 +15,7 @@ export interface SidebarCollapseState {
 }
 
 export const DEFAULT_COLLAPSED_SECTIONS: SidebarCollapseState = {
-  spotter: false,
+  spotter: true,
   folders: false,
   recentNotes: false,
 };

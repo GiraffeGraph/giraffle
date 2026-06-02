@@ -362,9 +362,9 @@
 .sidebar-inline-creator {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 7px;
   min-height: 28px;
-  padding: 0;
+  padding: 3px 6px;
   border-radius: 6px;
   background: transparent;
   border: 1px solid transparent;
@@ -387,7 +387,7 @@
   font-size: 13px;
   font-family: inherit;
   outline: none;
-  padding: 3px 6px 3px 2px;  /* same as .sidebar-folder-name */
+  padding: 0;  /* same as .sidebar-folder-name */
 }
 
 .sidebar-inline-creator-input::placeholder {
@@ -396,8 +396,8 @@
 
 /* --- Folder icon button (folder / folder_open toggle) -------- */
 .sidebar-folder-main {
-  gap: 0;
-  padding: 0;
+  gap: 7px;
+  padding: 3px 6px;
   overflow: hidden;
 }
 
@@ -416,7 +416,7 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 24px;
+  width: 18px;
   min-height: 28px;
   border: none;
   background: transparent;
@@ -458,7 +458,7 @@
   display: flex;
   align-items: center;
   min-height: 28px;
-  padding: 3px 6px 3px 2px;
+  padding: 0;
   border: none;
   border-radius: 6px;
   background: transparent;

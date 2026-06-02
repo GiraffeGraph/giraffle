@@ -10,11 +10,11 @@ export function useWikilinkSearch(
   createFn: ((target: string) => Promise<NoteReference>) | undefined,
   debounceMs = 120,
 ): WikilinkMenuItem[] {
-  const [items, setItems] = useState<WikilinkMenuItem[]>([]);
+  const [results, setResults] = useState<WikilinkMenuItem[]>([]);
+  const inactive = target == null || !searchFn;
 
   useEffect(() => {
-    if (target == null || !searchFn) {
-      setItems([]);
+    if (inactive) {
       return;
     }
 
@@ -50,14 +50,14 @@ export function useWikilinkSearch(
         });
       }
 
-      setItems(next);
+      setResults(next);
     }, debounceMs);
 
     return () => {
       cancelled = true;
       clearTimeout(timeoutId);
     };
-  }, [target, searchFn, createFn, debounceMs]);
+  }, [inactive, target, searchFn, createFn, debounceMs]);
 
-  return items;
+  return inactive ? [] : results;
 }

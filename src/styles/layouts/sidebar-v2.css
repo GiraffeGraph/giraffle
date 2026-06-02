@@ -271,6 +271,12 @@
   gap: 1px;
 }
 
+/* Indent group items so their icon column aligns under the
+   header icon — reads as a hierarchy under each section head. */
+.sidebar-group-body {
+  padding-left: 12px;
+}
+
 /* Nav item row wrapper */
 .sidebar-nav-item-row {
   display: flex;
