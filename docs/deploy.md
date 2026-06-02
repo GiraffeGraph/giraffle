@@ -47,12 +47,9 @@ DATABASE_URL=postgresql://giraffle:change-this-to-a-strong-password@postgres:543
 AUTH_SECRET=replace-this-with-a-long-random-secret
 NEXTAUTH_URL=http://YOUR_SERVER_IP_OR_DOMAIN
 LOG_LEVEL=info
-# Optional but recommended if you want encrypted app-managed provider keys in Settings.
+# Optional but recommended if you want encrypted app-managed settings in Settings.
 # APP_ENCRYPTION_KEY=YOUR_LONG_RANDOM_SECRET
-# Optional: enable AI-assisted routes
-# OPENAI_API_KEY=YOUR_OPENAI_API_KEY
-# Optional: OpenAI-compatible gateway or self-hosted inference endpoint
-# OPENAI_BASE_URL=https://api.openai.com/v1
+# AI is provided by a local CLI agent over MCP; see docs/agent.md (no API key here).
 NODE_ENV=production
 ```
 
@@ -200,15 +197,12 @@ docker compose --env-file .env.production -f docker-compose.prod.yml pull
 ./scripts/prod-up.sh
 ```
 
-## 9. In-app provider settings
+## 9. AI agent (Spotter)
 
-Users can configure OpenAI integration from **Settings → Self-host & Integrations**.
-
-Behavior:
-
-- app-managed OpenAI keys are encrypted before storage
-- if no app key exists, Giraffle falls back to `OPENAI_API_KEY`
-- `OPENAI_BASE_URL` can still be configured via env, or overridden from inside the UI
+Giraffle holds no model API key. AI is driven by a local CLI agent (Claude Code)
+over Giraffle's MCP server; external MCP clients connect with a token from
+**Settings → MCP Access**. See [agent.md](agent.md) for the architecture and the
+`GIRAFFLE_AGENT_*` / `GIRAFFLE_MCP_BASE_URL` env vars.
 
 ## 10. Recommended simple production flow
 
