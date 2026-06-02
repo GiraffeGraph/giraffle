@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { getRequestId, logger } from "@/lib/logger";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { spawnAgentRun } from "@/domain/agent/cli-runner";
-import { createMcpAccessToken, revokeMcpAccessToken } from "@/domain/mcp/token.service";
+import { createMcpAccessToken, deleteMcpAccessToken } from "@/domain/mcp/token.service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -62,7 +62,7 @@ export async function POST(req: Request) {
   try {
     child = spawnAgentRun({ prompt, mcpUrl, mcpToken: ephemeralToken.token, resume, model });
   } catch (error) {
-    await revokeMcpAccessToken(userId, ephemeralToken.id, { audit: false }).catch(() => {});
+    await deleteMcpAccessToken(userId, ephemeralToken.id).catch(() => {});
     logger.error("spotter_agent_spawn_failed", { requestId, userId, error });
     return new Response("Failed to launch agent CLI", { status: 500 });
   }
@@ -74,13 +74,13 @@ export async function POST(req: Request) {
     if (stderr.length < STDERR_CAP) stderr += chunk.toString().slice(0, STDERR_CAP - stderr.length);
   });
 
-  // Revoke the ephemeral token exactly once, no matter which path ends the run
+  // Delete the ephemeral token exactly once, no matter which path ends the run
   // (clean exit, error, or client disconnect) — shared by the stream + cancel.
-  let revoked = false;
-  const revokeOnce = async () => {
-    if (revoked) return;
-    revoked = true;
-    await revokeMcpAccessToken(userId, ephemeralToken.id, { audit: false }).catch(() => {});
+  let cleanedUp = false;
+  const cleanupToken = async () => {
+    if (cleanedUp) return;
+    cleanedUp = true;
+    await deleteMcpAccessToken(userId, ephemeralToken.id).catch(() => {});
   };
 
   // Terminate the process politely, then force-kill if it ignores SIGTERM so a
@@ -114,7 +114,7 @@ export async function POST(req: Request) {
         if (settled) return;
         settled = true;
         req.signal.removeEventListener("abort", onAbort);
-        await revokeOnce();
+        await cleanupToken();
         try {
           controller.close();
         } catch {
@@ -159,7 +159,7 @@ export async function POST(req: Request) {
     cancel() {
       req.signal.removeEventListener("abort", onAbort);
       killChild();
-      void revokeOnce();
+      void cleanupToken();
     },
   });
 

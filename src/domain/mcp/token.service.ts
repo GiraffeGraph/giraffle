@@ -142,6 +142,14 @@ export async function revokeMcpAccessToken(
   return true;
 }
 
+/**
+ * Hard-delete a token row (owner-scoped, no audit). Used for ephemeral agent
+ * tokens at run end so the table doesn't accumulate revoked rows per run.
+ */
+export async function deleteMcpAccessToken(userId: string, tokenId: string): Promise<void> {
+  await db.mcpAccessToken.deleteMany({ where: { id: tokenId, userId } });
+}
+
 export async function resolveMcpBearerToken(authorizationHeader: string | null) {
   const token = parseBearerToken(authorizationHeader);
 
