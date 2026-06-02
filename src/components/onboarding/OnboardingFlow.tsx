@@ -7,13 +7,13 @@ import { completeOnboardingAction } from "@/server/api/onboarding";
 import type { AppSettingKey } from "@/domain/app-settings/app-settings.types";
 import styles from "./OnboardingFlow.module.css";
 
-type StepId = "welcome" | "admin" | "ai" | "oauth" | "extras" | "finishing";
+type StepId = "welcome" | "admin" | "extras" | "finishing";
 
 interface Props {
   settingDescriptions: Record<AppSettingKey, string>;
 }
 
-const STEP_ORDER: StepId[] = ["welcome", "admin", "ai", "oauth", "extras"];
+const STEP_ORDER: StepId[] = ["welcome", "admin", "extras"];
 
 const COPY: Record<StepId, { title: string; subtitle: string; cta: string }> = {
   welcome: {
@@ -24,16 +24,6 @@ const COPY: Record<StepId, { title: string; subtitle: string; cta: string }> = {
   admin: {
     title: "Yönetici hesabını oluştur",
     subtitle: "İlk kullanıcı bu makinede admin olur.",
-    cta: "Devam",
-  },
-  ai: {
-    title: "AI ayarları",
-    subtitle: "OpenAI anahtarını girersen AI özellikleri açılır. İsteğe bağlı.",
-    cta: "Devam",
-  },
-  oauth: {
-    title: "OAuth sağlayıcıları",
-    subtitle: "Trail entegrasyonları için. Tümü isteğe bağlı.",
     cta: "Devam",
   },
   extras: {
@@ -56,19 +46,6 @@ export function OnboardingFlow({ settingDescriptions: _descs }: Props) {
   const [error, setError] = useState<string | null>(null);
 
   const [admin, setAdmin] = useState({ email: "", password: "", name: "" });
-  const [openaiKey, setOpenaiKey] = useState("");
-  const [openaiBase, setOpenaiBase] = useState("");
-
-  const [oauth, setOauth] = useState({
-    TRAIL_GITHUB_CLIENT_ID: "",
-    TRAIL_GITHUB_CLIENT_SECRET: "",
-    TRAIL_GOOGLE_CLIENT_ID: "",
-    TRAIL_GOOGLE_CLIENT_SECRET: "",
-    TRAIL_NOTION_CLIENT_ID: "",
-    TRAIL_NOTION_CLIENT_SECRET: "",
-    TRAIL_LINEAR_CLIENT_ID: "",
-    TRAIL_LINEAR_CLIENT_SECRET: "",
-  });
 
   const [extras, setExtras] = useState({
     UPLOAD_DIR: "",
@@ -117,11 +94,6 @@ export function OnboardingFlow({ settingDescriptions: _descs }: Props) {
     setError(null);
     startTransition(async () => {
       const secrets: Partial<Record<AppSettingKey, string>> = {};
-      if (openaiKey.trim()) secrets.OPENAI_API_KEY = openaiKey.trim();
-      if (openaiBase.trim()) secrets.OPENAI_BASE_URL = openaiBase.trim();
-      for (const [k, v] of Object.entries(oauth)) {
-        if (v.trim()) secrets[k as AppSettingKey] = v.trim();
-      }
       for (const [k, v] of Object.entries(extras)) {
         if (v.trim()) secrets[k as AppSettingKey] = v.trim();
       }
@@ -211,72 +183,6 @@ export function OnboardingFlow({ settingDescriptions: _descs }: Props) {
                 onChange={(e) => setAdmin({ ...admin, name: e.target.value })}
               />
             </div>
-          </div>
-        )}
-
-        {currentStep === "ai" && (
-          <div className={styles.panel} onKeyDown={onEnter}>
-            <div className={styles.field}>
-              <label className={styles.label}>OpenAI API Key</label>
-              <input
-                className={styles.input}
-                type="password"
-                value={openaiKey}
-                placeholder="sk-..."
-                onChange={(e) => setOpenaiKey(e.target.value)}
-              />
-            </div>
-            <div className={styles.field}>
-              <label className={styles.label}>OpenAI Base URL (opsiyonel)</label>
-              <input
-                className={styles.input}
-                type="text"
-                value={openaiBase}
-                placeholder="https://api.openai.com/v1"
-                onChange={(e) => setOpenaiBase(e.target.value)}
-              />
-            </div>
-            <p className={styles.skip}>Boş geçebilirsin, sonra eklersin.</p>
-          </div>
-        )}
-
-        {currentStep === "oauth" && (
-          <div className={styles.panel} onKeyDown={onEnter}>
-            {(["GITHUB", "GOOGLE", "NOTION", "LINEAR"] as const).map(
-              (provider) => {
-                const idKey =
-                  `TRAIL_${provider}_CLIENT_ID` as keyof typeof oauth;
-                const secretKey =
-                  `TRAIL_${provider}_CLIENT_SECRET` as keyof typeof oauth;
-                return (
-                  <div key={provider} style={{ display: "grid", gap: 8 }}>
-                    <p className={styles.sectionTitle}>{provider}</p>
-                    <div className={styles.field}>
-                      <input
-                        className={styles.input}
-                        type="text"
-                        value={oauth[idKey]}
-                        placeholder="Client ID"
-                        onChange={(e) =>
-                          setOauth({ ...oauth, [idKey]: e.target.value })
-                        }
-                      />
-                    </div>
-                    <div className={styles.field}>
-                      <input
-                        className={styles.input}
-                        type="password"
-                        value={oauth[secretKey]}
-                        placeholder="Client Secret"
-                        onChange={(e) =>
-                          setOauth({ ...oauth, [secretKey]: e.target.value })
-                        }
-                      />
-                    </div>
-                  </div>
-                );
-              },
-            )}
           </div>
         )}
 

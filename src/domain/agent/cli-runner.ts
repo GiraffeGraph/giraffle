@@ -26,6 +26,29 @@ export interface AgentRunOptions {
 }
 
 const AGENT_CMD = process.env.GIRAFFLE_AGENT_CMD || "claude";
+const PERMISSION_MODE = process.env.GIRAFFLE_AGENT_PERMISSION_MODE || "bypassPermissions";
+
+/**
+ * The agent runs under bypassPermissions by default and can therefore call any
+ * Giraffle MCP tool, including destructive ones. To avoid exposing server
+ * secrets (DATABASE_URL, auth secrets, signing keys, …) to a model-controlled
+ * subprocess, we hand it a minimal allowlisted environment rather than the full
+ * process.env — just what the CLI needs to find itself and read its own creds.
+ */
+function buildAgentEnv(): NodeJS.ProcessEnv {
+  const passthrough = [
+    "PATH", "HOME", "USER", "LOGNAME", "SHELL", "LANG", "TERM", "TMPDIR", "NODE_ENV",
+  ];
+  const env: Record<string, string | undefined> = {};
+  for (const key of passthrough) {
+    if (process.env[key]) env[key] = process.env[key];
+  }
+  // Claude Code / Anthropic / XDG config + LC_* locale vars the CLI may rely on.
+  for (const [key, value] of Object.entries(process.env)) {
+    if (value && /^(CLAUDE_|ANTHROPIC_|XDG_|LC_)/.test(key)) env[key] = value;
+  }
+  return env as NodeJS.ProcessEnv;
+}
 
 export function spawnAgentRun(opts: AgentRunOptions): AgentChildProcess {
   const mcpConfig = JSON.stringify({
@@ -48,7 +71,7 @@ export function spawnAgentRun(opts: AgentRunOptions): AgentChildProcess {
     mcpConfig,
     "--strict-mcp-config",
     "--permission-mode",
-    "bypassPermissions",
+    PERMISSION_MODE,
     "--model",
     opts.model || "sonnet",
   ];
@@ -59,6 +82,6 @@ export function spawnAgentRun(opts: AgentRunOptions): AgentChildProcess {
 
   return spawn(AGENT_CMD, args, {
     stdio: ["ignore", "pipe", "pipe"],
-    env: process.env,
+    env: buildAgentEnv(),
   });
 }

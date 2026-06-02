@@ -1,4 +1,3 @@
-import { tool, type ToolSet } from "ai";
 import { z } from "zod";
 import { createFolder, getFolder } from "@/domain/folder/folder.service";
 import { getBacklinks } from "@/domain/link/link.service";
@@ -18,14 +17,12 @@ import { searchWorkspaceNotes } from "@/domain/search/search.service";
 import { db } from "@/lib/db";
 import { BlockNodeContentSchema } from "@/mcp/schemas";
 
-import type { ApprovalPolicy } from "@/domain/agent/permissions";
 import { strideTools } from "@/domain/agent/tools/stride-tools";
 import { towerMatrixTools } from "@/domain/agent/tools/tower-tools";
 import { savannaTools } from "@/domain/agent/tools/savanna-tools";
 
 export interface AgentToolContext {
   userId: string;
-  approval?: ApprovalPolicy;
 }
 
 export interface InternalToolDefinition {
@@ -499,19 +496,3 @@ export const INTERNAL_TOOL_DEFINITIONS: InternalToolDefinition[] = [
   ...towerMatrixTools,
   ...savannaTools,
 ];
-
-export function buildInternalTools(ctx: AgentToolContext): ToolSet {
-  const result: ToolSet = {};
-  for (const def of INTERNAL_TOOL_DEFINITIONS) {
-    const needsApproval = ctx.approval
-      ? ctx.approval.needsApprovalFor(def.name, def.destructive)
-      : def.destructive;
-    result[def.name] = tool({
-      description: def.description,
-      inputSchema: def.inputSchema as never,
-      needsApproval,
-      execute: (async (input: unknown) => def.execute(input, ctx)) as never,
-    });
-  }
-  return result;
-}

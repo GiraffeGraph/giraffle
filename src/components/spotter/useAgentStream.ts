@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import { drainNdjson } from "@/lib/agent-stream";
+import { drainNdjson, type AgentEvent } from "@/lib/agent-stream";
 
 export type TimelineItem =
   | { id: string; role: "user"; text: string }
@@ -39,10 +39,14 @@ export function useAgentStream(): UseAgentStream {
   const [isStreaming, setIsStreaming] = useState(false);
   const sessionRef = useRef<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  // Ref mirrors isStreaming so send() can guard synchronously against a
+  // double-submit fired before the state update commits.
+  const isStreamingRef = useRef(false);
 
   const stop = useCallback(() => {
     abortRef.current?.abort();
     abortRef.current = null;
+    isStreamingRef.current = false;
     setIsStreaming(false);
   }, []);
 
@@ -54,8 +58,9 @@ export function useAgentStream(): UseAgentStream {
 
   const send = useCallback(async (prompt: string) => {
     const trimmed = prompt.trim();
-    if (!trimmed || isStreaming) return;
+    if (!trimmed || isStreamingRef.current) return;
 
+    isStreamingRef.current = true;
     setItems((prev) => [...prev, { id: nextId(), role: "user", text: trimmed }]);
     setIsStreaming(true);
 
@@ -94,6 +99,78 @@ export function useAgentStream(): UseAgentStream {
         return;
       }
 
+      const applyEvent = (ev: AgentEvent) => {
+        switch (ev.kind) {
+          case "session":
+            sessionRef.current = ev.sessionId;
+            break;
+          case "text":
+            appendText(ev.text);
+            break;
+          case "thinking":
+            assistantId = null;
+            setItems((prev) => [...prev, { id: nextId(), role: "thinking", text: ev.text }]);
+            break;
+          case "tool_call":
+            assistantId = null;
+            setItems((prev) => [
+              ...prev,
+              {
+                id: nextId(),
+                role: "tool",
+                toolId: ev.id,
+                name: ev.name,
+                label: ev.label,
+                input: ev.input,
+                result: null,
+                isError: false,
+                status: "running",
+              },
+            ]);
+            break;
+          case "tool_result":
+            // Match by tool id; if the result carries no id, fall back to the
+            // last still-running tool so its row doesn't hang forever.
+            setItems((prev) => {
+              let targetId: string | null = null;
+              if (ev.toolUseId) {
+                const match = prev.find(
+                  (it) => it.role === "tool" && it.status === "running" && it.toolId === ev.toolUseId,
+                );
+                targetId = match?.id ?? null;
+              }
+              if (!targetId) {
+                for (let i = prev.length - 1; i >= 0; i -= 1) {
+                  const it = prev[i];
+                  if (it.role === "tool" && it.status === "running") {
+                    targetId = it.id;
+                    break;
+                  }
+                }
+              }
+              if (!targetId) return prev;
+              return prev.map((it) =>
+                it.id === targetId && it.role === "tool"
+                  ? { ...it, result: ev.preview, isError: ev.isError, status: "done" }
+                  : it,
+              );
+            });
+            break;
+          case "rate_limit":
+            setItems((prev) => [...prev, { id: nextId(), role: "error", message: ev.message }]);
+            break;
+          case "done":
+            if (ev.sessionId) sessionRef.current = ev.sessionId;
+            if (ev.isError && ev.result) {
+              setItems((prev) => [...prev, { id: nextId(), role: "error", message: ev.result }]);
+            }
+            break;
+          case "error":
+            setItems((prev) => [...prev, { id: nextId(), role: "error", message: ev.message }]);
+            break;
+        }
+      };
+
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
@@ -104,60 +181,11 @@ export function useAgentStream(): UseAgentStream {
         buffer += decoder.decode(value, { stream: true });
         const { events, rest } = drainNdjson(buffer);
         buffer = rest;
-
-        for (const ev of events) {
-          switch (ev.kind) {
-            case "session":
-              sessionRef.current = ev.sessionId;
-              break;
-            case "text":
-              appendText(ev.text);
-              break;
-            case "thinking":
-              assistantId = null;
-              setItems((prev) => [...prev, { id: nextId(), role: "thinking", text: ev.text }]);
-              break;
-            case "tool_call":
-              assistantId = null;
-              setItems((prev) => [
-                ...prev,
-                {
-                  id: nextId(),
-                  role: "tool",
-                  toolId: ev.id,
-                  name: ev.name,
-                  label: ev.label,
-                  input: ev.input,
-                  result: null,
-                  isError: false,
-                  status: "running",
-                },
-              ]);
-              break;
-            case "tool_result":
-              setItems((prev) =>
-                prev.map((it) =>
-                  it.role === "tool" && it.status === "running" && it.toolId === ev.toolUseId
-                    ? { ...it, result: ev.preview, isError: ev.isError, status: "done" }
-                    : it,
-                ),
-              );
-              break;
-            case "rate_limit":
-              setItems((prev) => [...prev, { id: nextId(), role: "error", message: ev.message }]);
-              break;
-            case "done":
-              if (ev.sessionId) sessionRef.current = ev.sessionId;
-              if (ev.isError && ev.result) {
-                setItems((prev) => [...prev, { id: nextId(), role: "error", message: ev.result }]);
-              }
-              break;
-            case "error":
-              setItems((prev) => [...prev, { id: nextId(), role: "error", message: ev.message }]);
-              break;
-          }
-        }
+        for (const ev of events) applyEvent(ev);
       }
+      // Flush a final line that arrived without a trailing newline (carries the
+      // `done` event with the session id used for --resume).
+      for (const ev of drainNdjson(buffer + decoder.decode()).events) applyEvent(ev);
     } catch (error) {
       if (!(error instanceof DOMException && error.name === "AbortError")) {
         setItems((prev) => [
@@ -167,9 +195,10 @@ export function useAgentStream(): UseAgentStream {
       }
     } finally {
       abortRef.current = null;
+      isStreamingRef.current = false;
       setIsStreaming(false);
     }
-  }, [isStreaming]);
+  }, []);
 
   return { items, isStreaming, send, stop, reset };
 }

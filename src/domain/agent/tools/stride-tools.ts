@@ -9,6 +9,7 @@ import {
   toggleCalendarTodo,
   updateCalendarTodoText,
 } from "@/domain/note/note.service";
+import { db } from "@/lib/db";
 import type { InternalToolDefinition } from "../internal-tools";
 
 /**
@@ -42,9 +43,26 @@ function serializeTodo(t: CalendarTodo) {
 }
 
 function parseDate(value: string, label: string): Date {
-  const d = new Date(value);
+  // A bare YYYY-MM-DD parses as UTC midnight, which the Stride UI (local-time
+  // day boundaries) would show on the previous day west of UTC. Pin date-only
+  // strings to local midnight; full timestamps are honored as given.
+  const normalized = /^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T00:00:00` : value;
+  const d = new Date(normalized);
   if (Number.isNaN(d.getTime())) throw new Error(`Invalid ${label}: ${value}`);
   return d;
+}
+
+/**
+ * The underlying service mutations use updateMany/deleteMany scoped by owner,
+ * which silently affect 0 rows for a missing/unowned blockId. Assert ownership
+ * first so the agent gets an honest "task not found" instead of false success.
+ */
+async function assertOwnedTaskBlock(userId: string, blockId: string): Promise<void> {
+  const found = await db.block.findFirst({
+    where: { id: blockId, type: "taskItem", note: { userId } },
+    select: { id: true },
+  });
+  if (!found) throw new Error(`Task not found: ${blockId}`);
 }
 
 export const strideTools: InternalToolDefinition[] = [
@@ -109,6 +127,7 @@ export const strideTools: InternalToolDefinition[] = [
     }),
     execute: async (raw, { userId }) => {
       const input = raw as { blockId: string; dueDate: string | null };
+      await assertOwnedTaskBlock(userId, input.blockId);
       await setTodoDueDate(
         userId,
         input.blockId,
@@ -127,6 +146,7 @@ export const strideTools: InternalToolDefinition[] = [
     }),
     execute: async (raw, { userId }) => {
       const input = raw as { blockId: string; durationMinutes: number };
+      await assertOwnedTaskBlock(userId, input.blockId);
       await setTodoDuration(userId, input.blockId, input.durationMinutes);
       return { blockId: input.blockId, durationMinutes: input.durationMinutes };
     },
@@ -141,6 +161,7 @@ export const strideTools: InternalToolDefinition[] = [
     }),
     execute: async (raw, { userId }) => {
       const input = raw as { blockId: string; checked: boolean };
+      await assertOwnedTaskBlock(userId, input.blockId);
       await toggleCalendarTodo(userId, input.blockId, input.checked);
       return { blockId: input.blockId, checked: input.checked };
     },
@@ -155,6 +176,7 @@ export const strideTools: InternalToolDefinition[] = [
     }),
     execute: async (raw, { userId }) => {
       const input = raw as { blockId: string; text: string };
+      await assertOwnedTaskBlock(userId, input.blockId);
       await updateCalendarTodoText(userId, input.blockId, input.text);
       return { blockId: input.blockId, text: input.text };
     },
@@ -168,6 +190,7 @@ export const strideTools: InternalToolDefinition[] = [
     }),
     execute: async (raw, { userId }) => {
       const input = raw as { blockId: string };
+      await assertOwnedTaskBlock(userId, input.blockId);
       await deleteCalendarTodo(userId, input.blockId);
       return { blockId: input.blockId, deleted: true };
     },

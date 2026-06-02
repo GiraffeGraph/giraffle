@@ -1,5 +1,6 @@
 import { NodeViewWrapper, type NodeViewProps } from "@tiptap/react";
 import React from "react";
+import { drainNdjson, type AgentEvent } from "@/lib/agent-stream";
 
 export function SpotterBlockComponent(props: NodeViewProps) {
   const { node, updateAttributes, editor, deleteNode } = props;
@@ -19,13 +20,11 @@ export function SpotterBlockComponent(props: NodeViewProps) {
     try {
       const context = editor.getText();
 
-      const response = await fetch("/api/spotter/chat", {
+      const response = await fetch("/api/spotter/agent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          mode: "inline",
-          prompt,
-          context,
+          prompt: `${prompt}\n\n--- Current note context ---\n${context}`,
         }),
       });
 
@@ -38,18 +37,33 @@ export function SpotterBlockComponent(props: NodeViewProps) {
       const reader = response.body?.getReader();
       const decoder = new TextDecoder("utf-8");
       let currentOutput = "";
+      let buffer = "";
+
+      const applyEvents = (events: AgentEvent[]) => {
+        for (const ev of events) {
+          if (ev.kind === "text") {
+            currentOutput += ev.text;
+            updateAttributes({ output: currentOutput });
+          } else if (ev.kind === "done" && !currentOutput && ev.result) {
+            currentOutput = ev.result;
+            updateAttributes({ output: currentOutput });
+          } else if (ev.kind === "error") {
+            throw new Error(ev.message);
+          }
+        }
+      };
 
       if (reader) {
-        while (true) {
+        for (;;) {
           const { done, value } = await reader.read();
-
-          if (done) {
-            break;
-          }
-
-          currentOutput += decoder.decode(value, { stream: true });
-          updateAttributes({ output: currentOutput });
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const { events, rest } = drainNdjson(buffer);
+          buffer = rest;
+          applyEvents(events);
         }
+        // Flush any final line that arrived without a trailing newline.
+        applyEvents(drainNdjson(buffer + decoder.decode()).events);
       }
 
       updateAttributes({ status: "done" });
