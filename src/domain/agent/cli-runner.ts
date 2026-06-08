@@ -1,5 +1,7 @@
 import { spawn, type ChildProcessByStdio } from "node:child_process";
-import { tmpdir } from "node:os";
+import { accessSync, constants as fsConstants } from "node:fs";
+import { homedir, tmpdir } from "node:os";
+import { delimiter as pathDelimiter, isAbsolute, join as pathJoin } from "node:path";
 import type { Readable } from "node:stream";
 
 export type AgentChildProcess = ChildProcessByStdio<null, Readable, Readable>;
@@ -27,6 +29,69 @@ export interface AgentRunOptions {
 }
 
 const AGENT_CMD = process.env.GIRAFFLE_AGENT_CMD || "claude";
+
+/**
+ * Common per-user / package-manager bin dirs where `claude` (and other CLI
+ * agents) typically install. Critical for the bundled desktop app: GUI-launched
+ * macOS processes inherit a stripped PATH (`/usr/bin:/bin:/usr/sbin:/sbin`) that
+ * excludes `~/.local/bin`, Homebrew, etc., so a bare `spawn("claude")` fails
+ * with ENOENT even though the CLI is installed. We augment PATH and resolve the
+ * binary to an absolute path so it's found regardless of how the app launched.
+ */
+function extraPathDirs(): string[] {
+  const home = homedir();
+  return [
+    pathJoin(home, ".local", "bin"),
+    "/opt/homebrew/bin",
+    "/usr/local/bin",
+    pathJoin(home, ".bun", "bin"),
+    pathJoin(home, ".deno", "bin"),
+    pathJoin(home, ".volta", "bin"),
+    pathJoin(home, ".npm-global", "bin"),
+    pathJoin(home, ".yarn", "bin"),
+    pathJoin(home, ".cargo", "bin"),
+    "/usr/bin",
+    "/bin",
+  ];
+}
+
+/** PATH with the common bin dirs appended (existing entries kept, deduped). */
+function augmentedPath(): string {
+  const current = (process.env.PATH ?? "").split(pathDelimiter).filter(Boolean);
+  const merged: string[] = [];
+  const seen = new Set<string>();
+  for (const dir of [...current, ...extraPathDirs()]) {
+    if (!seen.has(dir)) {
+      seen.add(dir);
+      merged.push(dir);
+    }
+  }
+  return merged.join(pathDelimiter);
+}
+
+function isExecutable(file: string): boolean {
+  try {
+    accessSync(file, fsConstants.X_OK);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Resolve the agent command to an absolute path. An explicit path (absolute or
+ * containing a separator) is used as-is; a bare command name is searched across
+ * the augmented PATH. Falls back to the bare name so spawn can still try (and
+ * surface a clear ENOENT) if nothing matches.
+ */
+function resolveAgentCommand(cmd: string): string {
+  if (isAbsolute(cmd) || cmd.includes("/")) return cmd;
+  for (const dir of augmentedPath().split(pathDelimiter)) {
+    const candidate = pathJoin(dir, cmd);
+    if (isExecutable(candidate)) return candidate;
+  }
+  return cmd;
+}
 const PERMISSION_MODE = process.env.GIRAFFLE_AGENT_PERMISSION_MODE || "bypassPermissions";
 // Built-in tools the agent may use, on top of the giraffle MCP tools. Default
 // allows web research but NOT Bash/Read/Write/Edit, so the agent can look things
@@ -54,6 +119,9 @@ function buildAgentEnv(): NodeJS.ProcessEnv {
   for (const [key, value] of Object.entries(process.env)) {
     if (value && /^(CLAUDE_|ANTHROPIC_|XDG_|LC_)/.test(key)) env[key] = value;
   }
+  // Widen PATH so the agent (and anything it shells out to) is found even when
+  // the host process inherited a stripped GUI PATH (bundled desktop app).
+  env.PATH = augmentedPath();
   return env as NodeJS.ProcessEnv;
 }
 
@@ -105,7 +173,7 @@ export function buildAgentArgs(opts: AgentRunOptions, permissionMode = PERMISSIO
 }
 
 export function spawnAgentRun(opts: AgentRunOptions): AgentChildProcess {
-  return spawn(AGENT_CMD, buildAgentArgs(opts), {
+  return spawn(resolveAgentCommand(AGENT_CMD), buildAgentArgs(opts), {
     stdio: ["ignore", "pipe", "pipe"],
     env: buildAgentEnv(),
     // Neutral working directory — never the server's source tree.

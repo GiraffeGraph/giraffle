@@ -130,10 +130,13 @@ export async function POST(req: Request) {
       child.on("error", async (error) => {
         logger.error("spotter_agent_error", { requestId, userId, error });
         if (!settled) {
+          const code = (error as NodeJS.ErrnoException).code;
+          const message =
+            code === "ENOENT"
+              ? "Couldn't launch the agent CLI — 'claude' was not found. Install Claude Code, or set GIRAFFLE_AGENT_CMD to its full path."
+              : `Agent process error: ${(error as Error).message ?? code ?? "unknown"}`;
           safeEnqueue(
-            encoder.encode(
-              JSON.stringify({ type: "giraffle_error", message: "Agent process error" }) + "\n",
-            ),
+            encoder.encode(JSON.stringify({ type: "giraffle_error", message }) + "\n"),
           );
         }
         await finish();
