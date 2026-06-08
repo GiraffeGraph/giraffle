@@ -20,6 +20,7 @@ import { BlockNodeContentSchema } from "@/mcp/schemas";
 import { strideTools } from "@/domain/agent/tools/stride-tools";
 import { towerMatrixTools } from "@/domain/agent/tools/tower-tools";
 import { savannaTools } from "@/domain/agent/tools/savanna-tools";
+import { kanbanTools } from "@/domain/agent/tools/kanban-tools";
 
 export interface AgentToolContext {
   userId: string;
@@ -514,4 +515,5 @@ export const INTERNAL_TOOL_DEFINITIONS: InternalToolDefinition[] = [
   ...strideTools,
   ...towerMatrixTools,
   ...savannaTools,
+  ...kanbanTools,
 ];

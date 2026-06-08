@@ -78,6 +78,19 @@ const MCP_NAME_BY_INTERNAL: Record<string, string> = {
   savanna_create: "giraffle-savanna-create",
   savanna_rename: "giraffle-savanna-rename",
   savanna_delete: "giraffle-savanna-delete",
+  // Trek (Kanban boards)
+  kanban_list_boards: "giraffle-trek-list-boards",
+  kanban_get_board: "giraffle-trek-get-board",
+  kanban_create_board: "giraffle-trek-create-board",
+  kanban_update_board: "giraffle-trek-update-board",
+  kanban_delete_board: "giraffle-trek-delete-board",
+  kanban_add_column: "giraffle-trek-add-column",
+  kanban_update_column: "giraffle-trek-update-column",
+  kanban_delete_column: "giraffle-trek-delete-column",
+  kanban_add_card: "giraffle-trek-add-card",
+  kanban_update_card: "giraffle-trek-update-card",
+  kanban_move_card: "giraffle-trek-move-card",
+  kanban_delete_card: "giraffle-trek-delete-card",
 };
 
 export function createGiraffleMcpServer() {

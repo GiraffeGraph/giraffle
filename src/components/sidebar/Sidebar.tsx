@@ -39,6 +39,7 @@ import {
   deleteSpotterSessionAction,
   renameSpotterSessionAction,
 } from "@/server/api/spotter";
+import { createBoardAction } from "@/server/api/kanban";
 import {
   DEFAULT_COLLAPSED_SECTIONS,
   DEFAULT_EXPANDED_SIDEBAR_WIDTH,
@@ -195,6 +196,7 @@ export function Sidebar({
   notes,
   folders,
   spotterSessions,
+  kanbanBoards,
   activeNoteId,
 }: SidebarProps) {
   const pathname = usePathname();
@@ -440,6 +442,12 @@ export function Sidebar({
     const noteId = await createNoteAction();
     navigateToNote(noteId);
   }, [navigateToNote]);
+
+  const handleCreateBoard = useCallback(async () => {
+    const boardId = await createBoardAction({ title: "Untitled board" });
+    setCollapsedSections((s) => ({ ...s, kanban: false }));
+    router.push(`/kanban/${boardId}`);
+  }, [router]);
 
   const doCreateFolder = useCallback(
     async (name: string) => {
@@ -827,6 +835,16 @@ export function Sidebar({
         },
       },
       {
+        id: "action-trek",
+        group: "Navigation",
+        title: "Trek — Kanban boards",
+        description: "Open Trek kanban boards",
+        icon: encodeMaterialSymbol("view_kanban"),
+        onSelect: async () => {
+          router.push("/kanban");
+        },
+      },
+      {
         id: "action-search",
         group: "Navigation",
         title: "Open search workspace",
@@ -973,6 +991,9 @@ export function Sidebar({
   const isRecentNotesCollapsed = hasQuery
     ? false
     : collapsedSections.recentNotes;
+  const isKanbanCollapsed = hasQuery ? false : collapsedSections.kanban;
+  const kanbanCountLabel =
+    kanbanBoards.length > 0 ? String(kanbanBoards.length) : undefined;
   const inboxCount = notes.filter((n) => !n.folderId).length;
   const foldersCountLabel = flattenedFolders.length > 0 ? String(flattenedFolders.length) : undefined;
   const recentNotesCountLabel = notes.length > 0 ? String(notes.length) : undefined;
@@ -1186,6 +1207,11 @@ export function Sidebar({
                         path: "/stride",
                         icon: "calendar_month",
                         label: "Stride",
+                      },
+                      {
+                        path: "/kanban",
+                        icon: "view_kanban",
+                        label: "Trek",
                       },
                     ] as Array<{
                       path: string;
@@ -1467,6 +1493,66 @@ export function Sidebar({
                       ))
                     )}
                   </div>
+                </SidebarGroup>
+                {/* Trek — Kanban boards */}
+                <SidebarGroup
+                  label="Trek"
+                  icon={
+                    <span
+                      className="material-symbols-outlined sm"
+                      aria-hidden="true"
+                    >
+                      view_kanban
+                    </span>
+                  }
+                  meta={kanbanCountLabel}
+                  collapsed={isKanbanCollapsed}
+                  showChevron
+                  onToggle={() => toggleSection("kanban")}
+                  actions={[
+                    {
+                      icon: <PlusIcon />,
+                      label: "New board",
+                      onClick: () => void handleCreateBoard(),
+                    },
+                  ]}
+                >
+                  <nav className="sidebar-nav">
+                    {kanbanBoards.length === 0 ? (
+                      <div className="sidebar-empty">
+                        No boards yet. Create one.
+                      </div>
+                    ) : (
+                      kanbanBoards.map((board) => (
+                        <button
+                          key={board.id}
+                          type="button"
+                          className={`sidebar-item${
+                            pathname === `/kanban/${board.id}` ? " active" : ""
+                          }`}
+                          onClick={() => router.push(`/kanban/${board.id}`)}
+                          title={board.title}
+                        >
+                          <span className="sidebar-item-icon" aria-hidden="true">
+                            <span
+                              className="material-symbols-outlined"
+                              style={{ fontSize: "16px", lineHeight: 1 }}
+                            >
+                              {board.icon || "view_kanban"}
+                            </span>
+                          </span>
+                          <span className="sidebar-item-label">
+                            {board.title}
+                          </span>
+                          {board.cardCount > 0 ? (
+                            <span className="sidebar-nav-badge">
+                              {board.cardCount}
+                            </span>
+                          ) : null}
+                        </button>
+                      ))
+                    )}
+                  </nav>
                 </SidebarGroup>
                 {/* Recent notes */}
                 <SidebarGroup

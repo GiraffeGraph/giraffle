@@ -27,6 +27,7 @@ model User {
   canvases            Canvas[]
   spotterSessions     SpotterSession[]
   mcpAccessTokens     McpAccessToken[]
+  kanbanBoards        KanbanBoard[]
 }
 
 model Account {
@@ -269,4 +270,58 @@ model Canvas {
   updatedAt DateTime @updatedAt
 
   @@index([userId])
+}
+
+// ─── Trek — Kanban Boards ─────────────────────────────────────
+// A board owns ordered columns (custom statuses); each column owns
+// ordered cards. Cards reuse the Eisenhower `priority` taxonomy
+// (DO/SCHEDULE/DELEGATE/ELIMINATE) and a Stride-style dueDate so the
+// three task surfaces share one visual language.
+
+model KanbanBoard {
+  id          String         @id @default(uuid())
+  userId      String
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String         @default("Untitled board")
+  icon        String?
+  description String?
+  position    Int            @default(0)
+  columns     KanbanColumn[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([userId])
+  @@index([userId, position])
+}
+
+model KanbanColumn {
+  id        String       @id @default(uuid())
+  boardId   String
+  board     KanbanBoard  @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  title     String       @default("New column")
+  color     String?
+  position  Int          @default(0)
+  cards     KanbanCard[]
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@index([boardId, position])
+}
+
+model KanbanCard {
+  id              String       @id @default(uuid())
+  columnId        String
+  column          KanbanColumn @relation(fields: [columnId], references: [id], onDelete: Cascade)
+  title           String       @default("")
+  description     String?
+  priority        String?
+  dueDate         DateTime?
+  durationMinutes Int?
+  completed       Boolean      @default(false)
+  position        Int          @default(0)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([columnId, position])
+  @@index([dueDate])
 }

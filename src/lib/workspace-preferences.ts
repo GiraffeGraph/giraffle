@@ -12,12 +12,14 @@ export interface SidebarCollapseState {
   spotter: boolean;
   folders: boolean;
   recentNotes: boolean;
+  kanban: boolean;
 }
 
 export const DEFAULT_COLLAPSED_SECTIONS: SidebarCollapseState = {
   spotter: true,
   folders: false,
   recentNotes: false,
+  kanban: false,
 };
 
 export interface LocalSyncQueueItem {

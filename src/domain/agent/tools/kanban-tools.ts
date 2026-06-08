@@ -1,0 +1,303 @@
+import { z } from "zod";
+import {
+  createBoard,
+  createCard,
+  createColumn,
+  deleteBoard,
+  deleteCard,
+  deleteColumn,
+  getBoard,
+  listBoards,
+  moveCard,
+  updateBoard,
+  updateCard,
+  updateColumn,
+} from "@/domain/kanban/kanban.service";
+import type {
+  KanbanBoardData,
+  KanbanCardData,
+  KanbanColumnColor,
+  KanbanPriority,
+} from "@/domain/kanban/kanban.types";
+import type { InternalToolDefinition } from "../internal-tools";
+
+/**
+ * Trek (Kanban) tools. A board owns ordered columns (custom statuses); each
+ * column owns ordered cards. Cards carry an Eisenhower `priority`
+ * (DO/SCHEDULE/DELEGATE/ELIMINATE) and an optional dueDate, mirroring the
+ * userId-scoped service the Trek UI uses.
+ */
+
+const PRIORITY = z.enum(["DO", "SCHEDULE", "DELEGATE", "ELIMINATE"]);
+const COLUMN_COLOR = z.enum(["neutral", "blue", "amber", "green", "red", "purple"]);
+
+function parseDueDate(value: string | null | undefined): Date | null | undefined {
+  if (value === undefined) return undefined;
+  if (value === null) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) throw new Error(`Invalid dueDate: ${value}`);
+  return date;
+}
+
+function serializeCard(card: KanbanCardData) {
+  return {
+    id: card.id,
+    columnId: card.columnId,
+    title: card.title,
+    description: card.description,
+    priority: card.priority,
+    dueDate: card.dueDate ? card.dueDate.toISOString() : null,
+    durationMinutes: card.durationMinutes,
+    completed: card.completed,
+    position: card.position,
+  };
+}
+
+function serializeBoard(board: KanbanBoardData) {
+  return {
+    id: board.id,
+    title: board.title,
+    icon: board.icon,
+    description: board.description,
+    columns: board.columns.map((col) => ({
+      id: col.id,
+      title: col.title,
+      color: col.color,
+      position: col.position,
+      cards: col.cards.map(serializeCard),
+    })),
+  };
+}
+
+export const kanbanTools: InternalToolDefinition[] = [
+  {
+    name: "kanban_list_boards",
+    destructive: false,
+    description:
+      "List the user's Trek (Kanban) boards with column and card counts. Use this first to discover board ids.",
+    inputSchema: z.object({}),
+    execute: async (_raw, { userId }) => {
+      const boards = await listBoards(userId);
+      return {
+        boards: boards.map((b) => ({
+          id: b.id,
+          title: b.title,
+          icon: b.icon,
+          description: b.description,
+          columnCount: b.columnCount,
+          cardCount: b.cardCount,
+          completedCount: b.completedCount,
+          updatedAt: b.updatedAt.toISOString(),
+        })),
+      };
+    },
+  },
+  {
+    name: "kanban_get_board",
+    destructive: false,
+    description:
+      "Get one Trek board in full: its ordered columns and the ordered cards inside each column (with priority, dueDate, completed state).",
+    inputSchema: z.object({ boardId: z.string().min(1) }),
+    execute: async (raw, { userId }) => {
+      const input = raw as { boardId: string };
+      const board = await getBoard(userId, input.boardId);
+      if (!board) throw new Error(`Board not found: ${input.boardId}`);
+      return serializeBoard(board);
+    },
+  },
+  {
+    name: "kanban_create_board",
+    destructive: true,
+    description:
+      "Create a Trek board. By default it is seeded with To do / In progress / Done columns; pass withDefaultColumns=false for an empty board.",
+    inputSchema: z.object({
+      title: z.string().min(1).max(220),
+      icon: z.string().max(20).nullable().optional(),
+      withDefaultColumns: z.boolean().optional(),
+    }),
+    execute: async (raw, { userId }) => {
+      const input = raw as { title: string; icon?: string | null; withDefaultColumns?: boolean };
+      const boardId = await createBoard(userId, {
+        title: input.title,
+        icon: input.icon ?? null,
+        withDefaultColumns: input.withDefaultColumns,
+      });
+      const board = await getBoard(userId, boardId);
+      return board ? serializeBoard(board) : { id: boardId };
+    },
+  },
+  {
+    name: "kanban_update_board",
+    destructive: true,
+    description: "Update a Trek board's title, icon, or description.",
+    inputSchema: z.object({
+      boardId: z.string().min(1),
+      title: z.string().min(1).max(220).optional(),
+      icon: z.string().max(20).nullable().optional(),
+      description: z.string().max(2_000).nullable().optional(),
+    }),
+    execute: async (raw, { userId }) => {
+      const input = raw as {
+        boardId: string;
+        title?: string;
+        icon?: string | null;
+        description?: string | null;
+      };
+      await updateBoard(userId, input.boardId, {
+        title: input.title,
+        icon: input.icon,
+        description: input.description,
+      });
+      return { boardId: input.boardId, updated: true };
+    },
+  },
+  {
+    name: "kanban_delete_board",
+    destructive: true,
+    description: "Delete a Trek board and all of its columns and cards.",
+    inputSchema: z.object({ boardId: z.string().min(1) }),
+    execute: async (raw, { userId }) => {
+      const input = raw as { boardId: string };
+      await deleteBoard(userId, input.boardId);
+      return { boardId: input.boardId, deleted: true };
+    },
+  },
+  {
+    name: "kanban_add_column",
+    destructive: true,
+    description: "Add a column (status) to the end of a Trek board.",
+    inputSchema: z.object({
+      boardId: z.string().min(1),
+      title: z.string().min(1).max(160),
+      color: COLUMN_COLOR.nullable().optional(),
+    }),
+    execute: async (raw, { userId }) => {
+      const input = raw as { boardId: string; title: string; color?: KanbanColumnColor | null };
+      const columnId = await createColumn(userId, input.boardId, {
+        title: input.title,
+        color: input.color ?? null,
+      });
+      return { columnId, boardId: input.boardId };
+    },
+  },
+  {
+    name: "kanban_update_column",
+    destructive: true,
+    description: "Rename a column or change its accent color.",
+    inputSchema: z.object({
+      columnId: z.string().min(1),
+      title: z.string().min(1).max(160).optional(),
+      color: COLUMN_COLOR.nullable().optional(),
+    }),
+    execute: async (raw, { userId }) => {
+      const input = raw as { columnId: string; title?: string; color?: KanbanColumnColor | null };
+      await updateColumn(userId, input.columnId, { title: input.title, color: input.color });
+      return { columnId: input.columnId, updated: true };
+    },
+  },
+  {
+    name: "kanban_delete_column",
+    destructive: true,
+    description: "Delete a column and all cards inside it.",
+    inputSchema: z.object({ columnId: z.string().min(1) }),
+    execute: async (raw, { userId }) => {
+      const input = raw as { columnId: string };
+      await deleteColumn(userId, input.columnId);
+      return { columnId: input.columnId, deleted: true };
+    },
+  },
+  {
+    name: "kanban_add_card",
+    destructive: true,
+    description:
+      "Add a card to the end of a column. Optionally set an Eisenhower priority (DO/SCHEDULE/DELEGATE/ELIMINATE), an ISO dueDate, and a duration in minutes.",
+    inputSchema: z.object({
+      columnId: z.string().min(1),
+      title: z.string().min(1).max(2_000),
+      description: z.string().max(10_000).nullable().optional(),
+      priority: PRIORITY.nullable().optional(),
+      dueDate: z.string().min(1).max(40).nullable().optional(),
+      durationMinutes: z.number().int().min(0).max(100_000).nullable().optional(),
+    }),
+    execute: async (raw, { userId }) => {
+      const input = raw as {
+        columnId: string;
+        title: string;
+        description?: string | null;
+        priority?: KanbanPriority | null;
+        dueDate?: string | null;
+        durationMinutes?: number | null;
+      };
+      const card = await createCard(userId, input.columnId, {
+        title: input.title,
+        description: input.description ?? null,
+        priority: input.priority ?? null,
+        dueDate: parseDueDate(input.dueDate) ?? null,
+        durationMinutes: input.durationMinutes ?? null,
+      });
+      return serializeCard(card);
+    },
+  },
+  {
+    name: "kanban_update_card",
+    destructive: true,
+    description:
+      "Update a card's title, description, priority, dueDate (ISO or null), duration, or completed state.",
+    inputSchema: z.object({
+      cardId: z.string().min(1),
+      title: z.string().min(1).max(2_000).optional(),
+      description: z.string().max(10_000).nullable().optional(),
+      priority: PRIORITY.nullable().optional(),
+      dueDate: z.string().min(1).max(40).nullable().optional(),
+      durationMinutes: z.number().int().min(0).max(100_000).nullable().optional(),
+      completed: z.boolean().optional(),
+    }),
+    execute: async (raw, { userId }) => {
+      const input = raw as {
+        cardId: string;
+        title?: string;
+        description?: string | null;
+        priority?: KanbanPriority | null;
+        dueDate?: string | null;
+        durationMinutes?: number | null;
+        completed?: boolean;
+      };
+      await updateCard(userId, input.cardId, {
+        title: input.title,
+        description: input.description,
+        priority: input.priority,
+        dueDate: parseDueDate(input.dueDate),
+        durationMinutes: input.durationMinutes,
+        completed: input.completed,
+      });
+      return { cardId: input.cardId, updated: true };
+    },
+  },
+  {
+    name: "kanban_move_card",
+    destructive: true,
+    description:
+      "Move a card to a target column at a zero-based index (its Kanban status change). Pass a large toIndex to append.",
+    inputSchema: z.object({
+      cardId: z.string().min(1),
+      toColumnId: z.string().min(1),
+      toIndex: z.number().int().min(0).max(100_000).default(100_000),
+    }),
+    execute: async (raw, { userId }) => {
+      const input = raw as { cardId: string; toColumnId: string; toIndex: number };
+      await moveCard(userId, input.cardId, input.toColumnId, input.toIndex);
+      return { cardId: input.cardId, toColumnId: input.toColumnId, toIndex: input.toIndex };
+    },
+  },
+  {
+    name: "kanban_delete_card",
+    destructive: true,
+    description: "Delete a card from a Trek board.",
+    inputSchema: z.object({ cardId: z.string().min(1) }),
+    execute: async (raw, { userId }) => {
+      const input = raw as { cardId: string };
+      await deleteCard(userId, input.cardId);
+      return { cardId: input.cardId, deleted: true };
+    },
+  },
+];

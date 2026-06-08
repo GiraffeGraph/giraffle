@@ -1,4 +1,5 @@
 import type { ContextMenuItem } from "@/components/ui/ContextMenu";
+import type { KanbanBoardSummary } from "@/domain/kanban/kanban.types";
 
 export interface SidebarNote {
   id: string;
@@ -34,6 +35,7 @@ export interface SidebarProps {
   notes: SidebarNote[];
   folders: SidebarFolder[];
   spotterSessions: SidebarSpotterSession[];
+  kanbanBoards: KanbanBoardSummary[];
   activeNoteId?: string;
 }
 
@@ -47,7 +49,7 @@ export interface FolderDropTarget {
   mode: "inside" | "after";
 }
 
-export type SidebarSectionKey = "spotter" | "folders" | "recentNotes";
+export type SidebarSectionKey = "spotter" | "folders" | "recentNotes" | "kanban";
 
 export interface SidebarFolderDragData {
   type: "sidebar-folder";

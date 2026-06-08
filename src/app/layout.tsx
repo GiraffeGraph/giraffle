@@ -31,6 +31,7 @@ import "@/styles/layouts/sidebar-rail-v2.css";
 import "@/styles/layouts/savanna.css";
 import "@/styles/layouts/tower-matrix.css";
 import "@/styles/layouts/stride.css";
+import "@/styles/layouts/kanban.css";
 import "@excalidraw/excalidraw/index.css";
 import "./globals.css";
 import "@/styles/system.css";
