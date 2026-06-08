@@ -1,4 +1,18 @@
+import { randomUUID } from "node:crypto";
+import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
+import {
+  createNote,
+  createTaskItemInNote,
+  deleteCalendarTodo,
+  deleteNote,
+  setTodoBlockQuadrant,
+  setTodoDueDate,
+  setTodoDuration,
+  toggleTodoBlock,
+  updateCalendarTodoText,
+  updateNote,
+} from "@/domain/note/note.service";
 import type {
   CreateCardInput,
   KanbanBoardData,
@@ -6,333 +20,363 @@ import type {
   KanbanCardData,
   KanbanColumnColor,
   KanbanColumnData,
+  KanbanColumnDef,
   KanbanPriority,
   UpdateCardInput,
 } from "./kanban.types";
 
-// ─── Default scaffolding ──────────────────────────────────────
+// A board is a Note whose `kanbanColumns` JSON is non-null; cards are that
+// note's taskItem blocks, placed via attributes.kanbanColumnId/kanbanPosition.
 
-const DEFAULT_COLUMNS: Array<{ title: string; color: KanbanColumnColor }> = [
+const EISENHOWER = ["DO", "SCHEDULE", "DELEGATE", "ELIMINATE"];
+
+const DEFAULT_COLUMN_SEEDS: Array<{ title: string; color: KanbanColumnColor }> = [
   { title: "To do", color: "neutral" },
   { title: "In progress", color: "blue" },
   { title: "Done", color: "green" },
 ];
 
-// ─── Ownership guards ─────────────────────────────────────────
+function defaultColumns(): KanbanColumnDef[] {
+  return DEFAULT_COLUMN_SEEDS.map((c, i) => ({
+    id: randomUUID(),
+    title: c.title,
+    color: c.color,
+    position: i,
+  }));
+}
 
-async function assertBoardOwner(userId: string, boardId: string): Promise<void> {
-  const board = await db.kanbanBoard.findFirst({
+function isColumnColor(v: unknown): v is KanbanColumnColor {
+  return (
+    v === "neutral" ||
+    v === "blue" ||
+    v === "amber" ||
+    v === "green" ||
+    v === "red" ||
+    v === "purple"
+  );
+}
+
+function parseColumns(raw: unknown): KanbanColumnDef[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((c): c is Record<string, unknown> => Boolean(c) && typeof c === "object")
+    .map((c, i) => ({
+      id: typeof c.id === "string" ? c.id : randomUUID(),
+      title: typeof c.title === "string" ? c.title : "Column",
+      color: isColumnColor(c.color) ? c.color : null,
+      position: typeof c.position === "number" ? c.position : i,
+    }))
+    .sort((a, b) => a.position - b.position);
+}
+
+function extractText(content: unknown): string {
+  if (!content || typeof content !== "object") return "";
+  const node = content as { text?: unknown; content?: unknown };
+  if (typeof node.text === "string") return node.text;
+  if (Array.isArray(node.content)) return node.content.map(extractText).join("");
+  return "";
+}
+
+const asJson = (cols: KanbanColumnDef[]): Prisma.InputJsonValue =>
+  cols as unknown as Prisma.InputJsonValue;
+
+// ─── Guards ───────────────────────────────────────────────────
+
+async function assertBoard(userId: string, boardId: string): Promise<KanbanColumnDef[]> {
+  const note = await db.note.findFirst({
     where: { id: boardId, userId },
+    select: { id: true, kanbanColumns: true },
+  });
+  if (!note || note.kanbanColumns == null) throw new Error(`Board not found: ${boardId}`);
+  return parseColumns(note.kanbanColumns);
+}
+
+async function assertCardOwner(userId: string, cardId: string): Promise<void> {
+  const block = await db.block.findFirst({
+    where: { id: cardId, type: "taskItem", note: { userId } },
     select: { id: true },
   });
-  if (!board) throw new Error(`Board not found: ${boardId}`);
+  if (!block) throw new Error(`Card not found: ${cardId}`);
 }
 
-/** Returns the owning boardId, or throws if the column isn't the user's. */
-async function assertColumnOwner(userId: string, columnId: string): Promise<string> {
-  const column = await db.kanbanColumn.findFirst({
-    where: { id: columnId, board: { userId } },
-    select: { id: true, boardId: true },
+async function patchBlockAttrs(
+  userId: string,
+  blockId: string,
+  patch: Record<string, unknown>,
+): Promise<void> {
+  const block = await db.block.findFirst({
+    where: { id: blockId, note: { userId } },
+    select: { attributes: true },
   });
-  if (!column) throw new Error(`Column not found: ${columnId}`);
-  return column.boardId;
+  if (!block) throw new Error(`Card not found: ${blockId}`);
+  const attrs = (block.attributes ?? {}) as Record<string, unknown>;
+  await db.block.update({
+    where: { id: blockId },
+    data: { attributes: { ...attrs, ...patch } as Prisma.InputJsonValue },
+  });
 }
 
-/** Returns the card's columnId, or throws if the card isn't the user's. */
-async function assertCardOwner(userId: string, cardId: string): Promise<string> {
-  const card = await db.kanbanCard.findFirst({
-    where: { id: cardId, column: { board: { userId } } },
-    select: { id: true, columnId: true },
-  });
-  if (!card) throw new Error(`Card not found: ${cardId}`);
-  return card.columnId;
+async function writeColumns(boardId: string, cols: KanbanColumnDef[]): Promise<void> {
+  const ordered = [...cols].sort((a, b) => a.position - b.position).map((c, i) => ({ ...c, position: i }));
+  await db.note.update({ where: { id: boardId }, data: { kanbanColumns: asJson(ordered) } });
 }
 
 // ─── Serializers ──────────────────────────────────────────────
 
-type RawCard = {
+type RawCardBlock = {
   id: string;
-  columnId: string;
-  title: string;
-  description: string | null;
-  priority: string | null;
+  content: unknown;
+  attributes: unknown;
   dueDate: Date | null;
-  durationMinutes: number | null;
-  completed: boolean;
   position: number;
+  children: { content: unknown }[];
 };
 
-function serializeCard(card: RawCard): KanbanCardData {
+function blockToCard(b: RawCardBlock, validColumnIds: Set<string>, fallback: string): KanbanCardData {
+  const attrs = (b.attributes ?? {}) as Record<string, unknown>;
+  const text =
+    b.children.length > 0
+      ? b.children.map((c) => extractText(c.content)).join("")
+      : extractText(b.content);
+  const rawCol = typeof attrs.kanbanColumnId === "string" ? attrs.kanbanColumnId : null;
+  const columnId = rawCol && validColumnIds.has(rawCol) ? rawCol : fallback;
+  const dur = attrs.durationMinutes;
+  const kpos = attrs.kanbanPosition;
   return {
-    id: card.id,
-    columnId: card.columnId,
-    title: card.title,
-    description: card.description,
-    priority: (card.priority as KanbanPriority | null) ?? null,
-    dueDate: card.dueDate,
-    durationMinutes: card.durationMinutes,
-    completed: card.completed,
-    position: card.position,
+    id: b.id,
+    columnId,
+    title: text,
+    description: typeof attrs.description === "string" ? attrs.description : null,
+    priority: EISENHOWER.includes(String(attrs.quadrant ?? ""))
+      ? (attrs.quadrant as KanbanPriority)
+      : null,
+    dueDate: b.dueDate,
+    durationMinutes: typeof dur === "number" && dur > 0 ? dur : null,
+    completed: attrs.checked === true,
+    position: typeof kpos === "number" ? kpos : b.position,
   };
 }
 
 // ─── Boards ───────────────────────────────────────────────────
 
 export async function listBoards(userId: string): Promise<KanbanBoardSummary[]> {
-  const boards = await db.kanbanBoard.findMany({
-    where: { userId },
-    orderBy: [{ position: "asc" }, { createdAt: "asc" }],
+  const notes = await db.note.findMany({
+    where: { userId, isArchived: false, kanbanColumns: { not: Prisma.DbNull } },
+    orderBy: { updatedAt: "desc" },
     select: {
       id: true,
       title: true,
       icon: true,
-      description: true,
-      position: true,
       updatedAt: true,
-      columns: {
-        select: {
-          _count: { select: { cards: true } },
-          cards: { where: { completed: true }, select: { id: true } },
-        },
-      },
+      kanbanColumns: true,
+      blocks: { where: { type: "taskItem" }, select: { attributes: true } },
     },
   });
-
-  return boards.map((board) => {
-    const cardCount = board.columns.reduce((sum, c) => sum + c._count.cards, 0);
-    const completedCount = board.columns.reduce((sum, c) => sum + c.cards.length, 0);
+  return notes.map((n) => {
+    const completedCount = n.blocks.filter(
+      (b) => ((b.attributes ?? {}) as Record<string, unknown>).checked === true,
+    ).length;
     return {
-      id: board.id,
-      title: board.title,
-      icon: board.icon,
-      description: board.description,
-      position: board.position,
-      columnCount: board.columns.length,
-      cardCount,
+      id: n.id,
+      title: n.title,
+      icon: n.icon,
+      columnCount: parseColumns(n.kanbanColumns).length,
+      cardCount: n.blocks.length,
       completedCount,
-      updatedAt: board.updatedAt,
+      updatedAt: n.updatedAt,
     };
   });
 }
 
 export async function createBoard(
   userId: string,
-  input: { title?: string; icon?: string | null; withDefaultColumns?: boolean } = {},
+  input: { title?: string } = {},
 ): Promise<string> {
-  const last = await db.kanbanBoard.findFirst({
-    where: { userId },
-    orderBy: { position: "desc" },
-    select: { position: true },
+  const noteId = await createNote(userId, {
+    title: input.title?.trim() || "Untitled board",
+    icon: "view_kanban",
   });
-  const position = (last?.position ?? -1) + 1;
-
-  const board = await db.kanbanBoard.create({
-    data: {
-      userId,
-      title: input.title?.trim() || "Untitled board",
-      icon: input.icon ?? null,
-      position,
-      ...(input.withDefaultColumns === false
-        ? {}
-        : {
-            columns: {
-              create: DEFAULT_COLUMNS.map((col, index) => ({
-                title: col.title,
-                color: col.color,
-                position: index,
-              })),
-            },
-          }),
-    },
-    select: { id: true },
+  await db.note.update({
+    where: { id: noteId },
+    data: { kanbanColumns: asJson(defaultColumns()) },
   });
-  return board.id;
+  return noteId;
 }
 
-export async function getBoard(
-  userId: string,
-  boardId: string,
-): Promise<KanbanBoardData | null> {
-  const board = await db.kanbanBoard.findFirst({
+export async function getBoard(userId: string, boardId: string): Promise<KanbanBoardData | null> {
+  const note = await db.note.findFirst({
     where: { id: boardId, userId },
     select: {
       id: true,
       title: true,
       icon: true,
-      description: true,
-      position: true,
-      createdAt: true,
       updatedAt: true,
-      columns: {
+      kanbanColumns: true,
+      blocks: {
+        where: { type: "taskItem" },
         orderBy: { position: "asc" },
         select: {
           id: true,
-          boardId: true,
-          title: true,
-          color: true,
+          content: true,
+          attributes: true,
+          dueDate: true,
           position: true,
-          cards: {
-            orderBy: { position: "asc" },
-            select: {
-              id: true,
-              columnId: true,
-              title: true,
-              description: true,
-              priority: true,
-              dueDate: true,
-              durationMinutes: true,
-              completed: true,
-              position: true,
-            },
-          },
+          children: { select: { content: true }, orderBy: { position: "asc" } },
         },
       },
     },
   });
-  if (!board) return null;
+  if (!note || note.kanbanColumns == null) return null;
 
-  const columns: KanbanColumnData[] = board.columns.map((col) => ({
-    id: col.id,
-    boardId: col.boardId,
-    title: col.title,
-    color: (col.color as KanbanColumnColor | null) ?? null,
-    position: col.position,
-    cards: col.cards.map(serializeCard),
+  const cols = parseColumns(note.kanbanColumns);
+  const fallback = cols[0]?.id ?? "";
+  const validIds = new Set(cols.map((c) => c.id));
+  const buckets = new Map<string, KanbanCardData[]>();
+  for (const col of cols) buckets.set(col.id, []);
+  for (const block of note.blocks) {
+    const card = blockToCard(block as RawCardBlock, validIds, fallback);
+    (buckets.get(card.columnId) ?? buckets.get(fallback))?.push(card);
+  }
+  for (const list of buckets.values()) list.sort((a, b) => a.position - b.position);
+
+  const columns: KanbanColumnData[] = cols.map((c) => ({
+    id: c.id,
+    boardId: note.id,
+    title: c.title,
+    color: c.color,
+    position: c.position,
+    cards: buckets.get(c.id) ?? [],
   }));
 
-  return {
-    id: board.id,
-    title: board.title,
-    icon: board.icon,
-    description: board.description,
-    position: board.position,
-    columns,
-    createdAt: board.createdAt,
-    updatedAt: board.updatedAt,
-  };
+  return { id: note.id, title: note.title, icon: note.icon, columns, updatedAt: note.updatedAt };
 }
 
 export async function updateBoard(
   userId: string,
   boardId: string,
-  patch: { title?: string; icon?: string | null; description?: string | null },
+  patch: { title?: string; icon?: string | null },
 ): Promise<void> {
-  await assertBoardOwner(userId, boardId);
-  const data: Record<string, unknown> = {};
-  if (typeof patch.title === "string") data.title = patch.title.trim() || "Untitled board";
+  await assertBoard(userId, boardId);
+  const data: { title?: string; icon?: string | null } = {};
+  if (patch.title !== undefined) data.title = patch.title.trim() || "Untitled board";
   if (patch.icon !== undefined) data.icon = patch.icon;
-  if (patch.description !== undefined) data.description = patch.description;
-  if (Object.keys(data).length === 0) return;
-  await db.kanbanBoard.update({ where: { id: boardId }, data });
+  if (Object.keys(data).length > 0) await updateNote(userId, boardId, data);
 }
 
 export async function deleteBoard(userId: string, boardId: string): Promise<void> {
-  await assertBoardOwner(userId, boardId);
-  await db.kanbanBoard.delete({ where: { id: boardId } });
+  await assertBoard(userId, boardId);
+  await deleteNote(userId, boardId);
 }
 
-// ─── Columns ──────────────────────────────────────────────────
+// ─── Columns (mutate note.kanbanColumns) ──────────────────────
 
 export async function createColumn(
   userId: string,
   boardId: string,
   input: { title?: string; color?: KanbanColumnColor | null } = {},
 ): Promise<string> {
-  await assertBoardOwner(userId, boardId);
-  const last = await db.kanbanColumn.findFirst({
-    where: { boardId },
-    orderBy: { position: "desc" },
-    select: { position: true },
+  const cols = await assertBoard(userId, boardId);
+  const id = randomUUID();
+  cols.push({
+    id,
+    title: input.title?.trim() || "New column",
+    color: input.color ?? null,
+    position: cols.length,
   });
-  const position = (last?.position ?? -1) + 1;
-  const column = await db.kanbanColumn.create({
-    data: {
-      boardId,
-      title: input.title?.trim() || "New column",
-      color: input.color ?? null,
-      position,
-    },
-    select: { id: true },
-  });
-  return column.id;
+  await writeColumns(boardId, cols);
+  return id;
 }
 
 export async function updateColumn(
   userId: string,
+  boardId: string,
   columnId: string,
   patch: { title?: string; color?: KanbanColumnColor | null },
 ): Promise<void> {
-  await assertColumnOwner(userId, columnId);
-  const data: Record<string, unknown> = {};
-  if (typeof patch.title === "string") data.title = patch.title.trim() || "New column";
-  if (patch.color !== undefined) data.color = patch.color;
-  if (Object.keys(data).length === 0) return;
-  await db.kanbanColumn.update({ where: { id: columnId }, data });
+  const cols = await assertBoard(userId, boardId);
+  const col = cols.find((c) => c.id === columnId);
+  if (!col) throw new Error(`Column not found: ${columnId}`);
+  if (patch.title !== undefined) col.title = patch.title.trim() || "New column";
+  if (patch.color !== undefined) col.color = patch.color;
+  await writeColumns(boardId, cols);
 }
 
-export async function deleteColumn(userId: string, columnId: string): Promise<void> {
-  await assertColumnOwner(userId, columnId);
-  await db.kanbanColumn.delete({ where: { id: columnId } });
+export async function deleteColumn(userId: string, boardId: string, columnId: string): Promise<void> {
+  const cols = await assertBoard(userId, boardId);
+  const remaining = cols.filter((c) => c.id !== columnId).map((c, i) => ({ ...c, position: i }));
+  const fallback = remaining[0]?.id ?? null;
+  await db.$transaction(async (tx) => {
+    const blocks = await tx.block.findMany({
+      where: { type: "taskItem", note: { id: boardId, userId } },
+      select: { id: true, attributes: true },
+    });
+    for (const b of blocks) {
+      const a = (b.attributes ?? {}) as Record<string, unknown>;
+      if (a.kanbanColumnId === columnId) {
+        await tx.block.update({
+          where: { id: b.id },
+          data: { attributes: { ...a, kanbanColumnId: fallback } },
+        });
+      }
+    }
+    await tx.note.update({ where: { id: boardId }, data: { kanbanColumns: asJson(remaining) } });
+  });
 }
 
 export async function moveColumn(
   userId: string,
+  boardId: string,
   columnId: string,
   toIndex: number,
 ): Promise<void> {
-  const boardId = await assertColumnOwner(userId, columnId);
-  await db.$transaction(async (tx) => {
-    const siblings = await tx.kanbanColumn.findMany({
-      where: { boardId, id: { not: columnId } },
-      orderBy: { position: "asc" },
-      select: { id: true },
-    });
-    const ids = siblings.map((s) => s.id);
-    const idx = Math.max(0, Math.min(Math.trunc(toIndex), ids.length));
-    ids.splice(idx, 0, columnId);
-    await Promise.all(
-      ids.map((id, i) => tx.kanbanColumn.update({ where: { id }, data: { position: i } })),
-    );
-  });
+  const cols = await assertBoard(userId, boardId);
+  const moving = cols.find((c) => c.id === columnId);
+  if (!moving) throw new Error(`Column not found: ${columnId}`);
+  const rest = cols.filter((c) => c.id !== columnId);
+  const idx = Math.max(0, Math.min(Math.trunc(toIndex), rest.length));
+  rest.splice(idx, 0, moving);
+  await writeColumns(boardId, rest);
 }
 
-// ─── Cards ────────────────────────────────────────────────────
+// ─── Cards (taskItem blocks) ──────────────────────────────────
 
 export async function createCard(
   userId: string,
+  boardId: string,
   columnId: string,
   input: CreateCardInput,
 ): Promise<KanbanCardData> {
-  await assertColumnOwner(userId, columnId);
-  const last = await db.kanbanCard.findFirst({
-    where: { columnId },
-    orderBy: { position: "desc" },
-    select: { position: true },
+  const cols = await assertBoard(userId, boardId);
+  const col = cols.find((c) => c.id === columnId) ?? cols[0];
+  if (!col) throw new Error("Board has no columns");
+
+  const siblings = await db.block.findMany({
+    where: { type: "taskItem", note: { id: boardId, userId } },
+    select: { attributes: true },
   });
-  const position = (last?.position ?? -1) + 1;
-  const card = await db.kanbanCard.create({
-    data: {
-      columnId,
-      title: input.title.trim(),
-      description: input.description ?? null,
-      priority: input.priority ?? null,
-      dueDate: input.dueDate ?? null,
-      durationMinutes: input.durationMinutes ?? null,
-      position,
-    },
-    select: {
-      id: true,
-      columnId: true,
-      title: true,
-      description: true,
-      priority: true,
-      dueDate: true,
-      durationMinutes: true,
-      completed: true,
-      position: true,
-    },
-  });
-  return serializeCard(card);
+  const colCount = siblings.filter(
+    (b) => ((b.attributes ?? {}) as Record<string, unknown>).kanbanColumnId === col.id,
+  ).length;
+
+  const attrs: Record<string, unknown> = { kanbanColumnId: col.id, kanbanPosition: colCount };
+  if (input.priority) attrs.quadrant = input.priority;
+  if (input.durationMinutes != null) attrs.durationMinutes = input.durationMinutes;
+  if (input.description) attrs.description = input.description;
+
+  const blockId = await createTaskItemInNote(userId, boardId, input.title, attrs);
+  if (input.dueDate) await setTodoDueDate(userId, blockId, input.dueDate);
+
+  return {
+    id: blockId,
+    columnId: col.id,
+    title: input.title.trim(),
+    description: input.description ?? null,
+    priority: input.priority ?? null,
+    dueDate: input.dueDate ?? null,
+    durationMinutes: input.durationMinutes ?? null,
+    completed: false,
+    position: colCount,
+  };
 }
 
 export async function updateCard(
@@ -341,20 +385,22 @@ export async function updateCard(
   patch: UpdateCardInput,
 ): Promise<void> {
   await assertCardOwner(userId, cardId);
-  const data: Record<string, unknown> = {};
-  if (typeof patch.title === "string") data.title = patch.title.trim();
-  if (patch.description !== undefined) data.description = patch.description;
-  if (patch.priority !== undefined) data.priority = patch.priority;
-  if (patch.dueDate !== undefined) data.dueDate = patch.dueDate;
-  if (patch.durationMinutes !== undefined) data.durationMinutes = patch.durationMinutes;
-  if (typeof patch.completed === "boolean") data.completed = patch.completed;
-  if (Object.keys(data).length === 0) return;
-  await db.kanbanCard.update({ where: { id: cardId }, data });
+  if (patch.title !== undefined) await updateCalendarTodoText(userId, cardId, patch.title);
+  if (patch.priority !== undefined) await setTodoBlockQuadrant(userId, cardId, patch.priority);
+  if (patch.dueDate !== undefined) await setTodoDueDate(userId, cardId, patch.dueDate);
+  if (patch.durationMinutes !== undefined) {
+    if (patch.durationMinutes == null) await patchBlockAttrs(userId, cardId, { durationMinutes: null });
+    else await setTodoDuration(userId, cardId, patch.durationMinutes);
+  }
+  if (patch.description !== undefined) {
+    await patchBlockAttrs(userId, cardId, { description: patch.description });
+  }
+  if (typeof patch.completed === "boolean") await toggleTodoBlock(userId, cardId, patch.completed);
 }
 
 export async function deleteCard(userId: string, cardId: string): Promise<void> {
   await assertCardOwner(userId, cardId);
-  await db.kanbanCard.delete({ where: { id: cardId } });
+  await deleteCalendarTodo(userId, cardId);
 }
 
 export async function moveCard(
@@ -363,24 +409,42 @@ export async function moveCard(
   toColumnId: string,
   toIndex: number,
 ): Promise<void> {
-  await assertCardOwner(userId, cardId);
-  await assertColumnOwner(userId, toColumnId);
+  const card = await db.block.findFirst({
+    where: { id: cardId, type: "taskItem", note: { userId } },
+    select: { id: true, noteId: true, note: { select: { kanbanColumns: true } } },
+  });
+  if (!card || card.note.kanbanColumns == null) throw new Error(`Card not found: ${cardId}`);
+  const cols = parseColumns(card.note.kanbanColumns);
+  if (!cols.some((c) => c.id === toColumnId)) throw new Error(`Column not found: ${toColumnId}`);
+
   await db.$transaction(async (tx) => {
-    const siblings = await tx.kanbanCard.findMany({
-      where: { columnId: toColumnId, id: { not: cardId } },
-      orderBy: { position: "asc" },
-      select: { id: true },
+    const blocks = await tx.block.findMany({
+      where: { type: "taskItem", noteId: card.noteId },
+      select: { id: true, attributes: true },
     });
-    const ids = siblings.map((s) => s.id);
-    const idx = Math.max(0, Math.min(Math.trunc(toIndex), ids.length));
-    ids.splice(idx, 0, cardId);
-    await Promise.all(
-      ids.map((id, i) =>
-        tx.kanbanCard.update({
-          where: { id },
-          data: id === cardId ? { position: i, columnId: toColumnId } : { position: i },
-        }),
-      ),
-    );
+    const order = blocks
+      .filter((b) => {
+        if (b.id === cardId) return false;
+        return ((b.attributes ?? {}) as Record<string, unknown>).kanbanColumnId === toColumnId;
+      })
+      .map((b) => ({
+        id: b.id,
+        pos: Number(((b.attributes ?? {}) as Record<string, unknown>).kanbanPosition ?? 0),
+      }))
+      .sort((a, b) => a.pos - b.pos)
+      .map((b) => b.id);
+
+    const idx = Math.max(0, Math.min(Math.trunc(toIndex), order.length));
+    order.splice(idx, 0, cardId);
+
+    for (let i = 0; i < order.length; i++) {
+      const id = order[i];
+      const src = blocks.find((b) => b.id === id);
+      const a = (src?.attributes ?? {}) as Record<string, unknown>;
+      await tx.block.update({
+        where: { id },
+        data: { attributes: { ...a, kanbanColumnId: toColumnId, kanbanPosition: i } },
+      });
+    }
   });
 }

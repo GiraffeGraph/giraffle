@@ -458,7 +458,7 @@ export function KanbanBoardView({ board }: { board: KanbanBoardData }) {
           col.id === columnId ? { ...col, cards: [...col.cards, optimistic] } : col,
         ),
       );
-      createCardAction(columnId, { title })
+      createCardAction(board.id, columnId, { title })
         .then((real) => {
           setColumns((prev) =>
             prev.map((col) =>
@@ -470,7 +470,7 @@ export function KanbanBoardView({ board }: { board: KanbanBoardData }) {
         })
         .catch(fail);
     },
-    [fail],
+    [board.id, fail],
   );
 
   const handleToggleCard = useCallback(
@@ -533,10 +533,10 @@ export function KanbanBoardView({ board }: { board: KanbanBoardData }) {
         return result.columns;
       });
       if (serverIndex >= 0) {
-        moveColumnAction(columnId, serverIndex).catch(fail);
+        moveColumnAction(board.id, columnId, serverIndex).catch(fail);
       }
     },
-    [fail],
+    [board.id, fail],
   );
 
   const handleRenameColumn = useCallback(
@@ -545,9 +545,9 @@ export function KanbanBoardView({ board }: { board: KanbanBoardData }) {
       setColumns((prev) =>
         prev.map((col) => (col.id === columnId ? { ...col, title: trimmed } : col)),
       );
-      updateColumnAction(columnId, { title: trimmed }).catch(fail);
+      updateColumnAction(board.id, columnId, { title: trimmed }).catch(fail);
     },
-    [fail],
+    [board.id, fail],
   );
 
   const handleRecolorColumn = useCallback(
@@ -555,17 +555,17 @@ export function KanbanBoardView({ board }: { board: KanbanBoardData }) {
       setColumns((prev) =>
         prev.map((col) => (col.id === columnId ? { ...col, color } : col)),
       );
-      updateColumnAction(columnId, { color }).catch(fail);
+      updateColumnAction(board.id, columnId, { color }).catch(fail);
     },
-    [fail],
+    [board.id, fail],
   );
 
   const handleDeleteColumn = useCallback(
     (columnId: string) => {
       setColumns((prev) => prev.filter((col) => col.id !== columnId));
-      deleteColumnAction(columnId).catch(fail);
+      deleteColumnAction(board.id, columnId).catch(fail);
     },
-    [fail],
+    [board.id, fail],
   );
 
   const handleAddColumn = useCallback(() => {

@@ -47,6 +47,15 @@ export function KanbanBoardMenu({
       <Button
         variant="text"
         icon
+        onClick={() => router.push(`/notes/${boardId}`)}
+        aria-label="Open as note"
+        title="Open as note — a board is a note; its cards are tasks"
+      >
+        <span className="material-symbols-outlined">description</span>
+      </Button>
+      <Button
+        variant="text"
+        icon
         onClick={() => {
           setDraft(title);
           setDialog("rename");

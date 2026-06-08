@@ -650,6 +650,24 @@
   gap: 12px;
 }
 
+.kb-field-row--3 {
+  grid-template-columns: 1.2fr 0.9fr 0.9fr;
+}
+
+.kb-field-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: -4px 0 0;
+  font-size: 0.75rem;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.kb-field-hint .material-symbols-outlined {
+  font-size: 15px;
+  color: var(--md-sys-color-tertiary, #1d6d80);
+}
+
 .kb-field-label {
   font-size: 0.72rem;
   font-weight: 600;

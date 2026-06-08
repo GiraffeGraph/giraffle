@@ -1281,6 +1281,52 @@ export async function addTodoToNote(
 }
 
 /**
+ * Create a taskItem in a note's task list (creating a taskList if none exists)
+ * and return its blockId. Unlike addTodoToNote this pre-assigns the id and lets
+ * the caller seed extra attributes (e.g. Trek's kanbanColumnId/kanbanPosition,
+ * quadrant, durationMinutes) so the same block is shared across Tower, Stride,
+ * and Trek. Mirrors createCalendarTodo's insertion path.
+ */
+export async function createTaskItemInNote(
+  userId: string,
+  noteId: string,
+  text: string,
+  attrs: Record<string, unknown> = {}
+): Promise<string> {
+  const blockId = generateId();
+  const taskItemNode: BlockNodeContent = {
+    type: "taskItem",
+    attrs: { blockId, checked: false, ...attrs },
+    content: [
+      {
+        type: "paragraph",
+        content: text.trim()
+          ? [{ type: "text", text: text.trim() } as { type: "text"; text: string }]
+          : [],
+      },
+    ],
+  };
+
+  const existingTaskList = await db.block.findFirst({
+    where: { noteId, type: "taskList", note: { userId } },
+    select: { id: true },
+  });
+
+  if (existingTaskList) {
+    await insertBlock(userId, noteId, {
+      block: taskItemNode,
+      parentBlockId: existingTaskList.id,
+    });
+  } else {
+    await insertBlock(userId, noteId, {
+      block: { type: "taskList", content: [taskItemNode] },
+    });
+  }
+
+  return blockId;
+}
+
+/**
  * Set the quadrant of a taskItem block (Tower Matrix inner matrix).
  */
 export async function setTodoBlockQuadrant(

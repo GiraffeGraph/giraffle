@@ -67,9 +67,6 @@ export function KanbanBoardsList({ boards }: { boards: KanbanBoardSummary[] }) {
                     </span>
                     <span className="kb-board-card-title">{board.title}</span>
                   </div>
-                  {board.description && (
-                    <p className="kb-board-card-desc">{board.description}</p>
-                  )}
                   <div className="kb-board-card-stats">
                     <span>{board.columnCount} columns</span>
                     <span>·</span>

@@ -33,7 +33,7 @@ export async function getBoardAction(boardId: string) {
   return getBoard(userId, boardId);
 }
 
-export async function createBoardAction(input?: { title?: string; icon?: string | null }) {
+export async function createBoardAction(input?: { title?: string }) {
   const { userId } = await requireAuthenticatedUser();
   const boardId = await createBoard(userId, input ?? {});
   revalidatePath("/kanban");
@@ -42,7 +42,7 @@ export async function createBoardAction(input?: { title?: string; icon?: string 
 
 export async function updateBoardAction(
   boardId: string,
-  patch: { title?: string; icon?: string | null; description?: string | null },
+  patch: { title?: string; icon?: string | null },
 ) {
   const { userId } = await requireAuthenticatedUser();
   await updateBoard(userId, boardId, patch);
@@ -67,26 +67,27 @@ export async function createColumnAction(
 }
 
 export async function updateColumnAction(
+  boardId: string,
   columnId: string,
   patch: { title?: string; color?: KanbanColumnColor | null },
 ) {
   const { userId } = await requireAuthenticatedUser();
-  await updateColumn(userId, columnId, patch);
+  await updateColumn(userId, boardId, columnId, patch);
 }
 
-export async function deleteColumnAction(columnId: string) {
+export async function deleteColumnAction(boardId: string, columnId: string) {
   const { userId } = await requireAuthenticatedUser();
-  await deleteColumn(userId, columnId);
+  await deleteColumn(userId, boardId, columnId);
 }
 
-export async function moveColumnAction(columnId: string, toIndex: number) {
+export async function moveColumnAction(boardId: string, columnId: string, toIndex: number) {
   const { userId } = await requireAuthenticatedUser();
-  await moveColumn(userId, columnId, toIndex);
+  await moveColumn(userId, boardId, columnId, toIndex);
 }
 
-export async function createCardAction(columnId: string, input: CreateCardInput) {
+export async function createCardAction(boardId: string, columnId: string, input: CreateCardInput) {
   const { userId } = await requireAuthenticatedUser();
-  return createCard(userId, columnId, input);
+  return createCard(userId, boardId, columnId, input);
 }
 
 export async function updateCardAction(cardId: string, patch: UpdateCardInput) {
