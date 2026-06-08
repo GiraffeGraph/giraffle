@@ -177,6 +177,128 @@
   overflow: hidden;
 }
 
+/* Board-of-boards overview: header above the status columns */
+.kb-board--overview {
+  display: flex;
+  flex-direction: column;
+}
+
+.kb-overview-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 24px 6px;
+  flex-shrink: 0;
+}
+
+.kb-board--overview .kb-board-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto;
+}
+
+/* ─── Board card (a board shown as a card in the overview) ────── */
+
+.kb-bcard {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 11px 12px;
+  border: 1px solid var(--border-soft, var(--md-sys-color-outline-variant));
+  border-radius: var(--md-sys-shape-medium, 12px);
+  background: var(--md-sys-color-surface);
+  cursor: pointer;
+  transition: box-shadow 120ms ease, border-color 120ms ease, transform 120ms ease,
+    opacity 120ms ease;
+}
+
+.kb-bcard:hover {
+  box-shadow: var(--md-sys-elevation-panel, 0 16px 36px rgba(92, 71, 42, 0.08));
+  border-color: color-mix(in srgb, var(--md-sys-color-primary) 35%, transparent);
+  transform: translateY(-1px);
+}
+
+.kb-bcard-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.kb-bcard-icon {
+  font-size: 18px;
+  color: var(--md-sys-color-primary);
+  flex-shrink: 0;
+}
+
+.kb-bcard-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--md-sys-color-on-surface);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kb-bcard-del {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--md-sys-color-on-surface-variant);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 150ms ease, background 150ms ease, color 150ms ease;
+}
+
+.kb-bcard:hover .kb-bcard-del {
+  opacity: 1;
+}
+
+.kb-bcard-del:hover {
+  background: color-mix(in srgb, var(--md-sys-color-error) 14%, transparent);
+  color: var(--md-sys-color-error);
+}
+
+.kb-bcard-del .material-symbols-outlined {
+  font-size: 15px;
+}
+
+.kb-bcard-stats {
+  display: flex;
+  gap: 6px;
+  font-size: 0.72rem;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.kb-bcard-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.68rem;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.kb-bcard-bar {
+  flex: 1;
+  height: 4px;
+  border-radius: 100px;
+  background: var(--md-sys-color-surface-variant);
+  overflow: hidden;
+}
+
+.kb-bcard-bar-fill {
+  height: 100%;
+  border-radius: 100px;
+  background: var(--md-sys-color-primary);
+  transition: width var(--md-sys-motion-duration-medium2, 300ms) ease;
+}
+
 .kb-board-scroll {
   display: flex;
   gap: 14px;

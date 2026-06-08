@@ -14,6 +14,9 @@ model User {
   emailVerified DateTime?
   image         String?
   password      String?
+  // Trek board-of-boards: the meta status columns boards are organised into
+  // (array of { id, title, color, position }). Seeded on first use.
+  boardColumns  Json?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -103,6 +106,10 @@ model Note {
   // { id, title, color, position } column definitions. Cards are the note's
   // taskItem blocks, placed via block.attributes.kanbanColumnId/kanbanPosition.
   kanbanColumns Json?
+  // Board-of-boards placement: which User.boardColumns status this board sits
+  // in, and its order within that status. Only meaningful for board notes.
+  kanbanStatus         String?
+  kanbanStatusPosition Int?
   searchText  String   @default("")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

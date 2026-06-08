@@ -37,3 +37,43 @@ export function isKbCardDragData(d: unknown): d is KbCardDragData {
 export function isKbColumnDragData(d: unknown): d is KbColumnDragData {
   return isRecord(d) && d.type === KB_COLUMN_DRAG && typeof d.columnId === "string";
 }
+
+// ─── Board-of-boards (meta kanban) ────────────────────────────
+
+export const KB_BOARD_DRAG = "kb:board" as const;
+export const KB_STATUS_DRAG = "kb:status" as const;
+
+export type KbBoardDragData = {
+  type: typeof KB_BOARD_DRAG;
+  boardId: string;
+  fromStatusId: string;
+};
+
+export type KbStatusDragData = {
+  type: typeof KB_STATUS_DRAG;
+  statusId: string;
+};
+
+export const kbBoardDragData = (boardId: string, fromStatusId: string): KbBoardDragData => ({
+  type: KB_BOARD_DRAG,
+  boardId,
+  fromStatusId,
+});
+
+export const kbStatusDragData = (statusId: string): KbStatusDragData => ({
+  type: KB_STATUS_DRAG,
+  statusId,
+});
+
+export function isKbBoardDragData(d: unknown): d is KbBoardDragData {
+  return (
+    isRecord(d) &&
+    d.type === KB_BOARD_DRAG &&
+    typeof d.boardId === "string" &&
+    typeof d.fromStatusId === "string"
+  );
+}
+
+export function isKbStatusDragData(d: unknown): d is KbStatusDragData {
+  return isRecord(d) && d.type === KB_STATUS_DRAG && typeof d.statusId === "string";
+}

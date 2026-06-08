@@ -7,7 +7,9 @@ import {
   deleteCard,
   deleteColumn,
   getBoard,
+  getBoardsOverview,
   listBoards,
+  moveBoardToStatus,
   moveCard,
   updateBoard,
   updateCard,
@@ -83,12 +85,46 @@ export const kanbanTools: InternalToolDefinition[] = [
           id: b.id,
           title: b.title,
           icon: b.icon,
+          status: b.status,
           columnCount: b.columnCount,
           cardCount: b.cardCount,
           completedCount: b.completedCount,
           updatedAt: b.updatedAt.toISOString(),
         })),
       };
+    },
+  },
+  {
+    name: "kanban_list_board_statuses",
+    destructive: false,
+    description:
+      "List the board-of-boards status columns (the top level grouping boards sit in) with how many boards are in each.",
+    inputSchema: z.object({}),
+    execute: async (_raw, { userId }) => {
+      const overview = await getBoardsOverview(userId);
+      return {
+        statuses: overview.columns.map((c) => ({
+          id: c.id,
+          title: c.title,
+          color: c.color,
+          boardCount: c.boards.length,
+        })),
+      };
+    },
+  },
+  {
+    name: "kanban_set_board_status",
+    destructive: true,
+    description:
+      "Move a board into a board-of-boards status column (its top-level status). Use kanban_list_board_statuses for status ids.",
+    inputSchema: z.object({
+      boardId: z.string().min(1),
+      statusId: z.string().min(1),
+    }),
+    execute: async (raw, { userId }) => {
+      const input = raw as { boardId: string; statusId: string };
+      await moveBoardToStatus(userId, input.boardId, input.statusId, 100_000);
+      return { boardId: input.boardId, statusId: input.statusId };
     },
   },
   {

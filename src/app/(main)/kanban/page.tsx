@@ -1,14 +1,14 @@
 import { PageTopbar } from "@/components/ui/PageTopbar";
-import { KanbanBoardsList } from "@/components/kanban/KanbanBoardsList";
-import { getBoardsAction } from "@/server/api/kanban";
+import { KanbanBoardsBoard } from "@/components/kanban/KanbanBoardsBoard";
+import { getBoardsOverviewAction } from "@/server/api/kanban";
 
 export default async function KanbanPage() {
-  const boards = await getBoardsAction();
+  const overview = await getBoardsOverviewAction();
 
   return (
     <>
       <PageTopbar icon="view_kanban" label="Trek" />
-      <KanbanBoardsList boards={boards} />
+      <KanbanBoardsBoard overview={overview} />
     </>
   );
 }

@@ -80,6 +80,8 @@ const MCP_NAME_BY_INTERNAL: Record<string, string> = {
   savanna_delete: "giraffle-savanna-delete",
   // Trek (Kanban boards)
   kanban_list_boards: "giraffle-trek-list-boards",
+  kanban_list_board_statuses: "giraffle-trek-list-board-statuses",
+  kanban_set_board_status: "giraffle-trek-set-board-status",
   kanban_get_board: "giraffle-trek-get-board",
   kanban_create_board: "giraffle-trek-create-board",
   kanban_update_board: "giraffle-trek-update-board",

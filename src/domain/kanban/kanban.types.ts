@@ -62,10 +62,27 @@ export interface KanbanBoardSummary {
   id: string;
   title: string;
   icon: string | null;
+  status: string | null;
   columnCount: number;
   cardCount: number;
   completedCount: number;
   updatedAt: Date;
+}
+
+/** A board-of-boards status column (lives on User.boardColumns). */
+export interface KanbanBoardStatusDef {
+  id: string;
+  title: string;
+  color: KanbanColumnColor | null;
+  position: number;
+}
+
+export interface KanbanBoardStatusColumnData extends KanbanBoardStatusDef {
+  boards: KanbanBoardSummary[];
+}
+
+export interface KanbanBoardsOverview {
+  columns: KanbanBoardStatusColumnData[];
 }
 
 export interface KanbanBoardData {

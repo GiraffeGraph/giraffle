@@ -179,7 +179,9 @@ export async function getNote(userId: string, noteId: string) {
  */
 export async function getNotes(userId: string) {
   const rows = await db.note.findMany({
-    where: { userId, isArchived: false },
+    // Exclude Trek board notes (kanbanColumns set) — they are managed in the
+    // Trek section, not the document/inbox/recent surfaces.
+    where: { userId, isArchived: false, kanbanColumns: { equals: Prisma.DbNull } },
     orderBy: [{ isPinned: "desc" }, { position: "asc" }, { updatedAt: "desc" }],
     select: {
       id: true,

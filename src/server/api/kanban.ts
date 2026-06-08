@@ -3,16 +3,22 @@
 import { revalidatePath } from "next/cache";
 import {
   createBoard,
+  createBoardStatusColumn,
   createCard,
   createColumn,
   deleteBoard,
+  deleteBoardStatusColumn,
   deleteCard,
   deleteColumn,
   getBoard,
+  getBoardsOverview,
   listBoards,
+  moveBoardStatusColumn,
+  moveBoardToStatus,
   moveCard,
   moveColumn,
   updateBoard,
+  updateBoardStatusColumn,
   updateCard,
   updateColumn,
 } from "@/domain/kanban/kanban.service";
@@ -28,12 +34,56 @@ export async function getBoardsAction() {
   return listBoards(userId);
 }
 
+export async function getBoardsOverviewAction() {
+  const { userId } = await requireAuthenticatedUser();
+  return getBoardsOverview(userId);
+}
+
+export async function moveBoardToStatusAction(
+  boardId: string,
+  statusId: string,
+  toIndex: number,
+) {
+  const { userId } = await requireAuthenticatedUser();
+  await moveBoardToStatus(userId, boardId, statusId, toIndex);
+  revalidatePath("/kanban");
+}
+
+export async function createBoardStatusColumnAction(input?: {
+  title?: string;
+  color?: KanbanColumnColor | null;
+}) {
+  const { userId } = await requireAuthenticatedUser();
+  const id = await createBoardStatusColumn(userId, input ?? {});
+  revalidatePath("/kanban");
+  return id;
+}
+
+export async function updateBoardStatusColumnAction(
+  statusId: string,
+  patch: { title?: string; color?: KanbanColumnColor | null },
+) {
+  const { userId } = await requireAuthenticatedUser();
+  await updateBoardStatusColumn(userId, statusId, patch);
+}
+
+export async function deleteBoardStatusColumnAction(statusId: string) {
+  const { userId } = await requireAuthenticatedUser();
+  await deleteBoardStatusColumn(userId, statusId);
+  revalidatePath("/kanban");
+}
+
+export async function moveBoardStatusColumnAction(statusId: string, toIndex: number) {
+  const { userId } = await requireAuthenticatedUser();
+  await moveBoardStatusColumn(userId, statusId, toIndex);
+}
+
 export async function getBoardAction(boardId: string) {
   const { userId } = await requireAuthenticatedUser();
   return getBoard(userId, boardId);
 }
 
-export async function createBoardAction(input?: { title?: string }) {
+export async function createBoardAction(input?: { title?: string; status?: string }) {
   const { userId } = await requireAuthenticatedUser();
   const boardId = await createBoard(userId, input ?? {});
   revalidatePath("/kanban");
