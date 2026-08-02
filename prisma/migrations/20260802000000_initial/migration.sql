@@ -1,3 +1,6 @@
+-- CreateSchema
+CREATE SCHEMA IF NOT EXISTS "public";
+
 -- CreateTable
 CREATE TABLE "User" (
     "id" TEXT NOT NULL,
@@ -6,6 +9,7 @@ CREATE TABLE "User" (
     "emailVerified" TIMESTAMP(3),
     "image" TEXT,
     "password" TEXT,
+    "boardColumns" JSONB,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -69,30 +73,21 @@ CREATE TABLE "Note" (
     "icon" TEXT,
     "coverImage" TEXT,
     "folderId" TEXT,
-    "categoryId" TEXT,
     "userId" TEXT NOT NULL,
     "position" INTEGER NOT NULL DEFAULT 0,
     "isPinned" BOOLEAN NOT NULL DEFAULT false,
     "isArchived" BOOLEAN NOT NULL DEFAULT false,
     "isPublished" BOOLEAN NOT NULL DEFAULT false,
     "quadrant" TEXT,
+    "kanbanColumns" JSONB,
+    "kanbanStatus" TEXT,
+    "kanbanStatusPosition" INTEGER,
+    "searchText" TEXT NOT NULL DEFAULT '',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "searchVector" tsvector GENERATED ALWAYS AS (setweight(to_tsvector('simple'::regconfig, COALESCE(title, ''::text)), 'A'::"char") || setweight(to_tsvector('simple'::regconfig, COALESCE("searchText", ''::text)), 'B'::"char")) STORED,
 
     CONSTRAINT "Note_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "NoteCategory" (
-    "id" TEXT NOT NULL,
-    "name" TEXT NOT NULL,
-    "color" TEXT NOT NULL DEFAULT 'slate',
-    "icon" TEXT,
-    "userId" TEXT NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "NoteCategory_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -168,18 +163,6 @@ CREATE TABLE "OperationLog" (
 );
 
 -- CreateTable
-CREATE TABLE "SpotterSession" (
-    "id" TEXT NOT NULL,
-    "title" TEXT NOT NULL DEFAULT 'New chat',
-    "userId" TEXT NOT NULL,
-    "lastMessageAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "SpotterSession_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
 CREATE TABLE "McpAccessToken" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
@@ -196,28 +179,16 @@ CREATE TABLE "McpAccessToken" (
 );
 
 -- CreateTable
-CREATE TABLE "UserIntegrationSetting" (
+CREATE TABLE "AppSetting" (
     "id" TEXT NOT NULL,
-    "userId" TEXT NOT NULL,
-    "provider" TEXT NOT NULL,
-    "settingKey" TEXT NOT NULL,
+    "key" TEXT NOT NULL,
     "encryptedValue" TEXT NOT NULL,
     "valuePreview" TEXT,
+    "updatedBy" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "UserIntegrationSetting_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "SpotterMessage" (
-    "id" TEXT NOT NULL,
-    "sessionId" TEXT NOT NULL,
-    "role" TEXT NOT NULL,
-    "content" TEXT NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "SpotterMessage_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "AppSetting_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -261,9 +232,6 @@ CREATE UNIQUE INDEX "Note_slug_key" ON "Note"("slug");
 CREATE INDEX "Note_folderId_idx" ON "Note"("folderId");
 
 -- CreateIndex
-CREATE INDEX "Note_categoryId_idx" ON "Note"("categoryId");
-
--- CreateIndex
 CREATE INDEX "Note_userId_idx" ON "Note"("userId");
 
 -- CreateIndex
@@ -282,10 +250,7 @@ CREATE INDEX "Note_updatedAt_idx" ON "Note"("updatedAt");
 CREATE INDEX "Note_quadrant_idx" ON "Note"("quadrant");
 
 -- CreateIndex
-CREATE INDEX "NoteCategory_userId_createdAt_idx" ON "NoteCategory"("userId", "createdAt");
-
--- CreateIndex
-CREATE UNIQUE INDEX "NoteCategory_userId_name_key" ON "NoteCategory"("userId", "name");
+CREATE INDEX "Note_searchVector_idx" ON "Note" USING GIN ("searchVector");
 
 -- CreateIndex
 CREATE INDEX "Block_noteId_idx" ON "Block"("noteId");
@@ -330,9 +295,6 @@ CREATE INDEX "OperationLog_userId_createdAt_idx" ON "OperationLog"("userId", "cr
 CREATE INDEX "OperationLog_entityType_entityId_idx" ON "OperationLog"("entityType", "entityId");
 
 -- CreateIndex
-CREATE INDEX "SpotterSession_userId_lastMessageAt_idx" ON "SpotterSession"("userId", "lastMessageAt");
-
--- CreateIndex
 CREATE UNIQUE INDEX "McpAccessToken_tokenHash_key" ON "McpAccessToken"("tokenHash");
 
 -- CreateIndex
@@ -342,13 +304,7 @@ CREATE INDEX "McpAccessToken_userId_createdAt_idx" ON "McpAccessToken"("userId",
 CREATE INDEX "McpAccessToken_userId_revokedAt_idx" ON "McpAccessToken"("userId", "revokedAt");
 
 -- CreateIndex
-CREATE INDEX "UserIntegrationSetting_userId_provider_idx" ON "UserIntegrationSetting"("userId", "provider");
-
--- CreateIndex
-CREATE UNIQUE INDEX "UserIntegrationSetting_userId_provider_settingKey_key" ON "UserIntegrationSetting"("userId", "provider", "settingKey");
-
--- CreateIndex
-CREATE INDEX "SpotterMessage_sessionId_createdAt_idx" ON "SpotterMessage"("sessionId", "createdAt");
+CREATE UNIQUE INDEX "AppSetting_key_key" ON "AppSetting"("key");
 
 -- CreateIndex
 CREATE INDEX "Canvas_userId_idx" ON "Canvas"("userId");
@@ -369,13 +325,7 @@ ALTER TABLE "Folder" ADD CONSTRAINT "Folder_userId_fkey" FOREIGN KEY ("userId") 
 ALTER TABLE "Note" ADD CONSTRAINT "Note_folderId_fkey" FOREIGN KEY ("folderId") REFERENCES "Folder"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Note" ADD CONSTRAINT "Note_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "NoteCategory"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "Note" ADD CONSTRAINT "Note_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "NoteCategory" ADD CONSTRAINT "NoteCategory_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Block" ADD CONSTRAINT "Block_noteId_fkey" FOREIGN KEY ("noteId") REFERENCES "Note"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -405,16 +355,7 @@ ALTER TABLE "PasswordResetToken" ADD CONSTRAINT "PasswordResetToken_userId_fkey"
 ALTER TABLE "OperationLog" ADD CONSTRAINT "OperationLog_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "SpotterSession" ADD CONSTRAINT "SpotterSession_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "McpAccessToken" ADD CONSTRAINT "McpAccessToken_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "UserIntegrationSetting" ADD CONSTRAINT "UserIntegrationSetting_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "SpotterMessage" ADD CONSTRAINT "SpotterMessage_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "SpotterSession"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Canvas" ADD CONSTRAINT "Canvas_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;

@@ -7,3 +7,4 @@
 ## Architecture
 - Do not duplicate existing global sidebar note navigation inside feature pages — reuse the canonical sidebar as the note source for interactions like drag-and-drop.
 - When removing a platform implementation, preserve reusable branding and mobile assets unless their deletion is explicitly requested.
+- Treat the project as greenfield until production launch: there is no user data to preserve, so destructive local resets and migration squashing are allowed; optimize for a clean final schema and revisit this rule before accepting real data.

@@ -87,36 +87,39 @@ model Folder {
 }
 
 model Note {
-  id          String   @id @default(uuid())
-  title       String   @default("Untitled")
-  slug        String?  @unique
-  icon        String?
-  coverImage  String?
-  folderId    String?
-  folder      Folder?  @relation(fields: [folderId], references: [id], onDelete: SetNull)
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  position    Int      @default(0)
-  isPinned    Boolean  @default(false)
-  isArchived  Boolean  @default(false)
-  isPublished Boolean  @default(false)
-  quadrant    String?
+  id                   String                   @id @default(uuid())
+  title                String                   @default("Untitled")
+  slug                 String?                  @unique
+  icon                 String?
+  coverImage           String?
+  folderId             String?
+  folder               Folder?                  @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  userId               String
+  user                 User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  position             Int                      @default(0)
+  isPinned             Boolean                  @default(false)
+  isArchived           Boolean                  @default(false)
+  isPublished          Boolean                  @default(false)
+  quadrant             String?
   // Trek (Kanban): non-null => this note is a board. Array of
   // { id, title, color, position } column definitions. Cards are the note's
   // taskItem blocks, placed via block.attributes.kanbanColumnId/kanbanPosition.
-  kanbanColumns Json?
+  kanbanColumns        Json?
   // Board-of-boards placement: which User.boardColumns status this board sits
   // in, and its order within that status. Only meaningful for board notes.
   kanbanStatus         String?
   kanbanStatusPosition Int?
-  searchText  String   @default("")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  searchText           String                   @default("")
+  createdAt            DateTime                 @default(now())
+  updatedAt            DateTime                 @updatedAt
+  // PostgreSQL full-text projection used by the raw search endpoint. Prisma
+  // Client intentionally treats tsvector as unsupported.
+  searchVector         Unsupported("tsvector")? @default(dbgenerated("(setweight(to_tsvector('simple'::regconfig, COALESCE(title, ''::text)), 'A'::\"char\") || setweight(to_tsvector('simple'::regconfig, COALESCE(\"searchText\", ''::text)), 'B'::\"char\"))"))
 
-  blocks          Block[]
-  outgoingLinks   Link[]           @relation("OutgoingLinks")
-  incomingLinks   Link[]           @relation("IncomingLinks")
-  assets          MediaAsset[]
+  blocks        Block[]
+  outgoingLinks Link[]       @relation("OutgoingLinks")
+  incomingLinks Link[]       @relation("IncomingLinks")
+  assets        MediaAsset[]
 
   @@index([folderId])
   @@index([userId])
@@ -125,6 +128,7 @@ model Note {
   @@index([isPinned])
   @@index([updatedAt])
   @@index([quadrant])
+  @@index([searchVector], type: Gin)
 }
 
 model Block {
