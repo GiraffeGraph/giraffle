@@ -231,7 +231,6 @@ Then open `http://localhost:3000` for a production smoke test, or point your dom
 - `LOG_LEVEL`
 - `APP_PORT`
 - optional: `APP_ENCRYPTION_KEY` to encrypt app-managed settings stored from inside the UI
-- optional: Spotter agent vars (`GIRAFFLE_AGENT_CMD`, `GIRAFFLE_AGENT_PERMISSION_MODE`, `GIRAFFLE_MCP_BASE_URL`) — see [docs/agent.md](docs/agent.md)
 - optional: `DEPLOYMENT_ID` for version-skew protection during rolling deploys
 - `POSTGRES_USER`
 - `POSTGRES_PASSWORD`
@@ -296,7 +295,7 @@ That adds nginx on port `80` in front of the app. The default stack intentionall
 - Uploads are written to `/app/public/uploads` and persisted through the `giraffle_uploads` Docker volume.
 - By default the app is public on `APP_PORT` and reachable directly, usually `http://localhost:3000`.
 - nginx is optional and only starts when `docker-compose.proxy.yml` is included.
-- AI is provided by a local CLI agent (Claude Code) over Giraffle's MCP server — Giraffle holds no model API key. See [docs/agent.md](docs/agent.md).
+- Optional external integrations can use the authenticated MCP endpoint. Giraffle contains no built-in AI runtime. See [docs/mcp.md](docs/mcp.md).
 
 ## Auth Baseline
 
@@ -304,45 +303,6 @@ That adds nginx on port `80` in front of the app. The default stack intentionall
 - production secret requirement
 - secure cookies in production
 - basic login and registration rate limiting
-
-## Desktop App (Tauri)
-
-Tauri shell runs Giraffle three different ways:
-
-1. **Local** (default) — embedded Postgres 18 + Next.js standalone server boot under user's app data dir. No external dependencies; first launch initialises database under `~/Library/Application Support/com.giraffegraph.giraffle/local-runtime/pgdata` (macOS).
-2. **Custom DB** — Next server still runs locally inside shell, but user provides `DATABASE_URL` for their own Postgres.
-3. **Remote** — webview points at deployed Giraffle URL; shell stores both URL and DB URL.
-
-### Build pipeline
-
-`tauri build` (and `tauri dev`) auto-runs `scripts/prepare-desktop-runtime.mjs`, which:
-
-- runs `next build` (skipped with `--dev`),
-- stages `.next/standalone`, `.next/static`, `public/`, `prisma/`,
-- copies Node modules bootstrap needs (`prisma`, `@prisma/*`, `embedded-postgres`, `@embedded-postgres/<platform>`, `pg`, ...),
-- copies Node.js binary to `src-tauri/runtime/node[.exe]` (default: `process.execPath`; override via `GIRAFFLE_DESKTOP_NODE=/path/to/node`),
-- copies `scripts/desktop-bootstrap.mjs` to `src-tauri/runtime/bootstrap.mjs`.
-
-Result bundled as Tauri resources via `bundle.resources = ["runtime/**/*"]`.
-
-### Platform binaries
-
-`embedded-postgres` ships per-platform native binaries (~145 MB each). Only host platform binary installed by default. To build Windows / Linux installer, install matching optional dep first:
-
-```bash
-npm install --no-save @embedded-postgres/windows-x64@18.3.0-beta.17
-npm install --no-save @embedded-postgres/linux-x64@18.3.0-beta.17
-```
-
-`prepare-desktop-runtime.mjs` copies whichever `@embedded-postgres/*` package matches build host's platform/arch. Cross-platform bundles require running the build on each target OS.
-
-### Node runtime
-
-`prepare-desktop-runtime.mjs` downloads the official statically-linked Node binary (default: `v22.20.0`) from `https://nodejs.org/dist/` and caches it at `~/.cache/giraffle-desktop-node/<version>/`. The binary is copied to `src-tauri/binaries/node-<rust-target-triple>` and bundled via Tauri's `externalBin` mechanism.
-
-Do NOT use Homebrew's Node — it's dynamically linked against `libnode.<ver>.dylib` and won't work when copied out of the Cellar.
-
-Override the version with `GIRAFFLE_NODE_VERSION=v22.x.x`, or provide a custom binary path with `GIRAFFLE_DESKTOP_NODE=/abs/path/to/node`.
 
 ## Project Structure
 

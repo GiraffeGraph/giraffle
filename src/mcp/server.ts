@@ -1,7 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { RequestHandlerExtra } from "@modelcontextprotocol/sdk/shared/protocol.js";
 import type { CallToolResult, ServerNotification, ServerRequest } from "@modelcontextprotocol/sdk/types.js";
-import { INTERNAL_TOOL_DEFINITIONS } from "@/domain/agent/internal-tools";
+import { MCP_TOOL_DEFINITIONS } from "@/domain/mcp/tool-definitions";
 
 type ToolExtra = RequestHandlerExtra<ServerRequest, ServerNotification>;
 
@@ -108,7 +108,7 @@ export function createGiraffleMcpServer() {
     handler: (input: unknown, extra: ToolExtra) => Promise<CallToolResult>,
   ) => void;
 
-  for (const def of INTERNAL_TOOL_DEFINITIONS) {
+  for (const def of MCP_TOOL_DEFINITIONS) {
     const mcpName = MCP_NAME_BY_INTERNAL[def.name] ?? def.name;
     register(
       mcpName,

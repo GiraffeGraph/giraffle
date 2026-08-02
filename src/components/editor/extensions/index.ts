@@ -3,7 +3,6 @@ export { CalloutNode } from "./callout";
 export { WikilinkMark } from "./wikilink";
 export { ToggleNode } from "./toggle";
 export { KanbanNode } from "./kanban";
-export { SpotterBlockNode } from "./spotter-block";
 export { GhostHighlightPlugin } from "./ghost-highlight";
 export { defaultSlashCommands } from "./slash-command";
 export type { SlashCommandItem } from "./slash-command";

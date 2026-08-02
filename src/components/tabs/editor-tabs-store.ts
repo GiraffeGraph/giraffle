@@ -2,7 +2,11 @@
 
 import { useSyncExternalStore } from "react";
 
-export type TabKind = "note" | "savanna" | "spotter" | "page";
+export type TabKind = "note" | "savanna" | "page";
+
+function isTabKind(value: unknown): value is TabKind {
+  return value === "note" || value === "savanna" || value === "page";
+}
 
 export interface EditorTab {
   key: string;
@@ -70,14 +74,15 @@ function hydrate() {
           typeof (t as EditorTab).key === "string" &&
           typeof (t as EditorTab).href === "string" &&
           typeof (t as EditorTab).title === "string" &&
-          typeof (t as EditorTab).kind === "string",
+          isTabKind((t as EditorTab).kind),
       )
       .slice(0, MAX_TABS);
-    state = {
-      tabs,
-      activeKey:
-        typeof parsed.activeKey === "string" ? parsed.activeKey : null,
-    };
+    const activeKey =
+      typeof parsed.activeKey === "string" &&
+      tabs.some((tab) => tab.key === parsed.activeKey)
+        ? parsed.activeKey
+        : null;
+    state = { tabs, activeKey };
     cachedSnapshot = state;
   } catch {}
 }
@@ -240,6 +245,5 @@ export function useEditorTabs(): EditorTabsState {
 export const DEFAULT_KIND_ICON: Record<TabKind, string> = {
   note: "description",
   savanna: "polyline",
-  spotter: "smart_toy",
   page: "tab",
 };

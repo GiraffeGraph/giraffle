@@ -504,7 +504,7 @@ export function NoteEditorPage({
 
   const handleArchiveNote = useCallback(async () => {
     await archiveNoteAction(note.id);
-    router.push("/spotter");
+    router.push("/inbox");
   }, [note.id, router]);
 
   const handleOpenInCanvas = useCallback(async () => {
@@ -831,7 +831,7 @@ export function NoteEditorPage({
         onOpenIconPicker={handleOpenIconPicker}
         onToggleFolderMenu={() => setIsFolderMenuOpen((v) => !v)}
         onSelectFolder={handleSelectFolder}
-        onGoDashboard={() => router.push("/spotter")}
+        onGoDashboard={() => router.push("/inbox")}
         onContextMenu={openContextMenuAtPointer}
         onOpenContextMenuFromTrigger={openContextMenuFromTrigger}
         onOpenPublishPopover={handleOpenPublishPopover}

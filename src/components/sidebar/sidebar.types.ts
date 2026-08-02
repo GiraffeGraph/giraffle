@@ -24,17 +24,9 @@ export interface SidebarFolder {
   };
 }
 
-export interface SidebarSpotterSession {
-  id: string;
-  title: string;
-  lastMessageAt: Date;
-  createdAt: Date;
-}
-
 export interface SidebarProps {
   notes: SidebarNote[];
   folders: SidebarFolder[];
-  spotterSessions: SidebarSpotterSession[];
   kanbanBoards: KanbanBoardSummary[];
   activeNoteId?: string;
 }
@@ -49,7 +41,7 @@ export interface FolderDropTarget {
   mode: "inside" | "after";
 }
 
-export type SidebarSectionKey = "spotter" | "folders" | "recentNotes" | "kanban";
+export type SidebarSectionKey = "folders" | "recentNotes" | "kanban";
 
 export interface SidebarFolderDragData {
   type: "sidebar-folder";

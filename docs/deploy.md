@@ -49,7 +49,6 @@ NEXTAUTH_URL=http://YOUR_SERVER_IP_OR_DOMAIN
 LOG_LEVEL=info
 # Optional but recommended if you want encrypted app-managed settings in Settings.
 # APP_ENCRYPTION_KEY=YOUR_LONG_RANDOM_SECRET
-# AI is provided by a local CLI agent over MCP; see docs/agent.md (no API key here).
 NODE_ENV=production
 ```
 
@@ -197,12 +196,12 @@ docker compose --env-file .env.production -f docker-compose.prod.yml pull
 ./scripts/prod-up.sh
 ```
 
-## 9. AI agent (Spotter)
+## 9. External MCP access
 
-Giraffle holds no model API key. AI is driven by a local CLI agent (Claude Code)
-over Giraffle's MCP server; external MCP clients connect with a token from
-**Settings → MCP Access**. See [agent.md](agent.md) for the architecture and the
-`GIRAFFLE_AGENT_*` / `GIRAFFLE_MCP_BASE_URL` env vars.
+External integrations can connect to `/api/mcp` with a token created under
+**Settings → MCP Access**. Giraffle does not run an embedded AI or CLI process.
+Treat MCP tokens as account credentials and expose the endpoint only over HTTPS.
+See [mcp.md](mcp.md).
 
 ## 10. Recommended simple production flow
 

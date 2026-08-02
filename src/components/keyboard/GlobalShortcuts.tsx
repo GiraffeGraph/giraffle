@@ -4,8 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 const ROUTES: Record<string, string> = {
-  s: "/spotter",
-  n: "/notes",
+  n: "/inbox",
   h: "/",
   c: "/savanna",
   r: "/stride",
@@ -13,7 +12,6 @@ const ROUTES: Record<string, string> = {
 
 const SHORTCUT_HELP: { keys: string; label: string }[] = [
   { keys: "⌘K  /  /", label: "Komut paleti" },
-  { keys: "g  s", label: "Spotter" },
   { keys: "g  n", label: "Notlar" },
   { keys: "g  c", label: "Savanna" },
   { keys: "g  r", label: "Stride" },

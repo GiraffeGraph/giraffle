@@ -9,7 +9,7 @@ import {
   useState,
   useTransition,
 } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { renderStoredIcon } from "@/components/sidebar/sidebar-icon-utils";
 import { createNoteAction } from "@/server/api/notes";
 import {
@@ -71,19 +71,12 @@ function PlusIcon() {
   );
 }
 
-function deriveActiveKey(
-  pathname: string | null,
-  search: URLSearchParams | null,
-): string | null {
+function deriveActiveKey(pathname: string | null): string | null {
   if (!pathname) return null;
   const noteMatch = pathname.match(/^\/notes\/([^/?#]+)/);
   if (noteMatch) return `note:${decodeURIComponent(noteMatch[1])}`;
   const savannaMatch = pathname.match(/^\/savanna\/([^/?#]+)/);
   if (savannaMatch) return `savanna:${decodeURIComponent(savannaMatch[1])}`;
-  if (pathname === "/spotter") {
-    const session = search?.get("session");
-    return session ? `spotter:${session}` : null;
-  }
   return null;
 }
 
@@ -97,11 +90,7 @@ export function EditorTabs() {
   const { tabs, activeKey } = useEditorTabs();
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const routeKey = useMemo(
-    () => deriveActiveKey(pathname, searchParams),
-    [pathname, searchParams],
-  );
+  const routeKey = useMemo(() => deriveActiveKey(pathname), [pathname]);
   const effectiveActiveKey = routeKey ?? activeKey;
   const [dragKey, setDragKey] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
@@ -172,7 +161,7 @@ export function EditorTabs() {
       const wasActive = (routeKey ?? activeKey) === key;
       const { next } = editorTabsStore.closeTab(key);
       if (wasActive) {
-        router.push(next ? next.href : "/spotter");
+        router.push(next ? next.href : "/inbox");
       }
     },
     [activeKey, routeKey, router],
@@ -265,7 +254,7 @@ export function EditorTabs() {
         e.stopPropagation();
         const wasActive = target === routeKey;
         const { next } = editorTabsStore.closeTab(target);
-        if (wasActive) router.push(next ? next.href : "/spotter");
+        if (wasActive) router.push(next ? next.href : "/inbox");
         return;
       }
 
@@ -456,7 +445,7 @@ export function EditorTabs() {
             onClick={() => {
               editorTabsStore.closeAll();
               const remaining = editorTabsStore.getTabs();
-              router.push(remaining[0]?.href ?? "/spotter");
+              router.push(remaining[0]?.href ?? "/inbox");
               setContextMenu(null);
             }}
           >

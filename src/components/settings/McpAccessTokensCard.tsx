@@ -39,7 +39,7 @@ function formatDate(value: string | null) {
 export function McpAccessTokensCard({ tokens }: { tokens: McpAccessTokenView[] }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [name, setName] = useState("External agent");
+  const [name, setName] = useState("External integration");
   const [createdToken, setCreatedToken] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -64,7 +64,7 @@ export function McpAccessTokensCard({ tokens }: { tokens: McpAccessTokenView[] }
 
     runAction(async () => {
       const token = await createMcpAccessTokenAction({
-        name: trimmedName || "External agent",
+        name: trimmedName || "External integration",
       });
       setCreatedToken(token.token);
       setFeedback("MCP token created. Copy it now; it will not be shown again.");
@@ -86,7 +86,7 @@ export function McpAccessTokensCard({ tokens }: { tokens: McpAccessTokenView[] }
       <CardContent>
         <div style={{ display: "grid", gap: "16px" }}>
           <div style={{ fontSize: "13px", color: "var(--md-sys-color-on-surface-variant)" }}>
-            Use a personal access token as <code>Authorization: Bearer ...</code> when connecting external MCP agents to <code>/api/mcp</code>.
+            Use a personal access token as <code>Authorization: Bearer ...</code> when connecting an external MCP client to <code>/api/mcp</code>.
           </div>
 
           <div className="settings-panel">
@@ -97,7 +97,7 @@ export function McpAccessTokensCard({ tokens }: { tokens: McpAccessTokenView[] }
                 value={name}
                 onChange={(event) => setName(event.target.value)}
                 disabled={isPending}
-                placeholder="Claude Desktop, Cursor, etc."
+                placeholder="Integration name"
               />
             </label>
             <Button type="button" variant="filled" onClick={createToken} disabled={isPending}>

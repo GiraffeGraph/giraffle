@@ -21,7 +21,6 @@ export function areSidebarCollapseStatesEqual(
   right: SidebarCollapseState
 ) {
   return (
-    left.spotter === right.spotter &&
     left.folders === right.folders &&
     left.recentNotes === right.recentNotes &&
     left.kanban === right.kanban
@@ -35,7 +34,6 @@ export function loadSidebarCollapseState(): SidebarCollapseState {
     if (!stored) return DEFAULT_COLLAPSED_SECTIONS;
     const parsed = JSON.parse(stored) as Partial<SidebarCollapseState>;
     return {
-      spotter: Boolean(parsed.spotter),
       folders: Boolean(parsed.folders),
       recentNotes: Boolean(parsed.recentNotes),
       kanban: Boolean(parsed.kanban),

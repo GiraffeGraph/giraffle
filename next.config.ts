@@ -8,13 +8,10 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ["ssh2"],
   outputFileTracingExcludes: {
     "*": [
-      "src-tauri/**/*",
-      "tauri-shell/**/*",
       "deploy/**/*",
       "docs/**/*",
       "tests/**/*",
       ".next/cache/**/*",
-      "node_modules/@embedded-postgres/**/*",
       "node_modules/@swc/core-*/**/*",
       "node_modules/@esbuild/**/*",
       "node_modules/esbuild/**/*",
@@ -27,9 +24,6 @@ const nextConfig: NextConfig = {
       "**/CHANGELOG*",
       "**/LICENSE*",
     ],
-  },
-  typescript: {
-    ignoreBuildErrors: true,
   },
   images: {
     minimumCacheTTL: 86_400,

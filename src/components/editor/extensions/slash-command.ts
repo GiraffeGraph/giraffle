@@ -10,15 +10,6 @@ export interface SlashCommandItem {
 
 export const defaultSlashCommands: SlashCommandItem[] = [
   {
-    title: "Spotter",
-    description: "Get Spotter help inside the note",
-    icon: "✨",
-    shortcut: "/spotter",
-    command: (editor) => {
-      editor.chain().focus().insertSpotterBlock().run();
-    },
-  },
-  {
     title: "Text",
     description: "Plain text block",
     icon: "TXT",

@@ -3,26 +3,6 @@
    GiraffeGraph Design System v2
    ========================================================================== */
 
-/* ── Spotter-only giraffe pattern. Do not use this on general app surfaces. ── */
-:root {
-  --giraffe-spots: url("/patterns/giraffe-spots-warm-paper.svg");
-  --giraffe-spots-size: 392px 332px;
-  --giraffe-spots-position: 0 0;
-  --giraffe-spots-opacity-spotter: 0.03;
-}
-
-:root[data-theme="midnight-gold"] {
-  --giraffe-spots: url("/patterns/giraffe-spots-midnight-gold.svg");
-  --giraffe-spots-size: 408px 345px;
-  --giraffe-spots-opacity-spotter: 0.035;
-}
-
-:root[data-theme="graphite-night"] {
-  --giraffe-spots: url("/patterns/giraffe-spots-graphite-night.svg");
-  --giraffe-spots-size: 432px 366px;
-  --giraffe-spots-opacity-spotter: 0.02;
-}
-
 html,
 body {
   font-family: var(--md-sys-typeface-brand);

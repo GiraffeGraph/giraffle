@@ -71,8 +71,15 @@ export async function POST(request: Request) {
   const fileName = `${generateId()}-${baseName}${extension}`;
   const uploadRoot =
     (await getAppSetting("UPLOAD_DIR")) ??
-    path.join(process.cwd(), "public", "uploads");
-  const targetDirectory = path.join(uploadRoot, relativeDirectory);
+    path.join(
+      /* turbopackIgnore: true */ process.cwd(),
+      "public",
+      "uploads"
+    );
+  const targetDirectory = path.join(
+    /* turbopackIgnore: true */ uploadRoot,
+    relativeDirectory
+  );
   const absolutePath = path.join(targetDirectory, fileName);
 
   await mkdir(targetDirectory, { recursive: true });

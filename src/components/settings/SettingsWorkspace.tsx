@@ -5,8 +5,6 @@ import {
   LOCAL_SYNC_QUEUE_STORAGE_KEY,
   type LocalSyncQueueItem,
 } from "@/lib/workspace-preferences";
-import { BootstrapLogsCard } from "@/components/settings/BootstrapLogsCard";
-import { DesktopModeCard, useIsTauri } from "@/components/settings/DesktopModeCard";
 import { McpAccessTokensCard, type McpAccessTokenView } from "@/components/settings/McpAccessTokensCard";
 import { UpdateCenterCard } from "@/components/update/UpdateCenterCard";
 import { Button } from "@/components/ui/Button";
@@ -34,7 +32,7 @@ type OperationLogView = {
   appliedAt: string | null;
 };
 
-type SettingsTabId = "hosting" | "desktop" | "access" | "sync";
+type SettingsTabId = "hosting" | "access" | "sync";
 
 type SettingsTab = {
   id: SettingsTabId;
@@ -54,7 +52,6 @@ export function SettingsWorkspace({
 }: SettingsWorkspaceProps) {
   const tabsId = useId();
   const [activeTab, setActiveTab] = useState<SettingsTabId>("hosting");
-  const isTauri = useIsTauri();
   const [queuedItems, setQueuedItems] = useState<LocalSyncQueueItem[]>(() => {
     if (typeof window === "undefined") {
       return [];
@@ -81,21 +78,10 @@ export function SettingsWorkspace({
       icon: "deployed_code",
       badge: updateStatus?.updateAvailable ? "Update" : `v${appVersion}`,
     },
-    ...(isTauri
-      ? ([
-          {
-            id: "desktop",
-            label: "Desktop",
-            description: "Local / external / remote mode",
-            icon: "desktop_windows",
-            badge: "App",
-          },
-        ] as SettingsTab[])
-      : []),
     {
       id: "access",
       label: "MCP Access",
-      description: "External agent tokens",
+      description: "External integration tokens",
       icon: "key",
       badge: String(mcpAccessTokens.length),
     },
@@ -153,22 +139,6 @@ export function SettingsWorkspace({
             <SettingsSectionIntro title="Updates" />
             {updateStatus ? <UpdateCenterCard status={updateStatus} /> : null}
           </section>
-
-          {isTauri ? (
-            <section
-              id={`${tabsId}-desktop-panel`}
-              role="tabpanel"
-              aria-labelledby={`${tabsId}-desktop-tab`}
-              hidden={activeTab !== "desktop"}
-              className={styles.panel}
-            >
-              <SettingsSectionIntro title="Desktop" />
-              <DesktopModeCard />
-              <div style={{ marginTop: 16 }}>
-                <BootstrapLogsCard />
-              </div>
-            </section>
-          ) : null}
 
           <section
             id={`${tabsId}-access-panel`}

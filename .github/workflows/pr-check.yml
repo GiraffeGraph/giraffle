@@ -46,3 +46,11 @@ jobs:
         run: npm run test:run
         env:
           NEXT_TELEMETRY_DISABLED: "1"
+
+      - name: Dependency audit
+        run: npm run audit
+
+      - name: Production build
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"

@@ -111,7 +111,7 @@ export function OnboardingFlow({ settingDescriptions: _descs }: Props) {
         setError(result.error ?? "Kurulum başarısız.");
         return;
       }
-      router.replace("/spotter");
+      router.replace("/inbox");
       router.refresh();
     });
   }

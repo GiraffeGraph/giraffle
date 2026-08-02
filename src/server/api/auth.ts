@@ -69,7 +69,7 @@ export async function registerAction(formData: FormData) {
     await signIn("credentials", {
       email,
       password,
-      redirectTo: "/spotter",
+      redirectTo: "/inbox",
     });
     resetRateLimit(`register:${email}`);
   } catch (error) {
@@ -101,7 +101,7 @@ export async function loginAction(formData: FormData) {
     await signIn("credentials", {
       email,
       password,
-      redirectTo: "/spotter",
+      redirectTo: "/inbox",
     });
     resetRateLimit(`login:${email}`);
   } catch (error) {

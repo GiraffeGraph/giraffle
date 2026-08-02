@@ -6,3 +6,4 @@
 
 ## Architecture
 - Do not duplicate existing global sidebar note navigation inside feature pages — reuse the canonical sidebar as the note source for interactions like drag-and-drop.
+- When removing a platform implementation, preserve reusable branding and mobile assets unless their deletion is explicitly requested.

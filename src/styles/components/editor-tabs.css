@@ -76,10 +76,6 @@
   color: color-mix(in srgb, var(--accent, #d97706) 70%, var(--text-tertiary));
 }
 
-.editor-tab-spotter .editor-tab-icon {
-  color: color-mix(in srgb, var(--md-sys-color-tertiary, #7c3aed) 70%, var(--text-tertiary));
-}
-
 .editor-tab.dragging {
   opacity: 0.5;
 }

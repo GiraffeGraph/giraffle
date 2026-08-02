@@ -38,7 +38,6 @@ Optional but recommended:
 - `APP_IMAGE`
 - `APP_PORT`
 - `APP_ENCRYPTION_KEY`
-- Spotter agent: `GIRAFFLE_AGENT_CMD`, `GIRAFFLE_AGENT_PERMISSION_MODE`, `GIRAFFLE_MCP_BASE_URL` (see [agent.md](agent.md))
 - `DEPLOYMENT_ID`
 - `APP_UPDATE_REPOSITORY`
 
@@ -105,11 +104,11 @@ See also:
 - `docs/deploy.md`
 - `README.md`
 
-## AI agent
+## External MCP access
 
-Giraffle holds no model API key. AI runs through a local CLI agent (Claude Code)
-over Giraffle's MCP server; see [agent.md](agent.md). External MCP clients use a
-token from **Settings → MCP Access**.
+External integrations can use `/api/mcp` with a token created under
+**Settings → MCP Access**. Giraffle does not run an embedded AI or CLI process.
+See [mcp.md](mcp.md) for endpoint and security details.
 
 ## App-managed settings
 

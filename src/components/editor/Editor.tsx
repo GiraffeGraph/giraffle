@@ -36,7 +36,6 @@ import type {
 import { generateId } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import {
-  SpotterBlockNode,
   BlockIdExtension,
   CalloutNode,
   GhostHighlightPlugin,
@@ -363,7 +362,6 @@ export function Editor({
       KanbanNode,
       ToggleNode,
       WikilinkMark,
-      SpotterBlockNode,
       GhostHighlightPlugin,
     ],
     content: initialContent ?? {

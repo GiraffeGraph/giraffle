@@ -51,12 +51,5 @@ next-env.d.ts
 .pi/
 skills
 
-# tauri
-/src-tauri/target/
-/src-tauri/gen/schemas/
-/src-tauri/runtime/*
-!/src-tauri/runtime/.gitkeep
-/src-tauri/binaries/
-
 # claude code local
 /.claude/

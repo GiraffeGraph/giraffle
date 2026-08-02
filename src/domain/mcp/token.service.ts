@@ -39,9 +39,6 @@ export async function createMcpAccessToken(
   input: {
     name?: string;
     expiresAt?: Date | null;
-    // Ephemeral per-run agent tokens set this false to keep the operation log
-    // free of create/revoke churn (one pair per agent run otherwise).
-    audit?: boolean;
   } = {},
 ): Promise<CreatedMcpAccessToken> {
   const name = input.name?.trim() || DEFAULT_TOKEN_NAME;
@@ -68,19 +65,17 @@ export async function createMcpAccessToken(
     },
   });
 
-  if (input.audit !== false) {
-    await recordOperation({
-      userId,
-      entityType: "mcp-access-token",
-      entityId: row.id,
-      actionType: "create",
-      payload: {
-        name: row.name,
-        tokenPrefix: row.tokenPrefix,
-        expiresAt: row.expiresAt?.toISOString() ?? null,
-      },
-    });
-  }
+  await recordOperation({
+    userId,
+    entityType: "mcp-access-token",
+    entityId: row.id,
+    actionType: "create",
+    payload: {
+      name: row.name,
+      tokenPrefix: row.tokenPrefix,
+      expiresAt: row.expiresAt?.toISOString() ?? null,
+    },
+  });
 
   return {
     ...toSummary(row),
@@ -110,8 +105,7 @@ export async function listMcpAccessTokens(
 
 export async function revokeMcpAccessToken(userId: string, tokenId: string) {
   // Atomic conditional update: only the caller that flips revokedAt from null
-  // wins, so concurrent revokes (e.g. agent stream close + client disconnect)
-  // can't double-write the operation log.
+  // wins, so concurrent revokes cannot double-write the operation log.
   const result = await db.mcpAccessToken.updateMany({
     where: { id: tokenId, userId, revokedAt: null },
     data: { revokedAt: new Date() },
@@ -134,14 +128,6 @@ export async function revokeMcpAccessToken(userId: string, tokenId: string) {
   });
 
   return true;
-}
-
-/**
- * Hard-delete a token row (owner-scoped, no audit). Used for ephemeral agent
- * tokens at run end so the table doesn't accumulate revoked rows per run.
- */
-export async function deleteMcpAccessToken(userId: string, tokenId: string): Promise<void> {
-  await db.mcpAccessToken.deleteMany({ where: { id: tokenId, userId } });
 }
 
 export async function resolveMcpBearerToken(authorizationHeader: string | null) {
@@ -171,8 +157,7 @@ export async function resolveMcpBearerToken(authorizationHeader: string | null) 
     return null;
   }
 
-  // updateMany (not update) so a concurrent hard-delete of an ephemeral token
-  // between the read above and here is a no-op rather than a P2025 → 500.
+  // updateMany keeps concurrent revocation or deletion a harmless no-op.
   await db.mcpAccessToken.updateMany({
     where: { id: row.id },
     data: { lastUsedAt: new Date() },

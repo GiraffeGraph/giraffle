@@ -6,7 +6,6 @@ import {
   monitorForElements,
 } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import Image from "next/image";
-import { createPortal } from "react-dom";
 import type { MouseEvent as ReactMouseEvent } from "react";
 import {
   useCallback,
@@ -16,7 +15,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   CommandPalette,
   type CommandPaletteItem,
@@ -34,11 +33,6 @@ import {
   relocateNoteAction,
   updateNoteAction,
 } from "@/server/api/notes";
-import {
-  deleteAllSpotterSessionsAction,
-  deleteSpotterSessionAction,
-  renameSpotterSessionAction,
-} from "@/server/api/spotter";
 import { createBoardAction } from "@/server/api/kanban";
 import {
   DEFAULT_COLLAPSED_SECTIONS,
@@ -75,30 +69,6 @@ import { SidebarNoteRow } from "./SidebarNoteRow";
 import { SidebarFolderItem } from "./SidebarFolderItem";
 import { encodeMaterialSymbol } from "./sidebar-icon-utils";
 
-type SpotterDialogState =
-  | {
-      type: "rename";
-      session: { id: string; title: string };
-    }
-  | {
-      type: "delete";
-      session: { id: string; title: string };
-    }
-  | {
-      type: "deleteAll";
-      count: number;
-    };
-
-const sidebarSessionDateFormatter = new Intl.DateTimeFormat("tr", {
-  day: "2-digit",
-  month: "short",
-  timeZone: "UTC",
-});
-
-function formatSidebarSessionDate(value: Date) {
-  return sidebarSessionDateFormatter.format(new Date(value));
-}
-
 function PlusIcon() {
   return (
     <svg
@@ -133,25 +103,6 @@ function FileNewIcon() {
       <polyline points="14 2 14 8 20 8" />
       <line x1="12" y1="18" x2="12" y2="12" />
       <line x1="9" y1="15" x2="15" y2="15" />
-    </svg>
-  );
-}
-
-function MoreHorizontalIcon() {
-  return (
-    <svg
-      width="13"
-      height="13"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <circle cx="5" cy="12" r="1" />
-      <circle cx="12" cy="12" r="1" />
-      <circle cx="19" cy="12" r="1" />
     </svg>
   );
 }
@@ -195,13 +146,11 @@ function ChevronLeftIcon() {
 export function Sidebar({
   notes,
   folders,
-  spotterSessions,
   kanbanBoards,
   activeNoteId,
 }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const teardownResizeRef = useRef<(() => void) | null>(null);
   const isMobileViewport = useIsMobileViewport(900);
 
@@ -227,40 +176,19 @@ export function Sidebar({
   const [hasLoadedPreferences, setHasLoadedPreferences] = useState(false);
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
-  const [spotterDialog, setSpotterDialog] = useState<SpotterDialogState | null>(null);
-  const [spotterTitleDraft, setSpotterTitleDraft] = useState("");
-  const [spotterSearchQuery, setSpotterSearchQuery] = useState("");
-  const [isSpotterDialogSubmitting, setIsSpotterDialogSubmitting] = useState(false);
   const folderCreationHandledRef = useRef(false);
   const folderTreeRef = useRef<HTMLDivElement | null>(null);
 
   const normalizedPaletteQuery = paletteQuery.trim().toLowerCase();
   const currentNoteId =
     activeNoteId ?? extractActiveNoteId(pathname) ?? undefined;
-  const activeSpotterSessionId =
-    pathname === "/spotter" ? searchParams.get("session") : null;
   const effectiveIsSidebarCompact = !isMobileViewport && isSidebarCompact;
   const shouldShowSidebarPanel = !isMobileViewport || isMobileSidebarOpen;
-  const normalizedSpotterSearchQuery = spotterSearchQuery.trim().toLowerCase();
 
   const closeContextMenu = useCallback(() => setContextMenu(null), []);
-  const closeSpotterDialog = useCallback(() => {
-    if (isSpotterDialogSubmitting) {
-      return;
-    }
-
-    setSpotterDialog(null);
-    setSpotterTitleDraft("");
-  }, [isSpotterDialogSubmitting]);
   const navigateToNote = useCallback(
     (noteId: string) => {
       router.push(`/notes/${noteId}`);
-    },
-    [router],
-  );
-  const navigateToSpotterSession = useCallback(
-    (sessionId: string) => {
-      router.push(`/spotter?session=${sessionId}`);
     },
     [router],
   );
@@ -347,12 +275,6 @@ export function Sidebar({
     return () => window.cancelAnimationFrame(frameId);
   }, [pathname]);
 
-  useEffect(() => {
-    if (collapsedSections.spotter && spotterSearchQuery.length > 0) {
-      setSpotterSearchQuery("");
-    }
-  }, [collapsedSections.spotter, spotterSearchQuery]);
-
   // Persist collapsed sections
   useEffect(() => {
     if (!hasLoadedPreferences) return;
@@ -396,12 +318,6 @@ export function Sidebar({
   // Global keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (spotterDialog && event.key === "Escape") {
-        event.preventDefault();
-        closeSpotterDialog();
-        return;
-      }
-
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
         openPalette();
@@ -409,7 +325,7 @@ export function Sidebar({
     };
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [closeSpotterDialog, openPalette, spotterDialog]);
+  }, [openPalette]);
 
   const handleSidebarResizeStart = useCallback(
     (event: ReactMouseEvent<HTMLDivElement>) => {
@@ -544,66 +460,13 @@ export function Sidebar({
         tone: "danger" as const,
         onSelect: async () => {
           await archiveNoteAction(note.id);
-          if (currentNoteId === note.id) router.push("/spotter");
+          if (currentNoteId === note.id) router.push("/inbox");
           router.refresh();
         },
       },
     ],
     [copyInternalLink, currentNoteId, navigateToNote, router],
   );
-
-  const buildSpotterSessionMenu = useCallback(
-    (session: { id: string; title: string }): ContextMenuItem[] => [
-      {
-        label: "Open chat",
-        tooltip: "Open this Spotter session",
-        onSelect: () => navigateToSpotterSession(session.id),
-      },
-      {
-        label: "Rename chat",
-        tooltip: "Change the title of this Spotter session",
-        onSelect: () => {
-          setSpotterTitleDraft(session.title);
-          setSpotterDialog({ type: "rename", session });
-        },
-      },
-      {
-        label: "Delete chat",
-        tooltip: "Permanently delete this Spotter session",
-        tone: "danger",
-        onSelect: () => {
-          setSpotterDialog({ type: "delete", session });
-        },
-      },
-    ],
-    [navigateToSpotterSession],
-  );
-
-  const buildSpotterMenu = useCallback((): ContextMenuItem[] => {
-    const items: ContextMenuItem[] = [
-      {
-        label: "New chat",
-        tooltip: "Start a fresh Spotter conversation",
-        onSelect: () => router.push("/spotter"),
-      },
-    ];
-
-    if (spotterSessions.length > 0) {
-      items.push({
-        label: "Delete all chats",
-        tooltip: `Permanently delete all ${spotterSessions.length} Spotter sessions`,
-        tone: "danger",
-        onSelect: () => {
-          setSpotterDialog({
-            type: "deleteAll",
-            count: spotterSessions.length,
-          });
-        },
-      });
-    }
-
-    return items;
-  }, [router, spotterSessions.length]);
 
   useEffect(() => {
     if (!folderTreeRef.current) {
@@ -758,16 +621,6 @@ export function Sidebar({
     return source.slice(0, hasQuery ? 12 : 8);
   }, [hasQuery, normalizedQuery, notes]);
 
-  const filteredSpotterSessions = useMemo(() => {
-    if (!normalizedSpotterSearchQuery) {
-      return spotterSessions;
-    }
-
-    return spotterSessions.filter((session) =>
-      session.title.toLowerCase().includes(normalizedSpotterSearchQuery),
-    );
-  }, [normalizedSpotterSearchQuery, spotterSessions]);
-
   // Palette items
   const paletteItems = useMemo<CommandPaletteItem[]>(() => {
     const actionItems: CommandPaletteItem[] = [
@@ -921,51 +774,21 @@ export function Sidebar({
       }));
 
 
-    const spotterSessionItems = spotterSessions
-      .filter(
-        (session) =>
-          !normalizedPaletteQuery ||
-          session.title.toLowerCase().includes(normalizedPaletteQuery),
-      )
-      .slice(0, normalizedPaletteQuery ? 8 : 5)
-      .map<CommandPaletteItem>((session) => ({
-        id: `spotter-session-${session.id}`,
-        group: "Spotter",
-        title: session.title,
-        description: "Open chat session",
-        icon: encodeMaterialSymbol("forum"),
-        onSelect: async () => {
-          navigateToSpotterSession(session.id);
-        },
-      }));
-
     if (!normalizedPaletteQuery)
-      return [
-        ...actionItems,
-        ...spotterSessionItems,
-        ...noteItems,
-        ...folderItems,
-      ];
+      return [...actionItems, ...noteItems, ...folderItems];
 
     const filteredActions = actionItems.filter((item) =>
       `${item.title} ${item.description}`
         .toLowerCase()
         .includes(normalizedPaletteQuery),
     );
-    return [
-      ...filteredActions,
-      ...spotterSessionItems,
-      ...noteItems,
-      ...folderItems,
-    ];
+    return [...filteredActions, ...noteItems, ...folderItems];
   }, [
     closePalette,
     flattenedFolders,
     handleStartCreateFolder,
     navigateToNote,
-    navigateToSpotterSession,
     normalizedPaletteQuery,
-    spotterSessions,
     notes,
     router,
   ]);
@@ -986,7 +809,6 @@ export function Sidebar({
     [handleCreateNote, handleStartCreateFolder],
   );
 
-  const isSpotterCollapsed = hasQuery ? false : collapsedSections.spotter;
   const isFoldersCollapsed = hasQuery ? false : collapsedSections.folders;
   const isRecentNotesCollapsed = hasQuery
     ? false
@@ -1097,7 +919,7 @@ export function Sidebar({
               ) : null}
               <div
                 className="sidebar-workspace-card"
-                onClick={() => router.push("/spotter")}
+                onClick={() => router.push("/inbox")}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -1239,162 +1061,7 @@ export function Sidebar({
                       )}
                     </button>
                   ))}
-                  <div className="sidebar-spotter-block">
-                    <div className="sidebar-nav-item-row sidebar-spotter-row">
-                      <button
-                        type="button"
-                        className={`sidebar-item${
-                          pathname === "/spotter" && !activeSpotterSessionId
-                            ? " active"
-                            : ""
-                        }`}
-                        onClick={() => router.push("/spotter")}
-                      >
-                        <span className="sidebar-item-icon" aria-hidden="true">
-                          <span
-                            className="material-symbols-outlined"
-                            style={{ fontSize: "16px", lineHeight: 1 }}
-                          >
-                            smart_toy
-                          </span>
-                        </span>
-                        <span className="sidebar-item-label">Spotter</span>
-                        {spotterSessions.length > 0 ? (
-                          <span className="sidebar-nav-badge">{spotterSessions.length}</span>
-                        ) : null}
-                      </button>
-                      <button
-                        type="button"
-                        className="sidebar-nav-menu"
-                        onClick={() => toggleSection("spotter")}
-                        aria-expanded={!isSpotterCollapsed}
-                        aria-label={
-                          isSpotterCollapsed
-                            ? "Expand Spotter chats"
-                            : "Collapse Spotter chats"
-                        }
-                        title={isSpotterCollapsed ? "Expand chats" : "Collapse chats"}
-                      >
-                        <span className="material-symbols-outlined" style={{ fontSize: 14 }}>
-                          {isSpotterCollapsed ? "chevron_right" : "expand_more"}
-                        </span>
-                      </button>
-                      <button
-                        type="button"
-                        className="sidebar-nav-menu"
-                        onClick={(event) =>
-                          openContextMenuFromTrigger(event, buildSpotterMenu())
-                        }
-                        aria-label="Spotter menu"
-                        title="Spotter options"
-                      >
-                        <MoreHorizontalIcon />
-                      </button>
-                      <button
-                        type="button"
-                        className="sidebar-nav-menu sidebar-spotter-new-chat"
-                        onClick={() => {
-                          setSpotterSearchQuery("");
-                          router.push("/spotter");
-                        }}
-                        aria-label="New Spotter chat"
-                        title="New chat"
-                      >
-                        <PlusIcon />
-                      </button>
-                    </div>
 
-                    {!isSpotterCollapsed ? (
-                      <div className="sidebar-nested-items sidebar-spotter-sessions-shell">
-                        {spotterSessions.length > 5 || normalizedSpotterSearchQuery ? (
-                          <label className="sidebar-spotter-search" htmlFor="spotter-session-search">
-                            <span className="material-symbols-outlined" aria-hidden="true">search</span>
-                            <input
-                              id="spotter-session-search"
-                              type="search"
-                              value={spotterSearchQuery}
-                              onChange={(event) => setSpotterSearchQuery(event.target.value)}
-                              placeholder="Search chats"
-                              spellCheck={false}
-                            />
-                            {normalizedSpotterSearchQuery ? (
-                              <button
-                                type="button"
-                                className="sidebar-spotter-search-clear"
-                                onClick={() => setSpotterSearchQuery("")}
-                                aria-label="Clear Spotter chat search"
-                              >
-                                <span className="material-symbols-outlined" aria-hidden="true">close</span>
-                              </button>
-                            ) : null}
-                          </label>
-                        ) : null}
-
-                        <div className="sidebar-spotter-sessions">
-                          {spotterSessions.length === 0 ? (
-                            <div className="sidebar-session-empty">
-                              No chats yet.
-                            </div>
-                          ) : filteredSpotterSessions.length === 0 ? (
-                            <div className="sidebar-session-empty">
-                              No chats match your search.
-                            </div>
-                          ) : (
-                            filteredSpotterSessions.map((session) => (
-                              <div
-                                key={session.id}
-                                className={`sidebar-entity-row sidebar-spotter-session-row${
-                                  activeSpotterSessionId === session.id
-                                    ? " active"
-                                    : ""
-                                }`}
-                                onContextMenu={(event) =>
-                                  openContextMenuAtPointer(
-                                    event,
-                                    buildSpotterSessionMenu(session),
-                                  )
-                                }
-                              >
-                                <button
-                                  type="button"
-                                  className={`sidebar-item sidebar-row-main sidebar-nested-item${
-                                    activeSpotterSessionId === session.id
-                                      ? " active"
-                                      : ""
-                                  }`}
-                                  onClick={() => navigateToSpotterSession(session.id)}
-                                  title={session.title}
-                                >
-                                  <span className="sidebar-item-label">
-                                    {session.title}
-                                  </span>
-                                  <span className="sidebar-nested-item-date">
-                                    {formatSidebarSessionDate(session.lastMessageAt)}
-                                  </span>
-                                </button>
-                                <div className="sidebar-row-actions sidebar-spotter-session-actions">
-                                  <button
-                                    type="button"
-                                    className="context-trigger sidebar-row-action"
-                                    onClick={(event) =>
-                                      openContextMenuFromTrigger(
-                                        event,
-                                        buildSpotterSessionMenu(session),
-                                      )
-                                    }
-                                    aria-label={`${session.title} open menu`}
-                                    title="Options"
-                                  >
-                                    <MoreHorizontalIcon />
-                                  </button>
-                                </div>
-                              </div>
-                            ))
-                          )}
-                        </div>
-                      </div>
-                    ) : null}
-                  </div>
                 </div>
 
                 <div className="sidebar-divider" />
@@ -1621,154 +1288,6 @@ export function Sidebar({
         />
       ) : null}
 
-      {spotterDialog ? createPortal(
-        <div
-          className="sidebar-modal-backdrop"
-          onClick={closeSpotterDialog}
-          role="presentation"
-        >
-          <div
-            className="sidebar-modal"
-            onClick={(event) => event.stopPropagation()}
-            role="dialog"
-            aria-modal="true"
-            aria-label={
-              spotterDialog.type === "rename"
-                ? "Rename Spotter chat"
-                : spotterDialog.type === "delete"
-                  ? "Delete Spotter chat"
-                  : "Delete all Spotter chats"
-            }
-          >
-            <div className="sidebar-modal-header">
-              <h2 className="sidebar-modal-title">
-                {spotterDialog.type === "rename"
-                  ? "Rename chat"
-                  : spotterDialog.type === "delete"
-                    ? "Delete chat"
-                    : "Delete all chats"}
-              </h2>
-              <button
-                type="button"
-                className="sidebar-modal-close"
-                onClick={closeSpotterDialog}
-                disabled={isSpotterDialogSubmitting}
-                aria-label="Close dialog"
-              >
-                <span className="material-symbols-outlined">close</span>
-              </button>
-            </div>
-
-            {spotterDialog.type === "rename" ? (
-              <form
-                className="sidebar-modal-body"
-                onSubmit={async (event) => {
-                  event.preventDefault();
-                  setIsSpotterDialogSubmitting(true);
-                  try {
-                    await renameSpotterSessionAction(
-                      spotterDialog.session.id,
-                      spotterTitleDraft,
-                    );
-                    setSpotterDialog(null);
-                    setSpotterTitleDraft("");
-                    router.refresh();
-                  } finally {
-                    setIsSpotterDialogSubmitting(false);
-                  }
-                }}
-              >
-                <label className="sidebar-modal-label" htmlFor="spotter-title">
-                  Chat title
-                </label>
-                <input
-                  id="spotter-title"
-                  autoFocus
-                  className="sidebar-modal-input"
-                  value={spotterTitleDraft}
-                  onChange={(event) => setSpotterTitleDraft(event.target.value)}
-                  placeholder="New chat"
-                  disabled={isSpotterDialogSubmitting}
-                  aria-invalid={!spotterTitleDraft.trim()}
-                />
-                {!spotterTitleDraft.trim() ? (
-                  <p className="sidebar-modal-copy sidebar-modal-copy--muted">
-                    Title cannot be empty.
-                  </p>
-                ) : null}
-                <div className="sidebar-modal-actions">
-                  <Button
-                    type="button"
-                    variant="text"
-                    onClick={closeSpotterDialog}
-                    disabled={isSpotterDialogSubmitting}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={isSpotterDialogSubmitting || !spotterTitleDraft.trim()}
-                  >
-                    Save
-                  </Button>
-                </div>
-              </form>
-            ) : (
-              <div className="sidebar-modal-body">
-                <p className="sidebar-modal-copy">
-                  {spotterDialog.type === "delete"
-                    ? `\"${spotterDialog.session.title}\" kalıcı olarak silinecek.`
-                    : `Tüm ${spotterDialog.count} Spotter sohbeti kalıcı olarak silinecek.`}
-                </p>
-                <p className="sidebar-modal-copy sidebar-modal-copy--muted">
-                  Bu işlem geri alınamaz.
-                </p>
-                <div className="sidebar-modal-actions">
-                  <Button
-                    type="button"
-                    variant="text"
-                    onClick={closeSpotterDialog}
-                    disabled={isSpotterDialogSubmitting}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="button"
-                    onClick={async () => {
-                      setIsSpotterDialogSubmitting(true);
-                      try {
-                        if (spotterDialog.type === "delete") {
-                          await deleteSpotterSessionAction(spotterDialog.session.id);
-                          if (
-                            activeSpotterSessionId === spotterDialog.session.id &&
-                            pathname === "/spotter"
-                          ) {
-                            router.push("/spotter");
-                          }
-                        } else {
-                          await deleteAllSpotterSessionsAction();
-                          if (pathname === "/spotter") {
-                            router.push("/spotter");
-                          }
-                        }
-                        setSpotterDialog(null);
-                        setSpotterTitleDraft("");
-                        router.refresh();
-                      } finally {
-                        setIsSpotterDialogSubmitting(false);
-                      }
-                    }}
-                    disabled={isSpotterDialogSubmitting}
-                  >
-                    Delete
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>,
-        document.body,
-      ) : null}
 
       <ContextMenu
         items={contextMenu?.items ?? []}
