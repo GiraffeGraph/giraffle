@@ -175,22 +175,6 @@
   min-height: 16px;
 }
 
-.skip {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
-  text-align: center;
-  margin: 0;
-}
-
-.sectionTitle {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: rgba(255, 255, 255, 0.4);
-  font-weight: 500;
-  margin: 6px 0 0;
-}
-
 .spinner {
   width: 22px;
   height: 22px;

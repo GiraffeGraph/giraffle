@@ -303,21 +303,6 @@ a:hover {
   to   { opacity: 1; }
 }
 
-@keyframes md-fade-through-enter {
-  from { opacity: 0; transform: scale(0.96); }
-  to   { opacity: 1; transform: scale(1); }
-}
-
-@keyframes md-shared-axis-enter-x {
-  from { transform: translateX(24px); opacity: 0; }
-  to   { transform: translateX(0);   opacity: 1; }
-}
-
-@keyframes md-shared-axis-exit-x {
-  from { transform: translateX(0);    opacity: 1; }
-  to   { transform: translateX(-24px); opacity: 0; }
-}
-
 @keyframes md-container-enter {
   from {
     opacity: 0;
@@ -328,32 +313,5 @@ a:hover {
     opacity: 1;
     transform: scale(1);
     clip-path: inset(0 0 0 0 round 0px);
-  }
-}
-
-/* Legacy bridge — rise-in is used in existing CSS */
-@keyframes rise-in {
-  from {
-    opacity: 0;
-    transform: translateY(8px) scale(0.99);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes blink {
-  50% { opacity: 0; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
   }
 }

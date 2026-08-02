@@ -19,7 +19,6 @@ import "@/styles/components/navigation.css";
 import "@/styles/components/editor-tabs.css";
 import "@/styles/components/confirm-dialog.css";
 import "@/styles/layouts/app-layout.css";
-import "@/styles/layouts/sidebar.css";
 import "@/styles/layouts/pages.css";
 import "@/styles/layouts/shell.css";
 import "@/styles/layouts/editor.css";

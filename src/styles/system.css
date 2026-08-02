@@ -84,8 +84,7 @@
 .app-page,
 .dashboard,
 .note-page,
-.graph-page,
-.library-page {
+.graph-page {
   width: min(100%, var(--app-page-max));
   margin: 0 auto;
   padding: var(--app-page-pad-y) var(--app-page-pad-x) 20px;
@@ -98,8 +97,6 @@
 
 .dashboard-hero,
 .graph-header,
-.library-hero,
-.library-panel,
 .graph-panel,
 .dashboard-empty,
 .search-result-card,
@@ -118,8 +115,6 @@
 
 .dashboard-hero,
 .graph-header,
-.library-hero,
-.library-panel,
 .auth-card,
 .published-shell {
   padding: 14px;
@@ -412,8 +407,7 @@
   .app-page,
   .dashboard,
   .note-page,
-  .graph-page,
-  .library-page {
+  .graph-page {
     padding-left: var(--app-page-pad-x);
     padding-right: var(--app-page-pad-x);
   }
