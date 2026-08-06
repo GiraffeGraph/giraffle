@@ -9,7 +9,7 @@ const MAX_QUERY_LENGTH = 220;
 export type WorkspaceSearchMode = "recent" | "hybrid" | "regex";
 export type WorkspaceSearchReasonType =
   | "title"
-  | "folder"
+  | "path"
   | "body"
   | "fuzzy"
   | "regex"
@@ -23,9 +23,8 @@ export interface WorkspaceSearchReason {
 export interface WorkspaceSearchNoteHit {
   id: string;
   title: string;
-  slug: string | null;
-  folderId: string | null;
-  folderPath: string | null;
+  parentId: string | null;
+  parentPath: string | null;
   isPinned: boolean;
   updatedAt: Date;
   score: number;
@@ -41,8 +40,8 @@ export interface ParsedWorkspaceSearchQuery {
   tokens: string[];
   phrases: string[];
   negativeTokens: string[];
-  folderFilters: string[];
-  excludedFolders: string[];
+  pathFilters: string[];
+  excludedPaths: string[];
   titleFilters: string[];
   excludedTitles: string[];
   isPinned: boolean | null;
@@ -64,10 +63,9 @@ interface IndexedNote {
   id: string;
   title: string;
   titleNormalized: string;
-  slug: string | null;
-  folderId: string | null;
-  folderPath: string | null;
-  folderPathNormalized: string;
+  parentId: string | null;
+  parentPath: string | null;
+  parentPathNormalized: string;
   isPinned: boolean;
   updatedAt: Date;
   bodyPlain: string;
@@ -85,19 +83,19 @@ export async function searchWorkspaceNotes(
   const limit = Math.max(1, Math.min(options?.limit ?? DEFAULT_LIMIT, 120));
   const parsed = parseWorkspaceSearchQuery(trimmedQuery);
 
-  const [noteRows, folders] = await Promise.all([
+  const [noteRows, pageIndex] = await Promise.all([
     db.note.findMany({
       where: {
         userId,
         isArchived: false,
+        boardTaskSource: null,
       },
       orderBy: [{ isPinned: "desc" }, { updatedAt: "desc" }],
       take: MAX_SCAN_NOTES,
       select: {
         id: true,
         title: true,
-        slug: true,
-        folderId: true,
+        parentId: true,
         isPinned: true,
         updatedAt: true,
         blocks: {
@@ -109,17 +107,18 @@ export async function searchWorkspaceNotes(
         },
       },
     }),
-    db.folder.findMany({
-      where: { userId },
+    // Every page, not just the scanned window: an ancestor may fall outside it.
+    db.note.findMany({
+      where: { userId, boardTaskSource: null },
       select: {
         id: true,
-        name: true,
+        title: true,
         parentId: true,
       },
     }),
   ]);
 
-  const folderPathById = buildFolderPathMap(folders);
+  const pathById = buildPagePathMap(pageIndex);
   const indexedNotes: IndexedNote[] = noteRows.map((note) => {
     const bodyPlain = note.blocks
       .map((block) => extractTextFromJson(block.content))
@@ -127,15 +126,14 @@ export async function searchWorkspaceNotes(
       .join(" ")
       .replace(/\s+/g, " ")
       .trim();
-    const folderPath = note.folderId ? folderPathById.get(note.folderId) ?? null : null;
+    const parentPath = note.parentId ? pathById.get(note.parentId) ?? null : null;
     return {
       id: note.id,
       title: note.title,
       titleNormalized: normalizeForSearch(note.title),
-      slug: note.slug,
-      folderId: note.folderId,
-      folderPath,
-      folderPathNormalized: normalizeForSearch(folderPath ?? ""),
+      parentId: note.parentId,
+      parentPath,
+      parentPathNormalized: normalizeForSearch(parentPath ?? ""),
       isPinned: note.isPinned,
       updatedAt: note.updatedAt,
       bodyPlain,
@@ -153,16 +151,15 @@ export async function searchWorkspaceNotes(
       hits: indexedNotes.slice(0, limit).map((note, index) => ({
         id: note.id,
         title: note.title,
-        slug: note.slug,
-        folderId: note.folderId,
-        folderPath: note.folderPath,
+        parentId: note.parentId,
+        parentPath: note.parentPath,
         isPinned: note.isPinned,
         updatedAt: note.updatedAt,
         score: limit - index,
         snippet: buildSnippet({
           body: note.bodyPlain,
           title: note.title,
-          folderPath: note.folderPath,
+          parentPath: note.parentPath,
             parsed,
         }),
         highlights: [],
@@ -229,8 +226,8 @@ export function parseWorkspaceSearchQuery(query: string): ParsedWorkspaceSearchQ
       tokens: [],
       phrases: [],
       negativeTokens: [],
-      folderFilters: [],
-      excludedFolders: [],
+      pathFilters: [],
+      excludedPaths: [],
       titleFilters: [],
       excludedTitles: [],
       isPinned: null,
@@ -240,8 +237,8 @@ export function parseWorkspaceSearchQuery(query: string): ParsedWorkspaceSearchQ
     };
   }
 
-  const folderFilters: string[] = [];
-  const excludedFolders: string[] = [];
+  const pathFilters: string[] = [];
+  const excludedPaths: string[] = [];
   const titleFilters: string[] = [];
   const excludedTitles: string[] = [];
   const positiveTokens: string[] = [];
@@ -273,8 +270,8 @@ export function parseWorkspaceSearchQuery(query: string): ParsedWorkspaceSearchQ
       continue;
     }
 
-    if (hasPrefix && prefix === "folder") {
-      (isNegated ? excludedFolders : folderFilters).push(normalizedValue);
+    if (hasPrefix && prefix === "path") {
+      (isNegated ? excludedPaths : pathFilters).push(normalizedValue);
       continue;
     }
 
@@ -316,8 +313,8 @@ export function parseWorkspaceSearchQuery(query: string): ParsedWorkspaceSearchQ
     tokens: tokenize(normalizedText),
     phrases,
     negativeTokens: Array.from(new Set(negativeTokens)),
-    folderFilters: Array.from(new Set(folderFilters)),
-    excludedFolders: Array.from(new Set(excludedFolders)),
+    pathFilters: Array.from(new Set(pathFilters)),
+    excludedPaths: Array.from(new Set(excludedPaths)),
     titleFilters: Array.from(new Set(titleFilters)),
     excludedTitles: Array.from(new Set(excludedTitles)),
     isPinned,
@@ -338,12 +335,12 @@ function scoreRegexHit(
   }
 
   const titleMatches = collectRegexMatches(note.title, regex, 6);
-  const folderMatches = collectRegexMatches(note.folderPath ?? "", regex, 4);
+  const pathMatches = collectRegexMatches(note.parentPath ?? "", regex, 4);
   const bodyMatches = collectRegexMatches(note.bodyPlain, regex, 10);
 
   if (
     titleMatches.length === 0 &&
-    folderMatches.length === 0 &&
+    pathMatches.length === 0 &&
     bodyMatches.length === 0
   ) {
     return null;
@@ -356,8 +353,8 @@ function scoreRegexHit(
     reasons.push({ type: "regex", label: "Regex title" });
   }
 
-  if (folderMatches.length > 0) {
-    reasons.push({ type: "regex", label: "Regex folder" });
+  if (pathMatches.length > 0) {
+    reasons.push({ type: "regex", label: "Regex path" });
   }
 
 
@@ -367,7 +364,7 @@ function scoreRegexHit(
 
   const score =
     titleMatches.length * 150 +
-    folderMatches.length * 80 +
+    pathMatches.length * 80 +
     bodyMatches.length * 24 +
     phraseBoost(note, parsed) +
     getRecencyBoost(note.updatedAt) +
@@ -376,19 +373,18 @@ function scoreRegexHit(
   return {
     id: note.id,
     title: note.title,
-    slug: note.slug,
-    folderId: note.folderId,
-    folderPath: note.folderPath,
+    parentId: note.parentId,
+    parentPath: note.parentPath,
     isPinned: note.isPinned,
     updatedAt: note.updatedAt,
     score,
     snippet: buildSnippet({
       body: note.bodyPlain,
       title: note.title,
-      folderPath: note.folderPath,
+      parentPath: note.parentPath,
         parsed,
     }),
-    highlights: [...titleMatches, ...folderMatches, ...bodyMatches].slice(0, 6),
+    highlights: [...titleMatches, ...pathMatches, ...bodyMatches].slice(0, 6),
     reasons: dedupeReasons(reasons).slice(0, 5),
     mode: "regex",
   };
@@ -420,9 +416,9 @@ function scoreHybridHit(
   });
 
   score += scoreTextField({
-    label: "Folder match",
-    reasonType: "folder",
-    valueNormalized: note.folderPathNormalized,
+    label: "Path match",
+    reasonType: "path",
+    valueNormalized: note.parentPathNormalized,
     queryNormalized: parsed.normalizedText,
     tokens: parsed.tokens,
     exact: 190,
@@ -467,7 +463,7 @@ function scoreHybridHit(
   for (const token of parsed.tokens) {
     if (
       note.titleNormalized.includes(token) ||
-      note.folderPathNormalized.includes(token) ||
+      note.parentPathNormalized.includes(token) ||
       false
     ) {
       highlights.add(token);
@@ -477,16 +473,15 @@ function scoreHybridHit(
   return {
     id: note.id,
     title: note.title,
-    slug: note.slug,
-    folderId: note.folderId,
-    folderPath: note.folderPath,
+    parentId: note.parentId,
+    parentPath: note.parentPath,
     isPinned: note.isPinned,
     updatedAt: note.updatedAt,
     score,
     snippet: buildSnippet({
       body: note.bodyPlain,
       title: note.title,
-      folderPath: note.folderPath,
+      parentPath: note.parentPath,
         parsed,
     }),
     highlights: Array.from(highlights).slice(0, 6),
@@ -501,15 +496,15 @@ function noteMatchesFilters(note: IndexedNote, parsed: ParsedWorkspaceSearchQuer
   }
 
   if (
-    parsed.folderFilters.length > 0 &&
-    !parsed.folderFilters.every((filter) => note.folderPathNormalized.includes(filter))
+    parsed.pathFilters.length > 0 &&
+    !parsed.pathFilters.every((filter) => note.parentPathNormalized.includes(filter))
   ) {
     return false;
   }
 
   if (
-    parsed.excludedFolders.length > 0 &&
-    parsed.excludedFolders.some((filter) => note.folderPathNormalized.includes(filter))
+    parsed.excludedPaths.length > 0 &&
+    parsed.excludedPaths.some((filter) => note.parentPathNormalized.includes(filter))
   ) {
     return false;
   }
@@ -530,7 +525,7 @@ function noteMatchesFilters(note: IndexedNote, parsed: ParsedWorkspaceSearchQuer
 
   const combined = [
     note.titleNormalized,
-    note.folderPathNormalized,
+    note.parentPathNormalized,
     note.bodyNormalized,
   ]
     .filter(Boolean)
@@ -670,20 +665,20 @@ function computeSemanticSignals(
   parsed: ParsedWorkspaceSearchQuery,
 ) {
   const titleTokens = tokenize(note.titleNormalized);
-  const folderTokens = tokenize(note.folderPathNormalized);
+  const pathTokens = tokenize(note.parentPathNormalized);
   const topBodyTokens = tokenize(note.bodyNormalized).slice(0, 60);
 
   const titleSimilarity = tokenSetSimilarity(parsed.tokens, titleTokens);
-  const folderSimilarity = tokenSetSimilarity(parsed.tokens, folderTokens);
+  const pathSimilarity = tokenSetSimilarity(parsed.tokens, pathTokens);
   const bodySimilarity = tokenSetSimilarity(parsed.tokens, topBodyTokens);
   const phraseSimilarity = Math.max(
     parsed.normalizedText ? diceCoefficient(parsed.normalizedText, note.titleNormalized) : 0,
-    parsed.normalizedText ? diceCoefficient(parsed.normalizedText, note.folderPathNormalized) : 0,
+    parsed.normalizedText ? diceCoefficient(parsed.normalizedText, note.parentPathNormalized) : 0,
   );
 
   const score =
     Math.round(titleSimilarity * 72) +
-    Math.round(folderSimilarity * 34) +
+    Math.round(pathSimilarity * 34) +
     Math.round(bodySimilarity * 18) +
     Math.round(phraseSimilarity * 36);
 
@@ -694,10 +689,10 @@ function computeSemanticSignals(
     };
   }
 
-  if (folderSimilarity > titleSimilarity) {
+  if (pathSimilarity > titleSimilarity) {
     return {
       score,
-      label: "Folder fuzzy",
+      label: "Path fuzzy",
     };
   }
 
@@ -718,7 +713,7 @@ function phraseBoost(note: IndexedNote, parsed: ParsedWorkspaceSearchQuery) {
       score += 90;
     }
 
-    if (note.folderPathNormalized.includes(phrase)) {
+    if (note.parentPathNormalized.includes(phrase)) {
       score += 54;
     }
 
@@ -738,8 +733,8 @@ function addFilterReasons(
     reasons.push({ type: "filter", label: "Pinned only" });
   }
 
-  if (parsed.folderFilters.length > 0) {
-    reasons.push({ type: "filter", label: `folder:${parsed.folderFilters[0]}` });
+  if (parsed.pathFilters.length > 0) {
+    reasons.push({ type: "filter", label: `path:${parsed.pathFilters[0]}` });
   }
 
   if (parsed.titleFilters.length > 0) {
@@ -761,17 +756,17 @@ function sortByScoreThenDate(
 function buildSnippet({
   body,
   title,
-  folderPath,
+  parentPath,
   parsed,
 }: {
   body: string;
   title: string;
-  folderPath: string | null;
+  parentPath: string | null;
   parsed: ParsedWorkspaceSearchQuery;
 }) {
   const sourceCandidates = [
     body.trim(),
-    folderPath?.trim() ?? "",
+    parentPath?.trim() ?? "",
     title,
   ].filter(Boolean);
   const source = sourceCandidates[0] ?? title;
@@ -929,27 +924,25 @@ function cloneRegex(regex: RegExp, forceGlobal: boolean) {
   return new RegExp(regex.source, flags);
 }
 
-function buildFolderPathMap(
-  folders: Array<{
+/**
+ * Ancestor path of every page ("Project / Research"), used for path: filters
+ * and for showing where a hit lives.
+ */
+function buildPagePathMap(
+  pages: Array<{
     id: string;
-    name: string;
+    title: string;
     parentId: string | null;
   }>,
 ) {
-  const folderById = new Map(
-    folders.map((folder) => [
-      folder.id,
-      {
-        ...folder,
-        path: "",
-      },
-    ]),
+  const pageById = new Map(
+    pages.map((page) => [page.id, { ...page, path: "" }]),
   );
 
-  const resolve = (folderId: string): string => {
-    const current = folderById.get(folderId);
+  const resolve = (pageId: string, seen: Set<string>): string => {
+    const current = pageById.get(pageId);
 
-    if (!current) {
+    if (!current || seen.has(pageId)) {
       return "";
     }
 
@@ -957,17 +950,18 @@ function buildFolderPathMap(
       return current.path;
     }
 
-    const parentPath = current.parentId ? resolve(current.parentId) : "";
-    current.path = parentPath ? `${parentPath} / ${current.name}` : current.name;
+    seen.add(pageId);
+    const parentPath = current.parentId ? resolve(current.parentId, seen) : "";
+    current.path = parentPath ? `${parentPath} / ${current.title}` : current.title;
     return current.path;
   };
 
-  for (const folder of folders) {
-    resolve(folder.id);
+  for (const page of pages) {
+    resolve(page.id, new Set());
   }
 
   return new Map(
-    Array.from(folderById.entries()).map(([folderId, folder]) => [folderId, folder.path]),
+    Array.from(pageById.entries()).map(([pageId, page]) => [pageId, page.path]),
   );
 }
 

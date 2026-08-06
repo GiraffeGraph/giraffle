@@ -13,6 +13,7 @@ import type {
   KanbanBoardsOverview,
   KanbanColumnColor,
 } from "@/domain/kanban/kanban.types";
+import { BodyPortal } from "@/components/ui/BodyPortal";
 import { Button } from "@/components/ui/Button";
 import {
   createBoardAction,
@@ -152,9 +153,9 @@ function BoardCard({
         </button>
       </div>
       <div className="kb-bcard-stats">
-        <span>{board.columnCount} lists</span>
+        <span>{board.columnCount} columns</span>
         <span>·</span>
-        <span>{board.cardCount} cards</span>
+        <span>{board.cardCount} tasks</span>
       </div>
       <div className="kb-bcard-progress">
         <div className="kb-bcard-bar">
@@ -474,7 +475,7 @@ export function KanbanBoardsBoard({ overview }: { overview: KanbanBoardsOverview
         <div>
           <h1 className="kb-list-title">Trek boards</h1>
           <p className="kb-list-sub">
-            Two levels: organise boards by status, and tasks within each board. Drag to flow.
+            Organise boards by status. Open a board to manage its shared tasks.
           </p>
         </div>
         <Button leadingIcon="add" onClick={() => handleAddBoard(columns[0]?.id ?? "")} disabled={creating}>
@@ -504,35 +505,43 @@ export function KanbanBoardsBoard({ overview }: { overview: KanbanBoardsOverview
         </button>
       </div>
 
-      {confirmDelete && (
-        <div className="kb-modal-backdrop" role="presentation" onClick={() => setConfirmDelete(null)}>
+      {confirmDelete ? (
+        <BodyPortal>
           <div
-            className="kb-modal kb-modal--sm"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Delete board"
-            onClick={(e) => e.stopPropagation()}
+            className="kb-modal-backdrop"
+            role="presentation"
+            onClick={() => setConfirmDelete(null)}
           >
-            <div className="kb-modal-header">
-              <h2 className="kb-modal-title">Delete board</h2>
-            </div>
-            <div className="kb-modal-body">
-              <p className="kb-modal-copy">
-                &quot;{confirmDelete.title}&quot; and all its columns and cards will be permanently
-                deleted.
-              </p>
-            </div>
-            <div className="kb-modal-footer">
-              <div className="kb-modal-footer-right">
-                <Button variant="text" onClick={() => setConfirmDelete(null)}>
-                  Cancel
-                </Button>
-                <Button onClick={() => handleConfirmDelete(confirmDelete)}>Delete</Button>
+            <div
+              className="kb-modal kb-modal--sm"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Delete board"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="kb-modal-header">
+                <h2 className="kb-modal-title">Delete board</h2>
+              </div>
+              <div className="kb-modal-body">
+                <p className="kb-modal-copy">
+                  &quot;{confirmDelete.title}&quot; and all its columns and cards
+                  will be permanently deleted.
+                </p>
+              </div>
+              <div className="kb-modal-footer">
+                <div className="kb-modal-footer-right">
+                  <Button variant="text" onClick={() => setConfirmDelete(null)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={() => handleConfirmDelete(confirmDelete)}>
+                    Delete
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        </BodyPortal>
+      ) : null}
     </div>
   );
 }

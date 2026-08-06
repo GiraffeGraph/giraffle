@@ -1,33 +1,18 @@
 import type { ContextMenuItem } from "@/components/ui/ContextMenu";
-import type { KanbanBoardSummary } from "@/domain/kanban/kanban.types";
 
-export interface SidebarNote {
+export interface SidebarPage {
   id: string;
   title: string;
-  slug?: string | null;
   icon: string | null;
-  folderId?: string | null;
-  position?: number;
-  isPinned?: boolean;
+  parentId: string | null;
+  position: string;
+  isPinned: boolean;
   updatedAt: Date;
-}
-
-export interface SidebarFolder {
-  id: string;
-  name: string;
-  icon: string | null;
-  parentId?: string | null;
-  position?: number;
-  children?: SidebarFolder[];
-  _count?: {
-    notes: number;
-  };
+  children: SidebarPage[];
 }
 
 export interface SidebarProps {
-  notes: SidebarNote[];
-  folders: SidebarFolder[];
-  kanbanBoards: KanbanBoardSummary[];
+  pages: SidebarPage[];
   activeNoteId?: string;
 }
 
@@ -36,99 +21,54 @@ export interface SidebarMenuState {
   items: ContextMenuItem[];
 }
 
-export interface FolderDropTarget {
-  folderId: string;
-  mode: "inside" | "after";
+/**
+ * "inside" nests the dragged page under the target, "after" places it as the
+ * next sibling, "root" lifts it to the top level.
+ */
+export type SidebarDropMode = "inside" | "after" | "root";
+
+export interface SidebarPageDropTarget {
+  pageId: string | null;
+  mode: SidebarDropMode;
 }
 
-export type SidebarSectionKey = "folders" | "recentNotes" | "kanban";
-
-export interface SidebarFolderDragData {
-  type: "sidebar-folder";
-  folderId: string;
-}
-
-export interface SidebarNoteDragData {
-  type: "sidebar-note";
-  noteId: string;
-  folderId: string | null;
-  isPinned: boolean;
-}
-
-export interface SidebarFolderDropData {
-  type: "sidebar-folder-drop-target";
-  folderId: string;
-  mode: "inside" | "after" | "root";
+export interface SidebarPageDragData {
+  type: "sidebar-page";
+  pageId: string;
   parentId: string | null;
-  afterFolderId: string | null;
-}
-
-export interface SidebarNoteDropData {
-  type: "sidebar-note-drop-target";
-  folderId: string | null;
-  mode: "inside" | "after" | "root";
-  afterNoteId: string | null;
   isPinned: boolean;
 }
 
-export function isSidebarFolderDragData(value: unknown): value is SidebarFolderDragData {
+export interface SidebarPageDropData {
+  type: "sidebar-page-drop-target";
+  mode: SidebarDropMode;
+  parentId: string | null;
+  afterNoteId: string | null;
+  pageId: string | null;
+}
+
+export function isSidebarPageDragData(value: unknown): value is SidebarPageDragData {
   return Boolean(
     value &&
     typeof value === "object" &&
     "type" in value &&
-    "folderId" in value &&
-    (value as SidebarFolderDragData).type === "sidebar-folder" &&
-    typeof (value as SidebarFolderDragData).folderId === "string"
+    "pageId" in value &&
+    (value as SidebarPageDragData).type === "sidebar-page" &&
+    typeof (value as SidebarPageDragData).pageId === "string"
   );
 }
 
-export function isSidebarNoteDragData(value: unknown): value is SidebarNoteDragData {
+export function isSidebarPageDropData(value: unknown): value is SidebarPageDropData {
   return Boolean(
     value &&
     typeof value === "object" &&
     "type" in value &&
-    "noteId" in value &&
-    "folderId" in value &&
-    "isPinned" in value &&
-    (value as SidebarNoteDragData).type === "sidebar-note" &&
-    typeof (value as SidebarNoteDragData).noteId === "string" &&
-    typeof (value as SidebarNoteDragData).isPinned === "boolean"
-  );
-}
-
-export function isSidebarFolderDropData(value: unknown): value is SidebarFolderDropData {
-  return Boolean(
-    value &&
-    typeof value === "object" &&
-    "type" in value &&
-    "folderId" in value &&
     "mode" in value &&
     "parentId" in value &&
-    "afterFolderId" in value &&
-    (value as SidebarFolderDropData).type === "sidebar-folder-drop-target" &&
-    typeof (value as SidebarFolderDropData).folderId === "string" &&
-    ((value as SidebarFolderDropData).mode === "inside" ||
-      (value as SidebarFolderDropData).mode === "after" ||
-      (value as SidebarFolderDropData).mode === "root")
-  );
-}
-
-export function isSidebarNoteDropData(value: unknown): value is SidebarNoteDropData {
-  return Boolean(
-    value &&
-    typeof value === "object" &&
-    "type" in value &&
-    "mode" in value &&
     "afterNoteId" in value &&
-    "isPinned" in value &&
-    (value as SidebarNoteDropData).type === "sidebar-note-drop-target" &&
-    (typeof (value as SidebarNoteDropData).folderId === "string" ||
-      (value as SidebarNoteDropData).folderId === null) &&
-    ((value as SidebarNoteDropData).mode === "inside" ||
-      (value as SidebarNoteDropData).mode === "after" ||
-      (value as SidebarNoteDropData).mode === "root") &&
-    (typeof (value as SidebarNoteDropData).afterNoteId === "string" ||
-      (value as SidebarNoteDropData).afterNoteId === null) &&
-    typeof (value as SidebarNoteDropData).isPinned === "boolean"
+    (value as SidebarPageDropData).type === "sidebar-page-drop-target" &&
+    ((value as SidebarPageDropData).mode === "inside" ||
+      (value as SidebarPageDropData).mode === "after" ||
+      (value as SidebarPageDropData).mode === "root")
   );
 }

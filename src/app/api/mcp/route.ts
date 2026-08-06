@@ -98,7 +98,7 @@ async function handleMcpRequest(request: Request) {
       authInfo: {
         token: token.token,
         clientId: token.tokenId,
-        scopes: ["notes:read", "notes:write", "folders:read", "folders:write"],
+        scopes: ["notes:read", "notes:write"],
         extra: {
           userId: token.userId,
           tokenId: token.tokenId,

@@ -4,16 +4,10 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import {
-  Card,
-  CardActions,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/Card";
-import {
   createMcpAccessTokenAction,
   revokeMcpAccessTokenAction,
 } from "@/server/api/mcp-tokens";
+import styles from "./SettingsWorkspace.module.css";
 
 export interface McpAccessTokenView {
   id: string;
@@ -26,9 +20,7 @@ export interface McpAccessTokenView {
 }
 
 function formatDate(value: string | null) {
-  if (!value) {
-    return "Never";
-  }
+  if (!value) return "Never";
 
   return new Date(value).toLocaleString("en-US", {
     dateStyle: "medium",
@@ -36,10 +28,14 @@ function formatDate(value: string | null) {
   });
 }
 
-export function McpAccessTokensCard({ tokens }: { tokens: McpAccessTokenView[] }) {
+export function McpAccessTokensCard({
+  tokens,
+}: {
+  tokens: McpAccessTokenView[];
+}) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [name, setName] = useState("External integration");
+  const [name, setName] = useState("Connected app");
   const [createdToken, setCreatedToken] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -52,9 +48,8 @@ export function McpAccessTokensCard({ tokens }: { tokens: McpAccessTokenView[] }
         await task();
         router.refresh();
       } catch (nextError) {
-        setError(
-          nextError instanceof Error ? nextError.message : "Unknown MCP token error.",
-        );
+        console.error("Connected app update failed", nextError);
+        setError("We couldn't update this connection. Please try again.");
       }
     });
   };
@@ -64,118 +59,94 @@ export function McpAccessTokensCard({ tokens }: { tokens: McpAccessTokenView[] }
 
     runAction(async () => {
       const token = await createMcpAccessTokenAction({
-        name: trimmedName || "External integration",
+        name: trimmedName || "Connected app",
       });
       setCreatedToken(token.token);
-      setFeedback("MCP token created. Copy it now; it will not be shown again.");
+      setFeedback("Connection code created. Copy it now; it will not be shown again.");
     });
   };
 
   const revokeToken = (tokenId: string) => {
     runAction(async () => {
       await revokeMcpAccessTokenAction(tokenId);
-      setFeedback("MCP token revoked.");
+      setFeedback("App disconnected.");
     });
   };
 
   return (
-    <Card variant="outlined">
-      <CardHeader>
-        <CardTitle>MCP Access Tokens</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div style={{ display: "grid", gap: "16px" }}>
-          <div style={{ fontSize: "13px", color: "var(--md-sys-color-on-surface-variant)" }}>
-            Use a personal access token as <code>Authorization: Bearer ...</code> when connecting an external MCP client to <code>/api/mcp</code>.
-          </div>
-
-          <div className="settings-panel">
-            <label className="settings-field">
-              <span>Token name</span>
-              <input
-                type="text"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                disabled={isPending}
-                placeholder="Integration name"
-              />
-            </label>
-            <Button type="button" variant="filled" onClick={createToken} disabled={isPending}>
-              Create MCP token
-            </Button>
-          </div>
-
-          {createdToken ? (
-            <div
-              style={{
-                display: "grid",
-                gap: "8px",
-                padding: "16px",
-                borderRadius: "16px",
-                background: "var(--md-sys-color-primary-container)",
-                color: "var(--md-sys-color-on-primary-container)",
-              }}
-            >
-              <strong>New token</strong>
-              <code style={{ overflowWrap: "anywhere" }}>{createdToken}</code>
-            </div>
-          ) : null}
-
-          <div style={{ border: "1px solid var(--md-sys-color-outline-variant)", borderRadius: "var(--md-sys-shape-medium)", overflow: "hidden" }}>
-            <ul className="md-list" style={{ padding: 0 }}>
-              {tokens.length === 0 ? (
-                <li className="md-list-item">
-                  <div className="md-list-item-content">
-                    <span className="md-list-item-headline" style={{ color: "var(--md-sys-color-on-surface-variant)" }}>No MCP tokens yet.</span>
-                  </div>
-                </li>
-              ) : (
-                tokens.map((token, index) => {
-                  const revoked = Boolean(token.revokedAt);
-                  return (
-                    <li key={token.id} className="md-list-item" style={{ borderBottom: index < tokens.length - 1 ? "1px solid var(--md-sys-color-outline-variant)" : "none" }}>
-                      <div className="md-list-item-content">
-                        <span className="md-list-item-headline">{token.name}</span>
-                        <span className="md-list-item-supporting-text">
-                          {token.tokenPrefix}… · created {formatDate(token.createdAt)} · last used {formatDate(token.lastUsedAt)}
-                          {revoked ? ` · revoked ${formatDate(token.revokedAt)}` : ""}
-                        </span>
-                      </div>
-                      <div className="md-list-item-end">
-                        <Button
-                          type="button"
-                          variant="outlined"
-                          onClick={() => revokeToken(token.id)}
-                          disabled={isPending || revoked}
-                        >
-                          Revoke
-                        </Button>
-                      </div>
-                    </li>
-                  );
-                })
-              )}
-            </ul>
-          </div>
-
-          {feedback ? (
-            <div style={{ color: "var(--md-sys-color-primary)", fontSize: "13px" }}>
-              {feedback}
-            </div>
-          ) : null}
-
-          {error ? (
-            <div style={{ color: "var(--md-sys-color-error)", fontSize: "13px" }}>
-              {error}
-            </div>
-          ) : null}
+    <section className={styles.contentSection}>
+      <div className={styles.contentSectionHeader}>
+        <div>
+          <h3>Connect an app</h3>
+          <p>Create a code and paste it into the app you want to connect.</p>
         </div>
-      </CardContent>
-      <CardActions align="start">
-        <div style={{ fontSize: "12px", color: "var(--md-sys-color-on-surface-variant)" }}>
-          Tokens are hashed before storage. Revoke unused tokens immediately.
+      </div>
+
+      <div className={styles.formStack}>
+        <label className={styles.field}>
+          <span>App name</span>
+          <input
+            type="text"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            disabled={isPending}
+            placeholder="Name the app"
+          />
+        </label>
+        <div className={styles.actions}>
+          <Button
+            type="button"
+            variant="filled"
+            onClick={createToken}
+            disabled={isPending}
+          >
+            Create code
+          </Button>
         </div>
-      </CardActions>
-    </Card>
+      </div>
+
+      {createdToken ? (
+        <div className={styles.tokenReveal}>
+          <strong>Copy this code now</strong>
+          <code>{createdToken}</code>
+        </div>
+      ) : null}
+
+      <ul className={styles.dataList}>
+        {tokens.length === 0 ? (
+          <li className={styles.emptyRow}>No apps connected.</li>
+        ) : (
+          tokens.map((token) => {
+            const revoked = Boolean(token.revokedAt);
+            return (
+              <li key={token.id} className={styles.dataRow}>
+                <span>
+                  <strong>{token.name}</strong>
+                  <small>
+                    Added {formatDate(token.createdAt)} · Last used{" "}
+                    {formatDate(token.lastUsedAt)}
+                    {revoked ? ` · Disconnected ${formatDate(token.revokedAt)}` : ""}
+                  </small>
+                </span>
+                <Button
+                  type="button"
+                  variant="text"
+                  onClick={() => revokeToken(token.id)}
+                  disabled={isPending || revoked}
+                >
+                  Disconnect
+                </Button>
+              </li>
+            );
+          })
+        )}
+      </ul>
+
+      {feedback ? <p className={styles.feedback}>{feedback}</p> : null}
+      {error ? <p className={styles.error}>{error}</p> : null}
+      <p className={styles.footerNote}>
+        Keep connection codes private. Disconnect apps you no longer use.
+      </p>
+    </section>
   );
 }

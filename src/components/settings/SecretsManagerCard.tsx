@@ -4,19 +4,12 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { confirmDialog } from "@/components/ui/ConfirmDialog";
-import {
-  Card,
-  CardActions,
-  CardContent,
-  CardHeader,
-  CardSubtitle,
-  CardTitle,
-} from "@/components/ui/Card";
 import type { AppSettingKey } from "@/domain/app-settings/app-settings.types";
 import {
   deleteAppSettingAction,
   setAppSettingAction,
 } from "@/server/api/app-settings";
+import styles from "./SettingsWorkspace.module.css";
 
 interface SecretItem {
   key: AppSettingKey;
@@ -38,9 +31,9 @@ function formatDate(value: string | null) {
 function sourceLabel(source: SecretItem["source"]) {
   switch (source) {
     case "app":
-      return "DB (in-app)";
+      return "Saved here";
     case "env":
-      return "ENV (legacy)";
+      return "System setting";
     default:
       return "Not set";
   }
@@ -53,38 +46,47 @@ export function SecretsManagerCard({
   items: SecretItem[];
   encryptionAvailable: boolean;
 }) {
-  if (!encryptionAvailable) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>App secrets</CardTitle>
-          <CardSubtitle>
-            AUTH_SECRET (or APP_ENCRYPTION_KEY) must be set before secrets can
-            be stored.
-          </CardSubtitle>
-        </CardHeader>
-      </Card>
-    );
-  }
-
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>App secrets</CardTitle>
-        <CardSubtitle>
-          Store API keys and runtime config in the database. Values are
-          AES-256-GCM encrypted with your AUTH_SECRET. Bootstrap-only env vars
-          (DATABASE_URL, AUTH_SECRET, NEXTAUTH_URL) are excluded.
-        </CardSubtitle>
-      </CardHeader>
-      <CardContent>
-        <div style={{ display: "grid", gap: 12 }}>
-          {items.map((item) => (
-            <SecretRow key={item.key} item={item} />
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+    <div className={styles.standaloneRoot}>
+      <header className={styles.sectionIntro}>
+        <h1 className={styles.title}>More settings</h1>
+        <p className={styles.sectionDescription}>
+          Extra choices for this installation.
+        </p>
+      </header>
+
+      {!encryptionAvailable ? (
+        <section className={styles.contentSection}>
+          <p className={styles.error}>
+            These settings cannot be saved safely yet.
+          </p>
+        </section>
+      ) : (
+        <section className={styles.contentSection}>
+          <div className={styles.contentSectionHeader}>
+            <div>
+              <h3>Optional settings</h3>
+              <p>
+                Saved values are kept private. Leave anything you do not
+                recognize unchanged.
+              </p>
+              <details className={styles.advancedBlock}>
+                <summary>About these settings</summary>
+                <p>
+                  Most people do not need to change these. Some are chosen when
+                  Giraffle is installed and can only be changed there.
+                </p>
+              </details>
+            </div>
+          </div>
+          <div className={styles.secretList}>
+            {items.map((item) => (
+              <SecretRow key={item.key} item={item} />
+            ))}
+          </div>
+        </section>
+      )}
+    </div>
   );
 }
 
@@ -116,20 +118,21 @@ function SecretRow({ item }: { item: SecretItem }) {
         setFeedback("Saved");
         reset();
         router.refresh();
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Save failed.");
+      } catch (nextError) {
+        console.error("Advanced setting save failed", nextError);
+        setError("We couldn't save this setting. Please try again.");
       }
     });
   };
 
   const remove = async () => {
-    const ok = await confirmDialog({
-      title: "Delete secret?",
-      message: `Delete ${item.key} from the database?`,
-      confirmLabel: "Delete",
+    const confirmed = await confirmDialog({
+      title: "Remove setting?",
+      message: `Remove the saved value for ${item.key}?`,
+      confirmLabel: "Remove",
       destructive: true,
     });
-    if (!ok) return;
+    if (!confirmed) return;
 
     startTransition(async () => {
       try {
@@ -137,106 +140,74 @@ function SecretRow({ item }: { item: SecretItem }) {
         await deleteAppSettingAction(item.key);
         setFeedback("Removed");
         router.refresh();
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Remove failed.");
+      } catch (nextError) {
+        console.error("Advanced setting removal failed", nextError);
+        setError("We couldn't remove this setting. Please try again.");
       }
     });
   };
 
   return (
-    <div
-      style={{
-        border: "1px solid var(--md-color-outline-variant, #ddd)",
-        borderRadius: 8,
-        padding: 14,
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "baseline",
-          gap: 12,
-          flexWrap: "wrap",
-        }}
-      >
+    <article className={styles.secretRow}>
+      <div className={styles.secretRowHeader}>
         <div>
-          <code style={{ fontSize: 13, fontWeight: 600 }}>{item.key}</code>
-          <div style={{ fontSize: 12, opacity: 0.7, marginTop: 2 }}>
-            {item.description}
-          </div>
+          <code>{item.key}</code>
+          <div className={styles.secretDescription}>{item.description}</div>
         </div>
-        <span
-          style={{
-            fontSize: 11,
-            padding: "2px 8px",
-            borderRadius: 999,
-            background: "var(--md-color-surface-container, #eee)",
-            opacity: 0.8,
-          }}
-        >
-          {sourceLabel(item.source)}
-        </span>
+        <span className={styles.secretSource}>{sourceLabel(item.source)}</span>
       </div>
 
-      <div style={{ marginTop: 8, fontSize: 12, opacity: 0.75 }}>
-        {item.configured ? (
-          <span>
-            Current: <strong>{item.preview ?? "•••"}</strong> · Updated{" "}
-            {formatDate(item.updatedAt)}
-          </span>
-        ) : (
-          <span>Not configured</span>
-        )}
+      <div className={styles.secretMeta}>
+        {item.configured
+          ? `Current ${item.preview ?? "•••"} · updated ${formatDate(item.updatedAt)}`
+          : "Not configured"}
       </div>
 
       {editing ? (
-        <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
-          <input
-            type="password"
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            placeholder={`New value for ${item.key}`}
-            disabled={isPending}
-            autoFocus
-            style={{
-              padding: "8px 10px",
-              border: "1px solid var(--md-color-outline-variant, #ccc)",
-              borderRadius: 6,
-              fontSize: 13,
-              fontFamily: "inherit",
-            }}
-          />
-          {error && <div style={{ color: "var(--md-color-error, #b00)", fontSize: 12 }}>{error}</div>}
-          <CardActions align="end">
+        <div className={styles.secretEditor}>
+          <label className={styles.field}>
+            <span>New value</span>
+            <input
+              type="password"
+              value={value}
+              onChange={(event) => setValue(event.target.value)}
+              placeholder={`Value for ${item.key}`}
+              disabled={isPending}
+              autoFocus
+            />
+          </label>
+          {error ? <p className={styles.error}>{error}</p> : null}
+          <div className={styles.actions}>
             <Button variant="text" onClick={reset} disabled={isPending}>
               Cancel
             </Button>
             <Button onClick={save} disabled={isPending}>
               {isPending ? "Saving…" : "Save"}
             </Button>
-          </CardActions>
+          </div>
         </div>
       ) : (
-        <div style={{ marginTop: 10, display: "flex", gap: 8 }}>
-          <Button variant="text" onClick={() => setEditing(true)} disabled={isPending}>
+        <div className={styles.actions}>
+          <Button
+            variant="text"
+            onClick={() => setEditing(true)}
+            disabled={isPending}
+          >
             {item.configured ? "Replace" : "Set value"}
           </Button>
-          {item.source === "app" && (
+          {item.source === "app" ? (
             <Button
               variant="text"
               onClick={remove}
               disabled={isPending}
-              style={{ color: "var(--md-color-error, #b00)" }}
+              className={styles.error}
             >
-              Delete
+              Remove
             </Button>
-          )}
-          {feedback && (
-            <span style={{ fontSize: 12, opacity: 0.7, alignSelf: "center" }}>{feedback}</span>
-          )}
+          ) : null}
+          {feedback ? <span className={styles.feedback}>{feedback}</span> : null}
         </div>
       )}
-    </div>
+    </article>
   );
 }

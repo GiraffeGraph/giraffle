@@ -23,7 +23,8 @@ import {
   toggleTodoAction,
 } from "@/server/api/notes";
 import type { EisenhowerQuadrant, MatrixSlot } from "@/domain/note/note.types";
-import { isSidebarNoteDragData } from "@/components/sidebar/sidebar.types";
+import { renderStoredIcon } from "@/components/sidebar/sidebar-icon-utils";
+import { isSidebarPageDragData } from "@/components/sidebar/sidebar.types";
 import {
   isTmNoteDragData,
   isTmTodoDragData,
@@ -177,7 +178,12 @@ function NoteCard({
       ].filter(Boolean).join(" ")}
     >
       <button className="tm-note-card-body" type="button" onClick={() => onSelect(note)}>
-        {note.icon && <span className="tm-note-card-icon">{note.icon}</span>}
+        <span className="tm-note-card-icon" aria-hidden="true">
+          {renderStoredIcon(note.icon, {
+            fallback: <span className="material-symbols-outlined">description</span>,
+            materialClassName: "material-symbols-outlined",
+          })}
+        </span>
         <span className="tm-note-card-title">{note.title || "Untitled"}</span>
         {note.todoTotal > 0 && (
           <span className="tm-note-card-badge">
@@ -279,14 +285,14 @@ function OuterQuadrant({
       dropTargetForElements({
         element: el,
         canDrop: ({ source }) =>
-          isTmNoteDragData(source.data) || isSidebarNoteDragData(source.data),
+          isTmNoteDragData(source.data) || isSidebarPageDragData(source.data),
         onDragEnter: () => setIsOver(true),
         onDragLeave: () => setIsOver(false),
         onDrop: ({ source }) => {
           setIsOver(false);
           if (isTmNoteDragData(source.data)) onDrop(source.data.id, config.key);
-          else if (isSidebarNoteDragData(source.data))
-            onDrop(source.data.noteId, config.key);
+          else if (isSidebarPageDragData(source.data))
+            onDrop(source.data.pageId, config.key);
         },
       })
     );
@@ -342,14 +348,14 @@ function BacklogStrip({
       dropTargetForElements({
         element: el,
         canDrop: ({ source }) =>
-          isTmNoteDragData(source.data) || isSidebarNoteDragData(source.data),
+          isTmNoteDragData(source.data) || isSidebarPageDragData(source.data),
         onDragEnter: () => setIsOver(true),
         onDragLeave: () => setIsOver(false),
         onDrop: ({ source }) => {
           setIsOver(false);
           if (isTmNoteDragData(source.data)) onDrop(source.data.id, "BACKLOG");
-          else if (isSidebarNoteDragData(source.data))
-            onDrop(source.data.noteId, "BACKLOG");
+          else if (isSidebarPageDragData(source.data))
+            onDrop(source.data.pageId, "BACKLOG");
         },
       })
     );
@@ -362,7 +368,7 @@ function BacklogStrip({
     >
       <div className="tm-backlog-header">
         <span className="material-symbols-outlined tm-backlog-icon">
-          inbox
+          pending_actions
         </span>
         <div className="tm-backlog-labels">
           <span className="tm-backlog-label">Backlog</span>
@@ -633,7 +639,12 @@ function InnerPanel({
     <div className="tm-inner-panel">
       <div className="tm-inner-header-bar">
         <div className="tm-inner-note-info">
-          {note.icon && <span className="tm-inner-note-icon">{note.icon}</span>}
+          <span className="tm-inner-note-icon" aria-hidden="true">
+            {renderStoredIcon(note.icon, {
+              fallback: <span className="material-symbols-outlined">description</span>,
+              materialClassName: "material-symbols-outlined",
+            })}
+          </span>
           <span className="tm-inner-note-title">{note.title || "Untitled"}</span>
           {todos.length > 0 && (
             <span className="tm-inner-note-prog">{completedCount}/{todos.length}</span>

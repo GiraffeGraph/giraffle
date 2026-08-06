@@ -759,12 +759,37 @@
 }
 
 .stride-todo-note {
-  font-size: 10px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  background: transparent;
   color: var(--text-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 10px;
+  line-height: 1.2;
+  text-align: left;
+}
+
+.stride-todo-note:hover {
+  color: var(--text-secondary);
+}
+
+.stride-todo-note > span:last-child {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  line-height: 1.2;
+}
+
+.stride-todo-note-icon,
+.stride-todo-note-icon .material-symbols-outlined {
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 11px;
 }
 
 .stride-todo-quadrant-dot {
@@ -879,12 +904,33 @@
 }
 
 .stride-event-note {
-  font-size: 9px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  background: transparent;
   color: var(--text-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 9px;
+  line-height: 1.2;
+  text-align: left;
+}
+
+.stride-event-note > span:last-child {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  line-height: 1.2;
+}
+
+.stride-event-note-icon,
+.stride-event-note-icon .material-symbols-outlined {
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 10px;
 }
 
 /* Duration badge + picker */
@@ -1324,6 +1370,13 @@
   letter-spacing: 0.05em;
   border-bottom: 1px solid var(--border-soft);
   margin-bottom: 3px;
+}
+
+.stride-unscheduled-group-icon,
+.stride-unscheduled-group-icon .material-symbols-outlined {
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 12px;
 }
 
 .stride-unscheduled-group-title {

@@ -3,11 +3,7 @@
 import { db } from "@/lib/db";
 import { isRecord } from "@/lib/utils";
 import { extractWikilinksFromContent } from "./wikilink.parser";
-import type {
-  BacklinkResult,
-  GraphProjection,
-  UnresolvedLink,
-} from "./link.types";
+import type { BacklinkResult } from "./link.types";
 
 /**
  * Extract links from a note's blocks and persist them.
@@ -71,6 +67,7 @@ export async function extractAndSaveLinks(
       userId,
       title: { in: targetNames, mode: "insensitive" },
       isArchived: false,
+      boardTaskSource: null,
     },
     select: { id: true, title: true },
   });
@@ -118,35 +115,6 @@ export async function getBacklinks(
 }
 
 /**
- * Get all unresolved links across the workspace.
- * These are wikilinks that don't match any existing note title.
- */
-export async function getUnresolvedLinks(
-  userId: string
-): Promise<UnresolvedLink[]> {
-  const unresolvedLinks = await db.link.findMany({
-    where: {
-      targetNoteId: null,
-      sourceNote: { userId },
-    },
-    select: { targetRaw: true, sourceNoteId: true },
-  });
-
-  const grouped = new Map<string, Set<string>>();
-  for (const link of unresolvedLinks) {
-    const existing = grouped.get(link.targetRaw) ?? new Set();
-    existing.add(link.sourceNoteId);
-    grouped.set(link.targetRaw, existing);
-  }
-
-  return Array.from(grouped.entries()).map(([targetRaw, sourceNoteIds]) => ({
-    targetRaw,
-    sourceNoteIds: Array.from(sourceNoteIds),
-    count: sourceNoteIds.size,
-  }));
-}
-
-/**
  * Resolve links after a note is created or renamed.
  * Updates any unresolved links that now match the note title.
  */
@@ -178,75 +146,4 @@ export async function resolveLinksForNote(
   });
 
   return result.count;
-}
-
-export async function getGraphProjection(
-  userId: string
-): Promise<GraphProjection> {
-  const [notes, links] = await Promise.all([
-    db.note.findMany({
-      where: {
-        userId,
-        isArchived: false,
-      },
-      select: {
-        id: true,
-        title: true,
-        icon: true,
-        isPublished: true,
-      },
-      orderBy: {
-        updatedAt: "desc",
-      },
-    }),
-    db.link.findMany({
-      where: {
-        sourceNote: {
-          userId,
-          isArchived: false,
-        },
-        targetNoteId: {
-          not: null,
-        },
-      },
-      select: {
-        sourceNoteId: true,
-        targetNoteId: true,
-        targetRaw: true,
-      },
-    }),
-  ]);
-
-  const degreeByNoteId = new Map<string, number>();
-
-  for (const link of links) {
-    degreeByNoteId.set(
-      link.sourceNoteId,
-      (degreeByNoteId.get(link.sourceNoteId) ?? 0) + 1
-    );
-
-    if (link.targetNoteId) {
-      degreeByNoteId.set(
-        link.targetNoteId,
-        (degreeByNoteId.get(link.targetNoteId) ?? 0) + 1
-      );
-    }
-  }
-
-  return {
-    nodes: notes.map((note) => ({
-      id: note.id,
-      title: note.title,
-      icon: note.icon,
-      degree: degreeByNoteId.get(note.id) ?? 0,
-      isPublished: note.isPublished,
-    })),
-    edges: links
-      .filter((link) => typeof link.targetNoteId === "string")
-      .map((link) => ({
-        source: link.sourceNoteId,
-        target: link.targetNoteId as string,
-        label: link.targetRaw,
-      })),
-  };
 }

@@ -5,7 +5,7 @@
 <h1 align="center">Giraffle</h1>
 
 <p align="center">
-  A self-hosted knowledge editor that combines block editing, wikilinks, backlinks, graph navigation, and canonical PostgreSQL storage.
+  A self-hosted knowledge editor that combines block editing, wikilinks, backlinks, and canonical PostgreSQL storage.
 </p>
 
 <p align="center">
@@ -43,11 +43,10 @@ Instead of storing notes as loose markdown files first and reconstructing struct
 ## Features
 
 - Block-based editing with Tiptap and custom block behaviors
-- Wikilinks, backlinks, unresolved links, and graph projection
+- Wikilinks, resolved links, and backlinks
 - PostgreSQL-backed canonical note and block storage
-- Folder hierarchy, publishing, and note organization tools
+- Folder hierarchy and note organization tools
 - Markdown and MDX export from canonical note data
-- Public note routes and slug-based published pages
 - Self-hosted production stack with Docker Compose, PostgreSQL, and nginx
 - In-app update center that checks GitHub Releases and shows the recommended upgrade command
 
@@ -56,8 +55,8 @@ Instead of storing notes as loose markdown files first and reconstructing struct
 - Tiptap editor with custom `callout`, `toggle`, `wikilink`, `image`, and slash-command support
 - Canonical AST persistence into `Note` and `Block` tables
 - Patch-aware note saves plus explicit block mutation service APIs
-- Persisted wikilink index, backlinks, unresolved links, and graph projection
-- Folder navigation, note move flow, publish toggle, Markdown/MDX export, and public note pages
+- Persisted wikilink index and backlinks
+- Folder navigation, note move flow, and Markdown/MDX export
 
 ## Stack
 
@@ -74,10 +73,10 @@ Instead of storing notes as loose markdown files first and reconstructing struct
 
 | Domain | Responsibility |
 | --- | --- |
-| Note | metadata, canonical document, publish state |
+| Note | metadata and canonical document |
 | Block | stable block IDs, ordering, parent-child nesting |
-| Link | wikilinks, resolved note targets, backlinks, graph edges |
-| Folder | hierarchical organization and publish path segments |
+| Link | wikilinks, resolved note targets, and backlinks |
+| Folder | hierarchical note organization |
 
 ## Local Development
 
@@ -124,23 +123,17 @@ ENV_FILE=.env.production npm run smoke:prod
 
 ## Main Routes
 
-- `/dashboard` workspace overview
 - `/notes/[noteId]` editable note view
 - `/folders/[folderId]` folder-scoped note listing
-- `/graph` link graph over persisted projections
-- `/inbox` default landing area for notes without folders
+- `/notes` default landing area for all active notes
 - `/search` filterable workspace search
-- `/publish` publish/export workspace
 - `/settings` theme, sidebar, and local sync preferences
 - `/account` account and password maintenance
-- `/p/[noteId]` public published note surface
-- `/published/[...slugParts]` slug-based public published route
 
-## Export And Publish
+## Export
 
 - Notes stay canonical in block AST form.
 - Markdown and MDX are derived through `src/domain/note/note.serializer.ts` and `src/domain/note/note.export.ts`.
-- Publish file paths are derived from folder lineage plus slugified note titles.
 
 ## CI/CD
 
@@ -296,6 +289,7 @@ That adds nginx on port `80` in front of the app. The default stack intentionall
 - By default the app is public on `APP_PORT` and reachable directly, usually `http://localhost:3000`.
 - nginx is optional and only starts when `docker-compose.proxy.yml` is included.
 - Optional external integrations can use the authenticated MCP endpoint. Giraffle contains no built-in AI runtime. See [docs/mcp.md](docs/mcp.md).
+- Page, task, Trek, and Savanna persistence boundaries are documented in [docs/architecture/domain-model.md](docs/architecture/domain-model.md).
 
 ## Auth Baseline
 
@@ -311,7 +305,6 @@ src/
   app/
   components/
     editor/
-    graph/
     notes/
     sidebar/
   domain/

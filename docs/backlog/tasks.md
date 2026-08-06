@@ -5,10 +5,10 @@ Source: Consolidated from the former `docs/backlog/tasks/TASK-*.md` files.
 
 ## Roadmap Snapshot
 
-- Giraffle already has its core stack in place: Next.js 16, Prisma/PostgreSQL, NextAuth, Tiptap, canonical block storage, wikilinks, backlinks, templates, folders, publish/export, graph, search, and deployment foundations.
+- Giraffle already has its core stack in place: Next.js 16, Prisma/PostgreSQL, NextAuth, Tiptap, canonical block storage, wikilinks, backlinks, templates, folders, export, search, and deployment foundations.
 - The roadmap marks `TASK-001` through `TASK-027` as completed.
-- The product evolved in clear phases: data-model hardening, editor capabilities, navigation and information architecture, publishing and search, account and settings flows, local-first/sync boundaries, AI-assisted editing, and production operations.
-- The next layer is refinement work rather than missing platform basics: richer table UX, stronger template ergonomics, better graph filtering, semantic search, and deeper local-first sync.
+- The product evolved in clear phases: data-model hardening, editor capabilities, navigation and information architecture, search, account and settings flows, local-first/sync boundaries, and production operations.
+- The next layer is refinement work rather than missing platform basics: richer table UX, stronger template ergonomics, semantic search, and deeper local-first sync.
 
 ## Task Summaries
 
@@ -42,17 +42,10 @@ Source: Consolidated from the former `docs/backlog/tasks/TASK-*.md` files.
 - Turned tags into a persisted, queryable domain instead of a schema-only idea.
 - Added a basic tag-browsing surface without relying on render-time scans.
 
-### TASK-006 — Markdown/MDX Export and Publish Pipeline
+### TASK-006 — Markdown/MDX Export Pipeline
 - Hardened Markdown parsing and serialization for supported block types.
 - Added MDX-oriented downstream export output while keeping the AST as the source of truth.
-- Created a publish path for notes and note trees.
-- Added export actions, publish toggles, and public published-note pages.
-
-### TASK-007 — Graph View over Link Projections
-- Built a graph surface on top of persisted note/link projections.
-- Queried nodes and edges from stored data instead of scanning note content at render time.
-- Added a dedicated graph route with interactive SVG rendering.
-- Kept graph reads separate from core note-editing flows.
+- Added note-level Markdown and MDX export actions.
 
 ### TASK-008 — Deploy Discipline and Auth Hardening
 - Added a production deployment baseline with Dockerfile, `.dockerignore`, and production compose setup.
@@ -68,13 +61,13 @@ Source: Consolidated from the former `docs/backlog/tasks/TASK-*.md` files.
 
 ### TASK-010 — Turkish Product Language and Copy Baseline
 - Unified core product UI copy around a Turkish-first voice.
-- Removed mixed English/Turkish labels across dashboard, notes, graph, templates, publish, and auth pages.
+- Removed mixed English/Turkish labels across notes, templates, and auth pages.
 - Aligned editor prompts, slash commands, wikilink prompts, and auth errors with the same product tone.
 - Turned the app from a mixed-language prototype into a more coherent product experience.
 
 ### TASK-011 — App Shell Visual Refresh
 - Reworked the authenticated shell into a cleaner, warmer, paper-like visual system.
-- Improved shared spacing, surfaces, and control consistency across dashboard, notes, graph, auth, publish, and templates.
+- Improved shared spacing, surfaces, and control consistency across notes, auth, and templates.
 - Reduced the “stitched together prototype” feel without changing the data model.
 - Established a stronger base for later UI refinement work.
 
@@ -96,10 +89,10 @@ Source: Consolidated from the former `docs/backlog/tasks/TASK-*.md` files.
 - Tightened mobile spacing and action density so smaller screens remain usable.
 - Extended the polish into surrounding shell/editor surfaces for a more coherent workspace.
 
-### TASK-015 — Note List Ordering, Pinning, and Inbox Flow
+### TASK-015 — Note List Ordering and Pinning
 - Added explicit note ordering instead of relying only on `updatedAt` sorting.
-- Introduced persistent `position`, `isPinned`, and `slug` note flows.
-- Added inbox/root-note surfaces and pin/move controls in note and sidebar workflows.
+- Introduced persistent `position` and `isPinned` note flows.
+- Added note-list surfaces and pin/move controls in note and sidebar workflows.
 - Created a more stable workspace structure for folder and sidebar lists.
 
 ### TASK-016 — Folder Drag-Drop and Reparenting
@@ -132,16 +125,13 @@ Source: Consolidated from the former `docs/backlog/tasks/TASK-*.md` files.
 - Added Markdown seed content and JSON-based variable editing.
 - Kept template application producing canonical note documents.
 
-### TASK-021 — Graph Workspace and Backlink Navigation Hardening
-- Made the graph and backlinks more useful for actual knowledge navigation.
-- Added graph filters, graph search, orphan visibility, and unresolved-link surfacing.
-- Improved the connection between note pages, backlinks, and graph drill-down.
-- Kept graph data sourced from persisted link projections.
+### TASK-021 — Backlink Navigation Hardening
+- Improved the connection between note pages and backlink navigation.
+- Kept backlink data sourced from the persisted wikilink index.
 
-### TASK-022 — Publish Trees, Slugs, and Export Packaging
-- Improved publish/export from note-level output to a more stable downstream model.
-- Added persistent slugs, slug-based public routes, and a publish workspace.
-- Added note-level slug controls and cleaner export packaging.
+### TASK-022 — Export Packaging
+- Improved note export as a stable downstream model.
+- Added cleaner Markdown/MDX packaging.
 - Kept Markdown/MDX as downstream output rather than the primary source of truth.
 
 ### TASK-023 — Settings, Theme, and Workspace Preferences
@@ -177,7 +167,7 @@ Source: Consolidated from the former `docs/backlog/tasks/TASK-*.md` files.
 ## Overall Arc
 
 1. **Core data integrity:** `TASK-001`, `TASK-003`, and `TASK-009` established a durable block-based document model.
-2. **Knowledge graph workflows:** `TASK-002`, `TASK-005`, `TASK-006`, `TASK-007`, `TASK-019`, `TASK-021`, and `TASK-022` turned notes, links, tags, graph, search, and publishing into connected product features.
+2. **Linked-note workflows:** `TASK-002`, `TASK-005`, `TASK-006`, `TASK-019`, `TASK-021`, and `TASK-022` turned notes, links, tags, backlinks, search, and export into connected product features.
 3. **UX and product polish:** `TASK-010` through `TASK-018` significantly improved language, shell quality, sidebar IA, note usability, block interaction, and media/table handling.
 4. **Operational maturity:** `TASK-008`, `TASK-023`, `TASK-024`, `TASK-025`, `TASK-026`, and `TASK-027` pushed the app toward safer deployment, account management, settings, sync boundaries, and AI-assisted editing.
 

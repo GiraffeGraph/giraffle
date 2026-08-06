@@ -25,7 +25,7 @@ import type { McpToolDefinition } from "../tool-definitions";
 
 /**
  * Trek (Kanban) tools. A board IS a note (boardId === noteId); its columns are
- * the note's kanbanColumns and its cards are the note's taskItem blocks
+ * explicit Board/BoardColumn records and BoardTask links to canonical task blocks
  * (cardId === blockId). Because cards are real tasks, a dated card also shows in
  * Stride and a prioritized card shows in Tower. Priority is the Eisenhower
  * quadrant (DO/SCHEDULE/DELEGATE/ELIMINATE).

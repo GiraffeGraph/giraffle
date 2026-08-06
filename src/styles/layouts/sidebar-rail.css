@@ -579,16 +579,13 @@
   }
 }
 
-.graph-toolbar,
 .settings-layout,
 .settings-stat-grid,
-.proposal-card-head,
-.publish-card-actions {
+.proposal-card-head {
   display: flex;
   gap: 12px;
 }
 
-.graph-toolbar,
 .settings-layout,
 .settings-stat-grid {
   flex-wrap: wrap;
@@ -602,17 +599,14 @@
 .settings-helper-text,
 .proposal-card-summary,
 .settings-log-meta,
-.settings-empty,
-.note-slug-field span {
+.settings-empty {
   color: var(--text-secondary);
 }
 
 .settings-stat-card,
 .settings-log-row,
 .proposal-card,
-.sidebar-folder-dropzone,
-.graph-toolbar,
-.note-slug-input {
+.sidebar-folder-dropzone {
   border: 1px solid var(--border-color);
   background: var(--surface-glass);
   border-radius: var(--radius-card);
@@ -661,19 +655,6 @@
 .note-status-pill.pinned {
   background: rgba(var(--accent-rgb) / 0.12);
   color: var(--accent-strong);
-}
-
-.note-slug-field {
-  display: grid;
-  gap: 6px;
-  margin-top: 14px;
-  max-width: 340px;
-}
-
-.note-slug-input {
-  padding: 10px 12px;
-  color: var(--text-primary);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
 }
 
 .editor-surface-upload {
@@ -793,11 +774,6 @@
 
 .sidebar-entity-row.drag-source .sidebar-row-main {
   opacity: 0.55;
-}
-
-.graph-toolbar {
-  margin-top: 18px;
-  padding: 14px;
 }
 
 .proposal-card-actions {

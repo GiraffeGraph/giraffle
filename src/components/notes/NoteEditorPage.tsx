@@ -15,7 +15,6 @@ import { SidebarIconPicker } from "@/components/sidebar/SidebarIconPicker";
 
 import { NoteTopbar } from "@/components/notes/NoteTopbar";
 import { ReadingModeOverlay } from "@/components/notes/ReadingModeOverlay";
-import { PublishPopover } from "@/components/notes/PublishPopover";
 import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 import { useIsMobileViewport } from "@/components/ui/useIsMobileViewport";
 import type { BacklinkResult } from "@/domain/link/link.types";
@@ -33,30 +32,27 @@ import {
 } from "@/server/api/notes";
 import { createSavannaFromNoteAction } from "@/server/api/savanna";
 import {
-  buildFolderLabel,
+  buildPageLabel,
+  selectableParentPages,
   extractHeadings,
   splitDocumentIntoChunks,
   type NoteChunk,
   type TocHeading,
 } from "@/components/notes/NoteEditorPage.helpers";
 import { queueLocalMutation, resolveLocalMutation } from "@/lib/local-sync";
-import { useRegisterTab } from "@/components/tabs/use-register-tab";
-import { editorTabsStore } from "@/components/tabs/editor-tabs-store";
 
 interface NoteEditorPageProps {
   note: {
     id: string;
     title: string;
-    slug: string | null;
     icon: string | null;
-    folderId: string | null;
+    parentId: string | null;
     isPinned: boolean;
-    isPublished: boolean;
     document: TiptapDocument;
   };
-  folders: Array<{
+  pages: Array<{
     id: string;
-    name: string;
+    title: string;
     parentId: string | null;
   }>;
   backlinks: BacklinkResult[];
@@ -66,24 +62,20 @@ type SaveStatus = "saved" | "saving" | "pending";
 
 export function NoteEditorPage({
   note,
-  folders,
+  pages,
   backlinks,
 }: NoteEditorPageProps) {
   const [title, setTitle] = useState(note.title);
-  const [currentFolderId, setCurrentFolderId] = useState<string | null>(
-    note.folderId,
+  const [currentParentId, setCurrentParentId] = useState<string | null>(
+    note.parentId,
   );
-  const [slug, setSlug] = useState(note.slug);
   const [isPinned, setIsPinned] = useState(note.isPinned);
-  const [isPublished, setIsPublished] = useState(note.isPublished);
   const [contextMenuPosition, setContextMenuPosition] = useState<{
     x: number;
     y: number;
   } | null>(null);
   const [isExportPending, startExportTransition] = useTransition();
-  const [isPublishPending, startPublishTransition] = useTransition();
-  const [isFolderMenuOpen, setIsFolderMenuOpen] = useState(false);
-  const [publishAnchor, setPublishAnchor] = useState<DOMRect | null>(null);
+  const [isParentMenuOpen, setIsParentMenuOpen] = useState(false);
   const [noteIcon, setNoteIcon] = useState<string | null>(note.icon);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
   const [iconPickerPosition, setIconPickerPosition] = useState<{
@@ -100,7 +92,7 @@ export function NoteEditorPage({
   const [latestDocument, setLatestDocument] = useState<TiptapDocument>(
     note.document,
   );
-  const folderMenuRef = useRef<HTMLDivElement | null>(null);
+  const parentMenuRef = useRef<HTMLDivElement | null>(null);
   const titleSaveTimeoutRef = useRef<number | null>(null);
   const pendingTitleRef = useRef(note.title);
   const persistedTitleRef = useRef(note.title);
@@ -112,31 +104,24 @@ export function NoteEditorPage({
   const router = useRouter();
   const isMobileViewport = useIsMobileViewport(900);
 
-  const folderOptions = useMemo(
+  const parentOptions = useMemo(
     () =>
-      folders.map((folder) => ({
-        id: folder.id,
-        name: buildFolderLabel(folder, folders),
+      selectableParentPages(note.id, pages).map((page) => ({
+        id: page.id,
+        name: buildPageLabel(page, pages),
       })),
-    [folders],
+    [note.id, pages],
   );
 
-  const currentFolderLabel = useMemo(
+  const currentParentLabel = useMemo(
     () =>
-      folderOptions.find((folder) => folder.id === currentFolderId)?.name ??
+      parentOptions.find((page) => page.id === currentParentId)?.name ??
       "Workspace",
-    [currentFolderId, folderOptions],
+    [currentParentId, parentOptions],
   );
 
   const effectiveTitle = title.trim() || DEFAULT_NOTE_TITLE;
 
-  useRegisterTab({
-    kind: "note",
-    id: note.id,
-    href: `/notes/${note.id}`,
-    title: effectiveTitle,
-    icon: noteIcon,
-  });
   const saveStatusMeta = useMemo(() => {
     switch (saveStatus) {
       case "saving":
@@ -177,19 +162,19 @@ export function NoteEditorPage({
   }, []);
 
   useEffect(() => {
-    if (!isFolderMenuOpen) {
+    if (!isParentMenuOpen) {
       return;
     }
 
     const handlePointerDown = (event: MouseEvent) => {
-      if (!folderMenuRef.current?.contains(event.target as Node)) {
-        setIsFolderMenuOpen(false);
+      if (!parentMenuRef.current?.contains(event.target as Node)) {
+        setIsParentMenuOpen(false);
       }
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        setIsFolderMenuOpen(false);
+        setIsParentMenuOpen(false);
       }
     };
 
@@ -200,7 +185,7 @@ export function NoteEditorPage({
       document.removeEventListener("mousedown", handlePointerDown);
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isFolderMenuOpen]);
+  }, [isParentMenuOpen]);
 
   useEffect(() => {
     return () => {
@@ -395,44 +380,30 @@ export function NoteEditorPage({
     void flushTitleSave();
   }, [flushTitleSave]);
 
-  const handleFolderChange = useCallback(
-    async (nextFolderId: string) => {
-      const normalizedFolderId = nextFolderId || null;
-      setCurrentFolderId(normalizedFolderId);
+  const handleParentChange = useCallback(
+    async (nextParentId: string) => {
+      const normalizedParentId = nextParentId || null;
+      setCurrentParentId(normalizedParentId);
       const mutationId = queueLocalMutation({
         entityType: "note",
         entityId: note.id,
-        actionType: "move-folder",
-        payload: { folderId: normalizedFolderId },
+        actionType: "move-page",
+        payload: { parentId: normalizedParentId },
       });
-      await updateNoteAction(note.id, { folderId: normalizedFolderId });
-      resolveLocalMutation(mutationId);
-    },
-    [note.id],
-  );
-
-  const handleSelectFolder = useCallback(
-    async (nextFolderId: string | null) => {
-      setIsFolderMenuOpen(false);
-      await handleFolderChange(nextFolderId ?? "");
-    },
-    [handleFolderChange],
-  );
-
-  const handlePublishToggle = useCallback(() => {
-    const nextValue = !isPublished;
-    startPublishTransition(async () => {
-      setIsPublished(nextValue);
-      const mutationId = queueLocalMutation({
-        entityType: "note",
-        entityId: note.id,
-        actionType: nextValue ? "publish" : "unpublish",
-      });
-      await updateNoteAction(note.id, { isPublished: nextValue });
+      await updateNoteAction(note.id, { parentId: normalizedParentId });
       resolveLocalMutation(mutationId);
       router.refresh();
-    });
-  }, [isPublished, note.id, router]);
+    },
+    [note.id, router],
+  );
+
+  const handleSelectParent = useCallback(
+    async (nextParentId: string | null) => {
+      setIsParentMenuOpen(false);
+      await handleParentChange(nextParentId ?? "");
+    },
+    [handleParentChange],
+  );
 
   const handlePinToggle = useCallback(async () => {
     const nextValue = !isPinned;
@@ -461,23 +432,6 @@ export function NoteEditorPage({
     [note.id, router],
   );
 
-  const handleSlugChange = useCallback(
-    async (nextSlug: string) => {
-      const normalizedSlug = nextSlug.trim() || null;
-      setSlug(normalizedSlug);
-      const mutationId = queueLocalMutation({
-        entityType: "note",
-        entityId: note.id,
-        actionType: "update-slug",
-        payload: { slug: normalizedSlug },
-      });
-      await updateNoteAction(note.id, { slug: normalizedSlug });
-      resolveLocalMutation(mutationId);
-      router.refresh();
-    },
-    [note.id, router],
-  );
-
   const handleCopyExport = useCallback(
     (format: "markdown" | "mdx") => {
       startExportTransition(async () => {
@@ -488,14 +442,6 @@ export function NoteEditorPage({
     [note.id],
   );
 
-  const handleOpenPublishedPage = useCallback(() => {
-    if (!isPublished || !slug) {
-      return;
-    }
-
-    window.open(`/published/${slug}`, "_blank", "noopener,noreferrer");
-  }, [isPublished, slug]);
-
   const handleCopyNoteLink = useCallback(async () => {
     await navigator.clipboard.writeText(
       `${window.location.origin}/notes/${note.id}`,
@@ -504,7 +450,7 @@ export function NoteEditorPage({
 
   const handleArchiveNote = useCallback(async () => {
     await archiveNoteAction(note.id);
-    router.push("/inbox");
+    router.push("/notes");
   }, [note.id, router]);
 
   const handleOpenInCanvas = useCallback(async () => {
@@ -585,10 +531,6 @@ export function NoteEditorPage({
   }, [flushTitleSave, flushDocumentSave]);
 
   useEffect(() => {
-    editorTabsStore.setDirty(`note:${note.id}`, saveStatus !== "saved");
-  }, [note.id, saveStatus]);
-
-  useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (!(e.metaKey || e.ctrlKey)) return;
       if (e.key.toLowerCase() !== "s" || e.shiftKey || e.altKey) return;
@@ -620,19 +562,14 @@ export function NoteEditorPage({
 
   const handleCreateWikilink = useCallback(
     async (target: string): Promise<NoteReference> => {
-      return createNoteFromWikilinkAction(target, currentFolderId);
+      return createNoteFromWikilinkAction(target, currentParentId);
     },
-    [currentFolderId],
+    [currentParentId],
   );
 
   const navigateToNote = useCallback(
     (noteId: string) => {
-      const href = `/notes/${noteId}`;
-      if (typeof window !== "undefined") {
-        window.location.assign(href);
-        return;
-      }
-      router.push(href);
+      router.push(`/notes/${noteId}`);
     },
     [router],
   );
@@ -702,19 +639,6 @@ export function NoteEditorPage({
     [note.id, router],
   );
 
-  const handleOpenPublishPopover = useCallback(
-    (event: ReactMouseEvent<HTMLButtonElement>) => {
-      event.preventDefault();
-      const rect = event.currentTarget.getBoundingClientRect();
-      setPublishAnchor((current) => (current ? null : rect));
-    },
-    [],
-  );
-
-  const handleClosePublishPopover = useCallback(() => {
-    setPublishAnchor(null);
-  }, []);
-
   const openContextMenuAtPointer = useCallback(
     (event: ReactMouseEvent<HTMLElement>) => {
       event.preventDefault();
@@ -747,11 +671,6 @@ export function NoteEditorPage({
         onSelect: handlePinToggle,
       },
       {
-        label: isPublished ? "Unpublish" : "Publish",
-        tooltip: "Toggle public availability",
-        onSelect: handlePublishToggle,
-      },
-      {
         label: "Open in Savanna",
         tooltip: "Spatial map centered on this note",
         onSelect: handleOpenInCanvas,
@@ -780,11 +699,6 @@ export function NoteEditorPage({
         onSelect: () => handleCopyExport("mdx"),
       },
       {
-        label: "Open published page",
-        disabled: !isPublished,
-        onSelect: handleOpenPublishedPage,
-      },
-      {
         label: "Move to archive",
         tone: "danger",
         onSelect: handleArchiveNote,
@@ -796,20 +710,11 @@ export function NoteEditorPage({
       handleCopyNoteLink,
       handleMoveNote,
       handleOpenInCanvas,
-      handleOpenPublishedPage,
       handlePinToggle,
-      handlePublishToggle,
       isExportPending,
       isPinned,
-      isPublished,
     ],
   );
-
-  const contentShellPadding = isMobileViewport ? "0" : "0 24px";
-  const contentSidePadding = isMobileViewport ? "0 16px" : "0 32px";
-  const titleSectionPadding = isMobileViewport ? "28px 0 12px" : "48px 0 16px";
-  const editorSectionPadding = isMobileViewport ? "0 16px 24px" : "0 32px 32px";
-  const footerSectionPadding = isMobileViewport ? "0 16px" : "0 32px";
 
   return (
     <>
@@ -817,73 +722,50 @@ export function NoteEditorPage({
         isMobileViewport={isMobileViewport}
         iconPickerPosition={iconPickerPosition}
         noteIcon={noteIcon}
-        currentFolderId={currentFolderId}
-        currentFolderLabel={currentFolderLabel}
-        isFolderMenuOpen={isFolderMenuOpen}
-        folderOptions={folderOptions}
+        currentParentId={currentParentId}
+        currentParentLabel={currentParentLabel}
+        isParentMenuOpen={isParentMenuOpen}
+        parentOptions={parentOptions}
         effectiveTitle={effectiveTitle}
-        isPublished={isPublished}
         isPinned={isPinned}
         isReadingMode={isReadingMode}
-        isPublishPopoverOpen={publishAnchor !== null}
         saveStatusMeta={saveStatusMeta}
-        folderMenuRef={folderMenuRef}
+        parentMenuRef={parentMenuRef}
         onOpenIconPicker={handleOpenIconPicker}
-        onToggleFolderMenu={() => setIsFolderMenuOpen((v) => !v)}
-        onSelectFolder={handleSelectFolder}
-        onGoDashboard={() => router.push("/inbox")}
+        onToggleParentMenu={() => setIsParentMenuOpen((v) => !v)}
+        onSelectParent={handleSelectParent}
+        onGoDashboard={() => router.push("/notes")}
         onContextMenu={openContextMenuAtPointer}
         onOpenContextMenuFromTrigger={openContextMenuFromTrigger}
-        onOpenPublishPopover={handleOpenPublishPopover}
         onTogglePin={handlePinToggle}
         onToggleReadingMode={toggleReadingMode}
       />
 
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          padding: contentShellPadding,
-        }}
-      >
-        <div style={{ flex: "1 1 0", maxWidth: "800px", minWidth: 0 }}>
-          <div style={{ padding: contentSidePadding }}>
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "8px",
-                padding: titleSectionPadding,
+      <div className="note-editor-layout">
+        <article className="note-document">
+          <header className="note-document-header">
+            <input
+              className="note-title-input"
+              value={title}
+              autoFocus={title === DEFAULT_NOTE_TITLE}
+              onChange={(event) => handleTitleChange(event.target.value)}
+              onFocus={(event) => {
+                if (title === DEFAULT_NOTE_TITLE) event.currentTarget.select();
               }}
-            >
-              <input
-                className="note-title-input"
-                value={title}
-                onChange={(event) => handleTitleChange(event.target.value)}
-                onBlur={handleTitleBlur}
-                placeholder={DEFAULT_NOTE_TITLE}
-                spellCheck={false}
-                style={{
-                  fontSize: "var(--md-sys-typescale-display-small-size)",
-                  fontWeight: "var(--md-sys-typescale-display-small-weight)",
-                  color: "var(--md-sys-color-on-background)",
-                  border: "none",
-                  background: "transparent",
-                  outline: "none",
-                  width: "100%",
-                  padding: 0,
-                }}
-              />
+              onKeyDown={(event) => {
+                if (event.key !== "Enter") return;
+                event.preventDefault();
+                document
+                  .querySelector<HTMLElement>(".giraffle-editor-content")
+                  ?.focus();
+              }}
+              onBlur={handleTitleBlur}
+              placeholder={DEFAULT_NOTE_TITLE}
+              aria-label="Page title"
+            />
+          </header>
 
-            </div>
-          </div>
-
-          <div
-            style={{
-              padding: editorSectionPadding,
-              minHeight: isMobileViewport ? "50vh" : "60vh",
-            }}
-          >
+          <div className="note-document-body">
             <SafeEditor
               noteId={note.id}
               initialContent={note.document}
@@ -898,7 +780,6 @@ export function NoteEditorPage({
           {backlinks.length > 0 ? (
             <div
               className={`note-backlinks${isMobileViewport ? " note-backlinks--mobile" : ""}`}
-              style={{ padding: footerSectionPadding }}
             >
               <details className="note-backlinks-details">
                 <summary className="note-backlinks-summary">
@@ -924,8 +805,7 @@ export function NoteEditorPage({
             </div>
           ) : null}
 
-        </div>
-        {/* end main content column */}
+        </article>
 
         {isTocVisible ? (
           <aside className="note-toc">
@@ -956,7 +836,6 @@ export function NoteEditorPage({
           </aside>
         ) : null}
       </div>
-      {/* end flex layout wrapper */}
 
       {iconPickerPosition ? (
         <SidebarIconPicker
@@ -990,17 +869,6 @@ export function NoteEditorPage({
         />
       ) : null}
 
-      {publishAnchor ? (
-        <PublishPopover
-          anchorRect={publishAnchor}
-          isPublished={isPublished}
-          slug={slug}
-          isPending={isPublishPending}
-          onTogglePublish={handlePublishToggle}
-          onSlugChange={handleSlugChange}
-          onClose={handleClosePublishPopover}
-        />
-      ) : null}
     </>
   );
 }

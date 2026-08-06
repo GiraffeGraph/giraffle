@@ -9,20 +9,16 @@ export const SIDEBAR_MAX_WIDTH = 420;
 export const SIDEBAR_COMPACT_WIDTH = 60;
 
 export interface SidebarCollapseState {
-  folders: boolean;
-  recentNotes: boolean;
-  kanban: boolean;
+  pages: boolean;
 }
 
 export const DEFAULT_COLLAPSED_SECTIONS: SidebarCollapseState = {
-  folders: false,
-  recentNotes: false,
-  kanban: false,
+  pages: false,
 };
 
 export interface LocalSyncQueueItem {
   id: string;
-  entityType: "note" | "folder";
+  entityType: "note";
   entityId: string;
   actionType: string;
   queuedAt: string;

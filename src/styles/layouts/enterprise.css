@@ -17,9 +17,7 @@
 .sidebar-inline-action,
 .sidebar-sign-out,
 .sidebar-theme-button,
-.graph-panel-link,
 .editor-surface-upload,
-.publish-card-actions a,
 .search-form button,
 .proposal-card-actions .note-toolbar-btn {
   display: inline-flex;
@@ -41,10 +39,8 @@
 }
 
 .note-toolbar-btn,
-.publish-card-actions a,
 .proposal-card-actions .note-toolbar-btn,
 .editor-surface-upload,
-.graph-panel-link,
 .sidebar-theme-button,
 .sidebar-sign-out,
 .dashboard-secondary-btn,
@@ -58,10 +54,8 @@
 }
 
 .note-toolbar-btn:hover:not(:disabled),
-.publish-card-actions a:hover,
 .proposal-card-actions .note-toolbar-btn:hover:not(:disabled),
 .editor-surface-upload:hover,
-.graph-panel-link:hover,
 .sidebar-theme-button:hover,
 .sidebar-sign-out:hover,
 .dashboard-secondary-btn:hover,
@@ -137,7 +131,6 @@
 .search-input,
 .search-select,
 .note-folder-select,
-.note-slug-input,
 .settings-field input,
 .settings-field select,
 .settings-field textarea,
@@ -161,7 +154,6 @@
 .search-input,
 .search-select,
 .note-folder-select,
-.note-slug-input,
 .settings-field input,
 .settings-field select,
 .settings-field textarea,
@@ -176,7 +168,6 @@
 .search-input:focus,
 .search-select:focus,
 .note-folder-select:focus,
-.note-slug-input:focus,
 .settings-field input:focus,
 .settings-field select:focus,
 .settings-field textarea:focus,
@@ -202,8 +193,7 @@
   gap: 6px;
 }
 
-.settings-field > span,
-.note-slug-field > span {
+.settings-field > span {
   color: var(--text-secondary);
   font-size: 12px;
   font-weight: 700;
@@ -231,8 +221,7 @@
   gap: 10px;
 }
 
-.search-result-card,
-.publish-card {
+.search-result-card {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -248,8 +237,7 @@
     box-shadow var(--transition-fast);
 }
 
-.search-result-card:hover,
-.publish-card:hover {
+.search-result-card:hover {
   border-color: var(--border-color);
   background: var(--surface-glass-hover);
   box-shadow: var(--shadow-panel);
@@ -265,28 +253,10 @@
   font-size: 12px;
 }
 
-.publish-card-actions,
 .proposal-card-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-}
-
-.publish-card-actions a {
-  text-decoration: none;
-}
-
-.graph-toolbar {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 180px;
-  gap: 8px;
-  align-items: center;
-  padding: 10px;
-}
-
-.graph-toolbar .search-input,
-.graph-toolbar .search-select {
-  min-height: var(--control-height);
 }
 
 .auth-form,
@@ -305,10 +275,6 @@
   max-width: 240px;
 }
 
-.note-slug-field {
-  max-width: 280px;
-}
-
 .editor-surface-upload {
   min-height: var(--control-height-sm);
   padding: 0 10px;
@@ -317,14 +283,12 @@
 
 @media (max-width: 960px) {
   .templates-layout,
-  .graph-toolbar,
   .search-form {
     grid-template-columns: 1fr;
   }
 
   .dashboard,
-  .note-page,
-  .graph-page {
+  .note-page {
     padding-left: 28px;
     padding-right: 28px;
   }
@@ -332,8 +296,7 @@
 
 @media (max-width: 760px) {
   .dashboard,
-  .note-page,
-  .graph-page {
+  .note-page {
     padding-left: 18px;
     padding-right: 18px;
   }

@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { GraphIcon } from "./GraphIcon";
 import { decodeStoredIcon } from "./sidebar-icon-utils";
 
 export interface CommandPaletteItem {
@@ -130,9 +129,6 @@ export function CommandPalette({
   let flatIndex = -1;
 
   const renderIconNode = (icon: string) => {
-    if (icon === "__graph__") {
-      return <GraphIcon size={16} />;
-    }
     const decoded = decodeStoredIcon(icon);
     if (decoded.kind === "material" && decoded.value) {
       return (

@@ -65,10 +65,13 @@ export function SavannaListPage({ savannas }: { savannas: SavannaSummary[] }) {
 
   return (
     <div className="savanna-list-page">
-      <div className="savanna-list-header">
-        <p className="savanna-list-description">
-          A free-form infinite canvas. Drop notes, draw connections, add labels — spatial thinking without constraints.
-        </p>
+      <header className="savanna-list-header workspace-heading">
+        <div className="workspace-heading-copy">
+          <h1>Savanna</h1>
+          <p className="savanna-list-description">
+            Map notes and connections on a free-form canvas.
+          </p>
+        </div>
         <button
           type="button"
           className="savanna-create-btn"
@@ -78,7 +81,7 @@ export function SavannaListPage({ savannas }: { savannas: SavannaSummary[] }) {
           <span className="material-symbols-outlined">add</span>
           New Savanna
         </button>
-      </div>
+      </header>
 
       {savannas.length === 0 ? (
         <div className="savanna-empty-state">

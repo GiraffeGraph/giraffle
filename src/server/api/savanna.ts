@@ -3,6 +3,15 @@
 import { revalidatePath } from "next/cache";
 import type { Prisma } from "@prisma/client";
 import { persistedBlocksToDocument } from "@/domain/note/block-tree";
+import {
+  createSavanna,
+  deleteSavanna,
+  getSavanna,
+  listSavannas,
+  renameSavanna,
+  saveSavannaState,
+  syncCanvasReferences,
+} from "@/domain/savanna/savanna.service";
 import { requireAuthenticatedUser } from "@/lib/auth-session";
 import { db } from "@/lib/db";
 import { isRecord } from "@/lib/utils";
@@ -180,52 +189,31 @@ function createExcalidrawArrowElement(input: {
 
 export async function getSavannasAction() {
   const { userId } = await requireAuthenticatedUser();
-  return db.canvas.findMany({
-    where: { userId },
-    select: {
-      id: true,
-      title: true,
-      createdAt: true,
-      updatedAt: true,
-      elements: true,
-    },
-    orderBy: { updatedAt: "desc" },
-  });
+  return listSavannas(userId);
 }
 
 export async function createSavannaAction(title?: string) {
   const { userId } = await requireAuthenticatedUser();
-  const canvas = await db.canvas.create({
-    data: {
-      userId,
-      title: title?.trim() || "New Savanna",
-    },
-  });
+  const canvasId = await createSavanna(userId, title);
   revalidatePath("/savanna");
-  return canvas.id;
+  return canvasId;
 }
 
 export async function deleteSavannaAction(id: string) {
   const { userId } = await requireAuthenticatedUser();
-  await db.canvas.deleteMany({ where: { id, userId } });
+  await deleteSavanna(userId, id);
   revalidatePath("/savanna");
 }
 
 export async function renameSavannaAction(id: string, title: string) {
   const { userId } = await requireAuthenticatedUser();
-  await db.canvas.updateMany({
-    where: { id, userId },
-    data: { title: title.trim() || "New Savanna" },
-  });
+  await renameSavanna(userId, id, title);
   revalidatePath("/savanna");
 }
 
 export async function getSavannaAction(id: string) {
   const { userId } = await requireAuthenticatedUser();
-  const canvas = await db.canvas.findUnique({ where: { id } });
-
-  if (!canvas || canvas.userId !== userId) return null;
-  return canvas;
+  return getSavanna(userId, id);
 }
 
 export async function getSavannaNoteContentAction(noteId: string) {
@@ -235,6 +223,7 @@ export async function getSavannaNoteContentAction(noteId: string) {
       id: noteId,
       userId,
       isArchived: false,
+      boardTaskSource: null,
     },
     select: {
       id: true,
@@ -266,6 +255,7 @@ export async function getSavannaNoteEditorAction(noteId: string) {
       id: noteId,
       userId,
       isArchived: false,
+      boardTaskSource: null,
     },
     select: {
       id: true,
@@ -313,17 +303,13 @@ export async function saveSavannaStateAction(
   appState: unknown,
 ) {
   const { userId } = await requireAuthenticatedUser();
-  const result = await db.canvas.updateMany({
-    where: { id: canvasId, userId },
-    data: {
-      elements: toJsonValue(elements, []),
-      appState: sanitizeAppState(appState),
-    },
-  });
-
-  if (result.count === 0) {
-    throw new Error("Unauthorized");
-  }
+  await saveSavannaState(
+    userId,
+    canvasId,
+    elements,
+    toJsonValue(elements, []),
+    sanitizeAppState(appState),
+  );
 }
 
 export async function createSavannaFromNoteAction(noteId: string) {
@@ -332,12 +318,15 @@ export async function createSavannaFromNoteAction(noteId: string) {
   const note = await db.note.findUnique({
     where: { id: noteId },
     include: {
+      boardTaskSource: { select: { id: true } },
       outgoingLinks: { include: { targetNote: { select: { id: true, title: true, icon: true } } } },
       incomingLinks: { include: { sourceNote: { select: { id: true, title: true, icon: true } } } },
     },
   });
 
-  if (!note || note.userId !== userId) throw new Error("Unauthorized");
+  if (!note || note.userId !== userId || note.boardTaskSource) {
+    throw new Error("Unauthorized");
+  }
 
   const linkedNotes = [
     ...note.outgoingLinks.filter((link) => link.targetNote).map((link) => link.targetNote!),
@@ -401,6 +390,7 @@ export async function createSavannaFromNoteAction(noteId: string) {
     },
   });
 
+  await syncCanvasReferences(userId, canvas.id, elements);
   revalidatePath("/savanna");
   return canvas.id;
 }

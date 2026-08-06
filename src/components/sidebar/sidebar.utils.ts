@@ -8,7 +8,7 @@ import {
   SIDEBAR_WIDTH_STORAGE_KEY,
   type SidebarCollapseState,
 } from "@/lib/workspace-preferences";
-import type { SidebarFolder } from "./sidebar.types";
+import type { SidebarPage } from "./sidebar.types";
 
 export function extractActiveNoteId(pathname: string | null) {
   if (!pathname?.startsWith("/notes/")) return null;
@@ -20,11 +20,7 @@ export function areSidebarCollapseStatesEqual(
   left: SidebarCollapseState,
   right: SidebarCollapseState
 ) {
-  return (
-    left.folders === right.folders &&
-    left.recentNotes === right.recentNotes &&
-    left.kanban === right.kanban
-  );
+  return left.pages === right.pages;
 }
 
 export function loadSidebarCollapseState(): SidebarCollapseState {
@@ -33,11 +29,7 @@ export function loadSidebarCollapseState(): SidebarCollapseState {
     const stored = localStorage.getItem(SIDEBAR_COLLAPSE_STORAGE_KEY);
     if (!stored) return DEFAULT_COLLAPSED_SECTIONS;
     const parsed = JSON.parse(stored) as Partial<SidebarCollapseState>;
-    return {
-      folders: Boolean(parsed.folders),
-      recentNotes: Boolean(parsed.recentNotes),
-      kanban: Boolean(parsed.kanban),
-    };
+    return { pages: Boolean(parsed.pages) };
   } catch {
     return DEFAULT_COLLAPSED_SECTIONS;
   }
@@ -65,44 +57,28 @@ export function clampSidebarWidth(width: number) {
   return Math.min(Math.max(width, SIDEBAR_MIN_WIDTH), SIDEBAR_MAX_WIDTH);
 }
 
-export function filterFolderTree(
-  folderTree: SidebarFolder[],
+/**
+ * Keep a page when it matches, or when any descendant matches — an ancestor
+ * has to stay visible for its matching children to be reachable.
+ */
+export function filterPageTree(
+  pages: SidebarPage[],
   query: string
-): SidebarFolder[] {
-  return folderTree.flatMap((folder) => {
-    const filteredChildren = filterFolderTree(folder.children ?? [], query);
-    const matchesSelf = folder.name.toLowerCase().includes(query);
+): SidebarPage[] {
+  return pages.flatMap((page) => {
+    const filteredChildren = filterPageTree(page.children, query);
+    const matchesSelf = page.title.toLowerCase().includes(query);
+
     if (!matchesSelf && filteredChildren.length === 0) return [];
-    return [{ ...folder, children: matchesSelf ? folder.children ?? [] : filteredChildren }];
+
+    return [{ ...page, children: matchesSelf ? page.children : filteredChildren }];
   });
 }
 
-export function countFolders(folderTree: SidebarFolder[]): number {
-  return folderTree.reduce(
-    (total, folder) => total + 1 + countFolders(folder.children ?? []),
-    0
-  );
+export function flattenPageTree(pages: SidebarPage[]): SidebarPage[] {
+  return pages.flatMap((page) => [page, ...flattenPageTree(page.children)]);
 }
 
-export function getFirstFolderId(folderTree: SidebarFolder[]): string | null {
-  return folderTree[0]?.id ?? null;
-}
-
-export function findFolderById(
-  folderTree: SidebarFolder[],
-  folderId: string
-): SidebarFolder | null {
-  for (const folder of folderTree) {
-    if (folder.id === folderId) return folder;
-    const child = findFolderById(folder.children ?? [], folderId);
-    if (child) return child;
-  }
-  return null;
-}
-
-export function flattenFolderTree(folderTree: SidebarFolder[]): SidebarFolder[] {
-  return folderTree.flatMap((folder) => [
-    folder,
-    ...flattenFolderTree(folder.children ?? []),
-  ]);
+export function countPages(pages: SidebarPage[]): number {
+  return pages.reduce((total, page) => total + 1 + countPages(page.children), 0);
 }

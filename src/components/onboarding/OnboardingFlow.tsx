@@ -22,18 +22,18 @@ const COPY: Record<StepId, { title: string; subtitle: string; cta: string }> = {
     cta: "Başla",
   },
   admin: {
-    title: "Yönetici hesabını oluştur",
-    subtitle: "İlk kullanıcı bu makinede admin olur.",
+    title: "İlk hesabını oluştur",
+    subtitle: "Bu hesap çalışma alanını yönetmek için kullanılacak.",
     cta: "Devam",
   },
   extras: {
-    title: "Son rötuşlar",
-    subtitle: "Upload dizini ve log seviyesi. İsteğe bağlı.",
-    cta: "Bitir",
+    title: "Diğer ayarlar",
+    subtitle: "Çoğu kişi bu alanları boş bırakabilir.",
+    cta: "Kurulumu tamamla",
   },
   finishing: {
     title: "Kurulum tamamlanıyor",
-    subtitle: "Hesap oluşturuluyor ve sırlar kaydediliyor…",
+    subtitle: "Hesabın ve çalışma alanın hazırlanıyor…",
     cta: "",
   },
 };
@@ -111,7 +111,7 @@ export function OnboardingFlow({ settingDescriptions: _descs }: Props) {
         setError(result.error ?? "Kurulum başarısız.");
         return;
       }
-      router.replace("/inbox");
+      router.replace("/notes");
       router.refresh();
     });
   }
@@ -142,8 +142,8 @@ export function OnboardingFlow({ settingDescriptions: _descs }: Props) {
         {currentStep === "welcome" && (
           <div className={styles.panel} onKeyDown={onEnter}>
             <p className={styles.hint}>
-              Verin makinenden çıkmaz. Tüm sırlar bu adımdan sonra
-              /settings/secrets üzerinden de düzenlenebilir.
+              Bir hesap oluşturduktan sonra doğrudan notlarına geçeceksin.
+              Diğer ayarları istersen daha sonra değiştirebilirsin.
             </p>
           </div>
         )}
@@ -189,36 +189,39 @@ export function OnboardingFlow({ settingDescriptions: _descs }: Props) {
         {currentStep === "extras" && (
           <div className={styles.panel} onKeyDown={onEnter}>
             <div className={styles.field}>
-              <label className={styles.label}>Upload dizini</label>
+              <label className={styles.label}>Dosya klasörü</label>
               <input
                 className={styles.input}
                 type="text"
                 value={extras.UPLOAD_DIR}
-                placeholder="/absolute/path/to/uploads (opsiyonel)"
+                placeholder="Boş bırakırsan varsayılan klasör kullanılır"
                 onChange={(e) =>
                   setExtras({ ...extras, UPLOAD_DIR: e.target.value })
                 }
               />
             </div>
             <div className={styles.field}>
-              <label className={styles.label}>Log seviyesi</label>
-              <input
+              <label className={styles.label}>Kayıt ayrıntısı</label>
+              <select
                 className={styles.input}
-                type="text"
                 value={extras.LOG_LEVEL}
-                placeholder="debug, info, warn, error (varsayılan: info)"
                 onChange={(e) =>
                   setExtras({ ...extras, LOG_LEVEL: e.target.value })
                 }
-              />
+              >
+                <option value="">Normal</option>
+                <option value="debug">Ayrıntılı</option>
+                <option value="warn">Yalnızca uyarılar</option>
+                <option value="error">Yalnızca hatalar</option>
+              </select>
             </div>
             <div className={styles.field}>
-              <label className={styles.label}>Update repository</label>
+              <label className={styles.label}>Güncelleme kaynağı</label>
               <input
                 className={styles.input}
                 type="text"
                 value={extras.APP_UPDATE_REPOSITORY}
-                placeholder="owner/repo (opsiyonel)"
+                placeholder="Yalnızca kendi sürümlerini yayınlıyorsan değiştir"
                 onChange={(e) =>
                   setExtras({
                     ...extras,

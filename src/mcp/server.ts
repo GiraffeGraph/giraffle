@@ -54,8 +54,7 @@ const MCP_NAME_BY_INTERNAL: Record<string, string> = {
   notes_export: "giraffle-export-note",
   notes_backlinks: "giraffle-get-backlinks",
   notes_move: "giraffle-move-note",
-  folders_create: "giraffle-create-folder",
-  folders_list: "giraffle-list-folder",
+  pages_children: "giraffle-list-child-pages",
   // Stride (calendar scheduling)
   stride_list_scheduled: "giraffle-stride-list-scheduled",
   stride_list_unscheduled: "giraffle-stride-list-unscheduled",

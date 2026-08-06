@@ -6,12 +6,10 @@ import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PageTopbar } from "@/components/ui/PageTopbar";
-import { isSidebarNoteDragData } from "@/components/sidebar/sidebar.types";
+import { isSidebarPageDragData } from "@/components/sidebar/sidebar.types";
 import { saveSavannaStateAction } from "@/server/api/savanna";
 import { isRecord } from "@/lib/utils";
 import { NotePreviewPanel } from "./NotePreviewPanel";
-import { useRegisterTab } from "@/components/tabs/use-register-tab";
-import { editorTabsStore } from "@/components/tabs/editor-tabs-store";
 import type { AppState, ExcalidrawImperativeAPI, ExcalidrawProps } from "@excalidraw/excalidraw/types";
 import type { ExcalidrawElement } from "@excalidraw/excalidraw/element/types";
 
@@ -82,13 +80,6 @@ function pickPersistedAppState(appState: AppState) {
 
 export function SavannaEditor({ canvas, notes }: SavannaEditorProps) {
   const router = useRouter();
-  useRegisterTab({
-    kind: "savanna",
-    id: canvas.id,
-    href: `/savanna/${canvas.id}`,
-    title: canvas.title || "Untitled canvas",
-    icon: null,
-  });
   const [excalidrawAPI, setExcalidrawAPI] = useState<ExcalidrawImperativeAPI | null>(null);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
   const [theme, setTheme] = useState<ExcalidrawTheme>("light");
@@ -157,10 +148,6 @@ export function SavannaEditor({ canvas, notes }: SavannaEditorProps) {
   );
 
   useEffect(() => {
-    editorTabsStore.setDirty(`savanna:${canvas.id}`, saveStatus !== "saved");
-  }, [canvas.id, saveStatus]);
-
-  useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (!(e.metaKey || e.ctrlKey)) return;
       if (e.key.toLowerCase() !== "s" || e.shiftKey || e.altKey) return;
@@ -227,14 +214,14 @@ export function SavannaEditor({ canvas, notes }: SavannaEditorProps) {
     return combine(
       dropTargetForElements({
         element,
-        canDrop: ({ source }) => isSidebarNoteDragData(source.data),
+        canDrop: ({ source }) => isSidebarPageDragData(source.data),
         onDragEnter: () => setIsNoteDragOver(true),
         onDragLeave: () => setIsNoteDragOver(false),
         onDrop: ({ location, source }) => {
           setIsNoteDragOver(false);
-          if (!isSidebarNoteDragData(source.data)) return;
+          if (!isSidebarPageDragData(source.data)) return;
 
-          const note = noteById.get(source.data.noteId);
+          const note = noteById.get(source.data.pageId);
           if (!note) return;
 
           void addNoteToCanvas(note, {

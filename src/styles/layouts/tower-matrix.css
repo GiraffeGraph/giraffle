@@ -141,9 +141,10 @@
   position: relative;
   display: flex;
   align-items: center;
-  border-radius: 9px;
-  background: var(--md-sys-color-glass-chip);
-  border: 1px solid var(--border-soft);
+  border: 0;
+  border-bottom: 1px solid var(--app-border, var(--border-soft));
+  border-radius: 0;
+  background: transparent;
   cursor: grab;
   transition:
     background var(--transition-fast),
@@ -156,9 +157,9 @@
 }
 
 .tm-note-card:hover {
-  background: var(--md-sys-color-glass-hover);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  background: color-mix(in srgb, var(--app-surface-hover) 68%, transparent);
+  transform: none;
+  box-shadow: none;
   z-index: 1;
 }
 
@@ -169,9 +170,9 @@
 }
 
 .tm-note-card--selected {
-  border-color: var(--md-sys-color-primary);
-  background: var(--md-sys-color-primary-container);
-  box-shadow: 0 0 0 2px rgba(225,166,62,0.18);
+  border-color: var(--app-border, var(--border-soft));
+  background: var(--accent-subtle);
+  box-shadow: inset 2px 0 0 var(--accent);
 }
 
 .tm-note-card-body {
@@ -188,6 +189,8 @@
 }
 
 .tm-note-card-icon { font-size: 13px; flex-shrink: 0; }
+.tm-note-card-icon .material-symbols-outlined { font-size: 14px; }
+.tm-inner-note-icon .material-symbols-outlined { font-size: 17px; }
 
 .tm-note-card-title {
   flex: 1;

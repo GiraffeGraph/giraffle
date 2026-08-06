@@ -3,10 +3,10 @@ import {
   addTodoToNote,
   getNoteTodoBlocks,
   getNotesWithTodoSummary,
+  setPagePriority,
   setTodoBlockQuadrant,
   toggleTodoBlock,
-  updateNote,
-} from "@/domain/note/note.service";
+} from "@/domain/note/task.service";
 import type { EisenhowerQuadrant, MatrixSlot } from "@/domain/note/note.types";
 import { db } from "@/lib/db";
 import type { McpToolDefinition } from "../tool-definitions";
@@ -17,9 +17,9 @@ async function assertOwnedNote(userId: string, noteId: string): Promise<void> {
 }
 
 /**
- * Tower Matrix = Eisenhower prioritization. Notes carry a MatrixSlot
- * (DO/SCHEDULE/DELEGATE/ELIMINATE/BACKLOG); individual taskItems carry an
- * EisenhowerQuadrant. These tools mirror the userId-scoped service layer the
+ * Tower Matrix = Eisenhower prioritization. PagePriority stores each note's
+ * matrix slot; TaskMetadata stores each task's priority. These tools mirror the
+ * userId-scoped service layer the
  * Tower Matrix UI uses.
  */
 
@@ -65,7 +65,7 @@ export const towerMatrixTools: McpToolDefinition[] = [
     }),
     execute: async (raw, { userId }) => {
       const input = raw as { noteId: string; quadrant: MatrixSlot | null };
-      await updateNote(userId, input.noteId, { quadrant: input.quadrant });
+      await setPagePriority(userId, input.noteId, input.quadrant);
       return { noteId: input.noteId, quadrant: input.quadrant };
     },
   },

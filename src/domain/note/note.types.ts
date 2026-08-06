@@ -83,45 +83,56 @@ export interface Block {
 export interface Note {
   id: string;
   title: string;
-  slug: string | null;
   icon: string | null;
   coverImage: string | null;
-  folderId: string | null;
-  position: number;
+  parentId: string | null;
+  position: string;
   isPinned: boolean;
   isArchived: boolean;
-  isPublished: boolean;
   quadrant: MatrixSlot | null;
   createdAt: Date;
   updatedAt: Date;
   blocks?: Block[];
 }
 
+export interface PageTreeNode {
+  id: string;
+  title: string;
+  icon: string | null;
+  parentId: string | null;
+  position: string;
+  isPinned: boolean;
+  updatedAt: Date;
+  children: PageTreeNode[];
+}
+
+export interface PageBreadcrumb {
+  id: string;
+  title: string;
+  icon: string | null;
+}
+
 export interface NoteReference {
   id: string;
   title: string;
-  folderId: string | null;
-  slug?: string | null;
+  parentId: string | null;
   updatedAt?: Date;
 }
 
 export interface CreateNoteInput {
   title?: string;
   icon?: string;
-  folderId?: string;
+  parentId?: string;
 }
 
 export interface UpdateNoteInput {
   title?: string;
-  slug?: string | null;
   icon?: string | null;
   coverImage?: string | null;
-  folderId?: string | null;
-  position?: number;
+  parentId?: string | null;
+  position?: string;
   isPinned?: boolean;
   isArchived?: boolean;
-  isPublished?: boolean;
-  quadrant?: MatrixSlot | null;
 }
 
 export interface BlockPlacementInput {

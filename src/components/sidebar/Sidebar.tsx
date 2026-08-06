@@ -25,7 +25,6 @@ import { ThemeSelector } from "@/components/theme/ThemeSelector";
 import { Button } from "@/components/ui/Button";
 import { useIsMobileViewport } from "@/components/ui/useIsMobileViewport";
 import { cn } from "@/lib/utils";
-import { createFolderAction, relocateFolderAction } from "@/server/api/folders";
 import {
   archiveNoteAction,
   createNoteAction,
@@ -33,7 +32,6 @@ import {
   relocateNoteAction,
   updateNoteAction,
 } from "@/server/api/notes";
-import { createBoardAction } from "@/server/api/kanban";
 import {
   DEFAULT_COLLAPSED_SECTIONS,
   DEFAULT_EXPANDED_SIDEBAR_WIDTH,
@@ -44,29 +42,26 @@ import {
   type SidebarCollapseState,
 } from "@/lib/workspace-preferences";
 import {
-  isSidebarFolderDragData,
-  isSidebarFolderDropData,
-  isSidebarNoteDragData,
-  isSidebarNoteDropData,
-  type FolderDropTarget,
+  isSidebarPageDragData,
+  isSidebarPageDropData,
   type SidebarMenuState,
+  type SidebarPageDropTarget,
   type SidebarProps,
-  type SidebarSectionKey,
 } from "./sidebar.types";
 import {
   areSidebarCollapseStatesEqual,
   clampSidebarWidth,
+  countPages,
   extractActiveNoteId,
-  filterFolderTree,
-  flattenFolderTree,
+  filterPageTree,
+  flattenPageTree,
   loadSidebarCollapseState,
   loadSidebarCompactState,
   loadSidebarWidth,
 } from "./sidebar.utils";
 import { SidebarGroup } from "./SidebarGroup";
 import type { SidebarGroupAction } from "./SidebarGroup";
-import { SidebarNoteRow } from "./SidebarNoteRow";
-import { SidebarFolderItem } from "./SidebarFolderItem";
+import { SidebarPageRow } from "./SidebarPageRow";
 import { encodeMaterialSymbol } from "./sidebar-icon-utils";
 
 function PlusIcon() {
@@ -107,25 +102,6 @@ function FileNewIcon() {
   );
 }
 
-function FolderNewIcon() {
-  return (
-    <svg
-      width="12"
-      height="12"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-      <line x1="12" y1="11" x2="12" y2="17" />
-      <line x1="9" y1="14" x2="15" y2="14" />
-    </svg>
-  );
-}
-
 function ChevronLeftIcon() {
   return (
     <svg
@@ -143,12 +119,7 @@ function ChevronLeftIcon() {
   );
 }
 
-export function Sidebar({
-  notes,
-  folders,
-  kanbanBoards,
-  activeNoteId,
-}: SidebarProps) {
+export function Sidebar({ pages, activeNoteId }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const teardownResizeRef = useRef<(() => void) | null>(null);
@@ -157,15 +128,9 @@ export function Sidebar({
   const [contextMenu, setContextMenu] = useState<SidebarMenuState | null>(null);
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
   const [paletteQuery, setPaletteQuery] = useState("");
-  const [draggedFolderId, setDraggedFolderId] = useState<string | null>(null);
-  const [folderDropTarget, setFolderDropTarget] =
-    useState<FolderDropTarget | null>(null);
-  const [draggedNoteId, setDraggedNoteId] = useState<string | null>(null);
-  const [noteDropTarget, setNoteDropTarget] = useState<{
-    folderId: string | null;
-    noteId: string | null;
-    mode: "inside" | "after" | "root";
-  } | null>(null);
+  const [draggedPageId, setDraggedPageId] = useState<string | null>(null);
+  const [pageDropTarget, setPageDropTarget] =
+    useState<SidebarPageDropTarget | null>(null);
   const [sidebarWidth, setSidebarWidth] = useState<number>(
     DEFAULT_EXPANDED_SIDEBAR_WIDTH,
   );
@@ -174,10 +139,8 @@ export function Sidebar({
   const [collapsedSections, setCollapsedSections] =
     useState<SidebarCollapseState>(DEFAULT_COLLAPSED_SECTIONS);
   const [hasLoadedPreferences, setHasLoadedPreferences] = useState(false);
-  const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
-  const folderCreationHandledRef = useRef(false);
-  const folderTreeRef = useRef<HTMLDivElement | null>(null);
+  const pageTreeRef = useRef<HTMLDivElement | null>(null);
 
   const normalizedPaletteQuery = paletteQuery.trim().toLowerCase();
   const currentNoteId =
@@ -225,11 +188,8 @@ export function Sidebar({
     await navigator.clipboard.writeText(`${window.location.origin}${path}`);
   }, []);
 
-  const toggleSection = useCallback((section: SidebarSectionKey) => {
-    setCollapsedSections((current) => ({
-      ...current,
-      [section]: !current[section],
-    }));
+  const togglePagesSection = useCallback(() => {
+    setCollapsedSections((current) => ({ pages: !current.pages }));
   }, []);
 
   const toggleSidebarCompact = useCallback(
@@ -356,57 +316,14 @@ export function Sidebar({
   // Note actions
   const handleCreateNote = useCallback(async () => {
     const noteId = await createNoteAction();
-    navigateToNote(noteId);
-  }, [navigateToNote]);
-
-  const handleCreateBoard = useCallback(async () => {
-    const boardId = await createBoardAction({ title: "Untitled board" });
-    setCollapsedSections((s) => ({ ...s, kanban: false }));
-    router.push(`/kanban/${boardId}`);
+    router.push(`/notes/${noteId}`);
+    router.refresh();
   }, [router]);
 
-  const doCreateFolder = useCallback(
-    async (name: string) => {
-      const trimmed = name.trim();
-      if (!trimmed) return;
-      const folderId = await createFolderAction({ name: trimmed });
-      router.push(`/folders/${folderId}`);
-    },
-    [router],
-  );
-
-  const handleStartCreateFolder = useCallback(() => {
-    setIsCreatingFolder(true);
-    // Open the folders section if it is collapsed
-    setCollapsedSections((s) => ({ ...s, folders: false }));
-  }, []);
-
-  const handleCreateNoteInFolder = useCallback(
-    async (folderId: string) => {
-      const noteId = await createNoteAction({ folderId });
-      navigateToNote(noteId);
-    },
-    [navigateToNote],
-  );
-
-  const handleCreateSubFolder = useCallback(
-    async (parentId: string, name: string) => {
-      const trimmed = name.trim();
-      if (!trimmed) return;
-      await createFolderAction({ name: trimmed, parentId });
-      router.refresh();
-    },
-    [router],
-  );
-
-  const handleRelocateFolder = useCallback(
-    async (
-      folderId: string,
-      placement: { parentId?: string | null; afterFolderId?: string | null },
-    ) => {
-      await relocateFolderAction(folderId, placement);
-      setFolderDropTarget(null);
-      setDraggedFolderId(null);
+  const handleCreateChildPage = useCallback(
+    async (parentId: string) => {
+      const noteId = await createNoteAction({ parentId });
+      router.push(`/notes/${noteId}`);
       router.refresh();
     },
     [router],
@@ -419,11 +336,26 @@ export function Sidebar({
       title: string;
       icon?: string | null;
       isPinned?: boolean;
+      parentId?: string | null;
     }): ContextMenuItem[] => [
       {
         label: "Open note",
         tooltip: "Open the selected note in the editor",
         onSelect: () => navigateToNote(note.id),
+      },
+      {
+        label: "Add page inside",
+        tooltip: "Create a new page nested under this one",
+        onSelect: () => handleCreateChildPage(note.id),
+      },
+      {
+        label: "Move to top level",
+        tooltip: "Detach the page from its parent",
+        disabled: !note.parentId,
+        onSelect: async () => {
+          await updateNoteAction(note.id, { parentId: null });
+          router.refresh();
+        },
       },
       {
         label: note.isPinned ? "Unpin" : "Pin",
@@ -460,166 +392,113 @@ export function Sidebar({
         tone: "danger" as const,
         onSelect: async () => {
           await archiveNoteAction(note.id);
-          if (currentNoteId === note.id) router.push("/inbox");
+          if (currentNoteId === note.id) router.push("/notes");
           router.refresh();
         },
       },
     ],
-    [copyInternalLink, currentNoteId, navigateToNote, router],
+    [
+      copyInternalLink,
+      currentNoteId,
+      handleCreateChildPage,
+      navigateToNote,
+      router,
+    ],
   );
 
   useEffect(() => {
-    if (!folderTreeRef.current) {
+    if (!pageTreeRef.current) {
       return;
     }
 
     return combine(
+      // Empty space below the tree drops a page back to the top level.
       dropTargetForElements({
-        element: folderTreeRef.current,
-        canDrop: ({ source }) =>
-          isSidebarFolderDragData(source.data) ||
-          isSidebarNoteDragData(source.data),
-        getData: ({ source }) => {
-          if (isSidebarNoteDragData(source.data)) {
-            return {
-              type: "sidebar-note-drop-target",
-              folderId: null,
-              mode: "root",
-              afterNoteId: null,
-              isPinned: source.data.isPinned,
-            };
-          }
-
-          return {
-            type: "sidebar-folder-drop-target",
-            folderId: "__root__",
-            mode: "root",
-            parentId: null,
-            afterFolderId: null,
-          };
-        },
+        element: pageTreeRef.current,
+        canDrop: ({ source }) => isSidebarPageDragData(source.data),
+        getData: () => ({
+          type: "sidebar-page-drop-target",
+          mode: "root",
+          parentId: null,
+          afterNoteId: null,
+          pageId: null,
+        }),
       }),
       monitorForElements({
-        canMonitor: ({ source }) => isSidebarFolderDragData(source.data),
+        canMonitor: ({ source }) => isSidebarPageDragData(source.data),
         onDragStart: ({ source }) => {
-          if (isSidebarFolderDragData(source.data)) {
-            setDraggedFolderId(source.data.folderId);
+          if (isSidebarPageDragData(source.data)) {
+            setDraggedPageId(source.data.pageId);
           }
         },
         onDropTargetChange: ({ location }) => {
           const currentTarget = location.current.dropTargets[0]?.data;
 
-          if (!isSidebarFolderDropData(currentTarget)) {
-            setFolderDropTarget(null);
+          if (!isSidebarPageDropData(currentTarget)) {
+            setPageDropTarget(null);
             return;
           }
 
-          if (currentTarget.mode === "root") {
-            setFolderDropTarget({ folderId: "__root__", mode: "after" });
-            return;
-          }
-
-          setFolderDropTarget({
-            folderId: currentTarget.folderId,
+          setPageDropTarget({
+            pageId: currentTarget.pageId,
             mode: currentTarget.mode,
           });
         },
         onDrop: async ({ source, location }) => {
-          setDraggedFolderId(null);
-          setFolderDropTarget(null);
+          setDraggedPageId(null);
+          setPageDropTarget(null);
 
-          if (!isSidebarFolderDragData(source.data)) {
+          if (!isSidebarPageDragData(source.data)) {
             return;
           }
 
           const currentTarget = location.current.dropTargets[0]?.data;
 
-          if (!isSidebarFolderDropData(currentTarget)) {
+          if (!isSidebarPageDropData(currentTarget)) {
             return;
           }
 
-          if (currentTarget.folderId === source.data.folderId) {
+          if (currentTarget.pageId === source.data.pageId) {
             return;
           }
 
-          await handleRelocateFolder(source.data.folderId, {
+          await relocateNoteAction(source.data.pageId, {
             parentId: currentTarget.parentId,
-            afterFolderId: currentTarget.afterFolderId,
+            afterNoteId: currentTarget.afterNoteId,
           });
+
+          router.refresh();
         },
       }),
     );
-  }, [handleRelocateFolder]);
-
-  useEffect(() => {
-    return monitorForElements({
-      canMonitor: ({ source }) => isSidebarNoteDragData(source.data),
-      onDragStart: ({ source }) => {
-        if (isSidebarNoteDragData(source.data)) {
-          setDraggedNoteId(source.data.noteId);
-        }
-      },
-      onDropTargetChange: ({ location }) => {
-        const currentTarget = location.current.dropTargets[0]?.data;
-
-        if (!isSidebarNoteDropData(currentTarget)) {
-          setNoteDropTarget(null);
-          return;
-        }
-
-        setNoteDropTarget({
-          folderId: currentTarget.folderId,
-          noteId: currentTarget.afterNoteId,
-          mode: currentTarget.mode,
-        });
-      },
-      onDrop: async ({ source, location }) => {
-        setDraggedNoteId(null);
-        setNoteDropTarget(null);
-
-        if (!isSidebarNoteDragData(source.data)) {
-          return;
-        }
-
-        const currentTarget = location.current.dropTargets[0]?.data;
-
-        if (!isSidebarNoteDropData(currentTarget)) {
-          return;
-        }
-
-        if (currentTarget.afterNoteId === source.data.noteId) {
-          return;
-        }
-
-        await relocateNoteAction(source.data.noteId, {
-          folderId: currentTarget.folderId,
-          afterNoteId: currentTarget.afterNoteId,
-        });
-
-        router.refresh();
-      },
-    });
   }, [router]);
 
   // Derived / filtered data
-  const flattenedFolders = useMemo(() => flattenFolderTree(folders), [folders]);
-
-  const filteredFolders = useMemo(() => {
-    const q = paletteQuery.trim().toLowerCase();
-    return q ? filterFolderTree(folders, q) : folders;
-  }, [folders, paletteQuery]);
-
+  const flattenedPages = useMemo(() => flattenPageTree(pages), [pages]);
 
   const deferredSearchQuery = useDeferredValue(paletteQuery);
   const normalizedQuery = deferredSearchQuery.trim().toLowerCase();
   const hasQuery = normalizedQuery.length > 0;
 
-  const filteredNotes = useMemo(() => {
-    const source = hasQuery
-      ? notes.filter((n) => n.title.toLowerCase().includes(normalizedQuery))
-      : notes.slice(0, 8);
-    return source.slice(0, hasQuery ? 12 : 8);
-  }, [hasQuery, normalizedQuery, notes]);
+  const visiblePages = useMemo(
+    () => (hasQuery ? filterPageTree(pages, normalizedQuery) : pages),
+    [hasQuery, normalizedQuery, pages],
+  );
+
+  // Ancestors of the open page stay expanded so the active row is reachable.
+  const ancestorsOfActive = useMemo(() => {
+    const byId = new Map(flattenedPages.map((page) => [page.id, page]));
+    const ancestors = new Set<string>();
+    let current = currentNoteId ? byId.get(currentNoteId) : undefined;
+
+    while (current?.parentId) {
+      if (ancestors.has(current.parentId)) break;
+      ancestors.add(current.parentId);
+      current = byId.get(current.parentId);
+    }
+
+    return ancestors;
+  }, [currentNoteId, flattenedPages]);
 
   // Palette items
   const paletteItems = useMemo<CommandPaletteItem[]>(() => {
@@ -637,17 +516,6 @@ export function Sidebar({
         },
       },
       {
-        id: "action-new-folder",
-        group: "Quick actions",
-        title: "Create new folder",
-        description: "Add a new folder to the workspace",
-        icon: encodeMaterialSymbol("create_new_folder"),
-        onSelect: async () => {
-          closePalette();
-          handleStartCreateFolder();
-        },
-      },
-      {
         id: "action-savanna",
         group: "Navigation",
         title: "Savanna",
@@ -658,23 +526,13 @@ export function Sidebar({
         },
       },
       {
-        id: "action-graph",
+        id: "action-notes",
         group: "Navigation",
-        title: "Go to graph view",
-        description: "Note graph view",
-        icon: "__graph__",
+        title: "Go to notes",
+        description: "Browse all notes",
+        icon: encodeMaterialSymbol("description"),
         onSelect: async () => {
-          router.push("/graph");
-        },
-      },
-      {
-        id: "action-inbox",
-        group: "Navigation",
-        title: "Go to inbox",
-        description: "Open notes without folders",
-        icon: encodeMaterialSymbol("inbox"),
-        onSelect: async () => {
-          router.push("/inbox");
+          router.push("/notes");
         },
       },
       {
@@ -706,20 +564,12 @@ export function Sidebar({
         onSelect: async () => {
           router.push("/search");
         },
-      },      {
-        id: "action-publish",
-        group: "Navigation",
-        title: "Publishing area",
-        description: "See published notes and exports",
-        icon: encodeMaterialSymbol("publish"),
-        onSelect: async () => {
-          router.push("/publish");
-        },
-      },      {
+      },
+      {
         id: "action-settings",
         group: "Navigation",
         title: "Settings",
-        description: "Open theme, local queue, and preferences",
+        description: "Open app settings",
         icon: encodeMaterialSymbol("settings"),
         onSelect: async () => {
           router.push("/settings");
@@ -737,7 +587,7 @@ export function Sidebar({
       },
     ];
 
-    const noteItems = notes
+    const noteItems = flattenedPages
       .filter(
         (n) =>
           !normalizedPaletteQuery ||
@@ -746,79 +596,44 @@ export function Sidebar({
       .slice(0, normalizedPaletteQuery ? 8 : 5)
       .map<CommandPaletteItem>((n) => ({
         id: `note-${n.id}`,
-        group: "Notes",
+        group: "Pages",
         title: n.title,
-        description: "Open the note in the editor",
+        description: "Open the page in the editor",
         icon: n.icon ?? encodeMaterialSymbol("description"),
         onSelect: async () => {
           navigateToNote(n.id);
         },
       }));
 
-    const folderItems = flattenedFolders
-      .filter(
-        (f) =>
-          !normalizedPaletteQuery ||
-          f.name.toLowerCase().includes(normalizedPaletteQuery),
-      )
-      .slice(0, normalizedPaletteQuery ? 8 : 5)
-      .map<CommandPaletteItem>((f) => ({
-        id: `folder-${f.id}`,
-        group: "Folders",
-        title: f.name,
-        description: "Open folder view",
-        icon: f.icon ?? encodeMaterialSymbol("folder"),
-        onSelect: async () => {
-          router.push(`/folders/${f.id}`);
-        },
-      }));
-
-
-    if (!normalizedPaletteQuery)
-      return [...actionItems, ...noteItems, ...folderItems];
+    if (!normalizedPaletteQuery) return [...actionItems, ...noteItems];
 
     const filteredActions = actionItems.filter((item) =>
       `${item.title} ${item.description}`
         .toLowerCase()
         .includes(normalizedPaletteQuery),
     );
-    return [...filteredActions, ...noteItems, ...folderItems];
+    return [...filteredActions, ...noteItems];
   }, [
-    closePalette,
-    flattenedFolders,
-    handleStartCreateFolder,
+    flattenedPages,
     navigateToNote,
     normalizedPaletteQuery,
-    notes,
     router,
   ]);
 
-  const folderGroupActions = useMemo<SidebarGroupAction[]>(
+  const pageGroupActions = useMemo<SidebarGroupAction[]>(
     () => [
       {
         icon: <FileNewIcon />,
-        label: "Yeni not",
+        label: "New page",
         onClick: () => void handleCreateNote(),
       },
-      {
-        icon: <FolderNewIcon />,
-        label: "New folder",
-        onClick: handleStartCreateFolder,
-      },
     ],
-    [handleCreateNote, handleStartCreateFolder],
+    [handleCreateNote],
   );
 
-  const isFoldersCollapsed = hasQuery ? false : collapsedSections.folders;
-  const isRecentNotesCollapsed = hasQuery
-    ? false
-    : collapsedSections.recentNotes;
-  const isKanbanCollapsed = hasQuery ? false : collapsedSections.kanban;
-  const kanbanCountLabel =
-    kanbanBoards.length > 0 ? String(kanbanBoards.length) : undefined;
-  const inboxCount = notes.filter((n) => !n.folderId).length;
-  const foldersCountLabel = flattenedFolders.length > 0 ? String(flattenedFolders.length) : undefined;
-  const recentNotesCountLabel = notes.length > 0 ? String(notes.length) : undefined;
+  const isPagesCollapsed = hasQuery ? false : collapsedSections.pages;
+  const pageCount = countPages(pages);
+  const pageCountLabel = pageCount > 0 ? String(pageCount) : undefined;
 
   return (
     <aside
@@ -919,7 +734,7 @@ export function Sidebar({
               ) : null}
               <div
                 className="sidebar-workspace-card"
-                onClick={() => router.push("/inbox")}
+                onClick={() => router.push("/notes")}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -963,7 +778,7 @@ export function Sidebar({
                 variant="text"
                 icon
                 onClick={handleCreateNote}
-                aria-label="Create new note"
+                aria-label="Create new page"
               >
                 <PlusIcon />
               </Button>
@@ -1010,20 +825,19 @@ export function Sidebar({
                   {(
                     [
                       {
+                        path: "/notes",
+                        icon: "description",
+                        label: "All notes",
+                      },
+                      {
                         path: "/savanna",
                         icon: "landscape",
                         label: "Savanna",
                       },
                       {
-                        path: "/inbox",
-                        icon: "\uE156",
-                        label: "Inbox",
-                        badge: inboxCount > 0 ? inboxCount : undefined,
-                      },
-                      {
-                        path: "/tower-matrix",
-                        icon: "grid_4x4",
-                        label: "Tower Matrix",
+                        path: "/kanban",
+                        icon: "view_kanban",
+                        label: "Trek",
                       },
                       {
                         path: "/stride",
@@ -1031,17 +845,16 @@ export function Sidebar({
                         label: "Stride",
                       },
                       {
-                        path: "/kanban",
-                        icon: "view_kanban",
-                        label: "Trek",
+                        path: "/tower-matrix",
+                        icon: "grid_4x4",
+                        label: "Tower Matrix",
                       },
                     ] as Array<{
                       path: string;
                       icon: string;
                       label: string;
-                      badge?: number;
                     }>
-                  ).map(({ path, icon, label, badge }) => (
+                  ).map(({ path, icon, label }) => (
                     <button
                       key={path}
                       className={`sidebar-item${pathname === path ? " active" : ""}`}
@@ -1056,9 +869,6 @@ export function Sidebar({
                         </span>
                       </span>
                       <span className="sidebar-item-label">{label}</span>
-                      {badge != null && (
-                        <span className="sidebar-nav-badge">{badge}</span>
-                      )}
                     </button>
                   ))}
 
@@ -1066,205 +876,54 @@ export function Sidebar({
 
                 <div className="sidebar-divider" />
 
-                {/* Folders */}
+                {/* Every page lives in one tree; a page nests inside another page. */}
                 <SidebarGroup
-                  label="Folders"
-                  icon={
-                    <span
-                      className="material-symbols-outlined sm"
-                      aria-hidden="true"
-                    >
-                      folder
-                    </span>
-                  }
-                  meta={foldersCountLabel}
-                  collapsed={isFoldersCollapsed}
+                  label="Pages"
+                  meta={pageCountLabel}
+                  collapsed={isPagesCollapsed}
                   showChevron
-                  onToggle={() => toggleSection("folders")}
-                  actions={folderGroupActions}
+                  onToggle={togglePagesSection}
+                  actions={pageGroupActions}
                 >
-                  <div ref={folderTreeRef} className="sidebar-folder-tree">
-                    {isCreatingFolder && (
-                      <div className="sidebar-inline-creator">
-                        {/* Icon area — same width as .sidebar-folder-icon-btn */}
-                        <span
-                          className="sidebar-folder-icon-btn sidebar-folder-icon-btn--static"
-                          aria-hidden="true"
-                        >
-                          <span className="material-symbols-outlined sm">
-                            folder
-                          </span>
-                        </span>
-                        <input
-                          autoFocus
-                          type="text"
-                          className="sidebar-inline-creator-input"
-                          defaultValue="New Folder"
-                          placeholder="Folder name"
-                          onFocus={(e) => {
-                            folderCreationHandledRef.current = false;
-                            e.currentTarget.select();
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                              e.preventDefault();
-                              folderCreationHandledRef.current = true;
-                              const name = e.currentTarget.value;
-                              setIsCreatingFolder(false);
-                              void doCreateFolder(name);
-                            } else if (e.key === "Escape") {
-                              e.preventDefault();
-                              folderCreationHandledRef.current = true;
-                              setIsCreatingFolder(false);
-                            }
-                          }}
-                          onBlur={(e) => {
-                            if (folderCreationHandledRef.current) {
-                              folderCreationHandledRef.current = false;
-                              return;
-                            }
-                            const name = e.currentTarget.value;
-                            setIsCreatingFolder(false);
-                            void doCreateFolder(name);
-                          }}
-                        />
-                      </div>
-                    )}
-                    {filteredFolders.length === 0 ? (
-                      <div className="sidebar-empty">
-                        {hasQuery ? "No matching folders." : "No folders yet."}
-                      </div>
-                    ) : (
-                      filteredFolders.map((folder) => (
-                        <SidebarFolderItem
-                          key={folder.id}
-                          folder={folder}
-                          pathname={pathname}
-                          onOpen={(id) => router.push(`/folders/${id}`)}
-                          onQuickCreate={handleCreateNoteInFolder}
-                          draggedFolderId={draggedFolderId}
-                          folderDropTarget={folderDropTarget}
-                          draggedNoteId={draggedNoteId}
-                          noteDropTarget={noteDropTarget}
-                          allNotes={notes}
-                          currentNoteId={currentNoteId}
-                          onNoteOpen={navigateToNote}
-                          onNoteContextMenu={(e, n) =>
-                            openContextMenuAtPointer(e, buildNoteMenu(n))
-                          }
-                          onNoteTriggerMenu={(e, n) =>
-                            openContextMenuFromTrigger(e, buildNoteMenu(n))
-                          }
-                          onCreateSubFolder={handleCreateSubFolder}
-                        />
-                      ))
-                    )}
-                  </div>
-                </SidebarGroup>
-                {/* Trek — Kanban boards */}
-                <SidebarGroup
-                  label="Trek"
-                  icon={
-                    <span
-                      className="material-symbols-outlined sm"
-                      aria-hidden="true"
-                    >
-                      view_kanban
-                    </span>
-                  }
-                  meta={kanbanCountLabel}
-                  collapsed={isKanbanCollapsed}
-                  showChevron
-                  onToggle={() => toggleSection("kanban")}
-                  actions={[
-                    {
-                      icon: <PlusIcon />,
-                      label: "New board",
-                      onClick: () => void handleCreateBoard(),
-                    },
-                  ]}
-                >
-                  <nav className="sidebar-nav">
-                    {kanbanBoards.length === 0 ? (
-                      <div className="sidebar-empty">
-                        No boards yet. Create one.
-                      </div>
-                    ) : (
-                      kanbanBoards.map((board) => (
-                        <button
-                          key={board.id}
-                          type="button"
-                          className={`sidebar-item${
-                            pathname === `/kanban/${board.id}` ? " active" : ""
-                          }`}
-                          onClick={() => router.push(`/kanban/${board.id}`)}
-                          title={board.title}
-                        >
-                          <span className="sidebar-item-icon" aria-hidden="true">
-                            <span
-                              className="material-symbols-outlined"
-                              style={{ fontSize: "16px", lineHeight: 1 }}
-                            >
-                              {board.icon || "view_kanban"}
-                            </span>
-                          </span>
-                          <span className="sidebar-item-label">
-                            {board.title}
-                          </span>
-                          {board.cardCount > 0 ? (
-                            <span className="sidebar-nav-badge">
-                              {board.cardCount}
-                            </span>
-                          ) : null}
-                        </button>
-                      ))
-                    )}
-                  </nav>
-                </SidebarGroup>
-                {/* Recent notes */}
-                <SidebarGroup
-                  label={hasQuery ? "Matching notes" : "Recent notes"}
-                  icon={
-                    <span
-                      className="material-symbols-outlined sm"
-                      aria-hidden="true"
-                    >
-                      {hasQuery ? "search" : "history"}
-                    </span>
-                  }
-                  meta={recentNotesCountLabel}
-                  collapsed={isRecentNotesCollapsed}
-                  showChevron
-                  onToggle={() => toggleSection("recentNotes")}
-                >
-                  <nav className="sidebar-nav">
-                    {filteredNotes.length === 0 ? (
+                  <div ref={pageTreeRef} className="sidebar-folder-tree">
+                    {visiblePages.map((page) => (
+                      <SidebarPageRow
+                        key={page.id}
+                        page={page}
+                        depth={0}
+                        activeNoteId={currentNoteId}
+                        ancestorsOfActive={ancestorsOfActive}
+                        draggedPageId={draggedPageId}
+                        dropTarget={pageDropTarget}
+                        onOpen={navigateToNote}
+                        onCreateChild={(parentId) =>
+                          void handleCreateChildPage(parentId)
+                        }
+                        onContextMenuOpen={(event, selectedPage) =>
+                          openContextMenuAtPointer(
+                            event,
+                            buildNoteMenu(selectedPage),
+                          )
+                        }
+                        onTriggerMenuOpen={(event, selectedPage) =>
+                          openContextMenuFromTrigger(
+                            event,
+                            buildNoteMenu(selectedPage),
+                          )
+                        }
+                      />
+                    ))}
+                    {visiblePages.length === 0 ? (
                       <div className="sidebar-empty">
                         {hasQuery
-                          ? "No matching notes."
-                          : "No notes yet. Create your first note."}
+                          ? "No matching pages."
+                          : "No pages yet. Create your first page."}
                       </div>
-                    ) : (
-                      filteredNotes.map((note) => (
-                        <SidebarNoteRow
-                          key={note.id}
-                          note={note}
-                          active={note.id === currentNoteId}
-                          onOpen={navigateToNote}
-                          onContextMenuOpen={(e, n) =>
-                            openContextMenuAtPointer(e, buildNoteMenu(n))
-                          }
-                          onTriggerMenuOpen={(e, n) =>
-                            openContextMenuFromTrigger(e, buildNoteMenu(n))
-                          }
-                          draggedNoteId={draggedNoteId}
-                          noteDropTarget={noteDropTarget}
-                        />
-                      ))
-                    )}
-                  </nav>
+                    ) : null}
+                  </div>
                 </SidebarGroup>
               </div>
+
             </div>
           ) : null}
         </>

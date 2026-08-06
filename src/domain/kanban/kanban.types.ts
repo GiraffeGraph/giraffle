@@ -3,11 +3,9 @@ import type { EisenhowerQuadrant } from "@/domain/note/note.types";
 /**
  * Trek — Kanban boards.
  *
- * A board IS a note: `note.kanbanColumns` holds the ordered column defs, and the
- * cards are the note's `taskItem` blocks placed via
- * `block.attributes.kanbanColumnId` / `kanbanPosition`. Because cards are real
- * taskItems, a dated card also appears in Stride and a prioritized card appears
- * in Tower — one task, three lenses. Priority reuses the Eisenhower quadrant.
+ * Boards, columns, and task placement have explicit relational models. Cards
+ * still point to canonical taskItem blocks through BoardTask, so dates appear
+ * in Stride and priorities appear in Tower — one task, three lenses.
  */
 export type KanbanPriority = EisenhowerQuadrant;
 
@@ -29,7 +27,7 @@ export const KANBAN_COLUMN_COLORS: KanbanColumnColor[] = [
   "purple",
 ];
 
-/** Column definition persisted as JSON on the board note (`note.kanbanColumns`). */
+/** Ordered column definition returned by the board service. */
 export interface KanbanColumnDef {
   id: string;
   title: string;
@@ -69,7 +67,7 @@ export interface KanbanBoardSummary {
   updatedAt: Date;
 }
 
-/** A board-of-boards status column (lives on User.boardColumns). */
+/** A board-of-boards status column persisted as BoardStatus. */
 export interface KanbanBoardStatusDef {
   id: string;
   title: string;

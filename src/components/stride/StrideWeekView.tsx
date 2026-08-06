@@ -8,11 +8,13 @@ import {
   useState,
   useCallback,
 } from "react";
+import { useRouter } from "next/navigation";
 import {
   draggable,
   dropTargetForElements,
   monitorForElements,
 } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
+import { renderStoredIcon } from "@/components/sidebar/sidebar-icon-utils";
 import { isDragData, type CalendarTodo } from "./stride.types";
 import { isRecord } from "@/lib/utils";
 import { StrideDurationPicker } from "./StrideDurationPicker";
@@ -161,6 +163,7 @@ interface EventBlockProps {
 }
 
 function EventBlock({ todo, isDraggedOver, onToggle, onDurationChange, onUpdateText, onDelete }: EventBlockProps) {
+  const router = useRouter();
   const blockRef = useRef<HTMLDivElement>(null);
   const resizeRef = useRef<HTMLDivElement>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
@@ -319,9 +322,28 @@ function EventBlock({ todo, isDraggedOver, onToggle, onDurationChange, onUpdateT
         )}
         {!compact && <span className="stride-event-time">{timeStr}</span>}
         {!compact && (
-          <span className="stride-event-note">
-            {todo.note.icon ? `${todo.note.icon} ` : ""}{todo.note.title}
-          </span>
+          <button
+            type="button"
+            className="stride-event-note"
+            title={todo.note.isBoard ? "Open source board" : "Open source note"}
+            onMouseDown={(event) => event.stopPropagation()}
+            onClick={(event) => {
+              event.stopPropagation();
+              router.push(
+                todo.note.isBoard
+                  ? `/kanban/${todo.note.id}`
+                  : `/notes/${todo.note.id}`,
+              );
+            }}
+          >
+            <span className="stride-event-note-icon" aria-hidden="true">
+              {renderStoredIcon(todo.note.icon, {
+                fallback: <span className="material-symbols-outlined">description</span>,
+                materialClassName: "material-symbols-outlined",
+              })}
+            </span>
+            <span>{todo.note.title}</span>
+          </button>
         )}
       </div>
 

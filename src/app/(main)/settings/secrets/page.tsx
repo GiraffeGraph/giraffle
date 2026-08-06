@@ -22,8 +22,8 @@ export default async function SecretsPage() {
 
   return (
     <>
-      <PageTopbar icon="key" label="App Secrets" />
-      <div className="dashboard settings-page app-page">
+      <PageTopbar icon="tune" label="More settings" />
+      <div className="settings-page">
         <SecretsManagerCard items={items} encryptionAvailable={canUseSecretBox()} />
       </div>
     </>

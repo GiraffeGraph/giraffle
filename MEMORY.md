@@ -6,5 +6,9 @@
 
 ## Architecture
 - Do not duplicate existing global sidebar note navigation inside feature pages — reuse the canonical sidebar as the note source for interactions like drag-and-drop.
+- Preserve the dedicated right utility rail; keep Archive, Settings, Account, Help, theme, sync, and sign-out actions there instead of duplicating them in the left content sidebar.
 - When removing a platform implementation, preserve reusable branding and mobile assets unless their deletion is explicitly requested.
 - Treat the project as greenfield until production launch: there is no user data to preserve, so destructive local resets and migration squashing are allowed; optimize for a clean final schema and revisit this rule before accepting real data.
+
+## Product UI
+- Preserve every Settings capability, but use simple user language everywhere, including optional detail sections; show raw technical values only when they are required to use the feature.

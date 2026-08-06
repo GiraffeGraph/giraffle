@@ -55,14 +55,12 @@ export const NoteMetadataSchema = z
   .object({
     id: z.string(),
     title: z.string(),
-    slug: z.string().nullable(),
     icon: z.string().nullable(),
     coverImage: z.string().nullable().optional(),
-    folderId: z.string().nullable(),
-    position: z.number().int().optional(),
+    parentId: z.string().nullable(),
+    position: z.string().optional(),
     isPinned: z.boolean(),
     isArchived: z.boolean(),
-    isPublished: z.boolean(),
     quadrant: z.enum(EISENHOWER_QUADRANTS).nullable().optional(),
     createdAt: IsoDateStringSchema,
     updatedAt: IsoDateStringSchema,
@@ -77,38 +75,20 @@ export const NoteWithDocumentSchema = z
   })
   .strict();
 
-export const FolderSummarySchema = z
-  .object({
-    id: z.string(),
-    name: z.string(),
-    icon: z.string().nullable(),
-    parentId: z.string().nullable(),
-    position: z.number().int(),
-    createdAt: IsoDateStringSchema.optional(),
-    updatedAt: IsoDateStringSchema.optional(),
-    noteCount: z.number().int().optional(),
-  })
-  .strict();
-
 export const NoteListItemSchema = z
   .object({
     id: z.string(),
     title: z.string(),
-    slug: z.string().nullable().optional(),
     icon: z.string().nullable().optional(),
-    folderId: z.string().nullable().optional(),
+    parentId: z.string().nullable().optional(),
     isPinned: z.boolean().optional(),
-    position: z.number().int().optional(),
+    position: z.string().optional(),
     updatedAt: IsoDateStringSchema.optional(),
   })
   .strict();
 
 export const NoteIdentifierInputSchema = z
   .object({
-    noteId: z.string().min(1).optional(),
-    slug: z.string().min(1).max(240).optional(),
+    noteId: z.string().min(1),
   })
-  .strict()
-  .refine((input) => Boolean(input.noteId) !== Boolean(input.slug), {
-    message: "Provide exactly one of noteId or slug.",
-  });
+  .strict();

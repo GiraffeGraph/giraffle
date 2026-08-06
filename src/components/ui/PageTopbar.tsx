@@ -16,7 +16,7 @@ export function PageTopbar({ icon, label, meta, actions }: PageTopbarProps) {
           <span className="material-symbols-outlined page-topbar-icon" aria-hidden="true">
             {icon}
           </span>
-          <Link href="/inbox" className="page-topbar-link">
+          <Link href="/notes" className="page-topbar-link">
             Workspace
           </Link>
           <span className="page-topbar-separator">/</span>

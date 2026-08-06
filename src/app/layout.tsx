@@ -9,14 +9,12 @@ import "@/styles/tokens.css";
 import "@/styles/reset.css";
 import "@/styles/base.css";
 import "@/styles/components/button.css";
-import "@/styles/components/card.css";
 import "@/styles/components/text-field.css";
 import "@/styles/components/list.css";
 import "@/styles/components/chip.css";
 import "@/styles/components/dialog.css";
 import "@/styles/components/command-palette.css";
 import "@/styles/components/navigation.css";
-import "@/styles/components/editor-tabs.css";
 import "@/styles/components/confirm-dialog.css";
 import "@/styles/layouts/app-layout.css";
 import "@/styles/layouts/pages.css";
@@ -35,9 +33,9 @@ import "./globals.css";
 import "@/styles/system.css";
 
 export const metadata: Metadata = {
-  title: "Giraffle — Knowledge Graph Editor",
+  title: "Giraffle — Linked Notes Editor",
   description:
-    "A block-based knowledge editor built around linked notes, wikilinks, and a knowledge graph.",
+    "A block-based knowledge editor built around linked notes, wikilinks, and backlinks.",
 };
 
 export default async function RootLayout({

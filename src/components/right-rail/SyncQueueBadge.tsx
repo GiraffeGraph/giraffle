@@ -9,8 +9,8 @@ export function SyncQueueBadge() {
     <button
       type="button"
       className="right-rail-btn sync-queue-badge"
-      title={`${count} mutation${count === 1 ? "" : "s"} pending sync`}
-      aria-label={`${count} mutations pending sync`}
+      title={`${count} change${count === 1 ? "" : "s"} waiting to save`}
+      aria-label={`${count} change${count === 1 ? "" : "s"} waiting to save`}
     >
       <span
         className="material-symbols-outlined"

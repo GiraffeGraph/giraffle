@@ -143,6 +143,10 @@ export function KanbanCardEditor({
                 );
               })}
             </div>
+            <p className="kb-field-hint">
+              <span className="material-symbols-outlined">grid_4x4</span>
+              Priority is shared with Tower.
+            </p>
           </div>
 
           <div className="kb-field-row kb-field-row--3">

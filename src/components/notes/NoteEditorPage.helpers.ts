@@ -115,28 +115,64 @@ export function estimateReadingMinutes(wordCount: number): number {
   return Math.max(1, Math.round(wordCount / AVERAGE_READING_WPM));
 }
 
-export function buildFolderLabel(
-  folder: { id: string; name: string; parentId: string | null },
-  folders: Array<{ id: string; name: string; parentId: string | null }>,
-) {
-  const foldersById = new Map(
-    folders.map((candidate) => [candidate.id, candidate]),
-  );
-  const labels = [folder.name];
-  let currentParentId = folder.parentId;
+export interface PageOption {
+  id: string;
+  title: string;
+  parentId: string | null;
+}
 
-  while (currentParentId) {
-    const parentFolder = foldersById.get(currentParentId);
+/**
+ * Full ancestor label of a page, e.g. "Project / Research / Notes".
+ */
+export function buildPageLabel(page: PageOption, pages: PageOption[]) {
+  const pagesById = new Map(pages.map((candidate) => [candidate.id, candidate]));
+  const labels = [page.title];
+  const visited = new Set([page.id]);
+  let currentParentId = page.parentId;
 
-    if (!parentFolder) {
+  while (currentParentId && !visited.has(currentParentId)) {
+    const parent = pagesById.get(currentParentId);
+
+    if (!parent) {
       break;
     }
 
-    labels.unshift(parentFolder.name);
-    currentParentId = parentFolder.parentId;
+    visited.add(parent.id);
+    labels.unshift(parent.title);
+    currentParentId = parent.parentId;
   }
 
   return labels.join(" / ");
+}
+
+/**
+ * Pages that may become the parent of `pageId`: everything except the page
+ * itself and its own descendants, which would create a cycle.
+ */
+export function selectableParentPages(pageId: string, pages: PageOption[]) {
+  const childrenByParent = new Map<string, PageOption[]>();
+
+  for (const page of pages) {
+    if (!page.parentId) continue;
+    const siblings = childrenByParent.get(page.parentId) ?? [];
+    siblings.push(page);
+    childrenByParent.set(page.parentId, siblings);
+  }
+
+  const blocked = new Set([pageId]);
+  const frontier = [pageId];
+
+  while (frontier.length > 0) {
+    const currentId = frontier.pop() as string;
+
+    for (const child of childrenByParent.get(currentId) ?? []) {
+      if (blocked.has(child.id)) continue;
+      blocked.add(child.id);
+      frontier.push(child.id);
+    }
+  }
+
+  return pages.filter((page) => !blocked.has(page.id));
 }
 
 export function extractHeadings(doc: TiptapDocument): TocHeading[] {

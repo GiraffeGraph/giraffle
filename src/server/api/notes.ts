@@ -3,36 +3,39 @@
 import { revalidatePath } from "next/cache";
 import { getBacklinks } from "@/domain/link/link.service";
 import {
-  addTodoToNote,
   archiveNote,
-  createCalendarTodo,
   createNote,
-  deleteCalendarTodo,
   deleteNote,
   findNoteByTitle,
   getArchivedNotes,
   getNote,
   getNoteForExport,
   getNotes,
-  getNotesWithTodoSummary,
-  getNoteTodoBlocks,
-  getPublicNoteBySlug,
-  getPublishedNotesForExport,
-  getTodosForCalendar,
-  getUnscheduledTodos,
+  getPageAncestors,
+  getPageTree,
   moveNote,
   relocateNote,
   restoreNote,
   saveNoteContent,
   searchNotesByTitle,
+  updateNote,
+} from "@/domain/note/page.service";
+import {
+  addTodoToNote,
+  createCalendarTodo,
+  deleteCalendarTodo,
+  getNotesWithTodoSummary,
+  getNoteTodoBlocks,
+  getTodosForCalendar,
+  getUnscheduledTodos,
+  setPagePriority,
   setTodoBlockQuadrant,
   setTodoDueDate,
   setTodoDuration,
   toggleCalendarTodo,
   toggleTodoBlock,
   updateCalendarTodoText,
-  updateNote,
-} from "@/domain/note/note.service";
+} from "@/domain/note/task.service";
 import { buildNoteExportArtifact } from "@/domain/note/note.export";
 import type {
   CreateNoteInput,
@@ -48,14 +51,23 @@ import { requireAuthenticatedUser } from "@/lib/auth-session";
 export async function createNoteAction(input?: CreateNoteInput) {
   const { userId } = await requireAuthenticatedUser();
   const noteId = await createNote(userId, input);
-  revalidatePath("/graph");
-  revalidatePath("/inbox");
+  revalidatePath("/notes");
   return noteId;
 }
 
 export async function getNotesAction() {
   const { userId } = await requireAuthenticatedUser();
   return getNotes(userId);
+}
+
+export async function getPageTreeAction() {
+  const { userId } = await requireAuthenticatedUser();
+  return getPageTree(userId);
+}
+
+export async function getPageAncestorsAction(noteId: string) {
+  const { userId } = await requireAuthenticatedUser();
+  return getPageAncestors(userId, noteId);
 }
 
 export async function getNoteAction(noteId: string) {
@@ -66,11 +78,8 @@ export async function getNoteAction(noteId: string) {
 export async function updateNoteAction(noteId: string, input: UpdateNoteInput) {
   const { userId } = await requireAuthenticatedUser();
   await updateNote(userId, noteId, input);
-  revalidatePath("/graph");
-  revalidatePath("/inbox");
+  revalidatePath("/notes");
   revalidatePath(`/notes/${noteId}`);
-  revalidatePath(`/p/${noteId}`);
-  revalidatePath("/published");
 }
 
 export async function saveNoteContentAction(
@@ -79,16 +88,13 @@ export async function saveNoteContentAction(
 ) {
   const { userId } = await requireAuthenticatedUser();
   await saveNoteContent(userId, noteId, document);
-  revalidatePath("/graph");
   revalidatePath(`/notes/${noteId}`);
-  revalidatePath(`/p/${noteId}`);
 }
 
 export async function archiveNoteAction(noteId: string) {
   const { userId } = await requireAuthenticatedUser();
   await archiveNote(userId, noteId);
-  revalidatePath("/graph");
-  revalidatePath("/inbox");
+  revalidatePath("/notes");
   revalidatePath("/archive");
 }
 
@@ -100,8 +106,7 @@ export async function getArchivedNotesAction() {
 export async function restoreNoteAction(noteId: string) {
   const { userId } = await requireAuthenticatedUser();
   await restoreNote(userId, noteId);
-  revalidatePath("/graph");
-  revalidatePath("/inbox");
+  revalidatePath("/notes");
   revalidatePath("/archive");
 }
 
@@ -111,30 +116,27 @@ export async function moveNoteAction(
 ) {
   const { userId } = await requireAuthenticatedUser();
   await moveNote(userId, noteId, direction);
-  revalidatePath("/graph");
-  revalidatePath("/inbox");
+  revalidatePath("/notes");
   revalidatePath(`/notes/${noteId}`);
 }
 
 export async function relocateNoteAction(
   noteId: string,
   placement: {
-    folderId?: string | null;
+    parentId?: string | null;
     afterNoteId?: string | null;
   }
 ) {
   const { userId } = await requireAuthenticatedUser();
   await relocateNote(userId, noteId, placement);
-  revalidatePath("/graph");
-  revalidatePath("/inbox");
+  revalidatePath("/notes");
   revalidatePath(`/notes/${noteId}`);
 }
 
 export async function deleteNoteAction(noteId: string) {
   const { userId } = await requireAuthenticatedUser();
   await deleteNote(userId, noteId);
-  revalidatePath("/graph");
-  revalidatePath("/inbox");
+  revalidatePath("/notes");
 }
 
 export async function getBacklinksAction(noteId: string) {
@@ -158,7 +160,7 @@ export async function findNoteByTitleAction(
 
 export async function createNoteFromWikilinkAction(
   rawTitle: string,
-  folderId?: string | null
+  parentId?: string | null
 ): Promise<NoteReference> {
   const { userId } = await requireAuthenticatedUser();
   const title = normalizeWikilinkTarget(rawTitle);
@@ -175,17 +177,16 @@ export async function createNoteFromWikilinkAction(
 
   const noteId = await createNote(userId, {
     title,
-    folderId: folderId ?? undefined,
+    parentId: parentId ?? undefined,
   });
 
-  revalidatePath("/graph");
-  revalidatePath("/inbox");
+  revalidatePath("/notes");
   revalidatePath(`/notes/${noteId}`);
 
   return {
     id: noteId,
     title,
-    folderId: folderId ?? null,
+    parentId: parentId ?? null,
   };
 }
 
@@ -204,16 +205,6 @@ export async function getNoteExportAction(
   return format === "mdx" ? artifact.mdx : artifact.markdown;
 }
 
-export async function getPublishedExportsAction() {
-  const { userId } = await requireAuthenticatedUser();
-  const notes = await getPublishedNotesForExport(userId);
-  return notes.map(buildNoteExportArtifact);
-}
-
-export async function getPublicNoteBySlugAction(slug: string) {
-  return getPublicNoteBySlug(slug);
-}
-
 export async function getNotesWithTodoSummaryAction() {
   const { userId } = await requireAuthenticatedUser();
   return getNotesWithTodoSummary(userId);
@@ -224,7 +215,7 @@ export async function assignNoteToQuadrantAction(
   quadrant: MatrixSlot | null
 ) {
   const { userId } = await requireAuthenticatedUser();
-  await updateNote(userId, noteId, { quadrant });
+  await setPagePriority(userId, noteId, quadrant);
   revalidatePath("/tower-matrix");
 }
 

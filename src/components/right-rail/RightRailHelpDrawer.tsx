@@ -13,21 +13,33 @@ const REQUIRED_ENV_KEYS = [
 
 const QUICK_LINKS = [
   { href: "/settings", label: "Settings", icon: "settings" },
-  { href: "/graph", label: "Graph", icon: "hub" },
+  { href: "/notes", label: "Notes", icon: "description" },
 ] as const;
 
 const PAGE_HELP: Record<string, { title: string; items: string[] }> = {
   "/settings": {
     title: "Settings",
-    items: ["Manage provider keys, MCP tokens, updates, and sync logs.", "Self-host notes live here in Help now."],
+    items: ["Check for updates and choose which apps can connect.", "Activity shows whether your latest changes are saved."],
   },
-  "/graph": {
-    title: "Graph",
-    items: ["View note links and unresolved references.", "Open nodes to jump back into notes."],
+  "/notes": {
+    title: "Notes",
+    items: ["Write pages and add tasks in one place.", "Use folders when you want to group related pages."],
+  },
+  "/kanban": {
+    title: "Trek",
+    items: ["Move tasks through clear stages.", "A task keeps the same date and priority everywhere."],
   },
   "/stride": {
     title: "Stride",
-    items: ["Plan todos on calendar views.", "Drag items to schedule work."],
+    items: ["Plan tasks on a calendar.", "Select a task's page or board name to open it."],
+  },
+  "/tower-matrix": {
+    title: "Tower Matrix",
+    items: ["Decide which pages need attention first.", "Select a page to organize its tasks."],
+  },
+  "/savanna": {
+    title: "Savanna",
+    items: ["Arrange your pages on a free-form canvas.", "Open a page from the canvas whenever you need it."],
   },
 };
 
@@ -38,7 +50,7 @@ function getPageHelp(pathname: string) {
   const match = Object.entries(PAGE_HELP).find(([path]) => pathname.startsWith(`${path}/`));
   return match?.[1] ?? {
     title: "Workspace",
-    items: ["Use left sidebar for notes and folders.", "Use right rail for tools, help, theme, and account actions."],
+    items: ["Find pages and folders on the left.", "Find search, help, appearance, and account actions on the right."],
   };
 }
 
@@ -89,10 +101,6 @@ export function RightRailHelpDrawer({
             <span>Version</span>
             <strong>v{appVersion}</strong>
           </div>
-          <div className="right-rail-help-row">
-            <span>Docker image</span>
-            <code>efekurucay/giraffle:latest</code>
-          </div>
         </section>
 
         <section className="right-rail-help-card">
@@ -104,14 +112,18 @@ export function RightRailHelpDrawer({
           </ul>
         </section>
 
-        <section className="right-rail-help-card">
-          <h3>Self-host env</h3>
+        <details className="right-rail-help-card">
+          <summary>Installation details</summary>
+          <div className="right-rail-help-row">
+            <span>Install image</span>
+            <code>efekurucay/giraffle:latest</code>
+          </div>
           <div className="right-rail-help-chip-row">
             {REQUIRED_ENV_KEYS.map((key) => (
               <span key={key} className="right-rail-help-chip">{key}</span>
             ))}
           </div>
-        </section>
+        </details>
 
         <section className="right-rail-help-card">
           <h3>Quick links</h3>

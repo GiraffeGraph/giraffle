@@ -9,17 +9,15 @@ import {
 import { combine } from "@atlaskit/pragmatic-drag-and-drop/combine";
 import { RightRailHelpDrawer } from "@/components/right-rail/RightRailHelpDrawer";
 import { SyncQueueBadge } from "@/components/right-rail/SyncQueueBadge";
-import { GraphIcon } from "@/components/sidebar/GraphIcon";
 import { ThemeSelector } from "@/components/theme/ThemeSelector";
 import { useIsMobileViewport } from "@/components/ui/useIsMobileViewport";
 import { signOutAction } from "@/server/api/auth";
 import { archiveNoteAction } from "@/server/api/notes";
 import { isTmNoteDragData } from "@/components/tower-matrix/dnd";
-import { isSidebarNoteDragData } from "@/components/sidebar/sidebar.types";
+import { isSidebarPageDragData } from "@/components/sidebar/sidebar.types";
 
 const NAV_ITEMS_TOP = [
   { path: "/search", icon: "\uE8B6", label: "Search" },
-  { path: "/publish", icon: "\uE255", label: "Publish" },
 ] as const;
 
 const NAV_ITEMS_BOTTOM = [
@@ -28,7 +26,7 @@ const NAV_ITEMS_BOTTOM = [
 ] as const;
 
 function isArchivableDragData(d: unknown) {
-  return isTmNoteDragData(d) || isSidebarNoteDragData(d);
+  return isTmNoteDragData(d) || isSidebarPageDragData(d);
 }
 
 function ArchiveDropButton({
@@ -64,8 +62,8 @@ function ArchiveDropButton({
           setIsOver(false);
           let noteId: string | null = null;
           if (isTmNoteDragData(source.data)) noteId = source.data.id;
-          else if (isSidebarNoteDragData(source.data))
-            noteId = source.data.noteId;
+          else if (isSidebarPageDragData(source.data))
+            noteId = source.data.pageId;
           if (!noteId) return;
           void archiveNoteAction(noteId).then(() => router.refresh());
         },
@@ -110,18 +108,6 @@ export function RightRail({ appVersion }: { appVersion: string }) {
   return (
     <>
       <div className="right-rail">
-        <button
-          type="button"
-          className={`right-rail-btn${pathname === "/graph" ? " active" : ""}`}
-          onClick={() => router.push("/graph")}
-          aria-label="Connection graph"
-          title="Connection graph"
-        >
-          <GraphIcon size={18} />
-        </button>
-
-        <div className="right-rail-divider" />
-
         {NAV_ITEMS_TOP.map(({ path, icon, label }) => (
           <button
             key={path}

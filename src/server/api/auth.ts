@@ -69,7 +69,7 @@ export async function registerAction(formData: FormData) {
     await signIn("credentials", {
       email,
       password,
-      redirectTo: "/inbox",
+      redirectTo: "/notes",
     });
     resetRateLimit(`register:${email}`);
   } catch (error) {
@@ -101,7 +101,7 @@ export async function loginAction(formData: FormData) {
     await signIn("credentials", {
       email,
       password,
-      redirectTo: "/inbox",
+      redirectTo: "/notes",
     });
     resetRateLimit(`login:${email}`);
   } catch (error) {
@@ -332,11 +332,6 @@ async function claimLegacyWorkspace(
     return;
   }
 
-  await tx.folder.updateMany({
-    where: { userId: legacyUser.id },
-    data: { userId },
-  });
-
   await tx.note.updateMany({
     where: { userId: legacyUser.id },
     data: { userId },
@@ -345,11 +340,8 @@ async function claimLegacyWorkspace(
   const remainingLegacyNotes = await tx.note.count({
     where: { userId: legacyUser.id },
   });
-  const remainingLegacyFolders = await tx.folder.count({
-    where: { userId: legacyUser.id },
-  });
 
-  if (remainingLegacyNotes === 0 && remainingLegacyFolders === 0) {
+  if (remainingLegacyNotes === 0) {
     await tx.user.delete({
       where: { id: legacyUser.id },
     });

@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { draggable } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
+import { useRouter } from "next/navigation";
+import { renderStoredIcon } from "@/components/sidebar/sidebar-icon-utils";
 import type { CalendarTodo } from "./stride.types";
 
 const QUADRANT_COLORS: Record<string, string> = {
@@ -28,6 +30,7 @@ export function StrideTodoCard({
   onDelete,
   showTime = false,
 }: StrideTodoCardProps) {
+  const router = useRouter();
   const dragRef = useRef<HTMLDivElement>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
   const [editingTitle, setEditingTitle] = useState(false);
@@ -110,10 +113,30 @@ export function StrideTodoCard({
             {todo.text || "Untitled task"}
           </span>
         )}
-        <span className="stride-todo-note">
-          {todo.note.icon ? `${todo.note.icon} ` : ""}
-          {todo.note.title}
-        </span>
+        <button
+          type="button"
+          className="stride-todo-note"
+          title={todo.note.isBoard ? "Open source board" : "Open source note"}
+          onMouseDown={(event) => event.stopPropagation()}
+          onClick={(event) => {
+            event.stopPropagation();
+            router.push(
+              todo.note.isBoard
+                ? `/kanban/${todo.note.id}`
+                : `/notes/${todo.note.id}`,
+            );
+          }}
+        >
+          <span className="stride-todo-note-icon" aria-hidden="true">
+            {renderStoredIcon(todo.note.icon, {
+              fallback: (
+                <span className="material-symbols-outlined">description</span>
+              ),
+              materialClassName: "material-symbols-outlined",
+            })}
+          </span>
+          <span>{todo.note.title}</span>
+        </button>
       </div>
 
       {todo.quadrant && (

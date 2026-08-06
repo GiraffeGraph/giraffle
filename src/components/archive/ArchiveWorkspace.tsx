@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
+import { renderStoredIcon } from "@/components/sidebar/sidebar-icon-utils";
 import { formatDate } from "@/lib/utils";
 import { restoreNoteAction } from "@/server/api/notes";
 
@@ -9,7 +10,7 @@ interface ArchivedNote {
   id: string;
   title: string;
   icon: string | null;
-  folderId: string | null;
+  parentId: string | null;
   updatedAt: Date;
 }
 
@@ -29,12 +30,17 @@ export function ArchiveWorkspace({ notes }: ArchiveWorkspaceProps) {
   }
 
   return (
-    <div className="dashboard app-page">
-      <section className="search-section">
-        <div className="dashboard-section-head search-section-head">
-          <span className="dashboard-section-kicker">Archived notes</span>
-          <span className="search-section-count">{notes.length}</span>
+    <div className="app-page notes-index-page">
+      <header className="workspace-heading notes-index-heading">
+        <div className="workspace-heading-copy">
+          <h1>Archive</h1>
+          <p>
+            {notes.length === 1 ? "1 archived page" : `${notes.length} archived pages`}
+          </p>
         </div>
+      </header>
+
+      <section className="search-section">
 
         {notes.length === 0 ? (
           <div className="dashboard-empty">
@@ -47,16 +53,16 @@ export function ArchiveWorkspace({ notes }: ArchiveWorkspaceProps) {
             {notes.map((note) => (
               <div key={note.id} className="archive-row">
                 <div className="archive-row-info">
-                  {note.icon ? (
-                    <span className="archive-row-icon">{note.icon}</span>
-                  ) : (
-                    <span
-                      className="material-symbols-outlined archive-row-icon-default"
-                      aria-hidden="true"
-                    >
-                      description
-                    </span>
-                  )}
+                  <span className="archive-row-icon" aria-hidden="true">
+                    {renderStoredIcon(note.icon, {
+                      fallback: (
+                        <span className="material-symbols-outlined">
+                          description
+                        </span>
+                      ),
+                      materialClassName: "material-symbols-outlined",
+                    })}
+                  </span>
                   <div className="archive-row-text">
                     <span className="archive-row-title">
                       {note.title || "Untitled"}

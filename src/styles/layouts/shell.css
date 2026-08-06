@@ -174,10 +174,6 @@ body::before {
 .note-header,
 .note-editor-container,
 .template-picker-modal,
-.graph-header,
-.graph-canvas,
-.graph-panel,
-.published-shell,
 .auth-card {
   animation: none;
 }
@@ -305,7 +301,6 @@ body::before {
 .note-toolbar-btn,
 .template-picker-close,
 .template-picker-submit,
-.graph-panel-link,
 .auth-submit {
   transition:
     background var(--transition-fast),
@@ -318,7 +313,6 @@ body::before {
 .sidebar-sign-out,
 .dashboard-secondary-btn,
 .note-toolbar-btn,
-.graph-panel-link,
 .template-picker-close {
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-control);
@@ -336,7 +330,6 @@ body::before {
 .sidebar-sign-out:hover,
 .dashboard-secondary-btn:hover,
 .note-toolbar-btn:hover:not(:disabled),
-.graph-panel-link:hover,
 .template-picker-close:hover {
   background: var(--surface-glass-hover);
   border-color: var(--border-color);
@@ -731,8 +724,7 @@ body::before {
 }
 
 .dashboard,
-.note-page,
-.graph-page {
+.note-page {
   width: min(100%, 1160px);
   margin: 0 auto;
   padding: 56px 72px 96px;
@@ -951,9 +943,7 @@ body::before {
   margin-top: 14px;
 }
 
-.note-tag-chip,
-.published-tag,
-.published-label {
+.note-tag-chip {
   padding: 6px 10px;
   border: 1px solid var(--border-soft);
   background: transparent;
@@ -1029,10 +1019,6 @@ body::before {
   color: var(--text-primary);
 }
 
-.graph-header,
-.graph-canvas,
-.graph-panel,
-.published-shell,
 .auth-card {
   border: 1px solid var(--border-soft);
   border-radius: 18px;
@@ -1056,10 +1042,6 @@ body::before {
   .main-content-inner {
     min-height: auto;
   }
-
-  .graph-layout {
-    grid-template-columns: 1fr;
-  }
 }
 
 @media (max-width: 760px) {
@@ -1069,8 +1051,7 @@ body::before {
   }
 
   .dashboard,
-  .note-page,
-  .graph-page {
+  .note-page {
     padding: 28px 20px 56px;
   }
 

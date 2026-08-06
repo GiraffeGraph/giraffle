@@ -18,7 +18,7 @@ export default async function SettingsPage() {
   return (
     <>
       <PageTopbar icon="settings" label="Settings" />
-      <div className="dashboard settings-page app-page">
+      <div className="settings-page">
         <SettingsWorkspace
           appVersion={app.version}
           updateStatus={updateStatus}

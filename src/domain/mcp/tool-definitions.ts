@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { createFolder, getFolder } from "@/domain/folder/folder.service";
 import { getBacklinks } from "@/domain/link/link.service";
 import { buildNoteExportArtifact } from "@/domain/note/note.export";
 import { blocksToMarkdown, markdownToBlocks } from "@/domain/note/note.serializer";
@@ -10,7 +9,7 @@ import {
   relocateNote,
   saveNoteContent,
   updateNote,
-} from "@/domain/note/note.service";
+} from "@/domain/note/page.service";
 import type { BlockNodeContent, TiptapDocument, UpdateNoteInput } from "@/domain/note/note.types";
 import { insertBlockInDocument } from "@/domain/note/block-tree";
 import { searchWorkspaceNotes } from "@/domain/search/search.service";
@@ -41,61 +40,17 @@ function serializeNoteMetadata(note: NonNullable<Awaited<ReturnType<typeof getNo
   return {
     id: note.id,
     title: note.title,
-    slug: note.slug,
     icon: note.icon,
     coverImage: note.coverImage,
-    folderId: note.folderId,
+    parentId: note.parentId,
     position: note.position,
     isPinned: note.isPinned,
     isArchived: note.isArchived,
-    isPublished: note.isPublished,
     quadrant: note.quadrant,
     createdAt: note.createdAt.toISOString(),
     updatedAt: note.updatedAt.toISOString(),
   };
 }
-
-async function resolveNoteId(userId: string, input: { noteId?: string; slug?: string }) {
-  if (input.noteId) return input.noteId;
-  if (!input.slug) throw new Error("Provide noteId or slug");
-  const found = await db.note.findFirst({
-    where: { userId, slug: input.slug },
-    select: { id: true },
-  });
-  if (!found) throw new Error("Note not found");
-  return found.id;
-}
-
-async function resolveNoteUpdateTarget(
-  userId: string,
-  input: { noteId?: string; lookupSlug?: string },
-) {
-  if (input.noteId && input.lookupSlug) {
-    const found = await db.note.findFirst({
-      where: { userId, slug: input.lookupSlug },
-      select: { id: true },
-    });
-    if (!found) throw new Error("Note not found");
-    if (found.id !== input.noteId) {
-      throw new Error("noteId and lookupSlug refer to different notes.");
-    }
-    return input.noteId;
-  }
-
-  return resolveNoteId(userId, {
-    noteId: input.noteId,
-    slug: input.lookupSlug,
-  });
-}
-
-const NoteIdOrSlug = z
-  .object({
-    noteId: z.string().min(1).optional(),
-    slug: z.string().min(1).max(240).optional(),
-  })
-  .refine((v) => Boolean(v.noteId) !== Boolean(v.slug), {
-    message: "Provide exactly one of noteId or slug.",
-  });
 
 function documentHasBlockId(document: TiptapDocument, blockId: string): boolean {
   const walk = (nodes: unknown): boolean => {
@@ -131,9 +86,8 @@ export const MCP_TOOL_DEFINITIONS: McpToolDefinition[] = [
         hits: results.hits.map((h) => ({
           id: h.id,
           title: h.title,
-          slug: h.slug,
-          folderId: h.folderId,
-          folderPath: h.folderPath,
+          parentId: h.parentId,
+          parentPath: h.parentPath,
           isPinned: h.isPinned,
           updatedAt: h.updatedAt.toISOString(),
           score: h.score,
@@ -147,20 +101,14 @@ export const MCP_TOOL_DEFINITIONS: McpToolDefinition[] = [
     name: "notes_get",
     destructive: false,
     description:
-      "Retrieve one note by noteId or slug. Returns metadata, canonical Tiptap document, and Markdown rendering.",
-    inputSchema: z
-      .object({
-        noteId: z.string().min(1).optional(),
-        slug: z.string().min(1).max(240).optional(),
-        includeArchived: z.boolean().optional(),
-      })
-      .refine((v) => Boolean(v.noteId) !== Boolean(v.slug), {
-        message: "Provide exactly one of noteId or slug.",
-      }),
+      "Retrieve one note by noteId. Returns metadata, canonical Tiptap document, and Markdown rendering.",
+    inputSchema: z.object({
+      noteId: z.string().min(1),
+      includeArchived: z.boolean().optional(),
+    }),
     execute: async (raw, { userId }) => {
-      const input = raw as { noteId?: string; slug?: string; includeArchived?: boolean };
-      const noteId = await resolveNoteId(userId, input);
-      const note = await getNote(userId, noteId);
+      const input = raw as { noteId: string; includeArchived?: boolean };
+      const note = await getNote(userId, input.noteId);
       if (!note || (!input.includeArchived && note.isArchived)) {
         throw new Error("Note not found");
       }
@@ -175,26 +123,19 @@ export const MCP_TOOL_DEFINITIONS: McpToolDefinition[] = [
     name: "notes_export",
     destructive: false,
     description: "Export a note as Markdown or MDX from its canonical block document.",
-    inputSchema: z
-      .object({
-        noteId: z.string().min(1).optional(),
-        slug: z.string().min(1).max(240).optional(),
-        format: z.enum(["markdown", "mdx"]).default("markdown"),
-      })
-      .refine((v) => Boolean(v.noteId) !== Boolean(v.slug), {
-        message: "Provide exactly one of noteId or slug.",
-      }),
+    inputSchema: z.object({
+      noteId: z.string().min(1),
+      format: z.enum(["markdown", "mdx"]).default("markdown"),
+    }),
     execute: async (raw, { userId }) => {
-      const input = raw as { noteId?: string; slug?: string; format: "markdown" | "mdx" };
-      const noteId = await resolveNoteId(userId, input);
-      const note = await getNoteForExport(userId, noteId);
+      const input = raw as { noteId: string; format: "markdown" | "mdx" };
+      const note = await getNoteForExport(userId, input.noteId);
       if (!note) throw new Error("Note not found");
       const artifact = buildNoteExportArtifact(note);
       return {
         noteId: artifact.noteId,
         title: artifact.title,
         format: input.format,
-        publishPath: artifact.publishPath,
         content: input.format === "mdx" ? artifact.mdx : artifact.markdown,
       };
     },
@@ -203,92 +144,60 @@ export const MCP_TOOL_DEFINITIONS: McpToolDefinition[] = [
     name: "notes_backlinks",
     destructive: false,
     description: "Get persisted backlinks pointing to a note.",
-    inputSchema: NoteIdOrSlug,
+    inputSchema: z.object({ noteId: z.string().min(1) }),
     execute: async (raw, { userId }) => {
-      const input = raw as { noteId?: string; slug?: string };
-      const noteId = await resolveNoteId(userId, input);
-      const backlinks = await getBacklinks(userId, noteId);
-      return { noteId, backlinks };
+      const input = raw as { noteId: string };
+      const backlinks = await getBacklinks(userId, input.noteId);
+      return { noteId: input.noteId, backlinks };
     },
   },
   {
-    name: "folders_list",
+    name: "pages_children",
     destructive: false,
     description:
-      "List one folder's child folders and notes. If folderId is omitted or null, lists root folders and inbox notes.",
+      "List the child pages of one page. If pageId is omitted or null, lists the top-level pages.",
     inputSchema: z.object({
-      folderId: z.string().min(1).nullable().optional(),
+      pageId: z.string().min(1).nullable().optional(),
     }),
     execute: async (raw, { userId }) => {
-      const input = raw as { folderId?: string | null };
-      if (input.folderId) {
-        const folder = await getFolder(userId, input.folderId);
-        if (!folder) throw new Error("Folder not found");
-        return {
-          folder: {
-            id: folder.id,
-            name: folder.name,
-            icon: folder.icon,
-            parentId: folder.parentId,
-            position: folder.position,
-            createdAt: folder.createdAt.toISOString(),
-            updatedAt: folder.updatedAt.toISOString(),
-          },
-          folders: folder.children.map((c) => ({
-            id: c.id,
-            name: c.name,
-            icon: c.icon,
-            parentId: c.parentId,
-            position: c.position,
-            createdAt: c.createdAt.toISOString(),
-            updatedAt: c.updatedAt.toISOString(),
-          })),
-          notes: folder.notes.map((n) => ({ ...n, updatedAt: n.updatedAt.toISOString() })),
-        };
+      const input = raw as { pageId?: string | null };
+
+      if (input.pageId) {
+        const page = await getNote(userId, input.pageId);
+        if (!page) throw new Error("Page not found");
       }
-      const [folders, notes] = await Promise.all([
-        db.folder.findMany({
-          where: { userId, parentId: null },
-          orderBy: [{ position: "asc" }, { createdAt: "asc" }],
-          select: {
-            id: true,
-            name: true,
-            icon: true,
-            parentId: true,
-            position: true,
-            createdAt: true,
-            updatedAt: true,
-            _count: { select: { notes: { where: { isArchived: false } } } },
+
+      const children = await db.note.findMany({
+        where: {
+          userId,
+          parentId: input.pageId ?? null,
+          isArchived: false,
+          boardTaskSource: null,
+        },
+        orderBy: [{ isPinned: "desc" }, { position: "asc" }, { updatedAt: "desc" }],
+        select: {
+          id: true,
+          title: true,
+          icon: true,
+          parentId: true,
+          isPinned: true,
+          position: true,
+          updatedAt: true,
+          _count: {
+            select: {
+              children: { where: { isArchived: false, boardTaskSource: null } },
+            },
           },
-        }),
-        db.note.findMany({
-          where: { userId, folderId: null, isArchived: false },
-          orderBy: [{ isPinned: "desc" }, { position: "asc" }, { updatedAt: "desc" }],
-          select: {
-            id: true,
-            title: true,
-            slug: true,
-            icon: true,
-            folderId: true,
-            isPinned: true,
-            position: true,
-            updatedAt: true,
-          },
-        }),
-      ]);
+        },
+      });
+
       return {
-        folder: null,
-        folders: folders.map((f) => ({
-          id: f.id,
-          name: f.name,
-          icon: f.icon,
-          parentId: f.parentId,
-          position: f.position,
-          createdAt: f.createdAt.toISOString(),
-          updatedAt: f.updatedAt.toISOString(),
-          noteCount: f._count.notes,
+        parentId: input.pageId ?? null,
+        pages: children.map(({ _count, ...child }) => ({
+          ...child,
+          updatedAt: child.updatedAt.toISOString(),
+          childCount: _count.children,
         })),
-        notes: notes.map((n) => ({ ...n, updatedAt: n.updatedAt.toISOString() })),
       };
     },
   },
@@ -299,34 +208,28 @@ export const MCP_TOOL_DEFINITIONS: McpToolDefinition[] = [
       "Create a note in the workspace. Optional initialMarkdown is parsed into canonical blocks; optional initialBlocks must be Tiptap block JSON.",
     inputSchema: z.object({
       title: z.string().min(1).max(220),
-      folderId: z.string().min(1).optional(),
+      parentId: z.string().min(1).optional(),
       icon: z.string().max(20).optional(),
-      slug: z.string().min(1).max(220).optional(),
       isPinned: z.boolean().optional(),
-      isPublished: z.boolean().optional(),
       initialMarkdown: z.string().max(200_000).optional(),
       initialBlocks: z.array(BlockNodeContentSchema).max(200).optional(),
     }),
     execute: async (raw, { userId }) => {
       const input = raw as {
         title: string;
-        folderId?: string;
+        parentId?: string;
         icon?: string;
-        slug?: string;
         isPinned?: boolean;
-        isPublished?: boolean;
         initialMarkdown?: string;
         initialBlocks?: BlockNodeContent[];
       };
       const noteId = await createNote(userId, {
         title: input.title,
-        folderId: input.folderId,
+        parentId: input.parentId,
         icon: input.icon,
       });
       const patch: UpdateNoteInput = {};
-      if (input.slug) patch.slug = input.slug;
       if (typeof input.isPinned === "boolean") patch.isPinned = input.isPinned;
-      if (typeof input.isPublished === "boolean") patch.isPublished = input.isPublished;
       if (Object.keys(patch).length > 0) await updateNote(userId, noteId, patch);
 
       const mdBlocks = input.initialMarkdown?.trim()
@@ -352,45 +255,30 @@ export const MCP_TOOL_DEFINITIONS: McpToolDefinition[] = [
     name: "notes_update",
     destructive: true,
     description:
-      "Update note metadata such as title, slug, publish/pin state, folder, icon, cover image, archive state, or quadrant. Prefer noteId when available; lookupSlug may be used instead. If both are provided, they must identify the same note.",
-    inputSchema: z
-      .object({
-        noteId: z.string().min(1).optional(),
-        lookupSlug: z.string().min(1).max(240).optional(),
-        title: z.string().min(1).max(220).optional(),
-        slug: z.string().min(1).max(220).nullable().optional(),
-        icon: z.string().max(20).nullable().optional(),
-        coverImage: z.string().max(2_000).nullable().optional(),
-        folderId: z.string().min(1).nullable().optional(),
-        isPinned: z.boolean().optional(),
-        isArchived: z.boolean().optional(),
-        isPublished: z.boolean().optional(),
-        quadrant: z.enum(["DO", "SCHEDULE", "DELEGATE", "ELIMINATE"]).nullable().optional(),
-      })
-      .refine((v) => Boolean(v.noteId) || Boolean(v.lookupSlug), {
-        message: "Provide noteId or lookupSlug.",
-      }),
+      "Update note metadata such as title, pin state, folder, icon, cover image, or archive state. Use tower_assign_note for matrix placement.",
+    inputSchema: z.object({
+      noteId: z.string().min(1),
+      title: z.string().min(1).max(220).optional(),
+      icon: z.string().max(20).nullable().optional(),
+      coverImage: z.string().max(2_000).nullable().optional(),
+      folderId: z.string().min(1).nullable().optional(),
+      isPinned: z.boolean().optional(),
+      isArchived: z.boolean().optional(),
+    }),
     execute: async (raw, { userId }) => {
-      const input = raw as {
-        noteId?: string;
-        lookupSlug?: string;
-      } & Partial<UpdateNoteInput>;
-      const noteId = await resolveNoteUpdateTarget(userId, input);
+      const input = raw as { noteId: string } & Partial<UpdateNoteInput>;
       const patch = Object.fromEntries(
         Object.entries({
           title: input.title,
-          slug: input.slug,
           icon: input.icon,
           coverImage: input.coverImage,
-          folderId: input.folderId,
+          parentId: input.parentId,
           isPinned: input.isPinned,
           isArchived: input.isArchived,
-          isPublished: input.isPublished,
-          quadrant: input.quadrant,
         }).filter(([, v]) => typeof v !== "undefined"),
       ) as UpdateNoteInput;
-      await updateNote(userId, noteId, patch);
-      const note = await getNote(userId, noteId);
+      await updateNote(userId, input.noteId, patch);
+      const note = await getNote(userId, input.noteId);
       if (!note) throw new Error("Note not found");
       return serializeNoteMetadata(note);
     },
@@ -402,30 +290,24 @@ export const MCP_TOOL_DEFINITIONS: McpToolDefinition[] = [
       "Append content to an existing note. Provide markdown for simple writes or Tiptap block JSON for precise canonical blocks.",
     inputSchema: z
       .object({
-        noteId: z.string().min(1).optional(),
-        slug: z.string().min(1).max(240).optional(),
+        noteId: z.string().min(1),
         parentBlockId: z.string().min(1).nullable().optional(),
         afterBlockId: z.string().min(1).nullable().optional(),
         markdown: z.string().max(200_000).optional(),
         blocks: z.array(BlockNodeContentSchema).max(100).optional(),
-      })
-      .refine((v) => Boolean(v.noteId) !== Boolean(v.slug), {
-        message: "Provide exactly one of noteId or slug.",
       })
       .refine((v) => Boolean(v.markdown?.trim()) || Boolean(v.blocks?.length), {
         message: "Provide markdown or at least one block.",
       }),
     execute: async (raw, { userId }) => {
       const input = raw as {
-        noteId?: string;
-        slug?: string;
+        noteId: string;
         parentBlockId?: string | null;
         afterBlockId?: string | null;
         markdown?: string;
         blocks?: BlockNodeContent[];
       };
-      const noteId = await resolveNoteId(userId, input);
-      const note = await getNote(userId, noteId);
+      const note = await getNote(userId, input.noteId);
       if (!note || note.isArchived) throw new Error("Note not found");
       let document: TiptapDocument = note.document;
       // A missing afterBlockId would otherwise silently append at the end (and,
@@ -459,57 +341,25 @@ export const MCP_TOOL_DEFINITIONS: McpToolDefinition[] = [
     name: "notes_move",
     destructive: true,
     description:
-      "Move a note to another folder, or to the inbox when targetFolderId is null. Use afterNoteId to position relative to a sibling.",
+      "Move a note inside another page, or to the workspace root when targetParentId is null. Use afterNoteId to position relative to a sibling.",
     inputSchema: z.object({
       noteId: z.string().min(1),
-      targetFolderId: z.string().min(1).nullable().optional(),
+      targetParentId: z.string().min(1).nullable().optional(),
       afterNoteId: z.string().min(1).nullable().optional(),
     }),
     execute: async (raw, { userId }) => {
       const input = raw as {
         noteId: string;
-        targetFolderId?: string | null;
+        targetParentId?: string | null;
         afterNoteId?: string | null;
       };
       await relocateNote(userId, input.noteId, {
-        folderId: input.targetFolderId ?? null,
+        parentId: input.targetParentId ?? null,
         afterNoteId: input.afterNoteId ?? null,
       });
       const note = await getNote(userId, input.noteId);
       if (!note) throw new Error("Note not found");
       return serializeNoteMetadata(note);
-    },
-  },
-  {
-    name: "folders_create",
-    destructive: true,
-    description: "Create a folder, optionally nested under a parent folder.",
-    inputSchema: z.object({
-      name: z.string().min(1).max(160),
-      icon: z.string().max(20).optional(),
-      parentId: z.string().min(1).optional(),
-    }),
-    execute: async (raw, { userId }) => {
-      const input = raw as { name: string; icon?: string; parentId?: string };
-      const folderId = await createFolder(userId, input);
-      const folder = await db.folder.findFirst({
-        where: { id: folderId, userId },
-        select: {
-          id: true,
-          name: true,
-          icon: true,
-          parentId: true,
-          position: true,
-          createdAt: true,
-          updatedAt: true,
-        },
-      });
-      if (!folder) throw new Error("Folder not found");
-      return {
-        ...folder,
-        createdAt: folder.createdAt.toISOString(),
-        updatedAt: folder.updatedAt.toISOString(),
-      };
     },
   },
   ...strideTools,

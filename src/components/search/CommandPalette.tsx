@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 interface NoteHit {
   id: string;
   title: string;
-  slug: string | null;
   icon: string | null;
   updatedAt: string;
 }

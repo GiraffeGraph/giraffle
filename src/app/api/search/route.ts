@@ -10,7 +10,6 @@ const MAX_QUERY_LENGTH = 200;
 type NoteRow = {
   id: string;
   title: string;
-  slug: string | null;
   icon: string | null;
   updatedAt: Date;
   rank: number;
@@ -31,7 +30,6 @@ export async function GET(req: Request) {
     SELECT
       "id",
       "title",
-      "slug",
       "icon",
       "updatedAt",
       ts_rank("searchVector", plainto_tsquery('simple', ${q})) AS rank
@@ -47,7 +45,6 @@ export async function GET(req: Request) {
     notes: notes.map((row) => ({
       id: row.id,
       title: row.title,
-      slug: row.slug,
       icon: row.icon,
       updatedAt: row.updatedAt.toISOString(),
       rank: row.rank,

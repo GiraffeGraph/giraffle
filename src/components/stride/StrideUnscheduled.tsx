@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { dropTargetForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
+import { renderStoredIcon } from "@/components/sidebar/sidebar-icon-utils";
 import { isDragData, type CalendarTodo } from "./stride.types";
 import { StrideTodoCard } from "./StrideTodoCard";
 
@@ -113,9 +114,16 @@ export function StrideUnscheduled({ todos, onToggle, onUpdateText, onDelete }: S
             grouped.map(({ note, todos: noteTodos }) => (
               <div key={note.id} className="stride-unscheduled-group">
                 <div className="stride-unscheduled-group-header">
-                  {note.icon && (
-                    <span style={{ fontSize: 12 }}>{note.icon}</span>
-                  )}
+                  <span className="stride-unscheduled-group-icon" aria-hidden="true">
+                    {renderStoredIcon(note.icon, {
+                      fallback: (
+                        <span className="material-symbols-outlined">
+                          description
+                        </span>
+                      ),
+                      materialClassName: "material-symbols-outlined",
+                    })}
+                  </span>
                   <span className="stride-unscheduled-group-title">{note.title}</span>
                 </div>
                 {noteTodos.map((t) => (

@@ -16,7 +16,7 @@ function emit() {
   for (const l of listeners) l();
 }
 
-function readQueue(): LocalSyncQueueItem[] {
+export function getLocalSyncQueue(): LocalSyncQueueItem[] {
   if (typeof window === "undefined") {
     return [];
   }
@@ -45,7 +45,7 @@ function writeQueue(queue: LocalSyncQueueItem[]) {
 
 function ensureCachedCount() {
   if (cachedCountLoaded) return;
-  cachedCount = readQueue().length;
+  cachedCount = getLocalSyncQueue().length;
   cachedCountLoaded = true;
 }
 
@@ -54,7 +54,7 @@ function ensureStorageListener() {
   storageListenerAttached = true;
   window.addEventListener("storage", (e) => {
     if (e.key !== LOCAL_SYNC_QUEUE_STORAGE_KEY) return;
-    cachedCount = readQueue().length;
+    cachedCount = getLocalSyncQueue().length;
     cachedCountLoaded = true;
     emit();
   });
@@ -82,13 +82,34 @@ export function useLocalSyncQueueCount(): number {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
 
+function getQueueSnapshot() {
+  return JSON.stringify(getLocalSyncQueue());
+}
+
+function getQueueServerSnapshot() {
+  return "[]";
+}
+
+export function useLocalSyncQueue(): LocalSyncQueueItem[] {
+  const serialized = useSyncExternalStore(
+    subscribe,
+    getQueueSnapshot,
+    getQueueServerSnapshot,
+  );
+  try {
+    return JSON.parse(serialized) as LocalSyncQueueItem[];
+  } catch {
+    return [];
+  }
+}
+
 export function queueLocalMutation(input: {
   entityType: LocalSyncQueueItem["entityType"];
   entityId: string;
   actionType: string;
   payload?: unknown;
 }) {
-  const queue = readQueue();
+  const queue = getLocalSyncQueue();
   const entry: LocalSyncQueueItem = {
     id: generateId(),
     entityType: input.entityType,
@@ -103,6 +124,10 @@ export function queueLocalMutation(input: {
 }
 
 export function resolveLocalMutation(entryId: string) {
-  const queue = readQueue().filter((entry) => entry.id !== entryId);
+  const queue = getLocalSyncQueue().filter((entry) => entry.id !== entryId);
   writeQueue(queue);
+}
+
+export function clearLocalSyncQueue() {
+  writeQueue([]);
 }

@@ -12,27 +12,8 @@ body {
   background-color: var(--md-sys-color-background);
 }
 
-/* Page background — gradient + grid (existing design preserved) */
 body {
-  background:
-    radial-gradient(circle at top left, rgb(var(--md-ref-accent-rgb) / 0.15), transparent 28%),
-    radial-gradient(circle at 82% 10%, rgb(var(--md-ref-accent-warm-rgb) / 0.12), transparent 24%),
-    linear-gradient(180deg, var(--md-ref-page-bg-start, var(--md-ref-page-bg-mid)) 0%, var(--md-ref-page-bg-mid) 54%, var(--md-ref-page-bg-deep) 100%);
-  position: relative;
-}
-
-/* Subtle grid overlay */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  background-image:
-    linear-gradient(rgb(var(--md-ref-page-grid-rgb) / 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(var(--md-ref-page-grid-rgb) / 0.04) 1px, transparent 1px);
-  background-size: 28px 28px;
-  pointer-events: none;
-  opacity: 0.34;
-  z-index: 0;
+  background: var(--bg-page);
 }
 
 /* Links */

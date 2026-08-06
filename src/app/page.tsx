@@ -10,8 +10,15 @@ export default async function HomePage() {
     redirect("/onboarding");
   }
   const session = await auth();
-  if (session?.user?.id) {
-    redirect("/inbox");
+  const sessionUserId = session?.user?.id;
+  const sessionUser = sessionUserId
+    ? await db.user.findUnique({
+        where: { id: sessionUserId },
+        select: { id: true },
+      })
+    : null;
+  if (sessionUser) {
+    redirect("/notes");
   }
   redirect("/login");
 }

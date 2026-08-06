@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 const ROUTES: Record<string, string> = {
-  n: "/inbox",
+  n: "/notes",
   h: "/",
   c: "/savanna",
   r: "/stride",

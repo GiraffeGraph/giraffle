@@ -8,7 +8,7 @@ import {
   setTodoDuration,
   toggleCalendarTodo,
   updateCalendarTodoText,
-} from "@/domain/note/note.service";
+} from "@/domain/note/task.service";
 import { db } from "@/lib/db";
 import type { McpToolDefinition } from "../tool-definitions";
 

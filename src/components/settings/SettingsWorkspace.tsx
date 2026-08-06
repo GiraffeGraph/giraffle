@@ -1,14 +1,18 @@
 "use client";
 
+import Link from "next/link";
 import { useId, useState } from "react";
+import type { LocalSyncQueueItem } from "@/lib/workspace-preferences";
 import {
-  LOCAL_SYNC_QUEUE_STORAGE_KEY,
-  type LocalSyncQueueItem,
-} from "@/lib/workspace-preferences";
-import { McpAccessTokensCard, type McpAccessTokenView } from "@/components/settings/McpAccessTokensCard";
+  clearLocalSyncQueue,
+  useLocalSyncQueue,
+} from "@/lib/local-sync";
+import {
+  McpAccessTokensCard,
+  type McpAccessTokenView,
+} from "@/components/settings/McpAccessTokensCard";
 import { UpdateCenterCard } from "@/components/update/UpdateCenterCard";
 import { Button } from "@/components/ui/Button";
-import { Card, CardHeader, CardTitle, CardContent, CardActions } from "@/components/ui/Card";
 import type { AppUpdateStatus } from "@/domain/update/update.types";
 import styles from "./SettingsWorkspace.module.css";
 
@@ -32,15 +36,41 @@ type OperationLogView = {
   appliedAt: string | null;
 };
 
-type SettingsTabId = "hosting" | "access" | "sync";
+type SettingsTabId = "updates" | "connections" | "activity";
 
 type SettingsTab = {
   id: SettingsTabId;
   label: string;
   description: string;
   icon: string;
-  badge: string;
+  meta: string;
 };
+
+const ITEM_LABELS: Record<string, string> = {
+  note: "Page",
+  folder: "Folder",
+  board: "Board",
+  canvas: "Canvas",
+  task: "Task",
+};
+
+const ACTION_LABELS: Record<string, string> = {
+  create: "created",
+  update: "updated",
+  "save-content": "edited",
+  archive: "archived",
+  restore: "restored",
+  delete: "deleted",
+  relocate: "moved",
+  "move-up": "moved",
+  "move-down": "moved",
+};
+
+function describeChange(entityType: string, actionType: string) {
+  const item = ITEM_LABELS[entityType.toLowerCase()] ?? "Item";
+  const action = ACTION_LABELS[actionType.toLowerCase()] ?? "changed";
+  return `${item} ${action}`;
+}
 
 export function SettingsWorkspace({
   appVersion,
@@ -51,61 +81,52 @@ export function SettingsWorkspace({
   showHeading = true,
 }: SettingsWorkspaceProps) {
   const tabsId = useId();
-  const [activeTab, setActiveTab] = useState<SettingsTabId>("hosting");
-  const [queuedItems, setQueuedItems] = useState<LocalSyncQueueItem[]>(() => {
-    if (typeof window === "undefined") {
-      return [];
-    }
-
-    try {
-      const storedQueue = window.localStorage.getItem(LOCAL_SYNC_QUEUE_STORAGE_KEY);
-      return storedQueue ? (JSON.parse(storedQueue) as LocalSyncQueueItem[]) : [];
-    } catch {
-      return [];
-    }
-  });
-
-  const clearQueue = () => {
-    window.localStorage.removeItem(LOCAL_SYNC_QUEUE_STORAGE_KEY);
-    setQueuedItems([]);
-  };
+  const [activeTab, setActiveTab] = useState<SettingsTabId>("updates");
+  const queuedItems = useLocalSyncQueue();
 
   const tabs: SettingsTab[] = [
     {
-      id: "hosting",
+      id: "updates",
       label: "Updates",
-      description: "Version and release flow",
+      description: "Keep Giraffle current",
       icon: "deployed_code",
-      badge: updateStatus?.updateAvailable ? "Update" : `v${appVersion}`,
+      meta: updateStatus?.updateAvailable ? "Available" : `v${appVersion}`,
     },
     {
-      id: "access",
-      label: "MCP Access",
-      description: "External integration tokens",
+      id: "connections",
+      label: "Connected apps",
+      description: "Apps you have connected",
       icon: "key",
-      badge: String(mcpAccessTokens.length),
+      meta:
+        mcpAccessTokens.length === 0
+          ? "None"
+          : `${mcpAccessTokens.length} connected`,
     },
     {
-      id: "sync",
-      label: "Sync & Logs",
-      description: "Local queue and server audit",
+      id: "activity",
+      label: "Activity",
+      description: "Saving progress and recent changes",
       icon: "sync_alt",
-      badge: `${queuedItems.length} pending`,
+      meta: queuedItems.length === 0 ? "All saved" : `${queuedItems.length} waiting`,
     },
   ];
 
   return (
     <div className={`${styles.root} ${embedded ? styles.rootEmbedded : ""}`}>
       {showHeading ? (
-        <SettingsHero
+        <SettingsHeader
           appVersion={appVersion}
-          tokenCount={mcpAccessTokens.length}
+          connectionCount={mcpAccessTokens.length}
         />
       ) : null}
 
       <div className={styles.shell}>
         <aside className={styles.tabRail} aria-label="Settings sections">
-          <div className={styles.tabList} role="tablist" aria-orientation="vertical">
+          <div
+            className={styles.tabList}
+            role="tablist"
+            aria-orientation="vertical"
+          >
             {tabs.map((tab) => (
               <button
                 key={tab.id}
@@ -117,12 +138,16 @@ export function SettingsWorkspace({
                 className={`${styles.tabButton} ${activeTab === tab.id ? styles.tabButtonActive : ""}`}
                 onClick={() => setActiveTab(tab.id)}
               >
-                <span className={styles.tabIcon} aria-hidden="true">{tab.icon}</span>
+                <span className={styles.tabIcon} aria-hidden="true">
+                  {tab.icon}
+                </span>
                 <span className={styles.tabCopy}>
                   <span className={styles.tabLabel}>{tab.label}</span>
-                  <span className={styles.tabDescription}>{tab.description}</span>
+                  <span className={styles.tabDescription}>
+                    {tab.description}
+                  </span>
                 </span>
-                <span className={styles.badge}>{tab.badge}</span>
+                <span className={styles.tabMeta}>{tab.meta}</span>
               </button>
             ))}
           </div>
@@ -130,42 +155,64 @@ export function SettingsWorkspace({
 
         <main className={styles.content}>
           <section
-            id={`${tabsId}-hosting-panel`}
+            id={`${tabsId}-updates-panel`}
             role="tabpanel"
-            aria-labelledby={`${tabsId}-hosting-tab`}
-            hidden={activeTab !== "hosting"}
+            aria-labelledby={`${tabsId}-updates-tab`}
+            hidden={activeTab !== "updates"}
             className={styles.panel}
           >
-            <SettingsSectionIntro title="Updates" />
+            <SettingsSectionIntro
+              title="Updates"
+              description="See your current version and check for a newer one."
+            />
             {updateStatus ? <UpdateCenterCard status={updateStatus} /> : null}
+            <div className={styles.actions}>
+              <Link href="/settings/secrets">More settings</Link>
+            </div>
           </section>
 
           <section
-            id={`${tabsId}-access-panel`}
+            id={`${tabsId}-connections-panel`}
             role="tabpanel"
-            aria-labelledby={`${tabsId}-access-tab`}
-            hidden={activeTab !== "access"}
+            aria-labelledby={`${tabsId}-connections-tab`}
+            hidden={activeTab !== "connections"}
             className={styles.panel}
           >
-            <SettingsSectionIntro title="MCP Access" />
+            <SettingsSectionIntro
+              title="Connected apps"
+              description="Choose which other apps can work with your Giraffle notes."
+            />
             <McpAccessTokensCard tokens={mcpAccessTokens} />
           </section>
 
           <section
-            id={`${tabsId}-sync-panel`}
+            id={`${tabsId}-activity-panel`}
             role="tabpanel"
-            aria-labelledby={`${tabsId}-sync-tab`}
-            hidden={activeTab !== "sync"}
+            aria-labelledby={`${tabsId}-activity-tab`}
+            hidden={activeTab !== "activity"}
             className={styles.panel}
           >
-            <SettingsSectionIntro title="Sync & Logs" />
-            <div className={styles.statGrid}>
-              <SettingsStat label="Queued operations" value={queuedItems.length} caption="Local browser queue" />
-              <SettingsStat label="Server logs" value={operationLogs.length} caption="Latest loaded entries" />
-              <SettingsStat label="Sources" value={new Set(operationLogs.map((entry) => entry.source)).size} caption="Distinct operation origins" />
-            </div>
-            <LocalSyncQueueCard queuedItems={queuedItems} onClearQueue={clearQueue} />
-            <ServerOperationsCard operationLogs={operationLogs} />
+            <SettingsSectionIntro
+              title="Activity"
+              description="Check whether your changes are saved and review recent work."
+            />
+            <dl className={styles.metrics}>
+              <SettingsMetric
+                label="Waiting"
+                value={queuedItems.length}
+                caption="Changes still being saved"
+              />
+              <SettingsMetric
+                label="Recent"
+                value={operationLogs.length}
+                caption="Changes shown below"
+              />
+            </dl>
+            <WaitingChangesSection
+              queuedItems={queuedItems}
+              onClearQueue={clearLocalSyncQueue}
+            />
+            <RecentChangesSection operationLogs={operationLogs} />
           </section>
         </main>
       </div>
@@ -173,45 +220,57 @@ export function SettingsWorkspace({
   );
 }
 
-function SettingsHero({
+function SettingsHeader({
   appVersion,
-  tokenCount,
+  connectionCount,
 }: {
   appVersion: string;
-  tokenCount: number;
+  connectionCount: number;
 }) {
   return (
-    <header className={styles.hero}>
-      <div className={styles.heroCopy}>
-        <p className={styles.kicker}>Giraffle Control Room</p>
+    <header className={styles.pageHeader}>
+      <div>
         <h1 className={styles.title}>Settings</h1>
+        <p className={styles.pageDescription}>
+          Updates, connected apps, and saving activity.
+        </p>
       </div>
-      <div className={styles.heroMeta} aria-label="Settings summary">
-        <SummaryMeta label="Version" value={`v${appVersion}`} />
-        <SummaryMeta label="MCP tokens" value={String(tokenCount)} />
-      </div>
+      <dl className={styles.summary} aria-label="Settings summary">
+        <SummaryItem label="Version" value={`v${appVersion}`} />
+        <SummaryItem
+          label="Connected apps"
+          value={String(connectionCount)}
+        />
+      </dl>
     </header>
   );
 }
 
-function SummaryMeta({ label, value }: { label: string; value: string }) {
+function SummaryItem({ label, value }: { label: string; value: string }) {
   return (
-    <div className={styles.metaCard}>
-      <span>{label}</span>
-      <span className={styles.metaValue}>{value}</span>
+    <div className={styles.summaryItem}>
+      <dt>{label}</dt>
+      <dd>{value}</dd>
     </div>
   );
 }
 
-function SettingsSectionIntro({ title }: { title: string }) {
+function SettingsSectionIntro({
+  title,
+  description,
+}: {
+  title: string;
+  description: string;
+}) {
   return (
-    <div className={styles.sectionIntro}>
+    <header className={styles.sectionIntro}>
       <h2 className={styles.sectionTitle}>{title}</h2>
-    </div>
+      <p className={styles.sectionDescription}>{description}</p>
+    </header>
   );
 }
 
-function SettingsStat({
+function SettingsMetric({
   label,
   value,
   caption,
@@ -221,15 +280,15 @@ function SettingsStat({
   caption: string;
 }) {
   return (
-    <div className={styles.statCard}>
-      <div className={styles.statLabel}>{label}</div>
-      <div className={styles.statValue}>{value}</div>
-      <div className={styles.statCaption}>{caption}</div>
+    <div className={styles.metric}>
+      <dt>{label}</dt>
+      <dd>{value}</dd>
+      <span>{caption}</span>
     </div>
   );
 }
 
-function LocalSyncQueueCard({
+function WaitingChangesSection({
   queuedItems,
   onClearQueue,
 }: {
@@ -237,81 +296,75 @@ function LocalSyncQueueCard({
   onClearQueue: () => void;
 }) {
   return (
-    <Card variant="outlined">
-      <CardHeader>
-        <CardTitle>Local Sync Queue</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className={styles.cardNotice}>
-          <div className={styles.noticeLabel}>Queued operations</div>
-          <div className={styles.noticeValue}>{queuedItems.length}</div>
+    <section className={styles.contentSection}>
+      <div className={styles.contentSectionHeader}>
+        <div>
+          <h3>Waiting to save</h3>
+          <p>Changes that have not finished saving yet.</p>
         </div>
-
-        <div className={styles.compactList} style={{ marginTop: "18px" }}>
-          <ul className="md-list" style={{ padding: 0 }}>
-            {queuedItems.length === 0 ? (
-              <li className="md-list-item">
-                <div className="md-list-item-content">
-                  <span className="md-list-item-headline" style={{ color: "var(--md-sys-color-on-surface-variant)" }}>No pending local operations.</span>
-                </div>
-              </li>
-            ) : (
-              queuedItems.map((item, index) => (
-                <li key={item.id} className="md-list-item" style={{ borderBottom: index < queuedItems.length - 1 ? "1px solid var(--md-sys-color-outline-variant)" : "none" }}>
-                  <div className="md-list-item-content">
-                    <span className="md-list-item-headline">{item.entityType}:{item.actionType}</span>
-                    <span className="md-list-item-supporting-text">{item.entityId} · {new Date(item.queuedAt).toLocaleString("en-US")}</span>
-                  </div>
-                </li>
-              ))
-            )}
-          </ul>
-        </div>
-      </CardContent>
-      <CardActions>
         <Button
-          variant="filled"
+          variant="text"
           onClick={onClearQueue}
           disabled={queuedItems.length === 0}
         >
-          Clear local queue
+          Clear list
         </Button>
-      </CardActions>
-    </Card>
+      </div>
+
+      <ul className={styles.dataList}>
+        {queuedItems.length === 0 ? (
+          <li className={styles.emptyRow}>Everything is saved.</li>
+        ) : (
+          queuedItems.map((item) => (
+            <li key={item.id} className={styles.dataRow}>
+              <span>
+                <strong>
+                  {describeChange(item.entityType, item.actionType)}
+                </strong>
+                <small>
+                  Waiting since {new Date(item.queuedAt).toLocaleString("en-US")}
+                </small>
+              </span>
+            </li>
+          ))
+        )}
+      </ul>
+    </section>
   );
 }
 
-function ServerOperationsCard({ operationLogs }: { operationLogs: OperationLogView[] }) {
+function RecentChangesSection({
+  operationLogs,
+}: {
+  operationLogs: OperationLogView[];
+}) {
   return (
-    <Card variant="outlined">
-      <CardHeader>
-        <CardTitle>Server Operations</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className={styles.compactList}>
-          <ul className="md-list" style={{ padding: 0 }}>
-            {operationLogs.length === 0 ? (
-              <li className="md-list-item">
-                <div className="md-list-item-content">
-                  <span className="md-list-item-headline" style={{ color: "var(--md-sys-color-on-surface-variant)" }}>No operation logs yet.</span>
-                </div>
-              </li>
-            ) : (
-              operationLogs.map((entry, index) => (
-                <li key={entry.id} className="md-list-item" style={{ borderBottom: index < operationLogs.length - 1 ? "1px solid var(--md-sys-color-outline-variant)" : "none" }}>
-                  <div className="md-list-item-content">
-                    <span className="md-list-item-headline">{entry.entityType}:{entry.actionType}</span>
-                    <span className="md-list-item-supporting-text">{entry.entityId} · {new Date(entry.createdAt).toLocaleString("en-US")}</span>
-                  </div>
-                  <div className="md-list-item-end">
-                    <span className={styles.operationSource}>{entry.source}</span>
-                  </div>
-                </li>
-              ))
-            )}
-          </ul>
+    <section className={styles.contentSection}>
+      <div className={styles.contentSectionHeader}>
+        <div>
+          <h3>Recent changes</h3>
+          <p>Your latest saved work.</p>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+
+      <ul className={styles.dataList}>
+        {operationLogs.length === 0 ? (
+          <li className={styles.emptyRow}>No recent changes yet.</li>
+        ) : (
+          operationLogs.map((entry) => (
+            <li key={entry.id} className={styles.dataRow}>
+              <span>
+                <strong>
+                  {describeChange(entry.entityType, entry.actionType)}
+                </strong>
+                <small>
+                  {new Date(entry.createdAt).toLocaleString("en-US")}
+                </small>
+              </span>
+            </li>
+          ))
+        )}
+      </ul>
+    </section>
   );
 }

@@ -9,7 +9,6 @@ CREATE TABLE "User" (
     "emailVerified" TIMESTAMP(3),
     "image" TEXT,
     "password" TEXT,
-    "boardColumns" JSONB,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -52,36 +51,16 @@ CREATE TABLE "VerificationToken" (
 );
 
 -- CreateTable
-CREATE TABLE "Folder" (
-    "id" TEXT NOT NULL,
-    "name" TEXT NOT NULL,
-    "icon" TEXT,
-    "parentId" TEXT,
-    "position" INTEGER NOT NULL DEFAULT 0,
-    "userId" TEXT NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "Folder_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
 CREATE TABLE "Note" (
     "id" TEXT NOT NULL,
     "title" TEXT NOT NULL DEFAULT 'Untitled',
-    "slug" TEXT,
     "icon" TEXT,
     "coverImage" TEXT,
-    "folderId" TEXT,
+    "parentId" TEXT,
     "userId" TEXT NOT NULL,
-    "position" INTEGER NOT NULL DEFAULT 0,
+    "position" TEXT NOT NULL DEFAULT 'a0',
     "isPinned" BOOLEAN NOT NULL DEFAULT false,
     "isArchived" BOOLEAN NOT NULL DEFAULT false,
-    "isPublished" BOOLEAN NOT NULL DEFAULT false,
-    "quadrant" TEXT,
-    "kanbanColumns" JSONB,
-    "kanbanStatus" TEXT,
-    "kanbanStatusPosition" INTEGER,
     "searchText" TEXT NOT NULL DEFAULT '',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -99,11 +78,87 @@ CREATE TABLE "Block" (
     "attributes" JSONB NOT NULL DEFAULT '{}',
     "parentId" TEXT,
     "position" INTEGER NOT NULL DEFAULT 0,
-    "dueDate" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Block_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "PagePriority" (
+    "noteId" TEXT NOT NULL,
+    "slot" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "PagePriority_pkey" PRIMARY KEY ("noteId")
+);
+
+-- CreateTable
+CREATE TABLE "TaskMetadata" (
+    "blockId" TEXT NOT NULL,
+    "priority" TEXT,
+    "dueDate" TIMESTAMP(3),
+    "durationMinutes" INTEGER,
+    "completed" BOOLEAN NOT NULL DEFAULT false,
+    "description" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "TaskMetadata_pkey" PRIMARY KEY ("blockId")
+);
+
+-- CreateTable
+CREATE TABLE "BoardStatus" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "color" TEXT,
+    "position" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "BoardStatus_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Board" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "title" TEXT NOT NULL DEFAULT 'Untitled board',
+    "icon" TEXT,
+    "taskSourceNoteId" TEXT NOT NULL,
+    "statusId" TEXT,
+    "statusPosition" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Board_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "BoardColumn" (
+    "id" TEXT NOT NULL,
+    "boardId" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "color" TEXT,
+    "position" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "BoardColumn_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "BoardTask" (
+    "boardId" TEXT NOT NULL,
+    "blockId" TEXT NOT NULL,
+    "columnId" TEXT NOT NULL,
+    "position" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "BoardTask_pkey" PRIMARY KEY ("boardId","blockId")
 );
 
 -- CreateTable
@@ -204,6 +259,18 @@ CREATE TABLE "Canvas" (
     CONSTRAINT "Canvas_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "CanvasReference" (
+    "id" TEXT NOT NULL,
+    "canvasId" TEXT NOT NULL,
+    "noteId" TEXT NOT NULL,
+    "elementId" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "CanvasReference_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
@@ -220,16 +287,7 @@ CREATE UNIQUE INDEX "VerificationToken_token_key" ON "VerificationToken"("token"
 CREATE UNIQUE INDEX "VerificationToken_identifier_token_key" ON "VerificationToken"("identifier", "token");
 
 -- CreateIndex
-CREATE INDEX "Folder_parentId_idx" ON "Folder"("parentId");
-
--- CreateIndex
-CREATE INDEX "Folder_userId_idx" ON "Folder"("userId");
-
--- CreateIndex
-CREATE UNIQUE INDEX "Note_slug_key" ON "Note"("slug");
-
--- CreateIndex
-CREATE INDEX "Note_folderId_idx" ON "Note"("folderId");
+CREATE INDEX "Note_parentId_idx" ON "Note"("parentId");
 
 -- CreateIndex
 CREATE INDEX "Note_userId_idx" ON "Note"("userId");
@@ -247,9 +305,6 @@ CREATE INDEX "Note_isPinned_idx" ON "Note"("isPinned");
 CREATE INDEX "Note_updatedAt_idx" ON "Note"("updatedAt");
 
 -- CreateIndex
-CREATE INDEX "Note_quadrant_idx" ON "Note"("quadrant");
-
--- CreateIndex
 CREATE INDEX "Note_searchVector_idx" ON "Note" USING GIN ("searchVector");
 
 -- CreateIndex
@@ -262,7 +317,34 @@ CREATE INDEX "Block_parentId_idx" ON "Block"("parentId");
 CREATE INDEX "Block_noteId_position_idx" ON "Block"("noteId", "position");
 
 -- CreateIndex
-CREATE INDEX "Block_dueDate_idx" ON "Block"("dueDate");
+CREATE INDEX "PagePriority_slot_idx" ON "PagePriority"("slot");
+
+-- CreateIndex
+CREATE INDEX "TaskMetadata_priority_idx" ON "TaskMetadata"("priority");
+
+-- CreateIndex
+CREATE INDEX "TaskMetadata_dueDate_idx" ON "TaskMetadata"("dueDate");
+
+-- CreateIndex
+CREATE INDEX "BoardStatus_userId_position_idx" ON "BoardStatus"("userId", "position");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Board_taskSourceNoteId_key" ON "Board"("taskSourceNoteId");
+
+-- CreateIndex
+CREATE INDEX "Board_userId_updatedAt_idx" ON "Board"("userId", "updatedAt");
+
+-- CreateIndex
+CREATE INDEX "Board_statusId_statusPosition_idx" ON "Board"("statusId", "statusPosition");
+
+-- CreateIndex
+CREATE INDEX "BoardColumn_boardId_position_idx" ON "BoardColumn"("boardId", "position");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "BoardTask_blockId_key" ON "BoardTask"("blockId");
+
+-- CreateIndex
+CREATE INDEX "BoardTask_columnId_position_idx" ON "BoardTask"("columnId", "position");
 
 -- CreateIndex
 CREATE INDEX "Link_sourceNoteId_idx" ON "Link"("sourceNoteId");
@@ -309,6 +391,12 @@ CREATE UNIQUE INDEX "AppSetting_key_key" ON "AppSetting"("key");
 -- CreateIndex
 CREATE INDEX "Canvas_userId_idx" ON "Canvas"("userId");
 
+-- CreateIndex
+CREATE INDEX "CanvasReference_noteId_idx" ON "CanvasReference"("noteId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "CanvasReference_canvasId_elementId_key" ON "CanvasReference"("canvasId", "elementId");
+
 -- AddForeignKey
 ALTER TABLE "Account" ADD CONSTRAINT "Account_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
@@ -316,13 +404,7 @@ ALTER TABLE "Account" ADD CONSTRAINT "Account_userId_fkey" FOREIGN KEY ("userId"
 ALTER TABLE "Session" ADD CONSTRAINT "Session_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Folder" ADD CONSTRAINT "Folder_parentId_fkey" FOREIGN KEY ("parentId") REFERENCES "Folder"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "Folder" ADD CONSTRAINT "Folder_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "Note" ADD CONSTRAINT "Note_folderId_fkey" FOREIGN KEY ("folderId") REFERENCES "Folder"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "Note" ADD CONSTRAINT "Note_parentId_fkey" FOREIGN KEY ("parentId") REFERENCES "Note"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Note" ADD CONSTRAINT "Note_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -332,6 +414,36 @@ ALTER TABLE "Block" ADD CONSTRAINT "Block_noteId_fkey" FOREIGN KEY ("noteId") RE
 
 -- AddForeignKey
 ALTER TABLE "Block" ADD CONSTRAINT "Block_parentId_fkey" FOREIGN KEY ("parentId") REFERENCES "Block"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PagePriority" ADD CONSTRAINT "PagePriority_noteId_fkey" FOREIGN KEY ("noteId") REFERENCES "Note"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TaskMetadata" ADD CONSTRAINT "TaskMetadata_blockId_fkey" FOREIGN KEY ("blockId") REFERENCES "Block"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "BoardStatus" ADD CONSTRAINT "BoardStatus_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Board" ADD CONSTRAINT "Board_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Board" ADD CONSTRAINT "Board_taskSourceNoteId_fkey" FOREIGN KEY ("taskSourceNoteId") REFERENCES "Note"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Board" ADD CONSTRAINT "Board_statusId_fkey" FOREIGN KEY ("statusId") REFERENCES "BoardStatus"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "BoardColumn" ADD CONSTRAINT "BoardColumn_boardId_fkey" FOREIGN KEY ("boardId") REFERENCES "Board"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "BoardTask" ADD CONSTRAINT "BoardTask_boardId_fkey" FOREIGN KEY ("boardId") REFERENCES "Board"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "BoardTask" ADD CONSTRAINT "BoardTask_blockId_fkey" FOREIGN KEY ("blockId") REFERENCES "Block"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "BoardTask" ADD CONSTRAINT "BoardTask_columnId_fkey" FOREIGN KEY ("columnId") REFERENCES "BoardColumn"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Link" ADD CONSTRAINT "Link_sourceNoteId_fkey" FOREIGN KEY ("sourceNoteId") REFERENCES "Note"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -359,3 +471,9 @@ ALTER TABLE "McpAccessToken" ADD CONSTRAINT "McpAccessToken_userId_fkey" FOREIGN
 
 -- AddForeignKey
 ALTER TABLE "Canvas" ADD CONSTRAINT "Canvas_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CanvasReference" ADD CONSTRAINT "CanvasReference_canvasId_fkey" FOREIGN KEY ("canvasId") REFERENCES "Canvas"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CanvasReference" ADD CONSTRAINT "CanvasReference_noteId_fkey" FOREIGN KEY ("noteId") REFERENCES "Note"("id") ON DELETE CASCADE ON UPDATE CASCADE;

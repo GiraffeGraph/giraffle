@@ -12,6 +12,7 @@ export interface CalendarTodo {
     id: string;
     title: string;
     icon: string | null;
+    isBoard: boolean;
   };
 }
 
