@@ -3,11 +3,12 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useRef, useState } from "react";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { CanvasView } from "@/components/savanna/CanvasView";
 import { EditableText } from "@/components/ui/EditableText";
 import { Button, DividerRow, EmptyState, Icon } from "@/components/ui/primitives";
 import { useTheme } from "@/design/ThemeProvider";
 import { spacing, typography } from "@/design/tokens";
+import Canvas from "@/dom/Canvas";
+import { offlineDomProps } from "@/dom/offline";
 import { createId } from "@/platform/ids";
 import { useApp } from "@/state/AppProvider";
 
@@ -108,15 +109,26 @@ export default function CanvasEditor() {
       {/* The tab bar floats over the screen, so the canvas ends above it and
           Excalidraw's own toolbars stay reachable. */}
       <View style={{ flex: 1, marginBottom: TAB_BAR_HEIGHT + insets.bottom }}>
-        <CanvasView
+        <Canvas
           elements={canvas.elements}
-          addRequest={add}
+          pendingPage={add}
+          theme={{
+            bg: colors.background,
+            dot: colors.border,
+            surface: colors.surfaceStrong,
+            ink: colors.text,
+            muted: colors.muted,
+            border: colors.borderStrong,
+            accent: colors.accent,
+            danger: colors.danger,
+          }}
           onOpenPage={(pageId) => router.push(`/notes/${pageId}`)}
           onError={() => setSaveState("error")}
           onChange={(elements, appState) => {
             setAdd(null);
             saveScene(elements, appState);
           }}
+          dom={offlineDomProps({ backgroundColor: colors.background, scrollEnabled: false })}
         />
       </View>
       <Modal

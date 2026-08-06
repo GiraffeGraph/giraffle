@@ -7,17 +7,37 @@ import {
   type TiptapDocument,
 } from "@giraffle/domain";
 import { router, useLocalSearchParams } from "expo-router";
+import { File } from "expo-file-system";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Alert, AppState, Modal, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
+import { Alert, AppState, Linking, Modal, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { NativeEditor } from "@/components/editor/NativeEditor";
 import { EditableText } from "@/components/ui/EditableText";
 import { Button, DividerRow, EmptyState, Icon } from "@/components/ui/primitives";
 import { useTheme } from "@/design/ThemeProvider";
 import { spacing, typography } from "@/design/tokens";
+import Editor, { type EditorAttachment } from "@/dom/Editor";
+import { offlineDomProps } from "@/dom/offline";
 import { useApp } from "@/state/AppProvider";
 
 type SaveState = "saved" | "saving" | "error";
+
+/** Attachments live inside the encrypted document, so they stay small. */
+const MAX_ATTACHMENT_BYTES = 2 * 1024 * 1024;
+
+async function pickAttachment(accept: string[]): Promise<EditorAttachment | null> {
+  const picked = await File.pickFileAsync({ mimeTypes: accept });
+  if (picked.canceled) return null;
+  const file = picked.result;
+  if (file.size !== null && file.size > MAX_ATTACHMENT_BYTES) {
+    Alert.alert("Image too large", "Pick an image under 2 MB so the page stays quick to sync.");
+    return null;
+  }
+  const base64 = await file.base64();
+  return {
+    src: `data:${file.type || "image/png"};base64,${base64}`,
+    alt: file.name,
+  };
+}
 
 export default function NoteEditor() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -78,17 +98,22 @@ export default function NoteEditor() {
     [persist],
   );
 
+  /** Writes the pending draft now instead of waiting out the debounce. */
+  const flush = useCallback(() => {
+    if (!dirtyRef.current || !draftRef.current) return;
+    if (timer.current) {
+      clearTimeout(timer.current);
+      timer.current = null;
+    }
+    void persist(draftRef.current, revisionRef.current);
+  }, [persist]);
+
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (next) => {
-      if (next === "active" || !dirtyRef.current || !draftRef.current) return;
-      if (timer.current) {
-        clearTimeout(timer.current);
-        timer.current = null;
-      }
-      void persist(draftRef.current, revisionRef.current);
+      if (next !== "active") flush();
     });
     return () => subscription.remove();
-  }, [persist]);
+  }, [flush]);
 
   useEffect(
     () => () => {
@@ -261,16 +286,36 @@ export default function NoteEditor() {
           </ScrollView>
           ) : null}
         </View>
-        <NativeEditor
+        <Editor
           document={draft}
+          theme={{ text: colors.text, muted: colors.faint, link: colors.link }}
           onChange={queueSave}
           onError={() => setSaveState("error")}
+          onFocusChange={(focused) => {
+            if (!focused) flush();
+          }}
+          onTaskToggle={(blockId, checked) => {
+            // A checkbox in the document is only a task row when the block was
+            // minted as one; otherwise the document change is the whole story.
+            if (!snapshot.tasks.some((task) => task.id === blockId)) return;
+            void run((repository) =>
+              repository.updateTask(blockId, { completed: checked }),
+            ).catch(() => undefined);
+          }}
+          onRequestAttachment={pickAttachment}
           onOpenLink={(target) => {
             const next = snapshot.pages.find(
               (item) => item.title.toLocaleLowerCase() === target.toLocaleLowerCase(),
             );
-            if (next) router.push(`/notes/${next.id}`);
+            if (next) {
+              router.push(`/notes/${next.id}`);
+              return;
+            }
+            // The editor can never navigate itself, so a web link leaves for
+            // the system browser or goes nowhere.
+            if (/^https?:\/\//i.test(target)) void Linking.openURL(target).catch(() => undefined);
           }}
+          dom={offlineDomProps({ backgroundColor: colors.background, scrollEnabled: true })}
         />
         {backlinks.length ? (
           <View style={[styles.backlinks, { borderTopColor: colors.border }]}>
