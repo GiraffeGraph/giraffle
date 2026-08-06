@@ -6,8 +6,8 @@ import {
   type LwwRegister,
   type ObjectPresence,
   type TreeParentAssignment,
-} from "@/domain/e2ee/lww-register";
-import type { VersionStamp } from "@/domain/e2ee/hybrid-logical-clock";
+} from "@giraffle/sync";
+import type { VersionStamp } from "@giraffle/protocol";
 
 function stamp(
   physicalMs: number,

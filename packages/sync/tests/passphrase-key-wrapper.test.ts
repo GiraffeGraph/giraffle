@@ -3,7 +3,7 @@ import {
   CryptoAuthenticationError,
   createSodiumCryptoProvider,
   type E2eeCryptoProvider,
-} from "@/domain/e2ee/crypto-provider";
+} from "@giraffle/protocol";
 import {
   DEFAULT_ARGON2ID_MEMORY_BYTES,
   PassphraseKeyWrapperError,
@@ -11,7 +11,7 @@ import {
   decodePassphraseKeyWrapper,
   encodePassphraseKeyWrapper,
   openPassphraseKeyWrapper,
-} from "@/domain/e2ee/passphrase-key-wrapper";
+} from "@giraffle/sync";
 
 function fixedBytes(length: number, start: number) {
   return Uint8Array.from({ length }, (_, index) => (start + index) & 0xff);

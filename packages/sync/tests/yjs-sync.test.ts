@@ -7,7 +7,7 @@ import {
   encodeYjsDiff,
   encodeYjsStateVector,
   mergeYjsUpdates,
-} from "@/domain/e2ee/yjs-sync";
+} from "@giraffle/sync";
 
 function captureUpdates(document: ReturnType<typeof createYjsDocument>) {
   const updates: Uint8Array[] = [];

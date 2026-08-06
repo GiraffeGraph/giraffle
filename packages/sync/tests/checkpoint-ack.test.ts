@@ -8,17 +8,17 @@ import {
   evaluateCheckpointAcknowledgements,
   evaluateCheckpointCompactionPolicy,
   type SignedCheckpointAckV1,
-} from "@/domain/e2ee/checkpoint-ack";
+} from "@giraffle/sync";
 import {
   createEncryptedCheckpoint,
   openEncryptedCheckpoint,
   type SignedEncryptedCheckpointV1,
-} from "@/domain/e2ee/checkpoint";
+} from "@giraffle/sync";
 import {
   createSodiumCryptoProvider,
   type E2eeCryptoProvider,
   type SigningKeyPair,
-} from "@/domain/e2ee/crypto-provider";
+} from "@giraffle/protocol";
 
 function fixedBytes(length: number, start: number) {
   return Uint8Array.from({ length }, (_, index) => (start + index) & 0xff);

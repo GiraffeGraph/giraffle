@@ -2,7 +2,7 @@ import {
   bytesEqual,
   encodeSignedSyncRecord,
   type SignedSyncRecordV1,
-} from "@/domain/e2ee/sync-record";
+} from "@giraffle/protocol";
 
 const DATABASE_VERSION = 1;
 const RECORDS_STORE = "records";

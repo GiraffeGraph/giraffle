@@ -3,8 +3,8 @@ import {
   CryptoAuthenticationError,
   createSodiumCryptoProvider,
   type E2eeCryptoProvider,
-} from "@/domain/e2ee/crypto-provider";
-import vectors from "../../vectors/e2ee-v1.json";
+} from "@giraffle/protocol";
+import vectors from "../../../tests/vectors/e2ee-v1.json";
 
 function fromHex(value: string) {
   if (value.length % 2 !== 0 || !/^[0-9a-f]*$/i.test(value)) {

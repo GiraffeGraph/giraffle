@@ -6,13 +6,13 @@ import {
   encodeContentKeyWrapper,
   unwrapContentKey,
   wrapContentKey,
-} from "@/domain/e2ee/content-key-wrapper";
+} from "@giraffle/sync";
 import {
   CryptoAuthenticationError,
   createSodiumCryptoProvider,
   type E2eeCryptoProvider,
   type SigningKeyPair,
-} from "@/domain/e2ee/crypto-provider";
+} from "@giraffle/protocol";
 import {
   MissingKeyEpochError,
   createSyncRecord,
@@ -20,7 +20,7 @@ import {
   openSyncRecordWithKeyResolver,
   zeroRecordHash,
   type SyncOperationV1,
-} from "@/domain/e2ee/sync-record";
+} from "@giraffle/protocol";
 
 function fixedBytes(length: number, start: number) {
   return Uint8Array.from({ length }, (_, index) => (start + index) & 0xff);

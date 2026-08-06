@@ -5,7 +5,7 @@ import {
   visibleExcalidrawElements,
   type ExcalidrawElementLike,
   type VersionedExcalidrawElement,
-} from "@/domain/e2ee/excalidraw-merge";
+} from "@giraffle/sync";
 
 function candidate(input: {
   id: string;

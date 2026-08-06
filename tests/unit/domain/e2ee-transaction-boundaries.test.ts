@@ -3,7 +3,7 @@ import {
   createSodiumCryptoProvider,
   type E2eeCryptoProvider,
   type SigningKeyPair,
-} from "@/domain/e2ee/crypto-provider";
+} from "@giraffle/protocol";
 import {
   createSyncRecord,
   hashSignedSyncRecord,
@@ -11,7 +11,7 @@ import {
   zeroRecordHash,
   type SignedSyncRecordV1,
   type SyncOperationV1,
-} from "@/domain/e2ee/sync-record";
+} from "@giraffle/protocol";
 
 interface DurableClientState {
   title: string | null;

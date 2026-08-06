@@ -1,14 +1,14 @@
 import {
   decodeCanonical,
   encodeCanonical,
-} from "./canonical-cbor";
-import type { E2eeCryptoProvider, AgreementKeyPair } from "./crypto-provider";
-import { CryptoAuthenticationError } from "./crypto-provider";
+} from "@giraffle/protocol";
+import type { E2eeCryptoProvider, AgreementKeyPair } from "@giraffle/protocol";
+import { CryptoAuthenticationError } from "@giraffle/protocol";
 import {
   assertHybridLogicalClock,
   type HybridLogicalClock,
-} from "./hybrid-logical-clock";
-import { bytesEqual, E2EE_PROTOCOL_VERSION } from "./sync-record";
+} from "@giraffle/protocol";
+import { bytesEqual, E2EE_PROTOCOL_VERSION } from "@giraffle/protocol";
 
 export const DEVICE_WRAPPER_VERSION = 1 as const;
 export const DEVICE_WRAPPER_SUITE = "libsodium-sealed-box-ed25519-v1" as const;

@@ -1,8 +1,8 @@
 import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { authorizeBlindVault, decodeBoundedBase64 } from "@/domain/e2ee/blind-sync.server";
-import { createSodiumCryptoProvider } from "@/domain/e2ee/crypto-provider";
-import { bytesEqual, decodeSignedSyncRecord, encodeSignedSyncRecord, hashSignedSyncRecord, MAX_ENCODED_SYNC_RECORD_BYTES, verifySyncRecord } from "@/domain/e2ee/sync-record";
+import { createSodiumCryptoProvider } from "@giraffle/protocol";
+import { bytesEqual, decodeSignedSyncRecord, encodeSignedSyncRecord, hashSignedSyncRecord, MAX_ENCODED_SYNC_RECORD_BYTES, verifySyncRecord } from "@giraffle/protocol";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

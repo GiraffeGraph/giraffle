@@ -1,0 +1,13 @@
+{
+  "name": "@giraffle/sync",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "index.ts",
+  "types": "index.ts",
+  "dependencies": {
+    "@giraffle/protocol": "*",
+    "libsodium-wrappers-sumo": "^0.8.4",
+    "yjs": "^13.6.31"
+  }
+}

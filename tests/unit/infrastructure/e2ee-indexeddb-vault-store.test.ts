@@ -4,14 +4,14 @@ import {
   createSodiumCryptoProvider,
   type E2eeCryptoProvider,
   type SigningKeyPair,
-} from "@/domain/e2ee/crypto-provider";
+} from "@giraffle/protocol";
 import {
   createSyncRecord,
   decodeSignedSyncRecord,
   hashSignedSyncRecord,
   zeroRecordHash,
   type SyncOperationV1,
-} from "@/domain/e2ee/sync-record";
+} from "@giraffle/protocol";
 import {
   IndexedDbVaultStore,
   IndexedDbVaultStoreError,

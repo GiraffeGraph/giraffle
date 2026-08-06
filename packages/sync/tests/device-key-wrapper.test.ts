@@ -5,7 +5,7 @@ import {
   type AgreementKeyPair,
   type E2eeCryptoProvider,
   type SigningKeyPair,
-} from "@/domain/e2ee/crypto-provider";
+} from "@giraffle/protocol";
 import {
   DeviceKeyWrapperError,
   createDeviceKeyWrapper,
@@ -15,7 +15,7 @@ import {
   openDeviceKeyWrapper,
   type SignedDeviceKeyWrapperV1,
   type UnsignedDeviceKeyWrapperV1,
-} from "@/domain/e2ee/device-key-wrapper";
+} from "@giraffle/sync";
 
 function fixedBytes(length: number, start: number) {
   return Uint8Array.from({ length }, (_, index) => (start + index) & 0xff);

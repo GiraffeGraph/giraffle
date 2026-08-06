@@ -3,7 +3,7 @@ import {
   CanonicalEncodingError,
   decodeCanonical,
   encodeCanonical,
-} from "@/domain/e2ee/canonical-cbor";
+} from "@giraffle/protocol";
 
 function toHex(value: Uint8Array) {
   return Array.from(value, (byte) => byte.toString(16).padStart(2, "0")).join("");

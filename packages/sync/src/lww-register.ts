@@ -1,7 +1,7 @@
 import {
   compareVersionStamps,
   type VersionStamp,
-} from "./hybrid-logical-clock";
+} from "@giraffle/protocol";
 
 export interface LwwRegister<T> {
   value: T;

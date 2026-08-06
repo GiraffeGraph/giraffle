@@ -1,10 +1,10 @@
 import { beforeAll, describe, expect, it } from "vitest";
-import vectors from "../../vectors/e2ee-v1.json";
+import vectors from "../../../tests/vectors/e2ee-v1.json";
 import {
   CryptoAuthenticationError,
   createSodiumCryptoProvider,
   type E2eeCryptoProvider,
-} from "@/domain/e2ee/crypto-provider";
+} from "@giraffle/protocol";
 import {
   RecoveryKeyWrapperError,
   createRecoveryKeyWrapper,
@@ -14,7 +14,7 @@ import {
   formatRecoveryCode,
   openRecoveryKeyWrapper,
   parseRecoveryCode,
-} from "@/domain/e2ee/recovery-key-wrapper";
+} from "@giraffle/sync";
 
 function fromHex(value: string) {
   return Uint8Array.from(value.match(/.{2}/g) ?? [], (byte) =>

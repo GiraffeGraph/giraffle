@@ -11,13 +11,13 @@ import {
   openEncryptedCheckpoint,
   type SignedEncryptedCheckpointV1,
   type UnsignedEncryptedCheckpointV1,
-} from "@/domain/e2ee/checkpoint";
+} from "@giraffle/sync";
 import {
   CryptoAuthenticationError,
   createSodiumCryptoProvider,
   type E2eeCryptoProvider,
   type SigningKeyPair,
-} from "@/domain/e2ee/crypto-provider";
+} from "@giraffle/protocol";
 
 function fixedBytes(length: number, start: number) {
   return Uint8Array.from({ length }, (_, index) => (start + index) & 0xff);

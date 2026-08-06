@@ -2,13 +2,13 @@ import {
   decodeCanonical,
   encodeCanonical,
   type CanonicalValue,
-} from "./canonical-cbor";
+} from "@giraffle/protocol";
 import {
   CryptoAuthenticationError,
   E2EE_CRYPTO_SUITE,
   type E2eeCryptoProvider,
-} from "./crypto-provider";
-import { bytesEqual, E2EE_PROTOCOL_VERSION } from "./sync-record";
+} from "@giraffle/protocol";
+import { bytesEqual, E2EE_PROTOCOL_VERSION } from "@giraffle/protocol";
 
 export const CHECKPOINT_VERSION = 1 as const;
 export const MAX_CHECKPOINT_CIPHERTEXT_BYTES = 16 * 1024 * 1024;

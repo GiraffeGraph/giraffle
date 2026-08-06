@@ -7,7 +7,7 @@ import {
   initializeHybridClock,
   observeHybridClock,
   tickHybridClock,
-} from "@/domain/e2ee/hybrid-logical-clock";
+} from "@giraffle/protocol";
 
 describe("hybrid logical clock", () => {
   it("advances physical time when the wall clock moves forward", () => {

@@ -18,12 +18,12 @@ import {
   verifyBlobChunksAgainstManifest,
   verifyBlobPlaintextHash,
   wrapBlobDataKey,
-} from "@/domain/e2ee/blob-crypto";
+} from "@giraffle/sync";
 import {
   CryptoAuthenticationError,
   createSodiumCryptoProvider,
   type E2eeCryptoProvider,
-} from "@/domain/e2ee/crypto-provider";
+} from "@giraffle/protocol";
 
 function fixedBytes(length: number, start: number) {
   return Uint8Array.from({ length }, (_, index) => (start + index) & 0xff);

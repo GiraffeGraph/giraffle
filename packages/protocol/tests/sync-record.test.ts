@@ -4,14 +4,14 @@ import {
   createSodiumCryptoProvider,
   type E2eeCryptoProvider,
   type SigningKeyPair,
-} from "@/domain/e2ee/crypto-provider";
-import syncVector from "../../vectors/sync-record-v1.json";
+} from "@giraffle/protocol";
+import syncVector from "../../../tests/vectors/sync-record-v1.json";
 import {
   advanceDeviceChain,
   createDeviceChainState,
   type DeviceChainState,
-} from "@/domain/e2ee/device-chain";
-import { compareVersionStamps } from "@/domain/e2ee/hybrid-logical-clock";
+} from "@giraffle/protocol";
+import { compareVersionStamps } from "@giraffle/protocol";
 import {
   MAX_ENCODED_SYNC_RECORD_BYTES,
   MissingKeyEpochError,
@@ -30,7 +30,7 @@ import {
   type SignedSyncRecordV1,
   type SyncOperationV1,
   type UnsignedSyncRecordV1,
-} from "@/domain/e2ee/sync-record";
+} from "@giraffle/protocol";
 
 interface ServerRecord {
   serverSequence: number;

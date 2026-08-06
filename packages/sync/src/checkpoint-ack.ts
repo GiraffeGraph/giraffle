@@ -1,11 +1,11 @@
-import { decodeCanonical, encodeCanonical } from "./canonical-cbor";
-import type { E2eeCryptoProvider } from "./crypto-provider";
+import { decodeCanonical, encodeCanonical } from "@giraffle/protocol";
+import type { E2eeCryptoProvider } from "@giraffle/protocol";
 import {
   CHECKPOINT_VERSION,
   checkpointHash,
   type SignedEncryptedCheckpointV1,
 } from "./checkpoint";
-import { bytesEqual, E2EE_PROTOCOL_VERSION } from "./sync-record";
+import { bytesEqual, E2EE_PROTOCOL_VERSION } from "@giraffle/protocol";
 
 export const CHECKPOINT_ACK_VERSION = 1 as const;
 export const MAX_ENCODED_CHECKPOINT_ACK_BYTES = 1024;

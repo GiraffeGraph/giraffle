@@ -1,7 +1,7 @@
 import {
   compareVersionStamps,
   type VersionStamp,
-} from "./hybrid-logical-clock";
+} from "@giraffle/protocol";
 
 export const MAX_EXCALIDRAW_ELEMENTS_PER_CANVAS = 100_000;
 

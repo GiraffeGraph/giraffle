@@ -1,10 +1,10 @@
-import { decodeCanonical, encodeCanonical } from "./canonical-cbor";
+import { decodeCanonical, encodeCanonical } from "@giraffle/protocol";
 import {
   CryptoAuthenticationError,
   E2EE_CRYPTO_SUITE,
   type E2eeCryptoProvider,
-} from "./crypto-provider";
-import { E2EE_PROTOCOL_VERSION } from "./sync-record";
+} from "@giraffle/protocol";
+import { E2EE_PROTOCOL_VERSION } from "@giraffle/protocol";
 
 export const CONTENT_KEY_WRAPPER_VERSION = 1 as const;
 export const VAULT_ROOT_KEY_BYTES = 32;

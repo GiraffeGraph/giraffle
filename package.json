@@ -2,6 +2,9 @@
   "name": "giraffle",
   "version": "0.11.0",
   "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "dev": "next dev",
     "build": "next build",
