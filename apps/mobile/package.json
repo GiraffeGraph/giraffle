@@ -1,0 +1,80 @@
+{
+  "name": "giraffle-mobile",
+  "version": "0.1.0",
+  "private": true,
+  "main": "expo-router/entry",
+  "scripts": {
+    "start": "expo start --dev-client",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "web": "expo start --web",
+    "prebuild": "expo prebuild",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "jest --runInBand",
+    "test:watch": "jest --watch",
+    "export": "expo export --platform ios --platform android",
+    "verify": "npm run lint && npm run typecheck && npm test && npm run export",
+    "postinstall": "patch-package"
+  },
+  "dependencies": {
+    "@expo/vector-icons": "^15.1.1",
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "cborg": "^6.1.1",
+    "expo": "~57.0.9",
+    "expo-asset": "~57.0.8",
+    "expo-crypto": "~57.0.1",
+    "expo-document-picker": "~57.0.1",
+    "expo-file-system": "~57.0.1",
+    "expo-router": "~57.0.9",
+    "expo-secure-store": "~57.0.1",
+    "expo-sharing": "~57.0.8",
+    "expo-splash-screen": "~57.0.5",
+    "expo-sqlite": "~57.0.1",
+    "expo-status-bar": "~57.0.1",
+    "expo-system-ui": "~57.0.2",
+    "fractional-indexing": "^3.2.0",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-native": "0.86.2",
+    "react-native-gesture-handler": "~2.32.0",
+    "react-native-libsodium": "^1.7.0",
+    "react-native-reanimated": "4.5.1",
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-screens": "^4.26.2",
+    "react-native-web": "~0.21.0",
+    "react-native-webview": "13.16.1",
+    "yjs": "^13.6.31",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@testing-library/react-native": "^14.0.1",
+    "@types/jest": "^29.5.14",
+    "@types/node": "^22.20.1",
+    "@types/react": "~19.2.14",
+    "eslint": "^9.39.4",
+    "eslint-config-expo": "~57.0.1",
+    "jest": "^29.7.0",
+    "jest-expo": "~57.0.3",
+    "libsodium-wrappers-sumo": "^0.8.4",
+    "patch-package": "^8.0.1",
+    "react-test-renderer": "19.2.3",
+    "typescript": "~6.0.2"
+  },
+  "jest": {
+    "preset": "jest-expo",
+    "testMatch": [
+      "<rootDir>/tests/**/*.test.ts?(x)"
+    ],
+    "setupFilesAfterEnv": [
+      "<rootDir>/jest.setup.ts"
+    ],
+    "transformIgnorePatterns": [
+      "node_modules/(?!((jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|native-base|react-native-svg|fractional-indexing))"
+    ],
+    "collectCoverageFrom": [
+      "src/**/*.{ts,tsx}",
+      "!src/**/*.d.ts"
+    ]
+  }
+}

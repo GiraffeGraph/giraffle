@@ -1,0 +1,310 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import { useTheme } from "@/design/ThemeProvider";
+import { radii, typography } from "@/design/tokens";
+import type { Task } from "@/domain/models";
+import {
+  DEFAULT_DURATION_MINUTES,
+  clampMinutes,
+  formatClock,
+  minutesNow,
+  parseDue,
+  snapMinutes,
+} from "@/domain/stride/schedule";
+
+const HOUR_HEIGHT = 56;
+const MIN_BLOCK_MINUTES = 15;
+const GUTTER_WIDTH = 46;
+
+export interface ScheduledBlock {
+  task: Task;
+  minutes: number;
+  duration: number;
+}
+
+/**
+ * A day as a vertical time grid. Blocks sit at their start minute, can be
+ * dragged to another time and resized from the bottom edge.
+ */
+export function DayGrid({
+  day,
+  tasks,
+  onMoveTask,
+  onResizeTask,
+  onOpenTask,
+  onToggleTask,
+  onPickSlot,
+  onDropRegister,
+}: {
+  day: string;
+  tasks: Task[];
+  onMoveTask(taskId: string, minutes: number): void;
+  onResizeTask(taskId: string, duration: number): void;
+  onOpenTask(taskId: string): void;
+  onToggleTask(taskId: string): void;
+  /** Tapping empty space starts a new task at that minute. */
+  onPickSlot(minutes: number): void;
+  /** Publishes a way to turn a screen Y into a minute, for backlog drops. */
+  onDropRegister?(resolve: ((absoluteY: number) => number | null) | null): void;
+}) {
+  const { colors } = useTheme();
+  const [now, setNow] = useState(() => minutesNow());
+  const gridTop = useRef(0);
+  const scrollOffset = useRef(0);
+  const scrollRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(minutesNow()), 60_000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const { timed, allDay } = useMemo(() => {
+    const timedBlocks: ScheduledBlock[] = [];
+    const allDayTasks: Task[] = [];
+
+    for (const task of tasks) {
+      const due = parseDue(task.dueDate);
+      if (!due || due.day !== day) continue;
+
+      if (due.minutes === null) allDayTasks.push(task);
+      else {
+        timedBlocks.push({
+          task,
+          minutes: due.minutes,
+          duration: task.durationMinutes ?? DEFAULT_DURATION_MINUTES,
+        });
+      }
+    }
+
+    return {
+      timed: timedBlocks.sort((left, right) => left.minutes - right.minutes),
+      allDay: allDayTasks,
+    };
+  }, [day, tasks]);
+
+  const minutesAt = useCallback((absoluteY: number): number | null => {
+    const offsetInGrid = absoluteY - gridTop.current + scrollOffset.current;
+    if (offsetInGrid < 0) return null;
+    return snapMinutes((offsetInGrid / HOUR_HEIGHT) * 60);
+  }, []);
+
+  useEffect(() => {
+    onDropRegister?.(minutesAt);
+    return () => onDropRegister?.(null);
+  }, [minutesAt, onDropRegister]);
+
+  // Open on the current hour rather than at midnight.
+  useEffect(() => {
+    const target = Math.max(0, (now / 60) * HOUR_HEIGHT - HOUR_HEIGHT * 2);
+    const timer = setTimeout(() => scrollRef.current?.scrollTo({ y: target, animated: false }), 0);
+    return () => clearTimeout(timer);
+  }, [now]);
+
+  return (
+    <View style={styles.fill}>
+      {allDay.length > 0 ? (
+        <View style={[styles.allDay, { borderBottomColor: colors.border }]}>
+          {allDay.map((task) => (
+            <Pressable
+              key={task.id}
+              accessibilityRole="button"
+              onPress={() => onOpenTask(task.id)}
+              style={[styles.allDayChip, { backgroundColor: colors.accentSubtle }]}
+            >
+              <Text numberOfLines={1} style={[typography.caption, { color: colors.text }]}>
+                {task.content}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
+
+      <ScrollView
+        ref={scrollRef}
+        onLayout={(event) =>
+          event.currentTarget.measureInWindow((_x, y) => {
+            gridTop.current = y;
+          })
+        }
+        onScroll={(event) => {
+          scrollOffset.current = event.nativeEvent.contentOffset.y;
+        }}
+        scrollEventThrottle={16}
+      >
+        <View style={{ height: HOUR_HEIGHT * 24 }}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Add a task at this time"
+            onPress={(event) => {
+              const minutes = minutesAt(event.nativeEvent.pageY);
+              if (minutes !== null) onPickSlot(minutes);
+            }}
+            style={StyleSheet.absoluteFill}
+          />
+          {Array.from({ length: 24 }, (_, hour) => (
+            <View
+              key={hour}
+              style={[styles.hourRow, { top: hour * HOUR_HEIGHT, borderTopColor: colors.border }]}
+            >
+              <Text style={[typography.caption, styles.hourLabel, { color: colors.muted }]}>
+                {formatClock(hour * 60)}
+              </Text>
+            </View>
+          ))}
+
+          <View
+            style={[styles.nowLine, { top: (now / 60) * HOUR_HEIGHT, backgroundColor: colors.accent }]}
+          />
+
+          {timed.map((block) => (
+            <TimeBlock
+              key={block.task.id}
+              block={block}
+              onMove={onMoveTask}
+              onResize={onResizeTask}
+              onOpen={onOpenTask}
+              onToggle={onToggleTask}
+              resolveMinutes={minutesAt}
+            />
+          ))}
+        </View>
+      </ScrollView>
+    </View>
+  );
+}
+
+function TimeBlock({
+  block,
+  onMove,
+  onResize,
+  onOpen,
+  onToggle,
+  resolveMinutes,
+}: {
+  block: ScheduledBlock;
+  onMove(taskId: string, minutes: number): void;
+  onResize(taskId: string, duration: number): void;
+  onOpen(taskId: string): void;
+  onToggle(taskId: string): void;
+  resolveMinutes(absoluteY: number): number | null;
+}) {
+  const { colors } = useTheme();
+  const [preview, setPreview] = useState<{ minutes: number; duration: number } | null>(null);
+
+  const minutes = preview?.minutes ?? block.minutes;
+  const duration = Math.max(MIN_BLOCK_MINUTES, preview?.duration ?? block.duration);
+
+  const move = useMemo(
+    () =>
+      Gesture.Pan()
+        .activateAfterLongPress(180)
+        .onUpdate((event) => {
+          const next = resolveMinutes(event.absoluteY);
+          if (next !== null) setPreview({ minutes: next, duration: block.duration });
+        })
+        .onEnd(() => {
+          if (preview) onMove(block.task.id, clampMinutes(preview.minutes));
+        })
+        .onFinalize(() => setPreview(null))
+        .runOnJS(true),
+    [block.duration, block.task.id, onMove, preview, resolveMinutes],
+  );
+
+  const resize = useMemo(
+    () =>
+      Gesture.Pan()
+        .onUpdate((event) => {
+          const end = resolveMinutes(event.absoluteY);
+          if (end !== null) {
+            setPreview({
+              minutes: block.minutes,
+              duration: Math.max(MIN_BLOCK_MINUTES, snapMinutes(end - block.minutes)),
+            });
+          }
+        })
+        .onEnd(() => {
+          if (preview) onResize(block.task.id, preview.duration);
+        })
+        .onFinalize(() => setPreview(null))
+        .runOnJS(true),
+    [block.minutes, block.task.id, onResize, preview, resolveMinutes],
+  );
+
+  return (
+    <GestureDetector gesture={move}>
+      <View
+        style={[
+          styles.block,
+          {
+            top: (minutes / 60) * HOUR_HEIGHT,
+            height: Math.max(22, (duration / 60) * HOUR_HEIGHT - 3),
+            backgroundColor: colors.accentSubtle,
+            borderColor: preview ? colors.accent : colors.border,
+          },
+        ]}
+      >
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`${block.task.completed ? "Reopen" : "Complete"} ${block.task.content}`}
+          onPress={() => onToggle(block.task.id)}
+          onLongPress={() => onOpen(block.task.id)}
+          style={styles.blockBody}
+        >
+          <Text
+            numberOfLines={1}
+            style={[
+              typography.caption,
+              {
+                color: block.task.completed ? colors.muted : colors.text,
+                textDecorationLine: block.task.completed ? "line-through" : "none",
+              },
+            ]}
+          >
+            {block.task.content}
+          </Text>
+          <Text style={[typography.caption, { color: colors.muted }]}>
+            {formatClock(minutes)} · {duration}m
+          </Text>
+        </Pressable>
+        <GestureDetector gesture={resize}>
+          <View style={styles.resizeHandle}>
+            <View style={[styles.resizeBar, { backgroundColor: colors.borderStrong }]} />
+          </View>
+        </GestureDetector>
+      </View>
+    </GestureDetector>
+  );
+}
+
+const styles = StyleSheet.create({
+  fill: { flex: 1 },
+  allDay: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+    paddingBottom: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  allDayChip: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: radii.sm },
+  hourRow: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    height: HOUR_HEIGHT,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  hourLabel: { position: "absolute", left: 0, top: -7, width: GUTTER_WIDTH - 8, textAlign: "right" },
+  nowLine: { position: "absolute", left: GUTTER_WIDTH, right: 0, height: 2, borderRadius: 1 },
+  block: {
+    position: "absolute",
+    left: GUTTER_WIDTH,
+    right: 4,
+    borderRadius: radii.sm,
+    borderWidth: 1,
+    overflow: "hidden",
+  },
+  blockBody: { flex: 1, paddingHorizontal: 8, paddingTop: 4, gap: 1 },
+  resizeHandle: { height: 12, alignItems: "center", justifyContent: "center" },
+  resizeBar: { width: 26, height: 3, borderRadius: 2 },
+});

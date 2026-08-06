@@ -1,0 +1,173 @@
+diff --git a/node_modules/react-native-libsodium/cpp/react-native-libsodium.cpp b/node_modules/react-native-libsodium/cpp/react-native-libsodium.cpp
+index a97e74b..bba8a07 100644
+--- a/node_modules/react-native-libsodium/cpp/react-native-libsodium.cpp
++++ b/node_modules/react-native-libsodium/cpp/react-native-libsodium.cpp
+@@ -1295,7 +1295,7 @@ namespace ReactNativeLibsodium
+ 
+                 std::string additionalDataArgumentName = "additionalData";
+                 unsigned int additionalDataArgumentPosition = 1;
+-                validateIsString(functionName, runtime, arguments[additionalDataArgumentPosition], additionalDataArgumentName, true);
++                JsiArgType additionalDataArgType = validateIsStringOrArrayBuffer(functionName, runtime, arguments[additionalDataArgumentPosition], additionalDataArgumentName, true);
+ 
+                 std::string publicNonceArgumentName = "public_nonce";
+                 unsigned int publicNonceArgumentPosition = 2;
+@@ -1305,7 +1305,17 @@ namespace ReactNativeLibsodium
+                 unsigned int keyArgumentPosition = 3;
+                 validateIsArrayBuffer(functionName, runtime, arguments[keyArgumentPosition], keyArgumentName, true);
+ 
+-                std::string additionalData = arguments[additionalDataArgumentPosition].asString(runtime).utf8(runtime);
++                std::vector<uint8_t> additionalData;
++                if (additionalDataArgType == JsiArgType::string)
++                {
++                    std::string value = arguments[additionalDataArgumentPosition].asString(runtime).utf8(runtime);
++                    additionalData.assign(value.begin(), value.end());
++                }
++                else
++                {
++                    auto value = arguments[additionalDataArgumentPosition].asObject(runtime).getArrayBuffer(runtime);
++                    additionalData.assign(value.data(runtime), value.data(runtime) + value.length(runtime));
++                }
+                 auto publicNonceArrayBuffer =
+                     arguments[publicNonceArgumentPosition].asObject(runtime).getArrayBuffer(runtime);
+                 auto keyArrayBuffer =
+@@ -1333,8 +1343,8 @@ namespace ReactNativeLibsodium
+                         &ciphertextLength,
+                         reinterpret_cast<const unsigned char *>(messageString.data()),
+                         messageString.length(),
+-                        reinterpret_cast<const unsigned char *>(additionalData.data()),
+-                        additionalData.length(),
++                        additionalData.data(),
++                        additionalData.size(),
+                         NULL,
+                         publicNonceArrayBuffer.data(runtime),
+                         keyArrayBuffer.data(runtime));
+@@ -1350,8 +1360,8 @@ namespace ReactNativeLibsodium
+                         &ciphertextLength,
+                         messageArrayBuffer.data(runtime),
+                         messageArrayBuffer.length(runtime),
+-                        reinterpret_cast<const unsigned char *>(additionalData.data()),
+-                        additionalData.length(),
++                        additionalData.data(),
++                        additionalData.size(),
+                         NULL,
+                         publicNonceArrayBuffer.data(runtime),
+                         keyArrayBuffer.data(runtime));
+@@ -1377,7 +1387,7 @@ namespace ReactNativeLibsodium
+ 
+                 std::string additionalDataArgumentName = "additionalData";
+                 unsigned int additionalDataArgumentPosition = 1;
+-                validateIsString(functionName, runtime, arguments[additionalDataArgumentPosition], additionalDataArgumentName, true);
++                JsiArgType additionalDataArgType = validateIsStringOrArrayBuffer(functionName, runtime, arguments[additionalDataArgumentPosition], additionalDataArgumentName, true);
+ 
+                 std::string publicNonceArgumentName = "public_nonce";
+                 unsigned int publicNonceArgumentPosition = 2;
+@@ -1387,7 +1397,17 @@ namespace ReactNativeLibsodium
+                 unsigned int keyArgumentPosition = 3;
+                 validateIsArrayBuffer(functionName, runtime, arguments[keyArgumentPosition], keyArgumentName, true);
+ 
+-                std::string additionalData = arguments[additionalDataArgumentPosition].asString(runtime).utf8(runtime);
++                std::vector<uint8_t> additionalData;
++                if (additionalDataArgType == JsiArgType::string)
++                {
++                    std::string value = arguments[additionalDataArgumentPosition].asString(runtime).utf8(runtime);
++                    additionalData.assign(value.begin(), value.end());
++                }
++                else
++                {
++                    auto value = arguments[additionalDataArgumentPosition].asObject(runtime).getArrayBuffer(runtime);
++                    additionalData.assign(value.data(runtime), value.data(runtime) + value.length(runtime));
++                }
+                 auto publicNonceArrayBuffer =
+                     arguments[publicNonceArgumentPosition].asObject(runtime).getArrayBuffer(runtime);
+                 auto keyArrayBuffer =
+@@ -1416,8 +1436,8 @@ namespace ReactNativeLibsodium
+                         NULL,
+                         reinterpret_cast<const unsigned char *>(ciphertextString.data()),
+                         ciphertextString.length(),
+-                        reinterpret_cast<const unsigned char *>(additionalData.data()),
+-                        additionalData.length(),
++                        additionalData.data(),
++                        additionalData.size(),
+                         publicNonceArrayBuffer.data(runtime),
+                         keyArrayBuffer.data(runtime));
+                 }
+@@ -1433,8 +1453,8 @@ namespace ReactNativeLibsodium
+                         NULL,
+                         ciphertextArrayBuffer.data(runtime),
+                         ciphertextArrayBuffer.length(runtime),
+-                        reinterpret_cast<const unsigned char *>(additionalData.data()),
+-                        additionalData.length(),
++                        additionalData.data(),
++                        additionalData.size(),
+                         publicNonceArrayBuffer.data(runtime),
+                         keyArrayBuffer.data(runtime));
+                 }
+diff --git a/node_modules/react-native-libsodium/src/lib.native.ts b/node_modules/react-native-libsodium/src/lib.native.ts
+index bfa7ea8..dedf680 100644
+--- a/node_modules/react-native-libsodium/src/lib.native.ts
++++ b/node_modules/react-native-libsodium/src/lib.native.ts
+@@ -168,19 +168,19 @@ declare global {
+   ): ArrayBuffer;
+   function jsi_crypto_aead_xchacha20poly1305_ietf_encrypt(
+     message: string | ArrayBuffer,
+-    additionalData: string,
++    additionalData: string | ArrayBuffer,
+     public_nonce: ArrayBuffer,
+     key: ArrayBuffer
+   ): ArrayBuffer;
+   function jsi_crypto_aead_xchacha20poly1305_ietf_decrypt(
+     ciphertext: string | ArrayBuffer,
+-    additionalData: string,
++    additionalData: string | ArrayBuffer,
+     public_nonce: ArrayBuffer,
+     key: ArrayBuffer
+   ): ArrayBuffer;
+   function jsi_crypto_aead_xchacha20poly1305_ietf_decrypt(
+     ciphertext: string | ArrayBuffer,
+-    additionalData: string,
++    additionalData: string | ArrayBuffer,
+     public_nonce: ArrayBuffer,
+     key: ArrayBuffer
+   ): ArrayBuffer;
+@@ -786,14 +786,13 @@ export function crypto_aead_xchacha20poly1305_ietf_encrypt(
+   let result: ArrayBuffer;
+   const messageParam =
+     typeof message === 'string' ? message : toArrayBuffer(message);
+-  if (typeof additional_data !== 'string') {
+-    throw new Error(
+-      'crypto_aead_xchacha20poly1305_ietf_encrypt: input type not yet implemented'
+-    );
+-  }
++  const additionalDataParam =
++    typeof additional_data === 'string'
++      ? additional_data
++      : toArrayBuffer(additional_data ?? new Uint8Array());
+   result = global.jsi_crypto_aead_xchacha20poly1305_ietf_encrypt(
+     messageParam,
+-    additional_data,
++    additionalDataParam,
+     toArrayBuffer(public_nonce),
+     toArrayBuffer(key)
+   );
+@@ -830,16 +829,15 @@ export function crypto_aead_xchacha20poly1305_ietf_decrypt(
+       'crypto_aead_xchacha20poly1305_ietf_decrypt: input type not yet implemented'
+     );
+   }
+-  if (typeof additional_data !== 'string') {
+-    throw new Error(
+-      'crypto_aead_xchacha20poly1305_ietf_decrypt: input type not yet implemented'
+-    );
+-  }
++  const additionalDataParam =
++    typeof additional_data === 'string'
++      ? additional_data
++      : toArrayBuffer(additional_data ?? new Uint8Array());
+   const ciphertextParam =
+     typeof ciphertext === 'string' ? ciphertext : toArrayBuffer(ciphertext);
+   result = global.jsi_crypto_aead_xchacha20poly1305_ietf_decrypt(
+     ciphertextParam,
+-    additional_data,
++    additionalDataParam,
+     toArrayBuffer(public_nonce),
+     toArrayBuffer(key)
+   );
