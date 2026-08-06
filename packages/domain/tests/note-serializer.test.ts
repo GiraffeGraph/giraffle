@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { markdownToBlocks } from "@/domain/note/note.serializer";
+import { markdownToBlocks } from "@giraffle/domain";
 
 describe("note markdown serializer", () => {
   it("parses pasted markdown blocks into Tiptap nodes", () => {

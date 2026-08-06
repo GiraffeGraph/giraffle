@@ -5,7 +5,7 @@ import type {
   BlockMark,
   TiptapNode,
   TiptapDocument,
-} from "@/domain/note/note.types";
+} from "@giraffle/domain";
 
 interface NoteEmbedPageProps {
   params: Promise<{ noteId: string }>;

@@ -1,4 +1,4 @@
-import type { NoteReference } from "@/domain/note/note.types";
+import type { NoteReference } from "@giraffle/domain";
 
 export interface SlashMenuState {
   query: string;

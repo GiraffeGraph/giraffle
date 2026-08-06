@@ -2,16 +2,16 @@
 
 import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
-import { generateId, isRecord } from "@/lib/utils";
+import { generateId, isRecord } from "@giraffle/domain";
 import {
   EISENHOWER_QUADRANTS,
   MATRIX_SLOTS,
-} from "./note.types";
+} from "@giraffle/domain";
 import type {
   BlockNodeContent,
   EisenhowerQuadrant,
   MatrixSlot,
-} from "./note.types";
+} from "@giraffle/domain";
 import { createNote, insertBlock } from "./page.service";
 
 function extractBlockText(content: unknown): string {

@@ -1,4 +1,4 @@
-import type { BlockNodeContent, TiptapDocument } from "@/domain/note/note.types";
+import type { BlockNodeContent, TiptapDocument } from "@giraffle/domain";
 
 export interface TocHeading {
   level: number;

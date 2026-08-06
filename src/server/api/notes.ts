@@ -36,7 +36,7 @@ import {
   toggleTodoBlock,
   updateCalendarTodoText,
 } from "@/domain/note/task.service";
-import { buildNoteExportArtifact } from "@/domain/note/note.export";
+import { buildNoteExportArtifact } from "@giraffle/domain";
 import type {
   CreateNoteInput,
   EisenhowerQuadrant,
@@ -44,8 +44,8 @@ import type {
   NoteReference,
   TiptapDocument,
   UpdateNoteInput,
-} from "@/domain/note/note.types";
-import { normalizeWikilinkTarget } from "@/domain/link/wikilink.parser";
+} from "@giraffle/domain";
+import { normalizeWikilinkTarget } from "@giraffle/domain";
 import { requireAuthenticatedUser } from "@/lib/auth-session";
 
 export async function createNoteAction(input?: CreateNoteInput) {

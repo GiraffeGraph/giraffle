@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import React, { type ReactNode, useState } from "react";
-import type { NoteReference, TiptapDocument } from "@/domain/note/note.types";
+import type { NoteReference, TiptapDocument } from "@giraffle/domain";
 
 const DynamicEditor = dynamic(
   () => import("./Editor").then((module) => module.Editor),

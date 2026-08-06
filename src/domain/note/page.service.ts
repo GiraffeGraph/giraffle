@@ -4,14 +4,14 @@ import { Prisma } from "@prisma/client";
 import { generateKeyBetween } from "fractional-indexing";
 import { db } from "@/lib/db";
 import { extractAndSaveLinks, resolveLinksForNote } from "@/domain/link/link.service";
-import { normalizeWikilinkTarget } from "@/domain/link/wikilink.parser";
+import { normalizeWikilinkTarget } from "@giraffle/domain";
 import { recordOperation } from "@/domain/sync/operation-log.service";
-import { isRecord } from "@/lib/utils";
+import { isRecord } from "@giraffle/domain";
 import {
   DEFAULT_NOTE_TITLE,
   EISENHOWER_QUADRANTS,
   MATRIX_SLOTS,
-} from "./note.types";
+} from "@giraffle/domain";
 import type {
   MatrixSlot,
   CreateNoteInput,
@@ -21,14 +21,14 @@ import type {
   PageTreeNode,
   TiptapDocument,
   UpdateNoteInput,
-} from "./note.types";
+} from "@giraffle/domain";
 import {
   createEmptyDocument,
   insertBlockInDocument,
   documentToPersistedBlocks,
   persistedBlocksToDocument,
-} from "./block-tree";
-import { blocksToMarkdown } from "./note.serializer";
+} from "@giraffle/domain";
+import { blocksToMarkdown } from "@giraffle/domain";
 
 const SEARCH_TEXT_MAX_LENGTH = 50_000;
 

@@ -1,4 +1,4 @@
-import { isRecord } from "@/lib/utils";
+import { isRecord } from "../utils";
 import type {
   BlockMark,
   BlockNodeContent,

@@ -20,7 +20,7 @@ export type DragData =
   | { type: "stride:todo"; todoId: string }
   | { type: "stride:unscheduled"; todoId: string };
 
-import { isRecord } from "@/lib/utils";
+import { isRecord } from "@giraffle/domain";
 
 export function isDragData(value: unknown): value is DragData {
   if (!isRecord(value)) return false;

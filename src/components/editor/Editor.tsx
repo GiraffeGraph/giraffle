@@ -26,14 +26,14 @@ import {
   moveBlockInDocument,
   removeBlockFromDocument,
   updateBlockInDocument,
-} from "@/domain/note/block-tree";
+} from "@giraffle/domain";
 import type {
   BlockAttributes,
   BlockNodeContent,
   NoteReference,
   TiptapDocument,
-} from "@/domain/note/note.types";
-import { generateId } from "@/lib/utils";
+} from "@giraffle/domain";
+import { generateId } from "@giraffle/domain";
 import { Button } from "@/components/ui/Button";
 import {
   BlockIdExtension,

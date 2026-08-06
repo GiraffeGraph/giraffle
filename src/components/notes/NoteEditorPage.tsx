@@ -17,9 +17,9 @@ import { NoteTopbar } from "@/components/notes/NoteTopbar";
 import { ReadingModeOverlay } from "@/components/notes/ReadingModeOverlay";
 import { ContextMenu, type ContextMenuItem } from "@/components/ui/ContextMenu";
 import { useIsMobileViewport } from "@/components/ui/useIsMobileViewport";
-import type { BacklinkResult } from "@/domain/link/link.types";
-import { DEFAULT_NOTE_TITLE } from "@/domain/note/note.types";
-import type { NoteReference, TiptapDocument } from "@/domain/note/note.types";
+import type { BacklinkResult } from "@giraffle/domain";
+import { DEFAULT_NOTE_TITLE } from "@giraffle/domain";
+import type { NoteReference, TiptapDocument } from "@giraffle/domain";
 import {
   moveNoteAction,
   archiveNoteAction,

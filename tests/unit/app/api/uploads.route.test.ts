@@ -23,7 +23,7 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
-vi.mock("@/lib/utils", () => ({
+vi.mock("@giraffle/domain", () => ({
   generateId: vi.fn(() => "asset-1"),
   slugify: vi.fn((value: string) => value.toLowerCase().replace(/\s+/g, "-")),
 }));

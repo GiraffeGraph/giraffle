@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import type { KanbanCardData, KanbanPriority, UpdateCardInput } from "@/domain/kanban/kanban.types";
+import type { KanbanCardData, KanbanPriority, UpdateCardInput } from "@giraffle/domain";
 import { Button } from "@/components/ui/Button";
 import { PRIORITY_META, PRIORITY_ORDER } from "./kanban-meta";
 

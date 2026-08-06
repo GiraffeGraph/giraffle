@@ -8,7 +8,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PageTopbar } from "@/components/ui/PageTopbar";
 import { isSidebarPageDragData } from "@/components/sidebar/sidebar.types";
 import { saveSavannaStateAction } from "@/server/api/savanna";
-import { isRecord } from "@/lib/utils";
+import { isRecord } from "@giraffle/domain";
 import { NotePreviewPanel } from "./NotePreviewPanel";
 import type { AppState, ExcalidrawImperativeAPI, ExcalidrawProps } from "@excalidraw/excalidraw/types";
 import type { ExcalidrawElement } from "@excalidraw/excalidraw/element/types";

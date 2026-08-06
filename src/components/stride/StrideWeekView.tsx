@@ -16,7 +16,7 @@ import {
 } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import { renderStoredIcon } from "@/components/sidebar/sidebar-icon-utils";
 import { isDragData, type CalendarTodo } from "./stride.types";
-import { isRecord } from "@/lib/utils";
+import { isRecord } from "@giraffle/domain";
 import { StrideDurationPicker } from "./StrideDurationPicker";
 
 export const HOUR_PX = 60; // 1 px = 1 minute

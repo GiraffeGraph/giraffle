@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { BLOCK_TYPES, EISENHOWER_QUADRANTS } from "@/domain/note/note.types";
+import { BLOCK_TYPES, EISENHOWER_QUADRANTS } from "@giraffle/domain";
 
 export const IsoDateStringSchema = z.string();
 

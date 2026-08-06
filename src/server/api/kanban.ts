@@ -26,7 +26,7 @@ import type {
   CreateCardInput,
   KanbanColumnColor,
   UpdateCardInput,
-} from "@/domain/kanban/kanban.types";
+} from "@giraffle/domain";
 import { requireAuthenticatedUser } from "@/lib/auth-session";
 
 export async function getBoardsAction() {

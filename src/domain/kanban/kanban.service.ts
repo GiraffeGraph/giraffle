@@ -23,7 +23,7 @@ import type {
   KanbanColumnDef,
   KanbanPriority,
   UpdateCardInput,
-} from "./kanban.types";
+} from "@giraffle/domain";
 
 const EISENHOWER = ["DO", "SCHEDULE", "DELEGATE", "ELIMINATE"] as const;
 const DEFAULT_COLUMN_SEEDS: Array<{ title: string; color: KanbanColumnColor }> = [

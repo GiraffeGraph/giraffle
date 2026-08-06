@@ -1,4 +1,4 @@
-import type { EisenhowerQuadrant } from "@/domain/note/note.types";
+import type { EisenhowerQuadrant } from "../note/note.types";
 
 /**
  * Trek — Kanban boards.

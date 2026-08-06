@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { getBacklinks } from "@/domain/link/link.service";
-import { buildNoteExportArtifact } from "@/domain/note/note.export";
-import { blocksToMarkdown, markdownToBlocks } from "@/domain/note/note.serializer";
+import { buildNoteExportArtifact } from "@giraffle/domain";
+import { blocksToMarkdown, markdownToBlocks } from "@giraffle/domain";
 import {
   createNote,
   getNote,
@@ -10,8 +10,8 @@ import {
   saveNoteContent,
   updateNote,
 } from "@/domain/note/page.service";
-import type { BlockNodeContent, TiptapDocument, UpdateNoteInput } from "@/domain/note/note.types";
-import { insertBlockInDocument } from "@/domain/note/block-tree";
+import type { BlockNodeContent, TiptapDocument, UpdateNoteInput } from "@giraffle/domain";
+import { insertBlockInDocument } from "@giraffle/domain";
 import { searchWorkspaceNotes } from "@/domain/search/search.service";
 import { db } from "@/lib/db";
 import { BlockNodeContentSchema } from "@/mcp/schemas";

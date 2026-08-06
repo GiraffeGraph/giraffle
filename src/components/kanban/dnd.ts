@@ -1,4 +1,4 @@
-import { isRecord } from "@/lib/utils";
+import { isRecord } from "@giraffle/domain";
 
 export const KB_CARD_DRAG = "kb:card" as const;
 export const KB_COLUMN_DRAG = "kb:column" as const;

@@ -1,4 +1,4 @@
-import { isRecord } from "@/lib/utils";
+import { isRecord } from "@giraffle/domain";
 
 export const TM_NOTE_DRAG = "tm:note" as const;
 export const TM_TODO_DRAG = "tm:todo" as const;

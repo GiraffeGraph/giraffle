@@ -1,6 +1,6 @@
 import type { Editor as TiptapEditor } from "@tiptap/core";
-import type { BlockNodeContent } from "@/domain/note/note.types";
-import { generateId } from "@/lib/utils";
+import type { BlockNodeContent } from "@giraffle/domain";
+import { generateId } from "@giraffle/domain";
 
 export function resolveColorSelectionRange(
   editor: TiptapEditor,

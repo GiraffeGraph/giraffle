@@ -1,4 +1,4 @@
-import { generateId, isRecord } from "@/lib/utils";
+import { generateId, isRecord } from "@giraffle/domain";
 
 export const KANBAN_COLUMN_TONES = [
   "accent",

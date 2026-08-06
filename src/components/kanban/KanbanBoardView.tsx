@@ -13,7 +13,7 @@ import type {
   KanbanColumnColor,
   KanbanColumnData,
   UpdateCardInput,
-} from "@/domain/kanban/kanban.types";
+} from "@giraffle/domain";
 import {
   createCardAction,
   createColumnAction,

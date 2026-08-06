@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getAppSetting } from "@/domain/app-settings/app-settings.service";
-import { generateId, slugify } from "@/lib/utils";
+import { generateId, slugify } from "@giraffle/domain";
 
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 const MAX_ALT_TEXT_LENGTH = 500;

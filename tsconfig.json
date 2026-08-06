@@ -31,6 +31,9 @@
       ],
       "@giraffle/sync": [
         "./packages/sync/index.ts"
+      ],
+      "@giraffle/domain": [
+        "./packages/domain/index.ts"
       ]
     }
   },

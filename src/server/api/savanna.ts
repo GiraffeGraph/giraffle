@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import type { Prisma } from "@prisma/client";
-import { persistedBlocksToDocument } from "@/domain/note/block-tree";
+import { persistedBlocksToDocument } from "@giraffle/domain";
 import {
   createSavanna,
   deleteSavanna,
@@ -14,7 +14,7 @@ import {
 } from "@/domain/savanna/savanna.service";
 import { requireAuthenticatedUser } from "@/lib/auth-session";
 import { db } from "@/lib/db";
-import { isRecord } from "@/lib/utils";
+import { isRecord } from "@giraffle/domain";
 
 function extractTextFromNode(node: unknown): string {
   if (!isRecord(node)) return "";

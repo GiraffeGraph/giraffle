@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { SafeEditor } from "@/components/editor/SafeEditor";
-import type { NoteReference } from "@/domain/note/note.types";
+import type { NoteReference } from "@giraffle/domain";
 import {
   estimateReadingMinutes,
   type NoteChunk,

@@ -1,9 +1,9 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { isRecord } from "@/lib/utils";
-import { extractWikilinksFromContent } from "./wikilink.parser";
-import type { BacklinkResult } from "./link.types";
+import { isRecord } from "@giraffle/domain";
+import { extractWikilinksFromContent } from "@giraffle/domain";
+import type { BacklinkResult } from "@giraffle/domain";
 
 /**
  * Extract links from a note's blocks and persist them.

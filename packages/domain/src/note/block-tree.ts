@@ -1,4 +1,4 @@
-import { generateId, isRecord } from "@/lib/utils";
+import { generateId, isRecord } from "../utils";
 import type {
   BlockAttributes,
   BlockNodeContent,

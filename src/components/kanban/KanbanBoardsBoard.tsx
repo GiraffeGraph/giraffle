@@ -12,7 +12,7 @@ import type {
   KanbanBoardSummary,
   KanbanBoardsOverview,
   KanbanColumnColor,
-} from "@/domain/kanban/kanban.types";
+} from "@giraffle/domain";
 import { BodyPortal } from "@/components/ui/BodyPortal";
 import { Button } from "@/components/ui/Button";
 import {

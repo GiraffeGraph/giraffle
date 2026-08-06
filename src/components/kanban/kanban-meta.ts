@@ -1,4 +1,4 @@
-import type { KanbanColumnColor, KanbanPriority } from "@/domain/kanban/kanban.types";
+import type { KanbanColumnColor, KanbanPriority } from "@giraffle/domain";
 
 /**
  * Shared visual vocabulary for Trek. Priorities deliberately reuse the Tower

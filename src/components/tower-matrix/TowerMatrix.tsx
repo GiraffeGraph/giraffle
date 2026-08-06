@@ -22,7 +22,7 @@ import {
   getNoteTodosAction,
   toggleTodoAction,
 } from "@/server/api/notes";
-import type { EisenhowerQuadrant, MatrixSlot } from "@/domain/note/note.types";
+import type { EisenhowerQuadrant, MatrixSlot } from "@giraffle/domain";
 import { renderStoredIcon } from "@/components/sidebar/sidebar-icon-utils";
 import { isSidebarPageDragData } from "@/components/sidebar/sidebar.types";
 import {

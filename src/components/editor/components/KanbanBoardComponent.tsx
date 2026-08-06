@@ -7,7 +7,7 @@ import {
 } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import { NodeViewWrapper, type NodeViewProps } from "@tiptap/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { generateId, isRecord } from "@/lib/utils";
+import { generateId, isRecord } from "@giraffle/domain";
 import type { KanbanCard, KanbanColumn } from "../extensions/kanban.shared";
 import {
   createKanbanCard,

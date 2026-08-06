@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { getSavannaNoteEditorAction } from "@/server/api/savanna";
 import { saveNoteContentAction } from "@/server/api/notes";
-import type { TiptapDocument } from "@/domain/note/note.types";
+import type { TiptapDocument } from "@giraffle/domain";
 import dynamic from "next/dynamic";
 import type { ComponentType } from "react";
 

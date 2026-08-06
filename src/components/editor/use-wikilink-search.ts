@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { NoteReference } from "@/domain/note/note.types";
+import type { NoteReference } from "@giraffle/domain";
 import type { WikilinkMenuItem } from "./editor-types";
 
 export function useWikilinkSearch(

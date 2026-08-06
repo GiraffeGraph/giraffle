@@ -20,7 +20,7 @@ import {
   updateCalendarTodoTextAction,
 } from "@/server/api/notes";
 import { isDragData, type CalendarTodo, type CalendarView } from "./stride.types";
-import { isRecord } from "@/lib/utils";
+import { isRecord } from "@giraffle/domain";
 import { StrideHeader } from "./StrideHeader";
 import { StrideDayView } from "./StrideDayView";
 import { StrideWeekView } from "./StrideWeekView";

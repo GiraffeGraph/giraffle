@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { isRecord } from "@/lib/utils";
+import { isRecord } from "@giraffle/domain";
 
 const DEFAULT_LIMIT = 40;
 const MAX_SCAN_NOTES = 320;

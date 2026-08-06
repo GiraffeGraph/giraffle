@@ -20,7 +20,7 @@ import type {
   KanbanCardData,
   KanbanColumnColor,
   KanbanPriority,
-} from "@/domain/kanban/kanban.types";
+} from "@giraffle/domain";
 import type { McpToolDefinition } from "../tool-definitions";
 
 /**

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildNoteExportArtifact } from "@/domain/note/note.export";
+import { buildNoteExportArtifact } from "@giraffle/domain";
 
 describe("note export", () => {
   it("builds Markdown and MDX without publishing metadata", () => {

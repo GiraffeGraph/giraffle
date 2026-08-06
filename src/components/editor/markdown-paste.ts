@@ -1,6 +1,6 @@
 import { Fragment, Slice } from "@tiptap/pm/model";
 import type { EditorView } from "@tiptap/pm/view";
-import { markdownToBlocks } from "@/domain/note/note.serializer";
+import { markdownToBlocks } from "@giraffle/domain";
 
 const MARKDOWN_BLOCK_PATTERNS = [
   /^#{1,6}\s+.+/m,

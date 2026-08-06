@@ -1,6 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
-import { isRecord } from "@/lib/utils";
+import { isRecord } from "@giraffle/domain";
 
 /**
  * Savanna = infinite Excalidraw canvas. userId-scoped service layer shared by

@@ -7,7 +7,7 @@ import {
   setTodoBlockQuadrant,
   toggleTodoBlock,
 } from "@/domain/note/task.service";
-import type { EisenhowerQuadrant, MatrixSlot } from "@/domain/note/note.types";
+import type { EisenhowerQuadrant, MatrixSlot } from "@giraffle/domain";
 import { db } from "@/lib/db";
 import type { McpToolDefinition } from "../tool-definitions";
 

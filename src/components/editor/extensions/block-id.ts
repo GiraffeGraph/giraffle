@@ -1,6 +1,6 @@
 import { Extension } from "@tiptap/core";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
-import { generateId } from "@/lib/utils";
+import { generateId } from "@giraffle/domain";
 
 const BLOCK_NODE_TYPES = [
   "paragraph",
