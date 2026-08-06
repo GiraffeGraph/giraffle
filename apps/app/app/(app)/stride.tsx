@@ -8,7 +8,7 @@ import {
 } from "@giraffle/domain";
 import { router } from "expo-router";
 import { useCallback, useMemo, useRef, useState } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { ScreenTopbar } from "@/components/shell/ScreenTopbar";
 import { TaskViewSwitch } from "@/components/shell/TaskViewSwitch";
@@ -211,7 +211,7 @@ export default function Stride() {
               body="Create a task in Notes or Trek, or unschedule one here."
             />
           ) : (
-            <View style={styles.backlogList}>
+            <ScrollView contentContainerStyle={styles.backlogList}>
               {backlog.slice(0, 12).map((task) => (
                 <BacklogChip
                   key={task.id}
@@ -224,7 +224,7 @@ export default function Stride() {
                   }}
                 />
               ))}
-            </View>
+            </ScrollView>
           )}
         </View>
       </View>
@@ -362,7 +362,15 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
   },
   composerInput: { flex: 1, height: 38 },
-  backlog: { paddingTop: spacing.md, borderTopWidth: StyleSheet.hairlineWidth, gap: 8 },
+  // Capped so the backlog cannot squeeze the calendar down to a few hours;
+  // it scrolls internally instead of taking whatever height it wants.
+  backlog: {
+    paddingTop: spacing.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    gap: 8,
+    flexShrink: 0,
+    maxHeight: "38%",
+  },
   backlogHead: { flexDirection: "row", alignItems: "center", gap: 12 },
   search: { height: 38, borderWidth: 1, borderRadius: radii.sm, paddingHorizontal: 12 },
   backlogList: { flexDirection: "row", flexWrap: "wrap", gap: 6 },

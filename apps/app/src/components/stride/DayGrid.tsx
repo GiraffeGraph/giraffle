@@ -53,6 +53,9 @@ export function DayGrid({
   const gridTop = useRef(0);
   const scrollOffset = useRef(0);
   const scrollRef = useRef<ScrollView>(null);
+  // Measured through a plain View: react-native-web's layout event carries no
+  // node with measureInWindow, so reading it off the event crashes there.
+  const gridRef = useRef<View>(null);
 
   useEffect(() => {
     const timer = setInterval(() => setNow(minutesNow()), 60_000);
@@ -120,13 +123,18 @@ export function DayGrid({
         </View>
       ) : null}
 
-      <ScrollView
-        ref={scrollRef}
-        onLayout={(event) =>
-          event.currentTarget.measureInWindow((_x, y) => {
+      <View
+        ref={gridRef}
+        collapsable={false}
+        style={styles.fill}
+        onLayout={() =>
+          gridRef.current?.measureInWindow((_x, y) => {
             gridTop.current = y;
           })
         }
+      >
+      <ScrollView
+        ref={scrollRef}
         onScroll={(event) => {
           scrollOffset.current = event.nativeEvent.contentOffset.y;
         }}
@@ -170,6 +178,7 @@ export function DayGrid({
           ))}
         </View>
       </ScrollView>
+      </View>
     </View>
   );
 }

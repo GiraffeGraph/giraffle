@@ -7,7 +7,12 @@ import {
   useState,
   type PropsWithChildren,
 } from "react";
-import { View, type LayoutChangeEvent } from "react-native";
+import {
+  View,
+  type LayoutChangeEvent,
+  type StyleProp,
+  type ViewStyle,
+} from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 
 export type DropZone = "before" | "inside" | "after";
@@ -136,6 +141,7 @@ export function DragSortItem({
   containerOnly = false,
   disabled = false,
   onDrop,
+  style,
   children,
 }: PropsWithChildren<{
   id: string;
@@ -143,6 +149,12 @@ export function DragSortItem({
   containerOnly?: boolean;
   disabled?: boolean;
   onDrop(sourceId: string, target: DropTarget): void;
+  /**
+   * This wrapper is the real flex child, so any sizing the parent layout
+   * depends on belongs here — a percentage width on `children` would resolve
+   * against an indefinite width and collapse to the content.
+   */
+  style?: StyleProp<ViewStyle>;
 }>) {
   const drag = useDragSort();
   const viewRef = useRef<View>(null);
@@ -181,7 +193,7 @@ export function DragSortItem({
 
   return (
     <GestureDetector gesture={gesture}>
-      <View ref={viewRef} collapsable={false} onLayout={measure}>
+      <View ref={viewRef} collapsable={false} onLayout={measure} style={style}>
         {children}
       </View>
     </GestureDetector>

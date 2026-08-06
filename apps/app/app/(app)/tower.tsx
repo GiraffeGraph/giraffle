@@ -114,7 +114,14 @@ function TowerScreen() {
         const hovered = drag.target?.id === slotId;
 
         return (
-          <DragSortItem key={quadrant.id} id={slotId} containerOnly disabled onDrop={handleDrop}>
+          <DragSortItem
+            key={quadrant.id}
+            id={slotId}
+            containerOnly
+            disabled
+            onDrop={handleDrop}
+            style={styles.quadrantSlot}
+          >
             <View
               style={[
                 styles.quadrant,
@@ -374,9 +381,9 @@ function TowerScreen() {
 
 const styles = StyleSheet.create({
   matrix: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  trekShortcut: { marginBottom: spacing.sm },
+  trekShortcut: { width: "100%", marginBottom: spacing.sm },
+  quadrantSlot: { flexBasis: "48%", flexGrow: 1 },
   quadrant: {
-    width: "48%",
     minHeight: 190,
     borderWidth: StyleSheet.hairlineWidth,
     padding: 10,
