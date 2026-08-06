@@ -1,16 +1,24 @@
+# The blind sync relay, and nothing else. The clients hold the data; this
+# service only stores ciphertext it cannot read.
+#
+# Compose reads `.env` from this directory — copy `.env.example` to `.env` first.
 services:
-  postgres:
-    image: postgres:16-alpine
-    container_name: giraffle-db
+  sync:
+    build:
+      # The build context is the repository root because the server consumes
+      # @giraffle/protocol through a relative file: dependency.
+      context: .
+      dockerfile: apps/server/Dockerfile
+    image: giraffle-sync
+    container_name: giraffle-sync
     restart: unless-stopped
     ports:
-      - '5432:5432'
+      - "${SYNC_PORT:-8787}:8787"
     environment:
-      POSTGRES_USER: giraffle
-      POSTGRES_PASSWORD: giraffle_dev_2024
-      POSTGRES_DB: giraffle
+      SYNC_TOKENS: ${SYNC_TOKENS:?set SYNC_TOKENS in .env as vaultId:token}
+      DATABASE_PATH: /data/giraffle-sync.db
     volumes:
-      - giraffle_pgdata:/var/lib/postgresql/data
+      - giraffle_sync_data:/data
 
 volumes:
-  giraffle_pgdata:
+  giraffle_sync_data:

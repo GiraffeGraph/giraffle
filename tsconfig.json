@@ -1,12 +1,14 @@
 {
   "compilerOptions": {
-    "target": "ES2017",
+    "target": "ES2022",
     "lib": [
       "dom",
-      "dom.iterable",
       "esnext"
     ],
-    "allowJs": true,
+    // packages/* target every runtime the client runs on, so nothing here may
+    // reach for Node globals; an empty list keeps a hoisted @types/* from
+    // silently making that legal.
+    "types": [],
     "skipLibCheck": true,
     "strict": true,
     "noEmit": true,
@@ -15,17 +17,7 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "react-jsx",
-    "incremental": true,
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ],
     "paths": {
-      "@/*": [
-        "./src/*"
-      ],
       "@giraffle/protocol": [
         "./packages/protocol/index.ts"
       ],
@@ -38,18 +30,11 @@
     }
   },
   "include": [
-    "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.d.ts",
-    ".next/dev/types/**/*.d.ts",
-    "**/*.mts",
-    ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts"
+    "packages/**/*.ts",
+    "vitest.config.mts"
   ],
   "exclude": [
     "node_modules",
-    "apps/app",
-    "apps/server"
+    "apps"
   ]
 }

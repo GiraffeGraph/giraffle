@@ -13,10 +13,6 @@
 # testing
 /coverage
 
-# next.js
-/.next/
-/out/
-
 # production
 /build
 
@@ -33,21 +29,16 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 !.env.example
-!.env.production.example
 
 # docker / runtime secrets
 /secrets/
 *.secret
 
-# user-uploaded media (served from UPLOAD_DIR volume in production)
-/public/uploads/
-
-# vercel
-.vercel
+# relay database when running outside Docker
+/apps/server/data/
 
 # typescript
 *.tsbuildinfo
-next-env.d.ts
 .pi/
 skills
 

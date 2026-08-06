@@ -5,15 +5,14 @@
 <h1 align="center">Giraffle</h1>
 
 <p align="center">
-  A private, offline-first knowledge workspace. Runs locally on your machine, natively on your phone, and syncs only ciphertext through a server you own.
+  A private, offline-first knowledge workspace for iOS, Android and the browser. Your notes live on your device. If you want them on a second device, you host a relay that only ever sees ciphertext.
 </p>
 
 <p align="center">
-  <img alt="Next.js 16" src="https://img.shields.io/badge/Next.js-16-111111?logo=nextdotjs&logoColor=white">
-  <img alt="React 19" src="https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white">
   <img alt="Expo" src="https://img.shields.io/badge/Expo-React%20Native-000020?logo=expo&logoColor=white">
-  <img alt="Prisma 7" src="https://img.shields.io/badge/Prisma-7-2D3748?logo=prisma&logoColor=white">
-  <img alt="PostgreSQL" src="https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql&logoColor=white">
+  <img alt="React 19" src="https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white">
+  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-6-3178C6?logo=typescript&logoColor=white">
+  <img alt="SQLite" src="https://img.shields.io/badge/SQLite-encrypted-003B57?logo=sqlite&logoColor=white">
   <img alt="End-to-end encrypted" src="https://img.shields.io/badge/E2EE-yes-1F883D">
 </p>
 
@@ -21,10 +20,11 @@
   <a href="#why-giraffle">Why Giraffle</a> •
   <a href="#screenshots">Screenshots</a> •
   <a href="#features">Features</a> •
-  <a href="#local-development">Local Development</a> •
-  <a href="#mobile-app">Mobile App</a> •
-  <a href="#self-hosting">Self-Hosting</a> •
-  <a href="#project-structure">Project Structure</a>
+  <a href="#running-the-client">Running the Client</a> •
+  <a href="#building-the-client">Building</a> •
+  <a href="#hosting-the-sync-relay">Hosting the Relay</a> •
+  <a href="#pairing-a-second-device">Pairing</a> •
+  <a href="#repository-layout">Layout</a>
 </p>
 
 ## Screenshots
@@ -37,175 +37,158 @@
 
 ## Why Giraffle
 
-Giraffle is for people who want a Notion-like editor, Obsidian-style linking, and full ownership of their data.
+Giraffle is one app — an Expo Universal client that runs as a native iOS app, a native Android app, and a web app from the same source — plus an optional relay you can run to move changes between your own devices.
 
 Three rules shape every decision:
 
-- **Offline first.** The client owns the data. Every read and write works with no network. Sync is an optional background detail, never a prerequisite.
-- **The server is blind.** Content is encrypted on the device. The sync endpoints move ciphertext only — a server operator, including you, cannot read notes.
-- **You host it, or nobody does.** No account on someone else's cloud, no telemetry, no built-in AI runtime phoning home.
+- **The device owns the data.** Every page, task, board and canvas is written to an encrypted SQLite database on the device. Every read and write works with the network off. There is no "loading" state waiting on a server.
+- **The relay is blind.** Content is encrypted on the device with keys the device never sends anywhere. The relay stores opaque blobs and the metadata it needs to order them. Whoever runs it — including you — cannot read a note.
+- **There is no account.** No sign-up, no email, no password, no server-side user record. A vault is identified by an id and an access token you generate yourself; a second device joins by being authorized by the first.
+
+### The privacy model in plain terms
+
+Your notes are encrypted before they leave the app. The relay receives ciphertext, stores ciphertext, and hands ciphertext back to devices that hold the right token. It has no key, so a stolen database, a subpoena, or a curious operator yields nothing readable.
+
+What the relay *does* see: how many records exist, roughly how big they are, when they were pushed, and which device pushed them. That is the cost of having a sync service at all. If you never turn sync on, it sees nothing, because you never run it.
 
 ## Features
 
-- Block-based editing with Tiptap: callouts, toggles, tables, images, code, task lists, slash commands
-- Wikilinks, resolved links, and backlinks
+- Block editing with Tiptap: callouts, toggles, tables, images, code, task lists, slash commands
+- Wikilinks and backlinks between pages
 - Nested pages — any page can contain other pages, no separate folder concept
-- Trek kanban boards, where a board is itself a page (boards can nest into a 2D board-of-boards)
+- Trek kanban boards, where a board is itself a page
 - Stride day planning and Tower Matrix prioritization over the same task records
-- Savanna canvas built on Excalidraw, with note references
-- Workspace search, archive, tags, and Markdown/MDX export
-- End-to-end encrypted vault with per-device keys and ciphertext-only sync
-- Native iOS and Android client with its own encrypted local database
-- Authenticated MCP endpoint so external agents can drive the workspace
-- Self-hosted deployment with Docker Compose, PostgreSQL, and optional nginx
+- Savanna canvas built on Excalidraw
+- Workspace search and archive
+- Markdown export through the system share sheet
+- Encrypted local database, device-held keys, and an access lock (PIN / biometrics)
+- Optional ciphertext-only sync between your own devices
 
-## Architecture
-
-| Piece | What it does |
-| --- | --- |
-| Web app | Next.js App Router, local-first, works offline |
-| Mobile app | Expo / React Native, encrypted SQLite, offline by default |
-| Sync server | Ciphertext-only vault endpoints under `/api/v1/vaults` |
-| Storage | PostgreSQL 16 via Prisma 7 + `@prisma/adapter-pg` |
-| Crypto | libsodium, device-held keys, HLC-ordered operations |
-| Auth | NextAuth with credential login |
-
-### Domains
-
-`note` · `link` · `kanban` · `savanna` · `search` · `sync` · `e2ee` · `app-settings` · `mcp` · `update`
-
-### Routes
-
-- `/notes/[noteId]` — editable page view
-- `/notes` — all active pages
-- `/kanban` — Trek boards
-- `/stride` — day planning
-- `/tower-matrix` — task prioritization
-- `/savanna` — canvas
-- `/search` — filterable workspace search
-- `/archive` — archived pages
-- `/settings` — theme, sidebar, sync, and vault preferences
-- `/account` — account and password maintenance
-
-## Local Development
+## Running the Client
 
 ### Prerequisites
 
 - Node.js 20+
-- Docker
+- Xcode (for iOS) or Android Studio (for Android). Neither is needed for the web target.
 
 ### Setup
 
 ```bash
+cd apps/app
 npm install
-docker compose up -d
-cp .env.example .env
-npx prisma migrate dev
-npm run dev
+cp .env.example .env      # optional; leave EXPO_PUBLIC_SYNC_BASE_URL blank to stay fully offline
 ```
 
-Set `AUTH_SECRET` in `.env` to a long random value before logging in.
-
-App runs at `http://localhost:3000`, PostgreSQL at `localhost:5432`.
-
-### Verification
+### Run
 
 ```bash
-npm run verify        # prisma validate + lint + typecheck + tests + build
-npm run test:run
-npm run test:coverage
+npm run ios          # native iOS, builds a dev client
+npm run android      # native Android
+npm run web          # browser
+npm start            # dev server for an already-installed dev client
 ```
 
-Production-like smoke test — builds the image, starts PostgreSQL, applies migrations, checks `/api/health/ready`:
+The client needs native modules (encrypted SQLite, libsodium, secure storage), so `npm run ios` / `npm run android` build a development client rather than running in Expo Go.
+
+### Checks
 
 ```bash
-ENV_FILE=.env.production npm run smoke:prod
+cd apps/app
+npm run verify       # lint + typecheck + tests + export
 ```
 
-## Mobile App
+From the repository root, `npm run verify` covers the shared packages instead — typecheck plus the `packages/*/tests` suites that pin the crypto, sync and domain behavior the client is built on.
 
-The native client lives in `apps/mobile` (Expo + React Native). It keeps its own encrypted local database and talks to the same ciphertext-only sync endpoints as the web app.
+## Building the Client
 
 ```bash
-cd apps/mobile
-npm install
-npm run ios          # or: npm run android
-npm run typecheck && npm run test
+cd apps/app
+npm run export       # native JS bundles for iOS and Android
+npm run export:web   # static web build
+npm run prebuild     # regenerate the native ios/ and android/ projects
 ```
 
-The canvas surface is bundled as a prebuilt web asset — rebuild it with `tools/excalidraw-mobile/build.mjs` after changing canvas behavior.
+Store builds go through EAS; see `apps/app/eas.json` for the profiles.
 
-## Self-Hosting
+## Hosting the Sync Relay
 
-Giraffle ships a production Docker Compose stack:
-
-- `postgres` for durable storage
-- `app` for the standalone Next.js server
-- optional `nginx` through a separate proxy compose file
+The relay is a single small container. It needs no database server, no reverse proxy to function, and no configuration beyond one token.
 
 ### Quick start
 
 ```bash
-git clone <your-repo-url> giraffle
-cd giraffle
-cp .env.production.example .env.production
-$EDITOR .env.production
-./scripts/prod-up.sh
+cp .env.example .env
+$EDITOR .env                                    # set SYNC_TOKENS
+docker compose up -d --build
+curl http://localhost:8787/health/ready         # {"status":"ready"}
 ```
 
-Then open `http://localhost:3000`, or point your domain at the server and set `NEXTAUTH_URL` to the public URL you actually use.
+`docker-compose.yml` runs one service, built from `apps/server/Dockerfile` with the repository root as the build context. Its SQLite database lives on the named volume `giraffle_sync_data`, mounted at `/data`.
 
-For image-first control planes such as Coolify, Dokploy, CasaOS, and Portainer, use `deploy/selfhost/docker-compose.image.yml` and set `APP_IMAGE` to a published image, for example `docker.io/efekurucay/giraffle:latest`. You do not need to build the image yourself.
+### Configuration
 
-### Required environment variables
+| Variable | Required | Meaning |
+| --- | --- | --- |
+| `SYNC_TOKENS` | yes | Comma-separated `vaultId:token` pairs. Generate a token with `openssl rand -base64 48`. |
+| `SYNC_PORT` | no | Host port to publish on. Default `8787`. |
+| `HOST` | no | Interface to bind when running outside Docker. Default `0.0.0.0`. |
+| `PORT` | no | Port to listen on. Default `8787`. |
+| `DATABASE_PATH` | no | SQLite file. Default `./data/giraffle-sync.db`; `/data/giraffle-sync.db` in the container. |
 
-- `APP_IMAGE`
-- `DATABASE_URL`
-- `AUTH_SECRET`
-- `NEXTAUTH_URL`
-- `LOG_LEVEL`
-- `APP_PORT`
-- `POSTGRES_USER`
-- `POSTGRES_PASSWORD`
-- `POSTGRES_DB`
-- optional: `APP_ENCRYPTION_KEY` to encrypt app-managed settings stored from the UI
-- optional: `DEPLOYMENT_ID` for version-skew protection during rolling deploys
-- optional: `APP_UPDATE_REPOSITORY` to point update checks at your own fork's release feed
+`SYNC_TOKENS` is the operator credential and the whole access-control system. The relay **replaces its token table from this variable on every boot**, so removing a pair revokes it at the next restart. Only the SHA-256 digest of each token is stored.
 
-### What the stack does
+### Endpoints
 
-- pulls the app image via `APP_IMAGE`
-- runs `prisma migrate deploy` on startup
-- publishes the app on `APP_PORT` (default `3000`)
-- exposes `/api/health/live` and `/api/health/ready`
-- persists PostgreSQL data in `giraffle_pgdata` and uploads in `giraffle_uploads`
-- keeps `prisma.config.ts` inside the image, since Prisma 7 reads datasource config from it during `migrate deploy`
+| Route | Purpose |
+| --- | --- |
+| `GET /health/live` | Process is up. Never touches the database. |
+| `GET /health/ready` | Database is answering. |
+| `POST /api/v1/vaults/:vaultId/devices` | Register a device. |
+| `GET /api/v1/vaults/:vaultId/devices` | List registered devices. |
+| `POST /api/v1/vaults/:vaultId/devices/:deviceId/authorization` | Authorize a pending device. |
+| `GET /api/v1/vaults/:vaultId/devices/:deviceId/grant` | Fetch the wrapped key grant for a device. |
+| `POST /api/v1/vaults/:vaultId/sync/push` | Upload encrypted records. |
+| `GET /api/v1/vaults/:vaultId/sync/pull` | Download encrypted records. |
 
-### Useful commands
+Everything under `/api/v1/vaults` requires the vault's bearer token. Put the relay behind TLS before exposing it to the internet — a terminating proxy or a tunnel, whichever you already run.
+
+### Running without Docker
 
 ```bash
-./scripts/prod-logs.sh
-./scripts/prod-up-proxy.sh    # adds nginx on port 80 in front of the app
-docker compose --env-file .env.production -f docker-compose.prod.yml ps
-docker compose --env-file .env.production -f docker-compose.prod.yml restart app
-docker compose --env-file .env.production -f docker-compose.prod.yml down
+npm --prefix apps/server install
+SYNC_TOKENS=my-vault:$(openssl rand -base64 48) npm --prefix apps/server run dev
 ```
 
-### Upgrading
+## Pairing a Second Device
 
-```bash
-cd giraffle
-git pull
-./scripts/prod-up.sh
+1. **Point both devices at the relay.** Set `EXPO_PUBLIC_SYNC_BASE_URL` to your relay's URL and give both the same vault id and token from `SYNC_TOKENS`.
+2. **The first device claims the vault.** It generates the vault key, wraps it with its own device key, and pushes encrypted records.
+3. **The new device asks to join.** Open the join screen; it registers itself and waits, unauthorized. The relay will not hand it any key material yet.
+4. **The first device approves it.** Approving signs the new device into the vault's device chain and uploads the vault key wrapped for that device alone. The relay relays that blob without being able to open it.
+5. **The new device pulls.** It unwraps the key with its own device key and decrypts the history locally.
+
+Only a device that already holds the vault key can admit another one. The relay's token proves *which vault* you are talking to; it does not, on its own, let anyone read that vault.
+
+## Repository Layout
+
+```text
+apps/
+  app/            Expo Universal client — iOS, Android, web
+  server/         blind sync relay (Hono + SQLite), with its own Dockerfile
+packages/
+  domain/         pages, tasks, boards, links, ordering, Markdown, MCP tool catalog
+  protocol/       canonical CBOR, crypto provider, device chain, HLC, sync records
+  sync/           key wrapping, checkpoints, Yjs and Excalidraw merge, blob crypto
+tests/vectors/    frozen protocol test vectors, shared by the client and the packages
+public/           logo and screenshots used by this README
+docker-compose.yml  runs the relay
 ```
 
-## Security Baseline
+The client and the relay each install and test themselves; the root workspace owns only `packages/*`.
 
-- credential login with bcrypt password hashes
-- production secret requirement and secure cookies in production
-- login and registration rate limiting
-- note content encrypted client-side; sync endpoints accept and return ciphertext only
-- device keys never leave the device
+## Agent Control
+
+`packages/domain/src/mcp/` holds the catalog of tools an agent can call against a workspace — 42 tools covering pages, search, Stride, Tower, Savanna and Trek, with their names, descriptions and argument schemas. It is a contract, not a server: the relay is blind and cannot answer any of these calls, so an MCP host has to run inside a client that already holds the vault key. That host does not exist yet.
 
 ## Releasing
 
@@ -213,24 +196,6 @@ git pull
 
 ```bash
 npm run verify
-git push origin main
-git tag v0.11.0
-git push origin v0.11.0
-```
-
-## Project Structure
-
-```text
-src/
-  app/            routes, api, layouts
-  components/     editor, notes, sidebar, canvas
-  domain/         note, link, kanban, savanna, search, sync, e2ee, mcp
-  infrastructure/ e2ee primitives
-  mcp/            MCP server surface
-  server/         server-only wiring
-apps/
-  mobile/         Expo / React Native client
-deploy/           nginx config, image-first compose
-scripts/          production stack helpers
-tools/            build helpers for bundled web assets
+npm --prefix apps/app run verify
+npm --prefix apps/server run test
 ```

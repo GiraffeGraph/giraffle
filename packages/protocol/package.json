@@ -6,6 +6,7 @@
   "main": "index.ts",
   "types": "index.ts",
   "dependencies": {
+    "cborg": "^6.1.1",
     "libsodium-wrappers-sumo": "^0.8.4"
   }
 }

@@ -1,14 +1,15 @@
 # Project Memory
 
 ## Configuration
-- Use Docker Hub namespace `efekurucay` in this project's deployment examples and default image references.
-- Deployment docs for end users should assume the image is already published; do not ask users to build or publish images unless the section is explicitly maintainer-only.
+- The only container this repository builds is the blind sync relay (`apps/server/Dockerfile`, build context = repository root). Self-hosters build it from source via the root `docker-compose.yml`; no image is published anywhere.
+- `SYNC_TOKENS` is the relay's entire access-control system. The server replaces its token table from that variable on every boot, so removing a `vaultId:token` pair revokes it at the next restart.
 
 ## Architecture
-- Do not duplicate existing global sidebar note navigation inside feature pages — reuse the canonical sidebar as the note source for interactions like drag-and-drop.
-- Preserve the dedicated right utility rail; keep Archive, Settings, Account, Help, theme, sync, and sign-out actions there instead of duplicating them in the left content sidebar.
+- One client: the Expo Universal app in `apps/app`, shipping iOS, Android and web from the same source. `packages/*` is shared TypeScript consumed as source, with no build step, by the client, the relay and the root test suite.
+- Pages nest: a page can contain pages, and a Trek board is itself a page. There is no folder concept.
+- The relay never holds a key. Any feature that needs to read note content has to run in the client — that includes an MCP host, whose tool contract lives in `packages/domain/src/mcp/`.
 - When removing a platform implementation, preserve reusable branding and mobile assets unless their deletion is explicitly requested.
 - Treat the project as greenfield until production launch: there is no user data to preserve, so destructive local resets and migration squashing are allowed; optimize for a clean final schema and revisit this rule before accepting real data.
 
 ## Product UI
-- Preserve every Settings capability, but use simple user language everywhere, including optional detail sections; show raw technical values only when they are required to use the feature.
+- Use simple user language everywhere, including optional detail sections; show raw technical values only when they are required to use the feature.

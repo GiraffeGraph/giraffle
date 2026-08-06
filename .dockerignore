@@ -1,12 +1,17 @@
+# The only image built from this repository is apps/server/Dockerfile, whose
+# build context is the repository root so it can reach packages/protocol.
 .git
-.next
 node_modules
-npm-debug.log
-Dockerfile
-docker-compose*.yml
+**/node_modules
+apps/app
+packages/domain
+packages/sync
+public
+tests
 .env
-.env.local
+.env.*
 secrets
 *.secret
-docs
-skills
+npm-debug.log
+.claude
+.pi
