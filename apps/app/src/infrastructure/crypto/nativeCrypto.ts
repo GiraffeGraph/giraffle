@@ -1,4 +1,3 @@
-import { encode } from "cborg";
 import {
   ready, randombytes_buf, crypto_aead_xchacha20poly1305_ietf_encrypt,
   crypto_aead_xchacha20poly1305_ietf_decrypt, crypto_generichash,
@@ -6,7 +5,6 @@ import {
   crypto_box_seed_keypair, crypto_box_seal, crypto_box_seal_open,
   crypto_pwhash, crypto_pwhash_ALG_ARGON2ID13
 } from "react-native-libsodium";
-import type { VaultKeys } from "../secure-storage/keyStore";
 
 export async function initializeCrypto(): Promise<void> {
   await ready;
@@ -40,18 +38,5 @@ export async function derivePassphraseKey(passphrase: string, salt: Uint8Array, 
     memoryBytes,
     crypto_pwhash_ALG_ARGON2ID13,
   );
-}
-export interface EncryptedOperation { recordId: string; deviceSequence: number; objectLocator: Uint8Array; previousRecordHash: Uint8Array; keyEpoch: 1; nonce: Uint8Array; ciphertext: Uint8Array; signature: Uint8Array; encoded: Uint8Array; recordHash: Uint8Array }
-export function createEncryptedOperation(input: { recordId: string; vaultId: string; deviceId: string; deviceSequence: number; previousRecordHash: Uint8Array; objectId: string; kind: string; data: unknown; keys: VaultKeys }): EncryptedOperation {
-  const objectLocator = hash(encode(["giraffle-object-locator", 1, input.vaultId, input.objectId]), input.keys.locatorKey);
-  const suiteId = "xchacha20poly1305-argon2id-ed25519-v1";
-  const aad = encode({ protocolVersion: 1, suiteId, vaultId: input.vaultId, recordId: input.recordId, objectLocator, deviceId: input.deviceId, deviceSequence: input.deviceSequence, schemaVersion: 1, keyEpoch: 1 });
-  const operation = encode({ protocolVersion: 1, operationId: input.recordId, objectId: input.objectId, objectType: input.kind.split(".")[0] ?? "object", schemaVersion: 1, clock: { physicalMs: Date.now(), logical: 0 }, mutation: { kind: input.kind, data: input.data as never } });
-  const encrypted = encrypt(operation, aad, input.keys.contentKey);
-  const unsigned = { protocolVersion: 1, recordId: input.recordId, vaultId: input.vaultId, deviceId: input.deviceId, deviceSequence: input.deviceSequence, previousRecordHash: input.previousRecordHash, objectLocator, keyEpoch: 1, envelope: { protocolVersion: 1, suiteId, schemaVersion: 1, keyEpoch: 1, nonce: encrypted.nonce, ciphertext: encrypted.ciphertext } };
-  const unsignedBytes = encode(unsigned);
-  const signature = sign(unsignedBytes, signingPair(input.keys.signingSeed).privateKey);
-  const encoded = encode({ ...unsigned, signature });
-  return { recordId: input.recordId, deviceSequence: input.deviceSequence, objectLocator, previousRecordHash: input.previousRecordHash, keyEpoch: 1, nonce: encrypted.nonce, ciphertext: encrypted.ciphertext, signature, encoded, recordHash: hash(encoded) };
 }
 export function zeroize(...values: Uint8Array[]): void { values.forEach((value) => value.fill(0)); }

@@ -10,6 +10,8 @@ export interface VaultRow {
   protocolVersion: number;
 }
 
+export type DeviceStatus = "pending" | "active" | "revoked";
+
 export interface DeviceRow {
   id: string;
   vaultId: string;
@@ -17,6 +19,9 @@ export interface DeviceRow {
   signingPublicKey: Uint8Array;
   agreementPublicKey: Uint8Array;
   status: string;
+  authorizedAt: number;
+  approvedAt: number | null;
+  approvedByDeviceId: string | null;
   revokedAt: number | null;
 }
 
@@ -50,6 +55,15 @@ export interface EnrollDeviceInput {
   agreementPublicKey: Uint8Array;
 }
 
+export interface RecordAuthorizationInput {
+  statementHash: Uint8Array;
+  vaultId: string;
+  actingDeviceId: string;
+  subjectDeviceId: string;
+  action: string;
+  issuedAt: number;
+}
+
 export type Store = ReturnType<typeof createStore>;
 
 export function createStore(database: SyncDatabase) {
@@ -70,19 +84,53 @@ export function createStore(database: SyncDatabase) {
     insertVault: database.prepare(
       "INSERT INTO vault (id, protocol_version, created_at) VALUES (?, 1, ?) ON CONFLICT(id) DO NOTHING",
     ),
-    countActiveDevices: database.prepare(
-      "SELECT COUNT(*) AS total FROM device WHERE vault_id = ? AND status = 'active'",
-    ),
     findDevice: database.prepare(
       `SELECT id, vault_id AS vaultId, name,
               signing_public_key AS signingPublicKey,
               agreement_public_key AS agreementPublicKey,
-              status, revoked_at AS revokedAt
+              status, authorized_at AS authorizedAt, approved_at AS approvedAt,
+              approved_by_device_id AS approvedByDeviceId, revoked_at AS revokedAt
        FROM device WHERE id = ?`,
     ),
+    listDevices: database.prepare(
+      `SELECT id, vault_id AS vaultId, name,
+              signing_public_key AS signingPublicKey,
+              agreement_public_key AS agreementPublicKey,
+              status, authorized_at AS authorizedAt, approved_at AS approvedAt,
+              approved_by_device_id AS approvedByDeviceId, revoked_at AS revokedAt
+       FROM device WHERE vault_id = ? ORDER BY authorized_at, id`,
+    ),
     insertDevice: database.prepare(
+      `INSERT INTO device (id, vault_id, name, signing_public_key, agreement_public_key, status, authorized_at, approved_at)
+       VALUES (?, ?, ?, ?, ?, 'active', ?, ?)`,
+    ),
+    insertPendingDevice: database.prepare(
       `INSERT INTO device (id, vault_id, name, signing_public_key, agreement_public_key, status, authorized_at)
-       VALUES (?, ?, ?, ?, ?, 'active', ?)`,
+       VALUES (?, ?, ?, ?, ?, 'pending', ?)`,
+    ),
+    activateDevice: database.prepare(
+      `UPDATE device SET status = 'active', approved_at = ?, approved_by_device_id = ?
+       WHERE id = ? AND status = 'pending'`,
+    ),
+    revokeDevice: database.prepare(
+      "UPDATE device SET status = 'revoked', revoked_at = ? WHERE id = ? AND status <> 'revoked'",
+    ),
+    upsertGrant: database.prepare(
+      `INSERT INTO device_access_grant (device_id, vault_id, grant_blob, created_at)
+       VALUES (?, ?, ?, ?)
+       ON CONFLICT(device_id) DO UPDATE SET grant_blob = excluded.grant_blob, created_at = excluded.created_at`,
+    ),
+    findGrant: database.prepare(
+      "SELECT grant_blob AS grantBlob FROM device_access_grant WHERE device_id = ?",
+    ),
+    deleteGrant: database.prepare("DELETE FROM device_access_grant WHERE device_id = ?"),
+    findAuthorization: database.prepare(
+      "SELECT 1 AS spent FROM device_authorization WHERE statement_hash = ?",
+    ),
+    insertAuthorization: database.prepare(
+      `INSERT INTO device_authorization
+         (statement_hash, vault_id, acting_device_id, subject_device_id, action, issued_at, received_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
     ),
     findRecordByRecordId: database.prepare(
       "SELECT encoded_record AS encodedRecord FROM sync_record WHERE vault_id = ? AND record_id = ?",
@@ -129,12 +177,12 @@ export function createStore(database: SyncDatabase) {
       return statements.findVault.get(vaultId) as VaultRow | undefined;
     },
 
-    countActiveDevices(vaultId: string): number {
-      return (statements.countActiveDevices.get(vaultId) as { total: number }).total;
-    },
-
     findDevice(deviceId: string): DeviceRow | undefined {
       return statements.findDevice.get(deviceId) as DeviceRow | undefined;
+    },
+
+    listDevices(vaultId: string): DeviceRow[] {
+      return statements.listDevices.all(vaultId) as DeviceRow[];
     },
 
     /** Bootstraps a vault and its first device as one unit. */
@@ -149,8 +197,73 @@ export function createStore(database: SyncDatabase) {
           Buffer.from(input.signingPublicKey),
           Buffer.from(input.agreementPublicKey),
           now,
+          now,
         );
       }).immediate();
+    },
+
+    /**
+     * A device joining an existing vault lands with no rights at all. It becomes
+     * usable only once a trusted device signs an approval for exactly these keys.
+     */
+    enrollPendingDevice(input: EnrollDeviceInput) {
+      statements.insertPendingDevice.run(
+        input.deviceId,
+        input.vaultId,
+        input.name,
+        Buffer.from(input.signingPublicKey),
+        Buffer.from(input.agreementPublicKey),
+        Date.now(),
+      );
+    },
+
+    /**
+     * Records the authorization and applies it as one unit. `false` means the
+     * statement was already spent, so nothing changed.
+     */
+    applyAuthorization(
+      input: RecordAuthorizationInput & { grant?: Uint8Array },
+    ): boolean {
+      const now = Date.now();
+      return database.transaction(() => {
+        try {
+          statements.insertAuthorization.run(
+            Buffer.from(input.statementHash),
+            input.vaultId,
+            input.actingDeviceId,
+            input.subjectDeviceId,
+            input.action,
+            input.issuedAt,
+            now,
+          );
+        } catch {
+          return false;
+        }
+
+        if (input.action === "approve") {
+          statements.upsertGrant.run(
+            input.subjectDeviceId,
+            input.vaultId,
+            Buffer.from(input.grant!),
+            now,
+          );
+          statements.activateDevice.run(now, input.actingDeviceId, input.subjectDeviceId);
+        } else {
+          // A revoked device must not keep a blob it could still open.
+          statements.deleteGrant.run(input.subjectDeviceId);
+          statements.revokeDevice.run(now, input.subjectDeviceId);
+        }
+        return true;
+      }).immediate();
+    },
+
+    isAuthorizationSpent(statementHash: Uint8Array): boolean {
+      return statements.findAuthorization.get(Buffer.from(statementHash)) !== undefined;
+    },
+
+    findDeviceGrant(deviceId: string): Uint8Array | undefined {
+      const row = statements.findGrant.get(deviceId) as { grantBlob: Uint8Array } | undefined;
+      return row?.grantBlob;
     },
 
     findRecordByRecordId(vaultId: string, recordId: string): Uint8Array | undefined {

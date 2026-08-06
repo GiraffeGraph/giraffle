@@ -65,4 +65,33 @@ export const MIGRATIONS: readonly string[] = [
 
   CREATE INDEX checkpoint_vault_covers ON checkpoint(vault_id, covers_server_seq);
   `,
+  `
+  ALTER TABLE device ADD COLUMN approved_at INTEGER;
+  ALTER TABLE device ADD COLUMN approved_by_device_id TEXT;
+
+  -- The grant is sealed to the recipient device's X25519 key by an already
+  -- trusted device. This relay stores it byte-for-byte and has no key that
+  -- opens it, which is why it lives in its own table with no readable columns.
+  CREATE TABLE device_access_grant (
+    device_id  TEXT PRIMARY KEY REFERENCES device(id) ON DELETE CASCADE,
+    vault_id   TEXT NOT NULL REFERENCES vault(id) ON DELETE CASCADE,
+    grant_blob BLOB NOT NULL,
+    created_at INTEGER NOT NULL
+  ) STRICT;
+
+  -- One row per accepted authorization statement. The primary key makes a
+  -- replayed statement a conflict rather than a second state change, so a
+  -- captured approval cannot resurrect a device that was revoked afterwards.
+  CREATE TABLE device_authorization (
+    statement_hash    BLOB PRIMARY KEY,
+    vault_id          TEXT NOT NULL REFERENCES vault(id) ON DELETE CASCADE,
+    acting_device_id  TEXT NOT NULL,
+    subject_device_id TEXT NOT NULL,
+    action            TEXT NOT NULL,
+    issued_at         INTEGER NOT NULL,
+    received_at       INTEGER NOT NULL
+  ) STRICT;
+
+  CREATE INDEX device_authorization_subject ON device_authorization(vault_id, subject_device_id);
+  `,
 ];

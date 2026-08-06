@@ -1,9 +1,11 @@
 import { createHash } from "node:crypto";
 import type { MiddlewareHandler } from "hono";
 import { consumeRateLimit } from "../rate-limit.ts";
-import type { Store, VaultRow } from "../storage/queries.ts";
+import type { DeviceRow, Store, VaultRow } from "../storage/queries.ts";
 
 const IDENTIFIER = /^[A-Za-z0-9._:-]{1,128}$/;
+
+export const DEVICE_HEADER = "X-Giraffle-Device-Id";
 
 export const SYNC_RATE_LIMIT = { limit: 120, windowMs: 60_000, blockMs: 60_000 } as const;
 
@@ -16,6 +18,7 @@ export interface AuthorizedVault {
 export interface AppEnv {
   Variables: {
     auth: AuthorizedVault;
+    device: DeviceRow;
   };
 }
 
@@ -72,6 +75,39 @@ export function vaultAuth(store: Store): MiddlewareHandler<AppEnv> {
       vault: store.findVault(vaultId) ?? null,
     });
 
+    await next();
+  };
+}
+
+/**
+ * Record traffic is device-scoped, not token-scoped: the bearer token is an
+ * operator credential that every device in the vault shares. A device that is
+ * still waiting for approval, or that was revoked, presents a perfectly valid
+ * token and must still be turned away here.
+ */
+export function activeDevice(store: Store): MiddlewareHandler<AppEnv> {
+  return async (c, next) => {
+    // An unknown vault is answered by the route, which keeps existence hidden.
+    if (!c.get("auth").vault) {
+      return next();
+    }
+
+    const deviceId = c.req.header(DEVICE_HEADER)?.trim() ?? "";
+    if (!IDENTIFIER.test(deviceId)) {
+      return c.json({ error: `${DEVICE_HEADER} must identify the calling device` }, 400);
+    }
+
+    const device = store.findDevice(deviceId);
+    if (
+      !device ||
+      device.vaultId !== c.get("auth").vaultId ||
+      device.status !== "active" ||
+      device.revokedAt !== null
+    ) {
+      return c.json({ error: "This device is not authorized to sync this vault" }, 403);
+    }
+
+    c.set("device", device);
     await next();
   };
 }

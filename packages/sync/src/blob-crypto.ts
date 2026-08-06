@@ -778,12 +778,11 @@ export function verifyBlobChunksAgainstManifest(
     if (ordered[chunk.chunkIndex]) {
       throw new BlobCryptoError("Blob chunk set contains a duplicate index");
     }
-    if (
-      !bytesEqual(
-        encryptedBlobChunkHash(crypto, chunk),
-        manifest.encryptedChunkHashes[chunk.chunkIndex],
-      )
-    ) {
+    const expectedChunkHash = manifest.encryptedChunkHashes[chunk.chunkIndex];
+    if (!expectedChunkHash) {
+      throw new BlobCryptoError("Blob chunk index is outside the manifest");
+    }
+    if (!bytesEqual(encryptedBlobChunkHash(crypto, chunk), expectedChunkHash)) {
       throw new BlobCryptoError("Blob chunk hash does not match manifest");
     }
     ordered[chunk.chunkIndex] = chunk;

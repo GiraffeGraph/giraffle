@@ -1,3 +1,4 @@
+import { router } from "expo-router";
 import { Alert, StyleSheet, Text, View } from "react-native";
 import { AccessLockSection } from "@/components/settings/AccessLockSection";
 import { DeviceConnectionSection } from "@/components/settings/DeviceConnectionSection";
@@ -48,6 +49,15 @@ export default function Settings() {
       <AccessLockSection />
 
       <DeviceConnectionSection />
+
+      <View style={styles.safety}>
+        <Text style={[typography.label, styles.sectionLabel, { color: colors.muted }]}>Your devices</Text>
+        <Button
+          label="Devices"
+          icon="phone-portrait-outline"
+          onPress={() => router.push("/devices")}
+        />
+      </View>
 
       <View style={styles.safety}>
         <Text style={[typography.label, styles.sectionLabel, { color: colors.muted }]}>On this device</Text>

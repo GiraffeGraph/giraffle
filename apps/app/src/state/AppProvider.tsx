@@ -10,7 +10,7 @@ import {
 import { AppState, type AppStateStatus } from "react-native";
 import { createId } from "@/platform/ids";
 import { EMPTY_SNAPSHOT, type AppSnapshot, type VaultSession } from "@/state/snapshot";
-import { initializeCrypto } from "@/infrastructure/crypto/nativeCrypto";
+import { agreementPair, initializeCrypto } from "@/infrastructure/crypto/nativeCrypto";
 import {
   deleteEncryptedDatabase,
   openEncryptedDatabase,
@@ -32,9 +32,20 @@ import {
   createLocalKeys,
   hasLocalVault,
   loadLocalKeys,
+  saveVaultKeys,
   type VaultKeys,
 } from "@/infrastructure/secure-storage/keyStore";
-import { clearSyncConfiguration } from "@/infrastructure/sync/syncClient";
+import {
+  clearSyncConfiguration,
+  enrollDevice,
+  loadSyncConfiguration,
+  saveSyncConfiguration,
+  type SyncConfiguration,
+} from "@/infrastructure/sync/syncClient";
+import { nativeCryptoProvider } from "@/sync/cryptoProvider";
+import { deviceFingerprint } from "@/sync/deviceIdentity";
+import { claimVaultAccess } from "@/sync/deviceLink";
+import { createSyncEngine, type SyncOutcome } from "@/sync/engine";
 import {
   clearVaultWrapper,
   createPassphraseWrapper,
@@ -44,6 +55,13 @@ import {
 } from "@/infrastructure/secure-storage/vaultWrapper";
 
 type UnlockMethod = "passphrase" | "pin";
+
+/** What the joining device shows while a trusted device decides about it. */
+export interface PendingJoin {
+  vaultId: string;
+  deviceId: string;
+  fingerprint: string;
+}
 
 interface AppContextValue {
   phase: "booting" | "onboarding" | "locked" | "ready" | "error";
@@ -55,6 +73,16 @@ interface AppContextValue {
   pinEnabled: boolean;
   lockTimeoutMs: number;
   createVault(passphrase: string, pin?: string): Promise<VaultSession>;
+  beginJoin(input: {
+    server: SyncConfiguration;
+    vaultId: string;
+    passphrase: string;
+    deviceName?: string;
+  }): Promise<PendingJoin>;
+  /** `false` while the trusted device has not approved this one yet. */
+  completeJoin(): Promise<boolean>;
+  cancelJoin(): Promise<void>;
+  syncNow(): Promise<SyncOutcome>;
   unlock(credential: string, method?: UnlockMethod): Promise<void>;
   setQuickPin(pin: string | null): Promise<void>;
   setLockTimeout(timeoutMs: number): Promise<void>;
@@ -98,6 +126,10 @@ export function AppProvider({ children }: PropsWithChildren) {
   const pinFailures = useRef(0);
   const pinBlockedUntil = useRef(0);
   const mutationQueue = useRef<Promise<void>>(Promise.resolve());
+  const joinRef = useRef<
+    (PendingJoin & { keys: { databaseKey: Uint8Array; vaultKeys: VaultKeys }; passphrase: string }) | null
+  >(null);
+  const engineRef = useRef<ReturnType<typeof createSyncEngine> | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -144,6 +176,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     } finally {
       if (keyRef.current) clearKeyMaterial(keyRef.current);
       keyRef.current = null;
+      engineRef.current = null;
       mutationQueue.current = Promise.resolve();
       setRepository(null);
       setSession(null);
@@ -253,6 +286,104 @@ export function AppProvider({ children }: PropsWithChildren) {
     },
     [connect],
   );
+
+  /**
+   * Publishes this device's public keys and stops. Nothing is decrypted and no
+   * vault key exists here yet: the device is inert until a trusted one seals the
+   * vault secrets to the exact keys whose fingerprint the human just compared.
+   */
+  const beginJoin = useCallback<AppContextValue["beginJoin"]>(
+    async ({ server, vaultId, passphrase, deviceName }) => {
+      if (passphrase.length < 12) throw new Error("Use at least 12 characters");
+
+      const keys = await stage("create-local-keys", () => createLocalKeys());
+      try {
+        const deviceId = createId();
+        await stage("save-connection", () => saveSyncConfiguration(server));
+
+        const database = await stage("open-database", () =>
+          openEncryptedDatabase(keys.databaseKey),
+        );
+        const repository = new VaultRepository({
+          database,
+          vaultId,
+          deviceId,
+          keys: keys.vaultKeys,
+        });
+        await stage("repository-initialize", () => repository.initialize());
+        await stage("device-enrollment", () =>
+          enrollDevice(server, { vaultId, deviceId, repository, ...(deviceName ? { name: deviceName } : {}) }),
+        );
+        await database.closeAsync().catch(() => undefined);
+
+        const pending: PendingJoin = {
+          vaultId,
+          deviceId,
+          fingerprint: deviceFingerprint(nativeCryptoProvider, repository.deviceIdentity()),
+        };
+        joinRef.current = { ...pending, keys, passphrase };
+        return pending;
+      } catch (cause) {
+        clearKeyMaterial(keys);
+        await Promise.allSettled([clearLocalKeys(), clearSyncConfiguration(), deleteEncryptedDatabase()]);
+        throw cause;
+      }
+    },
+    [],
+  );
+
+  const completeJoin = useCallback(async () => {
+    const join = joinRef.current;
+    if (!join) throw new Error("No device is waiting to join");
+
+    const server = await loadSyncConfiguration();
+    if (!server) throw new Error("The saved connection could not be read");
+
+    const claimed = await claimVaultAccess(server, {
+      vaultId: join.vaultId,
+      deviceId: join.deviceId,
+      agreementKeys: agreementPair(join.keys.vaultKeys.agreementSeed),
+    });
+    if (!claimed) return false;
+
+    // The locally generated placeholders are replaced by the vault's real keys;
+    // the device identity seeds stay as they are, because they are this device's.
+    const vaultKeys: VaultKeys = { ...join.keys.vaultKeys, ...claimed.secrets };
+    await saveVaultKeys(vaultKeys);
+    await createPassphraseWrapper(join.vaultId, join.passphrase, vaultKeys.vaultRootKey);
+
+    joinRef.current = null;
+    await connect({ databaseKey: join.keys.databaseKey, vaultKeys }, join.vaultId, join.deviceId);
+    return true;
+  }, [connect]);
+
+  const cancelJoin = useCallback(async () => {
+    const join = joinRef.current;
+    joinRef.current = null;
+    if (join) clearKeyMaterial(join.keys);
+    await Promise.allSettled([
+      clearLocalKeys(),
+      clearVaultWrapper(),
+      clearSyncConfiguration(),
+      deleteEncryptedDatabase(),
+    ]);
+  }, []);
+
+  const syncNow = useCallback(async () => {
+    if (!repository || !session) throw new Error("Vault is locked");
+    const server = await loadSyncConfiguration();
+    if (!server) throw new Error("Save a connection first");
+
+    engineRef.current ??= createSyncEngine({
+      config: server,
+      vaultId: session.vaultId,
+      deviceId: session.deviceId,
+      repository,
+    });
+    const outcome = await engineRef.current.run();
+    setSnapshot(await repository.snapshot());
+    return outcome;
+  }, [repository, session]);
 
   const unlock = useCallback(
     async (credential: string, method: UnlockMethod = "passphrase") => {
@@ -394,6 +525,10 @@ export function AppProvider({ children }: PropsWithChildren) {
     pinEnabled,
     lockTimeoutMs,
     createVault,
+    beginJoin,
+    completeJoin,
+    cancelJoin,
+    syncNow,
     unlock,
     setQuickPin,
     setLockTimeout,

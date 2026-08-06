@@ -27,6 +27,14 @@ export async function createLocalKeys(): Promise<{ databaseKey: Uint8Array; vaul
   await SecureStore.setItemAsync(VAULT_MARKER, "1", { keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY });
   return { databaseKey, vaultKeys };
 }
+/**
+ * Rewrites the stored vault secrets. A device that joins an existing vault
+ * generates its own identity seeds first and only learns the vault-wide keys
+ * once a trusted device has sealed them to it.
+ */
+export async function saveVaultKeys(vaultKeys: VaultKeys): Promise<void> {
+  await SecureStore.setItemAsync(VAULT_KEYS, JSON.stringify(Object.fromEntries(Object.entries(vaultKeys).map(([key, value]) => [key, encode(value)]))), { keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY });
+}
 export async function loadLocalKeys(requireAuthentication = false): Promise<{ databaseKey: Uint8Array; vaultKeys: VaultKeys } | null> {
   await ready;
   const options: SecureStore.SecureStoreOptions = { requireAuthentication, authenticationPrompt: "Unlock Giraffle", keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY };

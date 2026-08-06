@@ -36,6 +36,19 @@ CREATE INDEX idx_links_target ON links(target_page_id);
 CREATE INDEX idx_canvas_refs_page ON canvas_references(page_id);
 CREATE INDEX idx_outbox_retry ON encrypted_outbox(next_attempt_at);
 `
+}, {
+  version: 2,
+  name: "convergent-merge-state",
+  sql: `
+ALTER TABLE vault_metadata ADD COLUMN clock_physical_ms INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE vault_metadata ADD COLUMN clock_logical INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE blocks ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0;
+CREATE TABLE object_registers(object_id TEXT NOT NULL, field TEXT NOT NULL, physical_ms INTEGER NOT NULL, logical INTEGER NOT NULL, device_id TEXT NOT NULL, operation_id TEXT NOT NULL, PRIMARY KEY(object_id, field));
+CREATE TABLE page_documents(page_id TEXT PRIMARY KEY REFERENCES pages(id) ON DELETE CASCADE, yjs_state BLOB NOT NULL, updated_at INTEGER NOT NULL);
+CREATE TABLE deferred_records(record_id TEXT PRIMARY KEY, server_seq INTEGER NOT NULL, key_epoch INTEGER NOT NULL, record BLOB NOT NULL, reason TEXT NOT NULL, created_at INTEGER NOT NULL);
+CREATE INDEX idx_blocks_page_live ON blocks(page_id, deleted);
+CREATE INDEX idx_deferred_seq ON deferred_records(server_seq);
+`
 }];
 
 export const CURRENT_SCHEMA_VERSION = migrations.at(-1)?.version ?? 0;

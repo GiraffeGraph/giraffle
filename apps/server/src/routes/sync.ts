@@ -1,32 +1,26 @@
 import { Hono } from "hono";
 import {
   bytesEqual,
-  createSodiumCryptoProvider,
   decodeSignedSyncRecord,
   encodeSignedSyncRecord,
   hashSignedSyncRecord,
   MAX_ENCODED_SYNC_RECORD_BYTES,
   verifySyncRecord,
   zeroRecordHash,
-  type E2eeCryptoProvider,
 } from "@giraffle/protocol";
+import { getCryptoProvider } from "../crypto.ts";
 import { decodeBoundedBase64, encodeBase64 } from "../encoding.ts";
 import type { Store } from "../storage/queries.ts";
-import type { AppEnv } from "./auth.ts";
+import { activeDevice, type AppEnv } from "./auth.ts";
 
 const MAX_BATCH = 100;
 const MAX_PULL_LIMIT = 100;
 const DECIMAL = /^\d+$/;
 
-let cryptoProvider: Promise<E2eeCryptoProvider> | null = null;
-
-function getCryptoProvider(): Promise<E2eeCryptoProvider> {
-  cryptoProvider ??= createSodiumCryptoProvider();
-  return cryptoProvider;
-}
-
 export function syncRoutes(store: Store) {
   const routes = new Hono<AppEnv>();
+
+  routes.use("/*", activeDevice(store));
 
   routes.post("/push", async (c) => {
     const auth = c.get("auth");
@@ -49,6 +43,7 @@ export function syncRoutes(store: Store) {
     // Resolved before the transaction opens: better-sqlite3 transactions are
     // synchronous and cannot await.
     const crypto = await getCryptoProvider();
+    const caller = c.get("device");
     let accepted: string[];
 
     try {
@@ -63,9 +58,12 @@ export function syncRoutes(store: Store) {
             throw new Error("Record vault does not match route");
           }
 
+          // A device may only extend its own hash chain, so the record author
+          // and the caller identified in the request must be the same device.
           const device = store.findDevice(record.deviceId);
           if (
             !device ||
+            device.id !== caller.id ||
             device.vaultId !== auth.vaultId ||
             device.status !== "active" ||
             device.revokedAt

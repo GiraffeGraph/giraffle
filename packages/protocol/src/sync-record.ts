@@ -430,7 +430,8 @@ export function createSyncRecord(
     plaintext: encodeCanonical(operationToCanonical(input.operation)),
     additionalData: buildAdditionalData(recordBase),
     key: input.contentKey,
-    nonce: input.nonce,
+    // Omitted rather than passed as undefined so the provider picks its own.
+    ...(input.nonce ? { nonce: input.nonce } : {}),
   });
 
   const unsigned: UnsignedSyncRecordV1 = {
@@ -536,7 +537,7 @@ export function bytesEqual(left: Uint8Array, right: Uint8Array) {
 
   let difference = 0;
   for (let index = 0; index < left.length; index += 1) {
-    difference |= left[index] ^ right[index];
+    difference |= (left[index] ?? 0) ^ (right[index] ?? 0);
   }
   return difference === 0;
 }

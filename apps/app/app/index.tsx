@@ -1,4 +1,4 @@
-import { Redirect } from "expo-router";
+import { Redirect, router } from "expo-router";
 import { useState } from "react";
 import {
   Image,
@@ -295,6 +295,15 @@ export default function VaultEntry() {
                 onPress={() => void submit()}
               />
             )}
+
+            {isNewWorkspace ? (
+              <Button
+                label="I already use Giraffle on another device"
+                icon="link-outline"
+                disabled={busy}
+                onPress={() => router.push("/join")}
+              />
+            ) : null}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

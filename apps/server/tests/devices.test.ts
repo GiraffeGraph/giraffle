@@ -5,6 +5,8 @@ import {
   DEVICE_ID,
   encode,
   enroll,
+  enrollSecondDevice,
+  SECOND_DEVICE_ID,
   VAULT_ID,
   type TestHarness,
 } from "./helpers.ts";
@@ -55,14 +57,22 @@ describe("device enrollment", () => {
     expect(await response.json()).toEqual({ deviceId: DEVICE_ID, status: "active" });
   });
 
-  it("refuses a second device that no trusted device authorized", async () => {
+  it("admits a second device as pending rather than active", async () => {
     expect((await enroll(harness)).status).toBe(201);
 
-    const response = await post(harness, enrollBody(harness, { deviceId: "device-beta" }));
-    expect(response.status).toBe(409);
-    expect(await response.json()).toEqual({
-      error: "A trusted device must authorize additional enrollment",
-    });
+    const response = await enrollSecondDevice(harness);
+    expect(response.status).toBe(202);
+    expect(await response.json()).toEqual({ deviceId: SECOND_DEVICE_ID, status: "pending" });
+    expect(harness.store.findDevice(SECOND_DEVICE_ID)?.status).toBe("pending");
+  });
+
+  it("replays a pending enrollment without resetting its state", async () => {
+    expect((await enroll(harness)).status).toBe(201);
+    expect((await enrollSecondDevice(harness)).status).toBe(202);
+
+    const replay = await enrollSecondDevice(harness);
+    expect(replay.status).toBe(200);
+    expect(await replay.json()).toEqual({ deviceId: SECOND_DEVICE_ID, status: "pending" });
   });
 
   it("refuses a re-enrollment that presents a different signing key", async () => {
@@ -77,6 +87,9 @@ describe("device enrollment", () => {
     );
 
     expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({
+      error: "This device id is already enrolled with other keys",
+    });
   });
 
   it("rejects malformed enrollment payloads", async () => {
@@ -88,5 +101,33 @@ describe("device enrollment", () => {
         .status,
     ).toBe(400);
     expect((await post(harness, "{not json")).status).toBe(400);
+  });
+});
+
+describe("device roster", () => {
+  it("lists every device with its public keys and status", async () => {
+    expect((await enroll(harness)).status).toBe(201);
+    expect((await enrollSecondDevice(harness)).status).toBe(202);
+
+    const response = await harness.app.request(`/api/v1/vaults/${VAULT_ID}/devices`, {
+      headers: authHeaders(),
+    });
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as {
+      devices: { deviceId: string; status: string; signingPublicKey: string }[];
+    };
+    expect(body.devices.map((device) => [device.deviceId, device.status])).toEqual([
+      [DEVICE_ID, "active"],
+      [SECOND_DEVICE_ID, "pending"],
+    ]);
+    expect(body.devices[0]!.signingPublicKey).toBe(encode(harness.signingPublicKey));
+  });
+
+  it("answers 404 for a vault that has no devices at all", async () => {
+    const response = await harness.app.request(`/api/v1/vaults/${VAULT_ID}/devices`, {
+      headers: authHeaders(),
+    });
+    expect(response.status).toBe(404);
   });
 });
