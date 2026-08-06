@@ -150,6 +150,7 @@ export function updateBlockInDocument(
       return node;
     }
 
+    const nextContent = update.content ?? node.content;
     const nextNode = ensureBlockIds({
       ...node,
       ...update,
@@ -158,7 +159,7 @@ export function updateBlockInDocument(
         ...toAttributes(update.attrs),
         blockId,
       },
-      content: update.content ?? node.content,
+      ...(nextContent ? { content: nextContent } : {}),
     });
 
     return nextNode;

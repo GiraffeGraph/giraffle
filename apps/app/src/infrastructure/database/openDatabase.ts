@@ -1,5 +1,5 @@
+import { positionBetween } from "@giraffle/domain";
 import * as SQLite from "expo-sqlite";
-import { positionBetween } from "@/domain/ids";
 import { migrations } from "./migrations";
 
 const DATABASE_NAME = "giraffle-vault.db";

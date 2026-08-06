@@ -1,9 +1,5 @@
-import type { Id, Page } from "../models";
-
-export interface PageBreadcrumb {
-  id: Id;
-  title: string;
-}
+import type { Id, Page } from "../entities";
+import type { PageBreadcrumb } from "../note/note.types";
 
 /**
  * Ancestors of a page, outermost first, excluding the page itself. The visited
@@ -19,7 +15,7 @@ export function pageAncestors(pages: Page[], pageId: Id): PageBreadcrumb[] {
     const parent = byId.get(currentId);
     if (!parent) break;
     visited.add(parent.id);
-    ancestors.unshift({ id: parent.id, title: parent.title });
+    ancestors.unshift({ id: parent.id, title: parent.title, icon: parent.icon });
     currentId = parent.parentId;
   }
 

@@ -1,9 +1,9 @@
+import type { Id, Page } from "@giraffle/domain";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { DropZone } from "@/components/dnd/DragSortContext";
 import { Icon } from "@/components/ui/primitives";
 import { useTheme } from "@/design/ThemeProvider";
 import { radii, typography } from "@/design/tokens";
-import type { Id, Page } from "@/domain/models";
 
 const INDENT_STEP = 16;
 

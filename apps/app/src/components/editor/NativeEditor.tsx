@@ -1,9 +1,9 @@
+import type { TiptapDocument } from "@giraffle/domain";
 import { useCallback, useEffect, useRef } from "react";
 import { StyleSheet } from "react-native";
 import { WebView, type WebViewMessageEvent } from "react-native-webview";
 import { useTheme } from "@/design/ThemeProvider";
-import { parseEditorMessage } from "@/domain/editor/bridge";
-import type { TiptapDocument } from "@/domain/models";
+import { parseEditorMessage } from "./bridge";
 import { EDITOR_HTML } from "./editorArtifact";
 
 // Synthetic origin: the editor never touches the network, the host only gives

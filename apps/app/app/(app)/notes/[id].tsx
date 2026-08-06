@@ -1,3 +1,11 @@
+import {
+  blocksToMarkdown,
+  pageAncestors,
+  pageLabel,
+  selectableParentPages,
+  type Page as PageModel,
+  type TiptapDocument,
+} from "@giraffle/domain";
 import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, AppState, Modal, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
@@ -7,9 +15,6 @@ import { EditableText } from "@/components/ui/EditableText";
 import { Button, DividerRow, EmptyState, Icon } from "@/components/ui/primitives";
 import { useTheme } from "@/design/ThemeProvider";
 import { spacing, typography } from "@/design/tokens";
-import { exportMarkdown } from "@/domain/import-export/markdown";
-import type { Page as PageModel, TiptapDocument } from "@/domain/models";
-import { pageAncestors, pageLabel, selectableParentPages } from "@/domain/pages/tree";
 import { useApp } from "@/state/AppProvider";
 
 type SaveState = "saved" | "saving" | "error";
@@ -291,7 +296,7 @@ export default function NoteEditor() {
         pageId={page.id}
         pinned={page.isPinned}
         archived={page.isArchived}
-        markdown={exportMarkdown(draft)}
+        markdown={blocksToMarkdown(draft)}
         onMove={() => {
           setMenu(false);
           setMoveSheet(true);

@@ -1,8 +1,7 @@
+import { documentPlainText, extractCanvasReferences, parseWikilinks, positionBetween, EMPTY_DOCUMENT, type Board, type BoardColumn, type BoardStatus, type Canvas, type CanvasElement, type Page, type PagePriority, type Task, type TaskPriority, type TiptapDocument } from "@giraffle/domain";
 import type { SQLiteDatabase } from "expo-sqlite";
-import { createId, positionBetween } from "@/domain/ids";
-import { extractCanvasReferences } from "@/domain/canvas/references";
-import { documentPlainText, extractWikilinks } from "@/domain/links/wikilinks";
-import { EMPTY_DOCUMENT, type AppSnapshot, type Board, type BoardColumn, type BoardStatus, type Canvas, type CanvasElement, type Page, type PagePriority, type Task, type TaskPriority, type TiptapDocument } from "@/domain/models";
+import { createId } from "@/platform/ids";
+import type { AppSnapshot } from "@/state/snapshot";
 import { createEncryptedOperation, hash, signingPair, agreementPair } from "../crypto/nativeCrypto";
 import type { VaultKeys } from "../secure-storage/keyStore";
 
@@ -184,7 +183,7 @@ export class VaultRepository {
     await this.mutate(pageId, "page.document", { document }, async (tx, now) => {
       const body = documentPlainText(document); await tx.runAsync("UPDATE blocks SET content_json=?,updated_at=? WHERE id=?", JSON.stringify(document), now, `${pageId}-document`); await tx.runAsync("UPDATE pages SET updated_at=? WHERE id=?", now, pageId); await this.rebuildPageSearch(tx,pageId); await tx.runAsync("DELETE FROM links WHERE source_page_id=?", pageId);
       const titles = await tx.getAllAsync<{ id: string; title: string }>("SELECT id,title FROM pages WHERE deleted=0"); const byTitle = new Map(titles.map((page) => [page.title.toLocaleLowerCase(), page.id]));
-      for (const target of extractWikilinks(body)) await tx.runAsync("INSERT INTO links(id,source_page_id,source_block_id,target_raw,target_page_id) VALUES (?,?,?,?,?)", createId(), pageId, `${pageId}-document`, target, byTitle.get(target.toLocaleLowerCase()) ?? null);
+      for (const target of new Set(parseWikilinks(body).map((link) => link.target))) await tx.runAsync("INSERT INTO links(id,source_page_id,source_block_id,target_raw,target_page_id) VALUES (?,?,?,?,?)", createId(), pageId, `${pageId}-document`, target, byTitle.get(target.toLocaleLowerCase()) ?? null);
     });
   }
   async deletePage(id: string): Promise<void> {

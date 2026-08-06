@@ -8,8 +8,8 @@ import {
   type PropsWithChildren,
 } from "react";
 import { AppState, type AppStateStatus } from "react-native";
-import { createId } from "@/domain/ids";
-import { EMPTY_SNAPSHOT, type AppSnapshot, type VaultSession } from "@/domain/models";
+import { createId } from "@/platform/ids";
+import { EMPTY_SNAPSHOT, type AppSnapshot, type VaultSession } from "@/state/snapshot";
 import { initializeCrypto } from "@/infrastructure/crypto/nativeCrypto";
 import {
   deleteEncryptedDatabase,

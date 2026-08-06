@@ -1,3 +1,4 @@
+import type { Task } from "@giraffle/domain";
 import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useMemo } from "react";
 import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
@@ -13,7 +14,6 @@ import { EditableText } from "@/components/ui/EditableText";
 import { Button, EmptyState } from "@/components/ui/primitives";
 import { useTheme } from "@/design/ThemeProvider";
 import { spacing, typography } from "@/design/tokens";
-import type { Task } from "@/domain/models";
 import { useApp } from "@/state/AppProvider";
 
 /** Cards follow their board position; the shared task list is ordered for the agenda screens. */

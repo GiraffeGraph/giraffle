@@ -1,3 +1,11 @@
+import {
+  DEFAULT_DURATION_MINUTES,
+  addDays,
+  dayKey,
+  formatClock,
+  formatDue,
+  parseDue,
+} from "@giraffle/domain";
 import { router } from "expo-router";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
@@ -8,14 +16,6 @@ import { DayGrid } from "@/components/stride/DayGrid";
 import { Button, DividerRow, EmptyState, Icon, Segment } from "@/components/ui/primitives";
 import { useTheme } from "@/design/ThemeProvider";
 import { radii, spacing, typography } from "@/design/tokens";
-import {
-  DEFAULT_DURATION_MINUTES,
-  addDays,
-  dayKey,
-  formatClock,
-  formatDue,
-  parseDue,
-} from "@/domain/stride/schedule";
 import { useApp } from "@/state/AppProvider";
 
 type ViewMode = "day" | "week";

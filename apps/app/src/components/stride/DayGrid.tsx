@@ -1,9 +1,3 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { Gesture, GestureDetector } from "react-native-gesture-handler";
-import { useTheme } from "@/design/ThemeProvider";
-import { radii, typography } from "@/design/tokens";
-import type { Task } from "@/domain/models";
 import {
   DEFAULT_DURATION_MINUTES,
   clampMinutes,
@@ -11,7 +5,13 @@ import {
   minutesNow,
   parseDue,
   snapMinutes,
-} from "@/domain/stride/schedule";
+  type Task,
+} from "@giraffle/domain";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import { useTheme } from "@/design/ThemeProvider";
+import { radii, typography } from "@/design/tokens";
 
 const HOUR_HEIGHT = 56;
 const MIN_BLOCK_MINUTES = 15;

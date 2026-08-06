@@ -1,3 +1,4 @@
+import type { CanvasElement } from "@giraffle/domain";
 import { router, useLocalSearchParams } from "expo-router";
 import { useRef, useState } from "react";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
@@ -7,8 +8,7 @@ import { EditableText } from "@/components/ui/EditableText";
 import { Button, DividerRow, EmptyState, Icon } from "@/components/ui/primitives";
 import { useTheme } from "@/design/ThemeProvider";
 import { spacing, typography } from "@/design/tokens";
-import { createId } from "@/domain/ids";
-import type { CanvasElement } from "@/domain/models";
+import { createId } from "@/platform/ids";
 import { useApp } from "@/state/AppProvider";
 
 type CanvasSaveState = "saved" | "saving" | "error";

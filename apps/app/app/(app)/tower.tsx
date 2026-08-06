@@ -1,3 +1,4 @@
+import type { PagePriority, TaskPriority } from "@giraffle/domain";
 import { router } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
@@ -13,7 +14,6 @@ import { Page } from "@/components/ui/Page";
 import { Button, DividerRow, EmptyState, Icon } from "@/components/ui/primitives";
 import { useTheme } from "@/design/ThemeProvider";
 import { spacing, typography } from "@/design/tokens";
-import type { PagePriority, TaskPriority } from "@/domain/models";
 import { useApp } from "@/state/AppProvider";
 
 const quadrants = [

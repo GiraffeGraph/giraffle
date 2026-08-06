@@ -100,7 +100,7 @@ function nodeToMarkdown(node: BlockNodeContent): string {
 
     case "table": {
       const rows = extractTableRows(node);
-      const [header, ...body] = rows;
+      const [header = [], ...body] = rows;
       const headerLine = `| ${header.join(" | ")} |`;
       const dividerLine = `| ${header.map(() => "---").join(" | ")} |`;
       const bodyLines = body.map((row) => `| ${row.join(" | ")} |`).join("\n");
@@ -171,11 +171,12 @@ function inlineToMarkdown(content?: TiptapNode[]): string {
  */
 export function markdownToBlocks(markdown: string): TiptapDocument {
   const lines = markdown.split("\n");
+  const lineAt = (position: number) => lines[position] ?? "";
   const content: BlockNodeContent[] = [];
   let index = 0;
 
   while (index < lines.length) {
-    const line = lines[index];
+    const line = lineAt(index);
 
     if (line.trim() === "") {
       index++;
@@ -186,8 +187,8 @@ export function markdownToBlocks(markdown: string): TiptapDocument {
     if (headingMatch) {
       content.push({
         type: "heading",
-        attrs: { level: headingMatch[1].length },
-        content: parseInlineMarkdown(headingMatch[2]),
+        attrs: { level: (headingMatch[1] ?? "").length },
+        content: parseInlineMarkdown(headingMatch[2] ?? ""),
       });
       index++;
       continue;
@@ -217,7 +218,7 @@ export function markdownToBlocks(markdown: string): TiptapDocument {
       const items: BlockNodeContent[] = [];
 
       while (index < lines.length) {
-        const taskLineMatch = lines[index].match(/^-\s+\[( |x|X)\]\s+(.*)$/);
+        const taskLineMatch = lineAt(index).match(/^-\s+\[( |x|X)\]\s+(.*)$/);
 
         if (!taskLineMatch) {
           break;
@@ -226,7 +227,7 @@ export function markdownToBlocks(markdown: string): TiptapDocument {
         items.push({
           type: "taskItem",
           attrs: {
-            checked: taskLineMatch[1].toLowerCase() === "x",
+            checked: (taskLineMatch[1] ?? "").toLowerCase() === "x",
           },
           content: [
             {
@@ -250,8 +251,8 @@ export function markdownToBlocks(markdown: string): TiptapDocument {
       const codeLines: string[] = [];
       index++;
 
-      while (index < lines.length && !lines[index].trim().startsWith("```")) {
-        codeLines.push(lines[index]);
+      while (index < lines.length && !lineAt(index).trim().startsWith("```")) {
+        codeLines.push(lineAt(index));
         index++;
       }
 
@@ -269,13 +270,13 @@ export function markdownToBlocks(markdown: string): TiptapDocument {
 
     const calloutMatch = line.match(/^>\s+\[!([A-Za-z]+)\]\s*(.*)$/);
     if (calloutMatch) {
-      const tone = calloutMatch[1].toLowerCase();
-      const title = calloutMatch[2].trim() || "Callout";
+      const tone = (calloutMatch[1] ?? "").toLowerCase();
+      const title = (calloutMatch[2] ?? "").trim() || "Callout";
       const bodyLines: string[] = [];
       index++;
 
-      while (index < lines.length && lines[index].startsWith(">")) {
-        bodyLines.push(lines[index].replace(/^>\s?/, ""));
+      while (index < lines.length && lineAt(index).startsWith(">")) {
+        bodyLines.push(lineAt(index).replace(/^>\s?/, ""));
         index++;
       }
 
@@ -293,7 +294,7 @@ export function markdownToBlocks(markdown: string): TiptapDocument {
 
     if (line.trim() === "<details>") {
       index++;
-      const summaryLine = lines[index] ?? "";
+      const summaryLine = lineAt(index);
       const summaryMatch = summaryLine.match(/^<summary>(.*)<\/summary>$/);
       const summary = summaryMatch?.[1]?.trim() || "Toggle";
 
@@ -302,8 +303,8 @@ export function markdownToBlocks(markdown: string): TiptapDocument {
       }
 
       const bodyLines: string[] = [];
-      while (index < lines.length && lines[index].trim() !== "</details>") {
-        bodyLines.push(lines[index]);
+      while (index < lines.length && lineAt(index).trim() !== "</details>") {
+        bodyLines.push(lineAt(index));
         index++;
       }
 
@@ -326,8 +327,8 @@ export function markdownToBlocks(markdown: string): TiptapDocument {
     if (line.startsWith("> ")) {
       const quoteLines: string[] = [];
 
-      while (index < lines.length && lines[index].startsWith("> ")) {
-        quoteLines.push(lines[index].slice(2));
+      while (index < lines.length && lineAt(index).startsWith("> ")) {
+        quoteLines.push(lineAt(index).slice(2));
         index++;
       }
 
@@ -346,14 +347,14 @@ export function markdownToBlocks(markdown: string): TiptapDocument {
     if (/^[-*+]\s+/.test(line)) {
       const items: BlockNodeContent[] = [];
 
-      while (index < lines.length && /^[-*+]\s+/.test(lines[index])) {
+      while (index < lines.length && /^[-*+]\s+/.test(lineAt(index))) {
         items.push({
           type: "listItem",
           content: [
             {
               type: "paragraph",
               content: [
-                ...parseInlineMarkdown(lines[index].replace(/^[-*+]\s+/, "")),
+                ...parseInlineMarkdown(lineAt(index).replace(/^[-*+]\s+/, "")),
               ],
             },
           ],
@@ -368,14 +369,14 @@ export function markdownToBlocks(markdown: string): TiptapDocument {
     if (/^\d+\.\s+/.test(line)) {
       const items: BlockNodeContent[] = [];
 
-      while (index < lines.length && /^\d+\.\s+/.test(lines[index])) {
+      while (index < lines.length && /^\d+\.\s+/.test(lineAt(index))) {
         items.push({
           type: "listItem",
           content: [
             {
               type: "paragraph",
               content: [
-                ...parseInlineMarkdown(lines[index].replace(/^\d+\.\s+/, "")),
+                ...parseInlineMarkdown(lineAt(index).replace(/^\d+\.\s+/, "")),
               ],
             },
           ],
@@ -390,15 +391,15 @@ export function markdownToBlocks(markdown: string): TiptapDocument {
     const looksLikeTable =
       line.includes("|") &&
       index + 1 < lines.length &&
-      /^\|\s*[-: ]+\|/.test(lines[index + 1].trim());
+      /^\|\s*[-: ]+\|/.test(lineAt(index + 1).trim());
 
     if (looksLikeTable) {
       const rows: string[][] = [parseMarkdownTableRow(line)];
 
       index += 2;
 
-      while (index < lines.length && lines[index].includes("|")) {
-        rows.push(parseMarkdownTableRow(lines[index]));
+      while (index < lines.length && lineAt(index).includes("|")) {
+        rows.push(parseMarkdownTableRow(lineAt(index)));
         index++;
       }
 

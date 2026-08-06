@@ -16,7 +16,7 @@ export function parseWikilinks(text: string): WikilinkMatch[] {
   WIKILINK_REGEX.lastIndex = 0;
 
   while ((match = WIKILINK_REGEX.exec(text)) !== null) {
-    const target = match[1].trim();
+    const target = (match[1] ?? "").trim();
     const displayText = match[2]?.trim() || target;
 
     matches.push({

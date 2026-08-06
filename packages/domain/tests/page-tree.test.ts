@@ -1,5 +1,11 @@
-import { EMPTY_DOCUMENT, type Page } from "@/domain/models";
-import { pageAncestors, pageLabel, selectableParentPages } from "@/domain/pages/tree";
+import { describe, expect, it } from "vitest";
+import {
+  EMPTY_DOCUMENT,
+  pageAncestors,
+  pageLabel,
+  selectableParentPages,
+  type Page,
+} from "@giraffle/domain";
 
 function page(id: string, title: string, parentId: string | null): Page {
   return {
@@ -24,7 +30,7 @@ const pages: Page[] = [
 ];
 
 describe("page tree", () => {
-  test("ancestors run outermost first and exclude the page itself", () => {
+  it("ancestors run outermost first and exclude the page itself", () => {
     expect(pageAncestors(pages, "grandchild").map((item) => item.id)).toEqual([
       "root",
       "child",
@@ -32,21 +38,21 @@ describe("page tree", () => {
     expect(pageAncestors(pages, "root")).toEqual([]);
   });
 
-  test("label joins the full ancestor path", () => {
+  it("label joins the full ancestor path", () => {
     expect(pageLabel(pages, pages[2] as Page)).toBe("Project / Research / Sources");
   });
 
-  test("a page cannot be moved into itself or its descendants", () => {
+  it("a page cannot be moved into itself or its descendants", () => {
     const options = selectableParentPages(pages, "root").map((item) => item.id);
     expect(options).toEqual(["other"]);
   });
 
-  test("descendants of other branches stay selectable", () => {
+  it("descendants of other branches stay selectable", () => {
     const options = selectableParentPages(pages, "other").map((item) => item.id);
     expect(options).toEqual(["root", "child", "grandchild"]);
   });
 
-  test("a broken parent link cannot loop forever", () => {
+  it("a broken parent link cannot loop forever", () => {
     const cyclic = [page("a", "A", "b"), page("b", "B", "a")];
     expect(pageAncestors(cyclic, "a").map((item) => item.id)).toEqual(["b"]);
   });

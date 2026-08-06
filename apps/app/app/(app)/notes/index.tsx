@@ -1,3 +1,4 @@
+import type { Id, Page as PageModel } from "@giraffle/domain";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
@@ -16,7 +17,6 @@ import { Page } from "@/components/ui/Page";
 import { Button, DividerRow, EmptyState, Icon } from "@/components/ui/primitives";
 import { useTheme } from "@/design/ThemeProvider";
 import { radii, spacing, typography } from "@/design/tokens";
-import type { Id, Page as PageModel } from "@/domain/models";
 import { useApp } from "@/state/AppProvider";
 
 const RECENT_LIMIT = 8;

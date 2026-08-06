@@ -1,10 +1,10 @@
+import type { CanvasElement } from "@giraffle/domain";
 import { Asset } from "expo-asset";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { View } from "react-native";
 import { WebView, type WebViewMessageEvent } from "react-native-webview";
 import { z } from "zod";
 import { useTheme } from "@/design/ThemeProvider";
-import type { CanvasElement } from "@/domain/models";
 
 // Excalidraw ships as one self-contained HTML asset; it is loaded from disk so
 // the several megabytes never cross the React Native bridge as a string.
