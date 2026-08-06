@@ -27,6 +27,9 @@ const eslintConfig = defineConfig([
     "build/**",
     "coverage/**",
     "next-env.d.ts",
+    // apps/mobile lints itself with eslint-config-expo; web rules
+    // misfire on React Native (alt-text, require in metro config).
+    "apps/**",
   ]),
 ]);
 
