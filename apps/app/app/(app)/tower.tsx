@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import {
   DragSortItem,
@@ -43,18 +43,18 @@ function TowerScreen() {
   const [selected, setSelected] = useState<string | null>(activePages[0]?.id ?? null);
   const [showTasks, setShowTasks] = useState(false);
   const phone = width < 720;
-  const selectedPage = activePages.find((page) => page.id === selected);
   const boardTasks = snapshot.tasks.filter((task) => task.boardId !== null);
   const showingBoardTasks = selected === "trek";
+  // The stored page can disappear when it is archived or deleted, so fall back
+  // to the first available page instead of correcting state after render.
+  const selectedPage = showingBoardTasks
+    ? undefined
+    : (activePages.find((page) => page.id === selected) ?? activePages[0]);
   const boardTasksVisible = boardTasks.length > 0 && (!phone || showingBoardTasks);
   const selectedTasks = selectedPage
     ? snapshot.tasks.filter((task) => task.pageId === selectedPage.id)
     : [];
   const unprioritized = selectedTasks.filter((task) => task.priority === null);
-
-  useEffect(() => {
-    if (!selectedPage && !showingBoardTasks) setSelected(activePages[0]?.id ?? null);
-  }, [activePages, selectedPage, showingBoardTasks]);
 
   const choosePage = (pageId: string) => {
     setSelected(pageId);

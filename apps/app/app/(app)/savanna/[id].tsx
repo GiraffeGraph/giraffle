@@ -81,7 +81,7 @@ export default function CanvasEditor() {
           onSave={(title) => void run((repository) => repository.renameCanvas(id, title))}
           style={[typography.title, { flex: 1 }]}
         />
-        {saveState === "error" && pendingScene.current !== null ? (
+        {saveState === "error" ? (
           <Button
             label="Retry"
             icon="refresh-outline"

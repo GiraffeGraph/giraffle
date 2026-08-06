@@ -22,7 +22,12 @@ export function EditableText({
   const lastSubmitted = useRef(value);
   const onSaveRef = useRef(onSave);
   const focused = useRef(false);
-  onSaveRef.current = onSave;
+
+  // commit() only ever runs from handlers and cleanups, so syncing after the
+  // commit phase still hands it the current callback.
+  useEffect(() => {
+    onSaveRef.current = onSave;
+  }, [onSave]);
 
   useEffect(() => {
     valueRef.current = value;

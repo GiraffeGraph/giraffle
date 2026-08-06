@@ -24,17 +24,14 @@ export default function Search() {
   const requestId = useRef(0);
 
   useEffect(() => {
+    // Bumping first invalidates any in-flight request when the query clears.
     const id = ++requestId.current;
     const normalized = query.trim();
-    if (!normalized || !repository) {
-      setResults([]);
-      setSearching(false);
-      return;
-    }
+    if (!normalized || !repository) return;
 
-    setSearching(true);
-    setResults([]);
     const timer = setTimeout(() => {
+      setSearching(true);
+      setResults([]);
       void repository
         .search(normalized)
         .then((next) => {
@@ -55,6 +52,11 @@ export default function Search() {
     return () => clearTimeout(timer);
   }, [query, repository]);
 
+  // An empty query has no results by definition, so derive rather than store it.
+  const normalizedQuery = query.trim();
+  const visibleResults = normalizedQuery ? results : [];
+  const isSearching = normalizedQuery ? searching : false;
+
   return (
     <>
       <ScreenTopbar title="Search" />
@@ -73,13 +75,13 @@ export default function Search() {
           style={[typography.body, { color: colors.text, flex: 1 }]}
         />
       </View>
-      {searching ? (
+      {isSearching ? (
         <Text accessibilityLiveRegion="polite" style={[typography.body, { color: colors.muted }]}>
           Searching…
         </Text>
       ) : null}
       {error ? <Text style={[typography.body, { color: colors.danger }]}>{error}</Text> : null}
-      {!searching && !error && query.trim() && !results.length ? (
+      {!isSearching && !error && normalizedQuery && !visibleResults.length ? (
         <EmptyState
           icon="search-outline"
           title="No matches"
@@ -87,7 +89,7 @@ export default function Search() {
         />
       ) : (
         <View>
-          {results.map((result) => (
+          {visibleResults.map((result) => (
             <DividerRow key={result.id} onPress={() => router.push(`/notes/${result.id}`)}>
               <Icon name="document-text-outline" />
               <View style={{ flex: 1 }}>

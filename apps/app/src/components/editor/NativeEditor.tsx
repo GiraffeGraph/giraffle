@@ -1,4 +1,4 @@
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { StyleSheet } from "react-native";
 import { WebView, type WebViewMessageEvent } from "react-native-webview";
 import { useTheme } from "@/design/ThemeProvider";
@@ -32,7 +32,11 @@ export function NativeEditor({
   const { colors } = useTheme();
   const ref = useRef<WebView>(null);
   const documentRef = useRef(document);
-  documentRef.current = document;
+
+  // initialize() runs from the WebView load callback, long after commit.
+  useEffect(() => {
+    documentRef.current = document;
+  }, [document]);
 
   const initialize = useCallback(() => {
     const payload = JSON.stringify({

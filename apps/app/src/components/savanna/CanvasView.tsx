@@ -28,13 +28,12 @@ function useCanvasUri(): string | null {
 
   return uri;
 }
-const addRequestSchema = z.object({
-  pageId: z.string().min(1),
-  title: z.string().min(1),
-  elementId: z.string().min(1),
-  versionNonce: z.number().int(),
-});
-type AddRequest = z.infer<typeof addRequestSchema>;
+interface AddRequest {
+  pageId: string;
+  title: string;
+  elementId: string;
+  versionNonce: number;
+}
 
 const canvasElementSchema = z
   .object({
@@ -92,7 +91,11 @@ export function CanvasView({
   const elementsRef = useRef(elements);
   const readyRef = useRef(false);
   const pendingAddRef = useRef<AddRequest | null>(null);
-  elementsRef.current = elements;
+
+  // initialize() runs from the WebView load callback, long after commit.
+  useEffect(() => {
+    elementsRef.current = elements;
+  }, [elements]);
 
   const injectAdd = useCallback((request: AddRequest) => {
     const payload = JSON.stringify(request).replace(/</g, "\\u003c");
