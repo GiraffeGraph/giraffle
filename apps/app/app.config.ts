@@ -3,7 +3,7 @@ import type { ExpoConfig, ConfigContext } from "expo/config";
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: "Giraffle",
-  slug: "giraffle-mobile",
+  slug: "giraffle",
   scheme: "giraffle",
   version: "0.1.0",
   orientation: "default",

@@ -11,7 +11,12 @@
     "ignoreDeprecations": "6.0",
     "types": ["jest", "node", "react", "react-native"],
     "baseUrl": ".",
-    "paths": { "@/*": ["src/*"] }
+    "paths": {
+      "@/*": ["src/*"],
+      "@giraffle/domain": ["../../packages/domain/index.ts"],
+      "@giraffle/protocol": ["../../packages/protocol/index.ts"],
+      "@giraffle/sync": ["../../packages/sync/index.ts"]
+    }
   },
   "include": ["app/**/*.ts", "app/**/*.tsx", "src/**/*.ts", "src/**/*.tsx", "tests/**/*.ts", "tests/**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"]
 }
