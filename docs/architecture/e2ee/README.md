@@ -20,8 +20,8 @@ This is not a Signal/WhatsApp protocol implementation. Messaging ratchets and ML
 6. Password changes do not require re-encrypting all vault data.
 7. Device enrollment requires an existing trusted device or recovery secret.
 8. Lost-device revocation protects future writes; it cannot erase keys already extracted by that device.
-9. Search, backlinks, graph, tasks, and kanban projections run on unlocked clients.
-10. Publishing and AI access are explicit plaintext disclosure boundaries.
+9. Search, backlinks, tasks, and kanban projections run on unlocked clients.
+10. Export and external MCP access are explicit plaintext disclosure boundaries.
 
 ## High-level topology
 
@@ -32,7 +32,7 @@ flowchart LR
       DB[(Encrypted local database)]
       Crypto[Key manager + crypto provider]
       Sync[Sync engine + outbox]
-      Index[Local search / graph projections]
+      Index[Local search / backlink projections]
       UI --> DB
       UI --> Index
       DB --> Sync
@@ -77,7 +77,7 @@ flowchart LR
 - Monotonic server cursor assignment.
 - Encrypted checkpoint and attachment storage.
 - Data-free push notifications used only as wake-up hints.
-- No note, block, search, graph, task, or canvas semantics.
+- No note, block, search, backlink, task, or canvas semantics.
 
 ## Architecture records
 
@@ -90,10 +90,10 @@ flowchart LR
 
 ## Product consequences
 
-- Existing server-side `searchText`, `Link`, todo queries, and graph projections cannot remain authoritative under full E2EE.
+- Existing server-side `searchText`, `Link`, todo queries, and backlink projections cannot remain authoritative under full E2EE.
 - Existing `OperationLog` is a plaintext audit trail, not a replication protocol, and will not be reused as the encrypted sync log.
 - Server-side MCP cannot transparently inspect encrypted notes. It must become client-mediated or require an explicit disclosure of selected plaintext before E2EE cutover.
-- Publishing creates a separate sanitized plaintext projection; private records remain encrypted.
+- Decrypted exports are created only on an unlocked client and are never stored as a server-side plaintext projection.
 
 ## Implementation status
 

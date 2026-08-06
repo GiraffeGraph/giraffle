@@ -10,10 +10,12 @@ Giraffle will not use one conflict algorithm for every entity and will not build
 | --- | --- |
 | Tiptap note body | Yjs document updates |
 | Note/folder metadata | Field-level LWW registers using HLC + device ID tie-breaker |
-| Ordered folder/note/kanban collections | Stable IDs + deterministic fractional position + tombstones |
+| Ordered folder/page/board collections | Stable IDs + deterministic fractional position + tombstones |
+| TaskMetadata, PagePriority, and BoardTask | Field-level LWW + stable relational IDs |
 | Excalidraw canvas | Element-level version merge + tombstones; conflict-preserving snapshot fallback |
+| CanvasReference projection | Rebuilt transactionally from merged live elements |
 | Attachments | Immutable blobs |
-| Derived search/graph/task indexes | Rebuilt locally; never authoritative sync data |
+| Derived search/backlink/task indexes | Rebuilt locally; never authoritative sync data |
 
 ## Tiptap notes
 
@@ -32,7 +34,7 @@ The future mobile editor should use a bundled local Tiptap WebView when exact Yj
 
 ## Metadata registers
 
-Scalar fields such as title, icon, archived, pinned, quadrant, and folder assignment use:
+Scalar fields such as title, icon, archived, pinned, page-priority slot, task priority, and folder assignment use:
 
 ```ts
 interface LwwValue<T> {
@@ -95,7 +97,7 @@ Chunks are independently authenticated and may arrive out of order, but the encr
 After applying mutations, clients transactionally update local projections:
 
 - full-text search
-- wikilink/backlink graph
+- wikilink/backlink index
 - unresolved links
 - task and due-date index
 - kanban/matrix projections

@@ -16,7 +16,7 @@ sync_cursor           last atomically applied server sequence
 known_device_head     highest signed head per device
 key_metadata          wrappers and non-secret key metadata
 conflict_journal      bounded recoverable losing values/revisions
-projection_*          local search, graph, task, and kanban indexes
+projection_*          local search, backlink, task, and kanban indexes
 blob_cache            encrypted/local attachment state
 ```
 

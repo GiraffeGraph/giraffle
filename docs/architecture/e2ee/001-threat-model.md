@@ -12,7 +12,7 @@ An attacker who obtains the server database, file storage, backup media, reverse
 - Tiptap/Yjs document updates
 - Excalidraw elements and app state
 - Tasks, due dates, kanban, matrix, and calendar data
-- Search and graph projections
+- Search and backlink projections
 - Private attachment content, names, and MIME metadata where practical
 - Vault root keys, content keys, recovery secrets, and device private keys
 - Decrypted content submitted to AI tools
@@ -44,7 +44,7 @@ The server may observe:
 - key epoch and protocol version
 - encrypted blob size
 
-The server must not receive semantic object type, real object ID, title, folder path, due date, graph edge, search token, plaintext hash, or plaintext MIME/file name.
+The server must not receive semantic object type, real object ID, title, folder path, due date, backlink edge, search token, plaintext hash, or plaintext MIME/file name.
 
 An opaque locator is computed with keyed BLAKE2b-256 over a domain-separated vault/object identifier so the server can group checkpoints without learning the underlying identifier. This still leaks that multiple records affect the same object.
 
@@ -73,7 +73,6 @@ Security claims must therefore distinguish:
 
 The following operations intentionally leave the private-vault boundary:
 
-- publishing a note
 - exporting decrypted data
 - copying content to another application
 - sending selected plaintext to an external MCP integration
