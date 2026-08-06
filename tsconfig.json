@@ -49,6 +49,7 @@
   ],
   "exclude": [
     "node_modules",
-    "apps/app"
+    "apps/app",
+    "apps/server"
   ]
 }

@@ -1,0 +1,29 @@
+{
+  "name": "giraffle-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@giraffle/protocol": "file:../../packages/protocol",
+    "@hono/node-server": "2.0.12",
+    "better-sqlite3": "^12.4.1",
+    "cborg": "^6.1.1",
+    "hono": "4.12.33",
+    "libsodium-wrappers-sumo": "^0.8.4",
+    "tsx": "^4.20.6"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^22.20.1",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.4"
+  }
+}
