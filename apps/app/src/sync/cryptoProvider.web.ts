@@ -1,5 +1,5 @@
+import { createSodiumCryptoProvider } from "@giraffle/protocol/src/sodium-provider";
 import {
-  createSodiumCryptoProvider,
   E2EE_CRYPTO_SUITE,
   type E2eeCryptoProvider,
 } from "@giraffle/protocol";

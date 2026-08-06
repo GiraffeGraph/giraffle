@@ -1,7 +1,7 @@
+import { createSodiumCryptoProvider } from "@giraffle/protocol/src/sodium-provider";
 import { beforeAll, describe, expect, it } from "vitest";
 import {
   CryptoAuthenticationError,
-  createSodiumCryptoProvider,
   type AgreementKeyPair,
   type E2eeCryptoProvider,
   type SigningKeyPair,

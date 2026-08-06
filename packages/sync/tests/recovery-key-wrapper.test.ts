@@ -1,8 +1,8 @@
+import { createSodiumCryptoProvider } from "@giraffle/protocol/src/sodium-provider";
 import { beforeAll, describe, expect, it } from "vitest";
 import vectors from "../../../tests/vectors/e2ee-v1.json";
 import {
   CryptoAuthenticationError,
-  createSodiumCryptoProvider,
   type E2eeCryptoProvider,
 } from "@giraffle/protocol";
 import {

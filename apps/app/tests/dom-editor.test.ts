@@ -144,11 +144,14 @@ describe("wikilink ranges", () => {
 });
 
 describe("editor theme", () => {
-  test("carries the three colours the editor paints with", () => {
-    expect(editorCssVariables({ text: "#111", muted: "#888", link: "#00f" })).toEqual({
+  test("carries every colour the editor paints with", () => {
+    expect(
+      editorCssVariables({ text: "#111", muted: "#888", link: "#00f", background: "#f5efe5" }),
+    ).toEqual({
       "--giraffle-ink": "#111",
       "--giraffle-muted": "#888",
       "--giraffle-link": "#00f",
+      "--giraffle-bg": "#f5efe5",
     });
   });
 });

@@ -1,3 +1,4 @@
+import { createSodiumCryptoProvider } from "@giraffle/protocol/src/sodium-provider";
 import { beforeAll, describe, expect, it } from "vitest";
 import {
   CheckpointAckError,
@@ -15,7 +16,6 @@ import {
   type SignedEncryptedCheckpointV1,
 } from "@giraffle/sync";
 import {
-  createSodiumCryptoProvider,
   type E2eeCryptoProvider,
   type SigningKeyPair,
 } from "@giraffle/protocol";

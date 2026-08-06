@@ -8,6 +8,8 @@ export interface EditorTheme {
   text: string;
   muted: string;
   link: string;
+  /** The webview paints white by default, which shows through as a slab. */
+  background: string;
 }
 
 export interface CanvasTheme {
@@ -26,6 +28,7 @@ export function editorCssVariables(theme: EditorTheme): Record<string, string> {
     "--giraffle-ink": theme.text,
     "--giraffle-muted": theme.muted,
     "--giraffle-link": theme.link,
+    "--giraffle-bg": theme.background,
   };
 }
 

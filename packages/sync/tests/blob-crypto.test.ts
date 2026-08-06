@@ -1,3 +1,4 @@
+import { createSodiumCryptoProvider } from "@giraffle/protocol/src/sodium-provider";
 import { beforeAll, describe, expect, it } from "vitest";
 import {
   BlobCryptoError,
@@ -21,7 +22,6 @@ import {
 } from "@giraffle/sync";
 import {
   CryptoAuthenticationError,
-  createSodiumCryptoProvider,
   type E2eeCryptoProvider,
 } from "@giraffle/protocol";
 

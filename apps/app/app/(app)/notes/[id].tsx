@@ -288,7 +288,12 @@ export default function NoteEditor() {
         </View>
         <Editor
           document={draft}
-          theme={{ text: colors.text, muted: colors.faint, link: colors.link }}
+          theme={{
+            text: colors.text,
+            muted: colors.faint,
+            link: colors.link,
+            background: colors.background,
+          }}
           onChange={queueSave}
           onError={() => setSaveState("error")}
           onFocusChange={(focused) => {

@@ -11,7 +11,7 @@ import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import { EditorContent, useEditor } from "@tiptap/react";
 import { StarterKit } from "@tiptap/starter-kit";
 import type { DOMProps } from "expo/dom";
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { assignBlockIds, ID_BEARING_NODES, isIdBearing, taskToggles } from "./document";
 import { editorCssVariables, type EditorTheme } from "./theme";
 import { wikilinkRanges } from "./wikilinks";
@@ -136,10 +136,15 @@ const Wikilink = Extension.create({
 });
 
 const STYLES = `
+html, body {
+  margin: 0;
+  background: var(--giraffle-bg);
+}
 .giraffle-shell {
   display: flex;
   flex-direction: column;
   min-height: 100%;
+  background: var(--giraffle-bg);
   color: var(--giraffle-ink);
   font: 16px/1.65 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   -webkit-text-size-adjust: 100%;
@@ -303,8 +308,18 @@ export default function Editor({
       .catch((error: unknown) => onError(describe(error)));
   }, [editor, onError, onRequestAttachment]);
 
+  // Written to the document root, not just the shell: the webview paints html
+  // and body itself, and a custom property set lower down never reaches them.
+  useEffect(() => {
+    const root = document.documentElement;
+    const variables = editorCssVariables(theme);
+    for (const [name, value] of Object.entries(variables)) {
+      root.style.setProperty(name, value);
+    }
+  }, [theme]);
+
   return (
-    <div className="giraffle-shell" style={editorCssVariables(theme) as CSSProperties}>
+    <div className="giraffle-shell">
       <style>{STYLES}</style>
       <EditorContent editor={editor} />
       <div className="giraffle-toolbar">

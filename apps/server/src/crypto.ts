@@ -1,4 +1,7 @@
-import { createSodiumCryptoProvider, type E2eeCryptoProvider } from "@giraffle/protocol";
+import { createSodiumCryptoProvider } from "@giraffle/protocol/src/sodium-provider";
+import {
+  type E2eeCryptoProvider,
+} from "@giraffle/protocol";
 
 let cryptoProvider: Promise<E2eeCryptoProvider> | null = null;
 

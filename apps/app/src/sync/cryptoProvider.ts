@@ -15,7 +15,6 @@ import {
   crypto_sign_detached,
   crypto_sign_seed_keypair,
   crypto_sign_verify_detached,
-  memzero,
   randombytes_buf,
   ready,
 } from "react-native-libsodium";
@@ -148,6 +147,8 @@ export const vaultCryptoProvider: E2eeCryptoProvider = {
   },
 
   clear(bytes) {
-    memzero(bytes);
+    // react-native-libsodium exposes no memzero, and a JS caller cannot get
+    // libsodium's compiler barrier anyway — the array is all we can reach.
+    bytes.fill(0);
   },
 };

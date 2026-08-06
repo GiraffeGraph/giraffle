@@ -1,3 +1,4 @@
+import { createSodiumCryptoProvider } from "@giraffle/protocol/src/sodium-provider";
 import { beforeAll, describe, expect, it } from "vitest";
 import {
   ContentKeyWrapperError,
@@ -9,7 +10,6 @@ import {
 } from "@giraffle/sync";
 import {
   CryptoAuthenticationError,
-  createSodiumCryptoProvider,
   type E2eeCryptoProvider,
   type SigningKeyPair,
 } from "@giraffle/protocol";

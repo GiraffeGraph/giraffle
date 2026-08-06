@@ -1,7 +1,7 @@
+import { createSodiumCryptoProvider } from "@giraffle/protocol/src/sodium-provider";
 import { beforeAll, describe, expect, it } from "vitest";
 import {
   CryptoAuthenticationError,
-  createSodiumCryptoProvider,
   type E2eeCryptoProvider,
   type SigningKeyPair,
 } from "@giraffle/protocol";
@@ -11,7 +11,9 @@ import {
   createDeviceChainState,
   type DeviceChainState,
 } from "@giraffle/protocol";
-import { compareVersionStamps } from "@giraffle/protocol";
+import {
+  compareVersionStamps,
+} from "@giraffle/protocol";
 import {
   MAX_ENCODED_SYNC_RECORD_BYTES,
   MissingKeyEpochError,

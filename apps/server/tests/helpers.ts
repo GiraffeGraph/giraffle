@@ -1,5 +1,5 @@
+import { createSodiumCryptoProvider } from "@giraffle/protocol/src/sodium-provider";
 import {
-  createSodiumCryptoProvider,
   createSyncRecord,
   encodeSignedSyncRecord,
   hashSignedSyncRecord,
