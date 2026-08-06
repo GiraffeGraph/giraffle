@@ -40,3 +40,9 @@ jest.mock("react-native-libsodium", () => {
     },
   );
 });
+
+// AsyncStorage needs a native module that no test host provides; the package
+// ships the in-memory stand-in used here.
+jest.mock("@react-native-async-storage/async-storage", () =>
+  jest.requireActual("@react-native-async-storage/async-storage/jest/async-storage-mock"),
+);

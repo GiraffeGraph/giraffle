@@ -8,7 +8,7 @@ import {
 } from "@/infrastructure/sync/syncClient";
 import { createId } from "@/platform/ids";
 import { createAccessGrant, openAccessGrant, type VaultSecrets } from "./accessGrant";
-import { nativeCryptoProvider } from "./cryptoProvider";
+import { vaultCryptoProvider } from "./cryptoProvider";
 import { deviceFingerprint, signAuthorizationStatement } from "./deviceIdentity";
 
 export interface LinkableDevice extends RemoteDevice {
@@ -31,7 +31,7 @@ export async function loadLinkableDevices(
   const devices = await listDevices(config, input.vaultId);
   return devices.map((device) => ({
     ...device,
-    fingerprint: deviceFingerprint(nativeCryptoProvider, device),
+    fingerprint: deviceFingerprint(vaultCryptoProvider, device),
     isThisDevice: device.deviceId === input.deviceId,
   }));
 }
@@ -51,7 +51,7 @@ export async function approveDevice(
 
   const identity = input.repository.deviceIdentity();
   const secrets: VaultSecrets = input.repository.vaultSecrets();
-  const grant = createAccessGrant(nativeCryptoProvider, {
+  const grant = createAccessGrant(vaultCryptoProvider, {
     wrapperId: createId(),
     vaultId: input.vaultId,
     recipientDeviceId: input.target.deviceId,
@@ -62,7 +62,7 @@ export async function approveDevice(
     secrets,
   });
 
-  const signed = signAuthorizationStatement(nativeCryptoProvider, {
+  const signed = signAuthorizationStatement(vaultCryptoProvider, {
     action: "approve",
     vaultId: input.vaultId,
     actingDeviceId: identity.deviceId,
@@ -89,7 +89,7 @@ export async function revokeDevice(
     throw new DeviceLinkError("A device cannot revoke itself");
   }
 
-  const signed = signAuthorizationStatement(nativeCryptoProvider, {
+  const signed = signAuthorizationStatement(vaultCryptoProvider, {
     action: "revoke",
     vaultId: input.vaultId,
     actingDeviceId: identity.deviceId,
@@ -135,7 +135,7 @@ export async function claimVaultAccess(
     throw new DeviceLinkError("The approving device is no longer listed");
   }
 
-  const opened = openAccessGrant(nativeCryptoProvider, pending.grant, {
+  const opened = openAccessGrant(vaultCryptoProvider, pending.grant, {
     vaultId: input.vaultId,
     recipientDeviceId: input.deviceId,
     authorizingSigningPublicKey: approver.signingPublicKey,
@@ -152,7 +152,7 @@ export async function claimVaultAccess(
     // that was on the trusted device's screen.
     approvedBy: {
       deviceId: approver.deviceId,
-      fingerprint: deviceFingerprint(nativeCryptoProvider, approver),
+      fingerprint: deviceFingerprint(vaultCryptoProvider, approver),
     },
   };
 }

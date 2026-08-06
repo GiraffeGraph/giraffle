@@ -1,9 +1,16 @@
 import { router, Slot, usePathname } from "expo-router";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useState } from "react";
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button, Icon, type IconName } from "@/components/ui/primitives";
 import { useTheme } from "@/design/ThemeProvider";
-import { typography } from "@/design/tokens";
+import { radii, spacing, typography, WIDE_LAYOUT_MIN_WIDTH } from "@/design/tokens";
 import { useApp } from "@/state/AppProvider";
 
 interface NavigationItem {
@@ -32,13 +39,95 @@ function isActive(path: string, item: NavigationItem) {
   );
 }
 
+/**
+ * One navigation control for both layouts. A pointer gets a hover tint that a
+ * touch screen has no way to show, and the keyboard focus ring is left to the
+ * platform rather than suppressed.
+ */
+function NavigationButton({
+  item,
+  active,
+  orientation,
+}: {
+  item: NavigationItem;
+  active: boolean;
+  orientation: "row" | "column";
+}) {
+  const { colors } = useTheme();
+  const [hovered, setHovered] = useState(false);
+  const tint = active ? colors.accent : colors.muted;
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={item.label}
+      accessibilityState={{ selected: active }}
+      onHoverIn={() => setHovered(true)}
+      onHoverOut={() => setHovered(false)}
+      onPress={() => router.push(item.href as never)}
+      style={({ pressed }) => [
+        orientation === "row" ? styles.bottomButton : styles.sidebarButton,
+        {
+          opacity: pressed ? 0.6 : 1,
+          backgroundColor: active
+            ? colors.accentSubtle
+            : hovered
+              ? colors.hover
+              : "transparent",
+        },
+      ]}
+    >
+      <Icon name={item.icon} size={20} color={tint} />
+      <Text
+        numberOfLines={1}
+        style={[
+          orientation === "row" ? typography.caption : typography.title,
+          { color: tint },
+        ]}
+      >
+        {item.label}
+      </Text>
+    </Pressable>
+  );
+}
+
 export function AppShell() {
   const { colors } = useTheme();
   const { actionError, clearActionError } = useApp();
   const insets = useSafeAreaInsets();
   const path = usePathname();
+  const { width } = useWindowDimensions();
+  const wide = width >= WIDE_LAYOUT_MIN_WIDTH;
+
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
+      {wide ? (
+        <View
+          accessibilityRole="menubar"
+          style={[
+            styles.sidebar,
+            {
+              paddingTop: insets.top + spacing.md,
+              paddingBottom: Math.max(insets.bottom, spacing.md),
+              borderRightColor: colors.border,
+              backgroundColor: colors.surface,
+            },
+          ]}
+        >
+          <Text style={[typography.heading, styles.wordmark, { color: colors.text }]}>
+            Giraffle
+          </Text>
+          {mainNavigation.map((item) => (
+            <NavigationButton
+              key={item.href}
+              item={item}
+              active={isActive(path, item)}
+              orientation="column"
+            />
+          ))}
+        </View>
+      ) : null}
+
       <View style={styles.content}>
         {actionError ? (
           <View
@@ -46,7 +135,7 @@ export function AppShell() {
             style={[
               styles.errorBanner,
               {
-                paddingTop: insets.top + 6,
+                paddingTop: wide ? 6 : insets.top + 6,
                 backgroundColor: colors.surfaceStrong,
                 borderBottomColor: colors.danger,
               },
@@ -64,47 +153,27 @@ export function AppShell() {
           <Slot />
         </View>
 
-        <View
-          style={[
-            styles.bottomBar,
-            {
-              paddingBottom: Math.max(insets.bottom, 6),
-              borderTopColor: colors.border,
-              backgroundColor: colors.surface,
-            },
-          ]}
-        >
-          {mainNavigation.map((item) => {
-            const active = isActive(path, item);
-            return (
-              <Pressable
+        {wide ? null : (
+          <View
+            style={[
+              styles.bottomBar,
+              {
+                paddingBottom: Math.max(insets.bottom, 6),
+                borderTopColor: colors.border,
+                backgroundColor: colors.surface,
+              },
+            ]}
+          >
+            {mainNavigation.map((item) => (
+              <NavigationButton
                 key={item.href}
-                accessibilityRole="button"
-                accessibilityLabel={item.label}
-                accessibilityState={{ selected: active }}
-                onPress={() => router.push(item.href as never)}
-                style={({ pressed }) => [
-                  styles.bottomButton,
-                  { opacity: pressed ? 0.6 : 1 },
-                ]}
-              >
-                <Icon
-                  name={item.icon}
-                  size={20}
-                  color={active ? colors.accent : colors.muted}
-                />
-                <Text
-                  style={[
-                    typography.caption,
-                    { color: active ? colors.accent : colors.muted },
-                  ]}
-                >
-                  {item.label}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
+                item={item}
+                active={isActive(path, item)}
+                orientation="row"
+              />
+            ))}
+          </View>
+        )}
       </View>
     </View>
   );
@@ -112,8 +181,23 @@ export function AppShell() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, flexDirection: "row" },
-  content: { flex: 1 },
+  content: { flex: 1, minWidth: 0 },
   slot: { flex: 1 },
+  sidebar: {
+    width: 216,
+    paddingHorizontal: spacing.sm,
+    gap: spacing.xxs,
+    borderRightWidth: StyleSheet.hairlineWidth,
+  },
+  wordmark: { paddingHorizontal: spacing.sm, paddingBottom: spacing.lg },
+  sidebarButton: {
+    minHeight: 40,
+    paddingHorizontal: spacing.md,
+    borderRadius: radii.sm,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+  },
   errorBanner: {
     minHeight: 46,
     paddingHorizontal: 12,

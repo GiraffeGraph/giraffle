@@ -1,25 +1,25 @@
 import { documentPlainText, extractCanvasReferences, parseWikilinks, positionBetween, EMPTY_DOCUMENT, type Board, type BoardColumn, type BoardStatus, type Canvas, type CanvasElement, type Page, type PagePriority, type Task, type TaskPriority, type TiptapDocument } from "@giraffle/domain";
 import { createSyncRecord, decodeSignedSyncRecord, encodeSignedSyncRecord, hashSignedSyncRecord, observeHybridClock, openSyncRecord, tickHybridClock, type SignedSyncRecordV1, type SyncOperationV1, type VersionStamp } from "@giraffle/protocol";
 import { applyYjsUpdate, mergeExcalidrawElements, mergeLwwRegister, resolveTreeParentAssignments, type TreeParentAssignment, type VersionedExcalidrawElement } from "@giraffle/sync";
-import type { SQLiteDatabase } from "expo-sqlite";
 import * as Y from "yjs";
 import { createId } from "@/platform/ids";
 import type { AppSnapshot } from "@/state/snapshot";
 import type { VaultSecrets } from "@/sync/accessGrant";
-import { nativeCryptoProvider } from "@/sync/cryptoProvider";
+import { vaultCryptoProvider } from "@/sync/cryptoProvider";
 import type { DevicePublicIdentity } from "@/sync/deviceIdentity";
 import { noteDocumentFromYjs, noteDocumentState, openNoteDocument, reconcileNoteDocument } from "@/sync/noteDocument";
-import { hash, signingPair, agreementPair } from "../crypto/nativeCrypto";
-import type { VaultKeys } from "../secure-storage/keyStore";
+import { hash, signingPair, agreementPair } from "../crypto/vaultCrypto";
+import type { VaultKeys } from "../secure-storage/vaultKeys.contract";
+import type { VaultDatabase } from "./vaultDatabase";
 
-interface RepositoryOptions { database: SQLiteDatabase; vaultId: string; deviceId: string; keys: VaultKeys }
-type Tx = Pick<SQLiteDatabase, "runAsync" | "getFirstAsync" | "getAllAsync" | "execAsync">;
+interface RepositoryOptions { database: VaultDatabase; vaultId: string; deviceId: string; keys: VaultKeys }
+type Tx = Pick<VaultDatabase, "runAsync" | "getFirstAsync" | "getAllAsync" | "execAsync">;
 type MutationData = Record<string, unknown>;
 const parse = <T>(value: string): T => JSON.parse(value) as T;
 const DAILY_PAGE_TITLE = "Daily";
 const KEY_EPOCH = 1;
 const bool = (value: number) => value === 1;
-const crypto = nativeCryptoProvider;
+const crypto = vaultCryptoProvider;
 
 /**
  * Canonical CBOR admits only safe integers, so rich sub-documents (editor
@@ -96,7 +96,7 @@ function numericPosition(before: string | null, after: string | null): string {
 }
 
 export class VaultRepository {
-  private readonly database: SQLiteDatabase;
+  private readonly database: VaultDatabase;
   private readonly vaultId: string;
   private readonly deviceId: string;
   private readonly keys: VaultKeys;

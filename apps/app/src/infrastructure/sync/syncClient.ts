@@ -1,18 +1,18 @@
-import * as SecureStore from "expo-secure-store";
 import type { VaultRepository } from "../database/repository";
-import { decodeKey, encodeKey } from "../secure-storage/keyStore";
+import { decodeKey, encodeKey } from "../secure-storage/keyEncoding";
+import type { SyncConfiguration } from "./syncConfiguration.contract";
 
-const SERVER_KEY = "giraffle.sync-server.v1";
-const TOKEN_KEY = "giraffle.sync-token.v1";
+export {
+  clearSyncConfiguration,
+  loadSyncConfiguration,
+  saveSyncConfiguration,
+} from "./syncConfiguration";
+export type { SyncConfiguration } from "./syncConfiguration.contract";
+
 const REQUEST_TIMEOUT_MS = 20_000;
 const DEVICE_HEADER = "X-Giraffle-Device-Id";
 const MAX_PULL_LIMIT = 100;
 const DECIMAL = /^\d+$/;
-
-export interface SyncConfiguration {
-  baseUrl: string;
-  token: string;
-}
 
 export type DeviceStatus = "pending" | "active" | "revoked";
 
@@ -45,33 +45,6 @@ async function request(url: string, init: RequestInit): Promise<Response> {
   } finally {
     clearTimeout(timeout);
   }
-}
-
-export async function saveSyncConfiguration(value: SyncConfiguration): Promise<void> {
-  const baseUrl = value.baseUrl.trim().replace(/\/+$/, "");
-  const token = value.token.trim();
-  if (!baseUrl || !token) throw new Error("Server address and connection code are required");
-  await Promise.all([
-    SecureStore.setItemAsync(SERVER_KEY, baseUrl),
-    SecureStore.setItemAsync(TOKEN_KEY, token, {
-      keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
-    }),
-  ]);
-}
-
-export async function loadSyncConfiguration(): Promise<SyncConfiguration | null> {
-  const [baseUrl, token] = await Promise.all([
-    SecureStore.getItemAsync(SERVER_KEY),
-    SecureStore.getItemAsync(TOKEN_KEY),
-  ]);
-  return baseUrl && token ? { baseUrl, token } : null;
-}
-
-export async function clearSyncConfiguration(): Promise<void> {
-  await Promise.all([
-    SecureStore.deleteItemAsync(SERVER_KEY),
-    SecureStore.deleteItemAsync(TOKEN_KEY),
-  ]);
 }
 
 const headers = (token: string, deviceId?: string) => ({

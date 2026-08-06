@@ -13,7 +13,7 @@ import { TaskViewSwitch } from "@/components/shell/TaskViewSwitch";
 import { Page } from "@/components/ui/Page";
 import { Button, DividerRow, EmptyState, Icon } from "@/components/ui/primitives";
 import { useTheme } from "@/design/ThemeProvider";
-import { spacing, typography } from "@/design/tokens";
+import { spacing, typography, WIDE_LAYOUT_MIN_WIDTH } from "@/design/tokens";
 import { useApp } from "@/state/AppProvider";
 
 const quadrants = [
@@ -42,7 +42,7 @@ function TowerScreen() {
   const activePages = snapshot.pages.filter((page) => !page.isArchived);
   const [selected, setSelected] = useState<string | null>(activePages[0]?.id ?? null);
   const [showTasks, setShowTasks] = useState(false);
-  const phone = width < 720;
+  const phone = width < WIDE_LAYOUT_MIN_WIDTH;
   const boardTasks = snapshot.tasks.filter((task) => task.boardId !== null);
   const showingBoardTasks = selected === "trek";
   // The stored page can disappear when it is archived or deleted, so fall back

@@ -29,7 +29,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     },
     allowBackup: false
   },
-  web: { bundler: "metro", favicon: "./assets/favicon.png" },
+  // Every route is served from one shell so the service worker can answer any
+  // deep link offline. The installable manifest, the worker and the HTML head
+  // live in `public/`, which Expo copies into the export verbatim.
+  web: { bundler: "metro", output: "single", favicon: "./assets/favicon.png" },
   plugins: [
     "expo-router",
     ["expo-splash-screen", { image: "./assets/splash.png", imageWidth: 160, backgroundColor: "#f5efe5", dark: { backgroundColor: "#191919" } }],

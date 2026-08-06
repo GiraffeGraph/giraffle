@@ -10,31 +10,35 @@ import {
 import { AppState, type AppStateStatus } from "react-native";
 import { createId } from "@/platform/ids";
 import { EMPTY_SNAPSHOT, type AppSnapshot, type VaultSession } from "@/state/snapshot";
-import { agreementPair, initializeCrypto } from "@/infrastructure/crypto/nativeCrypto";
+import { agreementPair } from "@/infrastructure/crypto/vaultCrypto";
 import {
   deleteEncryptedDatabase,
   openEncryptedDatabase,
 } from "@/infrastructure/database/openDatabase";
 import { VaultRepository } from "@/infrastructure/database/repository";
 import {
-  clearAccessLockSettings,
-  clearQuickPin,
-  createQuickPin,
+  clearLockTimeout,
   DEFAULT_LOCK_TIMEOUT_MS,
-  hasQuickPin,
   loadLockTimeout,
   saveLockTimeout,
-  verifyQuickPin,
-} from "@/infrastructure/secure-storage/accessLock";
+} from "@/infrastructure/secure-storage/lockTimeout";
+import { createRecoveryCode } from "@/infrastructure/secure-storage/recoveryCode";
 import {
   clearKeyMaterial,
   clearLocalKeys,
+  clearQuickPin,
+  clearVaultWrapper,
   createLocalKeys,
+  createPassphraseWrapper,
+  createQuickPin,
   hasLocalVault,
-  loadLocalKeys,
+  hasQuickPin,
+  hasVaultWrapper,
   saveVaultKeys,
+  unlockLocalKeys,
+  type LocalKeys,
   type VaultKeys,
-} from "@/infrastructure/secure-storage/keyStore";
+} from "@/infrastructure/secure-storage/vaultKeys";
 import {
   clearSyncConfiguration,
   enrollDevice,
@@ -42,17 +46,10 @@ import {
   saveSyncConfiguration,
   type SyncConfiguration,
 } from "@/infrastructure/sync/syncClient";
-import { nativeCryptoProvider } from "@/sync/cryptoProvider";
+import { initializeCrypto, vaultCryptoProvider } from "@/sync/cryptoProvider";
 import { deviceFingerprint } from "@/sync/deviceIdentity";
 import { claimVaultAccess } from "@/sync/deviceLink";
 import { createSyncEngine, type SyncOutcome } from "@/sync/engine";
-import {
-  clearVaultWrapper,
-  createPassphraseWrapper,
-  createRecoveryCode,
-  hasVaultWrapper,
-  verifyPassphrase,
-} from "@/infrastructure/secure-storage/vaultWrapper";
 
 type UnlockMethod = "passphrase" | "pin";
 
@@ -95,6 +92,10 @@ interface AppContextValue {
 
 const AppContext = createContext<AppContextValue | null>(null);
 
+async function clearAccessLock(): Promise<void> {
+  await Promise.all([clearQuickPin(), clearLockTimeout()]);
+}
+
 function errorMessage(cause: unknown, fallback: string): string {
   return cause instanceof Error ? cause.message : fallback;
 }
@@ -118,16 +119,13 @@ export function AppProvider({ children }: PropsWithChildren) {
   const [session, setSession] = useState<VaultSession | null>(null);
   const [pinEnabled, setPinEnabled] = useState(false);
   const [lockTimeoutMs, setLockTimeoutMs] = useState(DEFAULT_LOCK_TIMEOUT_MS);
-  const keyRef = useRef<{
-    databaseKey: Uint8Array;
-    vaultKeys: VaultKeys;
-  } | null>(null);
+  const keyRef = useRef<LocalKeys | null>(null);
   const backgroundAt = useRef<number | null>(null);
   const pinFailures = useRef(0);
   const pinBlockedUntil = useRef(0);
   const mutationQueue = useRef<Promise<void>>(Promise.resolve());
   const joinRef = useRef<
-    (PendingJoin & { keys: { databaseKey: Uint8Array; vaultKeys: VaultKeys }; passphrase: string }) | null
+    (PendingJoin & { keys: LocalKeys; passphrase: string }) | null
   >(null);
   const engineRef = useRef<ReturnType<typeof createSyncEngine> | null>(null);
 
@@ -149,7 +147,7 @@ export function AppProvider({ children }: PropsWithChildren) {
           await Promise.all([
             clearLocalKeys(),
             clearVaultWrapper(),
-            clearAccessLockSettings(),
+            clearAccessLock(),
             clearSyncConfiguration(),
             deleteEncryptedDatabase(),
           ]);
@@ -214,7 +212,7 @@ export function AppProvider({ children }: PropsWithChildren) {
 
   const connect = useCallback(
     async (
-      keys: { databaseKey: Uint8Array; vaultKeys: VaultKeys },
+      keys: LocalKeys,
       vaultId: string,
       deviceId: string,
       recoveryCode?: string,
@@ -278,7 +276,7 @@ export function AppProvider({ children }: PropsWithChildren) {
         await Promise.allSettled([
           clearLocalKeys(),
           clearVaultWrapper(),
-          clearAccessLockSettings(),
+          clearAccessLock(),
           deleteEncryptedDatabase(),
         ]);
         throw cause;
@@ -319,7 +317,7 @@ export function AppProvider({ children }: PropsWithChildren) {
         const pending: PendingJoin = {
           vaultId,
           deviceId,
-          fingerprint: deviceFingerprint(nativeCryptoProvider, repository.deviceIdentity()),
+          fingerprint: deviceFingerprint(vaultCryptoProvider, repository.deviceIdentity()),
         };
         joinRef.current = { ...pending, keys, passphrase };
         return pending;
@@ -391,31 +389,25 @@ export function AppProvider({ children }: PropsWithChildren) {
       if (method === "pin" && Date.now() < pinBlockedUntil.current) {
         throw new Error("Quick PIN is temporarily unavailable");
       }
-      const keys = await loadLocalKeys();
-      if (!keys) throw new Error("Secure vault keys are unavailable");
+      const keys = await unlockLocalKeys(credential, method);
+      if (!keys) {
+        if (method === "pin") {
+          pinFailures.current += 1;
+          if (pinFailures.current >= 5) {
+            pinFailures.current = 0;
+            pinBlockedUntil.current = Date.now() + 30_000;
+          }
+        }
+        throw new Error(
+          method === "pin"
+            ? "PIN did not unlock this vault"
+            : "Passphrase did not unlock this vault",
+        );
+      }
+      pinFailures.current = 0;
+      pinBlockedUntil.current = 0;
 
       try {
-        const verified =
-          method === "pin"
-            ? await verifyQuickPin(credential, keys.vaultKeys.vaultRootKey)
-            : await verifyPassphrase(credential, keys.vaultKeys.vaultRootKey);
-        if (!verified) {
-          if (method === "pin") {
-            pinFailures.current += 1;
-            if (pinFailures.current >= 5) {
-              pinFailures.current = 0;
-              pinBlockedUntil.current = Date.now() + 30_000;
-            }
-          }
-          throw new Error(
-            method === "pin"
-              ? "PIN did not unlock this vault"
-              : "Passphrase did not unlock this vault",
-          );
-        }
-        pinFailures.current = 0;
-        pinBlockedUntil.current = 0;
-
         const database = await openEncryptedDatabase(keys.databaseKey);
         let metadata: { id: string; device_id: string } | null = null;
         try {
@@ -498,7 +490,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     const cleanup = await Promise.allSettled([
       clearLocalKeys(),
       clearVaultWrapper(),
-      clearAccessLockSettings(),
+      clearAccessLock(),
       clearSyncConfiguration(),
       deleteEncryptedDatabase(),
     ]);

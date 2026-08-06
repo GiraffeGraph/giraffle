@@ -14,7 +14,7 @@ import { PinPad } from "@/components/ui/PinPad";
 import { Button, Field, Loading } from "@/components/ui/primitives";
 import { useTheme } from "@/design/ThemeProvider";
 import { radii, spacing, typography } from "@/design/tokens";
-import { isValidPin } from "@/infrastructure/secure-storage/accessLock";
+import { isValidPin } from "@/infrastructure/secure-storage/vaultKeys";
 import { useApp } from "@/state/AppProvider";
 
 type UnlockMode = "pin" | "passphrase";

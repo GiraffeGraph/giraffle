@@ -1,3 +1,7 @@
+// The one width at which Giraffle switches from a single stacked column to a
+// side-by-side layout. Screens and the app shell must agree on it, or a window
+// can end up with a sidebar and a phone-shaped screen inside it.
+export const WIDE_LAYOUT_MIN_WIDTH = 720;
 export const spacing = { xxs: 2, xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32, xxxl: 48 } as const;
 export const radii = { xs: 4, sm: 7, md: 9, lg: 11, sheet: 18, full: 999 } as const;
 export const controls = { compact: 30, default: 36, comfortable: 44 } as const;

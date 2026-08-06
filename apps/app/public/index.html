@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="%LANG_ISO_CODE%">
+  <head>
+    <meta charset="utf-8" />
+    <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover"
+    />
+    <title>%WEB_TITLE%</title>
+
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Giraffle" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#faf9f6" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#191919" />
+    <meta
+      name="description"
+      content="An offline-first, end-to-end encrypted place for your notes, tasks and canvases."
+    />
+
+    <!-- The `react-native-web` recommended style reset: https://necolas.github.io/react-native-web/docs/setup/#root-element -->
+    <style id="expo-reset">
+      /* These styles make the body full-height */
+      html,
+      body {
+        height: 100%;
+      }
+      /* These styles disable body scrolling if you are using <ScrollView> */
+      body {
+        overflow: hidden;
+      }
+      /* These styles make the root element full-height */
+      #root {
+        display: flex;
+        height: 100%;
+        flex: 1;
+      }
+    </style>
+
+    <!--
+      Pointer and keyboard behaviour react-native-web cannot express through
+      style props. Everything below is additive: it gives back browser
+      behaviour that the mobile-shaped reset would otherwise suppress.
+    -->
+    <style id="giraffle-web-interaction">
+      :root {
+        color-scheme: light dark;
+      }
+
+      /* Keyboard users need the focus ring back, and only for keyboard focus,
+         so a mouse press does not leave an outline behind. */
+      *:focus {
+        outline: none;
+      }
+      *:focus-visible {
+        outline: 2px solid #d4931f;
+        outline-offset: 2px;
+        border-radius: 4px;
+      }
+
+      /* React Native turns selection off globally to imitate a native view.
+         Prose is the one place where a pointer must be able to select text. */
+      [contenteditable="true"],
+      [contenteditable="true"] *,
+      .ProseMirror,
+      .ProseMirror * {
+        user-select: text;
+        -webkit-user-select: text;
+      }
+      [contenteditable="true"],
+      .ProseMirror {
+        cursor: text;
+      }
+
+      /* Wheel and trackpad scrolling inside the app must not drag the page or
+         trigger the browser's pull-to-refresh. */
+      html,
+      body {
+        overscroll-behavior: none;
+      }
+
+      body {
+        -webkit-tap-highlight-color: transparent;
+      }
+    </style>
+
+    <script id="giraffle-service-worker">
+      // Registered here so a cold start with no network still opens the vault.
+      // The worker caches the app shell only; vault bytes never reach it.
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", function () {
+          navigator.serviceWorker.register("/service-worker.js").catch(function () {
+            // A blocked or unsupported worker only costs offline start-up.
+          });
+        });
+      }
+    </script>
+  </head>
+
+  <body>
+    <noscript>You need to enable JavaScript to run Giraffle.</noscript>
+    <div id="root"></div>
+  </body>
+</html>

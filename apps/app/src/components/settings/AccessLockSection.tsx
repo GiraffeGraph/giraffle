@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { Button, DividerRow, Field, Icon } from "@/components/ui/primitives";
 import { useTheme } from "@/design/ThemeProvider";
 import { spacing, typography } from "@/design/tokens";
-import { isValidPin } from "@/infrastructure/secure-storage/accessLock";
+import { isValidPin } from "@/infrastructure/secure-storage/vaultKeys";
 import { useApp } from "@/state/AppProvider";
 
 const timeoutOptions = [

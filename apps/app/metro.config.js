@@ -31,7 +31,24 @@ const excalidrawStylesheet = path.resolve(
 const REACT_NATIVE_WEBCRYPTO = "isomorphic-webcrypto/src/react-native";
 const webcryptoShim = path.resolve(projectRoot, "src/sync/reactNativeWebcrypto.ts");
 
+// @sqlite.org/sqlite-wasm ships worker entry points for the OPFS-backed VFS
+// variants. Giraffle runs SQLite in memory on the main thread and seals the
+// database image itself, so those workers never start — but Metro follows the
+// `new Worker(new URL(...))` call sites while bundling and would fail to
+// resolve their bare specifiers, so they are pointed at an inert module.
+const SQLITE_WASM_WORKERS = new Set([
+  "sqlite3-worker1.mjs",
+  "sqlite3-opfs-async-proxy.js",
+]);
+const unusedSqliteWorker = path.resolve(
+  projectRoot,
+  "src/infrastructure/database/unusedSqliteWorker.js",
+);
+
 config.resolver.resolveRequest = (context, moduleName, platform) => {
+  if (SQLITE_WASM_WORKERS.has(moduleName)) {
+    return { type: "sourceFile", filePath: unusedSqliteWorker };
+  }
   if (moduleName === EXCALIDRAW_STYLESHEET) {
     return { type: "sourceFile", filePath: excalidrawStylesheet };
   }

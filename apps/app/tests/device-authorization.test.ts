@@ -1,6 +1,6 @@
 import { enrollDevice, listDevices } from "@/infrastructure/sync/syncClient";
 import { openAccessGrant } from "@/sync/accessGrant";
-import { nativeCryptoProvider } from "@/sync/cryptoProvider";
+import { vaultCryptoProvider } from "@/sync/cryptoProvider";
 import { deviceFingerprint } from "@/sync/deviceIdentity";
 import { approveDevice, claimVaultAccess, revokeDevice } from "@/sync/deviceLink";
 import {
@@ -118,7 +118,7 @@ describe("joining a vault from a second device", () => {
       },
     });
     expect(() =>
-      openAccessGrant(nativeCryptoProvider, stored, {
+      openAccessGrant(vaultCryptoProvider, stored, {
         vaultId: VAULT_ID,
         recipientDeviceId: joiner.deviceId,
         authorizingSigningPublicKey: founder.repository.deviceIdentity().signingPublicKey,
@@ -137,7 +137,7 @@ describe("joining a vault from a second device", () => {
 
     const stored = relay.devices.get(joiner.deviceId)!.grant!;
     expect(() =>
-      openAccessGrant(nativeCryptoProvider, stored, {
+      openAccessGrant(vaultCryptoProvider, stored, {
         vaultId: VAULT_ID,
         recipientDeviceId: joiner.deviceId,
         authorizingSigningPublicKey: joiner.repository.deviceIdentity().signingPublicKey,
@@ -192,12 +192,12 @@ describe("out-of-band verification", () => {
   it("shows the same fingerprint on both screens and a different one per device", async () => {
     await enrollJoiner();
 
-    const onJoiner = deviceFingerprint(nativeCryptoProvider, joiner.repository.deviceIdentity());
-    const onFounder = deviceFingerprint(nativeCryptoProvider, await remoteJoiner());
+    const onJoiner = deviceFingerprint(vaultCryptoProvider, joiner.repository.deviceIdentity());
+    const onFounder = deviceFingerprint(vaultCryptoProvider, await remoteJoiner());
     expect(onFounder).toBe(onJoiner);
     expect(onJoiner).toMatch(/^\d{5}-\d{5}-\d{5}-\d{5}$/);
 
-    expect(deviceFingerprint(nativeCryptoProvider, founder.repository.deviceIdentity())).not.toBe(
+    expect(deviceFingerprint(vaultCryptoProvider, founder.repository.deviceIdentity())).not.toBe(
       onJoiner,
     );
   });
@@ -207,8 +207,8 @@ describe("out-of-band verification", () => {
     const genuine = await remoteJoiner();
     const substituted = { ...genuine, agreementPublicKey: founder.repository.deviceIdentity().agreementPublicKey };
 
-    expect(deviceFingerprint(nativeCryptoProvider, substituted)).not.toBe(
-      deviceFingerprint(nativeCryptoProvider, genuine),
+    expect(deviceFingerprint(vaultCryptoProvider, substituted)).not.toBe(
+      deviceFingerprint(vaultCryptoProvider, genuine),
     );
   });
 });

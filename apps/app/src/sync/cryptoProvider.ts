@@ -17,6 +17,7 @@ import {
   crypto_sign_verify_detached,
   memzero,
   randombytes_buf,
+  ready,
 } from "react-native-libsodium";
 
 // Fixed by the suite this vault is pinned to. Reading them from the binding
@@ -31,13 +32,26 @@ const AGREEMENT_PUBLIC_KEY_BYTES = 32;
 const AGREEMENT_PRIVATE_KEY_BYTES = 32;
 const SEALED_BOX_OVERHEAD_BYTES = 48;
 
+export async function initializeCrypto(): Promise<void> {
+  await ready;
+  // The libsodium JSI bindings only exist in a native build; Expo Go leaves
+  // every jsi_* global undefined, so fail here instead of at vault creation.
+  try {
+    randombytes_buf(1);
+  } catch {
+    throw new Error(
+      "Native crypto is unavailable. Giraffle needs a development build (expo run:ios / expo run:android) — Expo Go cannot load its native modules.",
+    );
+  }
+}
+
 /**
  * The shared protocol and merge packages are written against
  * `E2eeCryptoProvider`. This binds that contract to the native libsodium build
  * so the client runs the same record, wrapper and merge code as the test suite,
  * rather than a second hand-written copy of it.
  */
-export const nativeCryptoProvider: E2eeCryptoProvider = {
+export const vaultCryptoProvider: E2eeCryptoProvider = {
   suite: E2EE_CRYPTO_SUITE,
   aeadKeyBytes: AEAD_KEY_BYTES,
   aeadNonceBytes: AEAD_NONCE_BYTES,

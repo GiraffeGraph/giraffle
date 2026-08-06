@@ -1,7 +1,7 @@
 import { ready, randombytes_buf } from "react-native-libsodium";
-import { runMigrations } from "@/infrastructure/database/openDatabase";
+import { runMigrations } from "@/infrastructure/database/vaultDatabase";
 import { VaultRepository } from "@/infrastructure/database/repository";
-import type { VaultKeys } from "@/infrastructure/secure-storage/keyStore";
+import type { VaultKeys } from "@/infrastructure/secure-storage/vaultKeys.contract";
 import type { SyncConfiguration } from "@/infrastructure/sync/syncClient";
 import { createSyncEngine, type SyncOutcome } from "@/sync/engine";
 import { openDatabaseAsync, type TestDatabase } from "./sqlite";
@@ -41,7 +41,7 @@ export async function createClient(input: {
   const vaultId = input.vaultId ?? VAULT_ID;
   const database = await openDatabaseAsync(`vault-${input.deviceId}`);
   await database.execAsync("PRAGMA foreign_keys = ON");
-  await runMigrations(database as never);
+  await runMigrations(database);
 
   // Identity keys are per device; only the vault secrets are shared.
   const keys: VaultKeys = {
@@ -52,7 +52,7 @@ export async function createClient(input: {
 
   const build = async (): Promise<TestClient> => {
     const repository = new VaultRepository({
-      database: database as never,
+      database,
       vaultId,
       deviceId: input.deviceId,
       keys,
