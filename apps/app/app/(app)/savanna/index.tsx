@@ -16,7 +16,7 @@ export default function Savanna() {
       .catch(() => undefined);
   };
   const confirmDelete = (id: string, title: string) => {
-    Alert.alert("Delete map?", `“${title}” will no longer be available.`, [
+    Alert.alert("Delete canvas?", `“${title}” will no longer be available.`, [
       { text: "Cancel", style: "cancel" },
       {
         text: "Delete",
@@ -29,16 +29,16 @@ export default function Savanna() {
   return (
     <>
       <ScreenTopbar
-        title="Savanna"
-        action={<Button label="Map" icon="add" tone="accent" onPress={create} />}
+        title="Canvas"
+        action={<Button label="Canvas" icon="add" tone="accent" onPress={create} />}
       />
       <Page>
       {snapshot.canvases.length === 0 ? (
         <EmptyState
           icon="map-outline"
-          title="Start with a map"
-          body="Create a map and place your pages on it."
-          action={<Button label="Create map" tone="accent" onPress={create} />}
+          title="Start with a canvas"
+          body="Create a canvas and place your pages on it."
+          action={<Button label="Create canvas" tone="accent" onPress={create} />}
         />
       ) : (
         <View style={[styles.list, { borderTopColor: colors.border }]}>
@@ -65,7 +65,7 @@ export default function Savanna() {
               <Button
                 icon="trash-outline"
                 tone="danger"
-                accessibilityLabel="Delete map"
+                accessibilityLabel="Delete canvas"
                 onPress={() => confirmDelete(canvas.id, canvas.title)}
               />
             </DividerRow>

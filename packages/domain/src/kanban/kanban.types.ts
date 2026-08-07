@@ -1,11 +1,11 @@
 import type { EisenhowerQuadrant } from "../note/note.types";
 
 /**
- * Trek — Kanban boards.
+ * Kanban boards.
  *
  * Boards, columns, and task placement have explicit relational models. Cards
- * still point to canonical taskItem blocks through BoardTask, so dates appear
- * in Stride and priorities appear in Tower — one task, three lenses.
+ * point to canonical taskItem blocks through BoardTask, so dates and priority
+ * remain visible through the same task lenses.
  */
 export type KanbanPriority = EisenhowerQuadrant;
 

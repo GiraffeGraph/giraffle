@@ -91,7 +91,7 @@ function BoardScreen() {
           icon="alert-circle-outline"
           title="Board unavailable"
           body="This board may have been deleted."
-          action={<Button label="Back to Trek" onPress={() => router.replace("/trek")} />}
+          action={<Button label="Back to Boards" onPress={() => router.replace("/trek")} />}
         />
       </Page>
     );
@@ -107,7 +107,7 @@ function BoardScreen() {
     <Page scroll={false}>
       <View style={[styles.heading, { paddingTop: insets.top }]}>
         <View style={styles.titleRow}>
-          <Button icon="chevron-back" accessibilityLabel="Back to Trek" onPress={() => router.back()} />
+          <Button icon="chevron-back" accessibilityLabel="Back to Boards" onPress={() => router.back()} />
           <EditableText
             value={board.title}
             onSave={(title) => void run((repository) => repository.updateBoard(id, { title }))}
@@ -115,7 +115,7 @@ function BoardScreen() {
           />
         </View>
         <Text style={[typography.body, { color: colors.secondary }]}>
-          One task, visible in Trek, Stride, and Tower.
+          The same task appears in Boards, Calendar, and Priority.
         </Text>
       </View>
       <ScrollView

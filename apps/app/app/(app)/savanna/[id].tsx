@@ -39,7 +39,7 @@ export default function CanvasEditor() {
       <View style={{ flex: 1, paddingTop: 80, backgroundColor: colors.background }}>
         <EmptyState
           icon="alert-circle-outline"
-          title="Map unavailable"
+          title="Canvas unavailable"
           body="This canvas may have been deleted."
         />
       </View>
@@ -165,7 +165,7 @@ export default function CanvasEditor() {
           ) : (
             <View style={styles.pickerEmpty}>
               <Text style={[typography.body, { color: colors.secondary }]}>
-                Create a page first, then return here to place it on the map.
+                Create a page first, then return here to place it on the canvas.
               </Text>
               <Button
                 label="Create page"

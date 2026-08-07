@@ -29,8 +29,8 @@ const mainNavigation: readonly NavigationItem[] = [
     icon: "checkmark-circle-outline",
     activePaths: ["/stride", "/tower"],
   },
-  { href: "/trek", label: "Trek", icon: "albums-outline" },
-  { href: "/savanna", label: "Savanna", icon: "map-outline" },
+  { href: "/trek", label: "Boards", icon: "albums-outline" },
+  { href: "/savanna", label: "Canvas", icon: "map-outline" },
   { href: "/account", label: "Account", icon: "person-circle-outline" },
 ];
 

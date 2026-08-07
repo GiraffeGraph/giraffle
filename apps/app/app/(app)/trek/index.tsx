@@ -114,7 +114,7 @@ function TrekScreen() {
   return (
     <>
       <ScreenTopbar
-        title="Trek"
+        title="Boards"
         action={<Button label="Board" icon="add" tone="accent" onPress={() => create()} />}
       />
       <Page>

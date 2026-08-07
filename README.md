@@ -56,9 +56,9 @@ What the relay *does* see: how many records exist, roughly how big they are, whe
 - Block editing with Tiptap: callouts, toggles, tables, images, code, task lists, slash commands
 - Wikilinks and backlinks between pages
 - Nested pages — any page can contain other pages, no separate folder concept
-- Trek kanban boards, where a board is itself a page
-- Stride day planning and Tower Matrix prioritization over the same task records
-- Savanna canvas built on Excalidraw
+- Kanban boards, where each board is also a page
+- Day, week and month planning plus task-only priority views over the same task records
+- Free-form canvas built on Excalidraw
 - Workspace search and archive
 - Markdown export through the system share sheet
 - Encrypted local database, device-held keys, and an access lock (PIN / biometrics)
@@ -188,7 +188,7 @@ The client and the relay each install and test themselves; the root workspace ow
 
 ## Agent Control
 
-`packages/domain/src/mcp/` holds the catalog of tools an agent can call against a workspace — 42 tools covering pages, search, Stride, Tower, Savanna and Trek, with their names, descriptions and argument schemas. It is a contract, not a server: the relay is blind and cannot answer any of these calls, so an MCP host has to run inside a client that already holds the vault key. That host does not exist yet.
+`packages/domain/src/mcp/` holds the catalog of tools an agent can call against a workspace — 42 tools covering pages, search, scheduling, priority, canvases and boards, with their names, descriptions and argument schemas. It is a contract, not a server: the relay is blind and cannot answer any of these calls, so an MCP host has to run inside a client that already holds the vault key. That host does not exist yet.
 
 ## Releasing
 
