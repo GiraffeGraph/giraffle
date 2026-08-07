@@ -64,6 +64,10 @@ What the relay *does* see: how many records exist, roughly how big they are, whe
 - Encrypted local database, device-held keys, and an access lock (PIN / biometrics)
 - Optional ciphertext-only sync between your own devices
 
+### One task, multiple views
+
+A task is one canonical block owned by a page. Board placement, calendar scheduling, and priority are optional dimensions on that same task—not copies. Boards are specialized pages, and Canvas stores live references to canonical pages, boards, and tasks alongside ordinary Excalidraw shapes.
+
 ## Running the Client
 
 ### Prerequisites

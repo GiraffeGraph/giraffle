@@ -79,8 +79,7 @@ function PriorityScreen() {
   };
 
   const openSource = (task: Task) => {
-    if (task.boardId) router.push(`/trek/${task.boardId}`);
-    else router.push(`/notes/${task.pageId}`);
+    router.push(`/notes/${task.pageId}`);
   };
 
   const toggleQuadrant = (priority: TaskPriority) => {

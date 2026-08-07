@@ -109,8 +109,7 @@ export default function Stride() {
     (taskId: string) => {
       const task = snapshot.tasks.find((item) => item.id === taskId);
       if (!task) return;
-      if (task.boardId) router.push(`/trek/${task.boardId}`);
-      else router.push(`/notes/${task.pageId}`);
+      router.push(`/notes/${task.pageId}`);
     },
     [snapshot.tasks],
   );

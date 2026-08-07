@@ -50,10 +50,14 @@ describe("shared task relational invariants", () => {
 
   test("canvas references rebuild atomically with the scene they came from", () => {
     const canvasReferences = table("canvas_references");
+    const taskReferences = migrations[3]?.sql ?? "";
 
     expect(canvasReferences).toContain("PRIMARY KEY(canvas_id, element_id)");
     expect(canvasReferences).toContain(
       "canvas_id TEXT NOT NULL REFERENCES canvases(id) ON DELETE CASCADE",
+    );
+    expect(taskReferences).toContain(
+      "task_id TEXT NOT NULL REFERENCES blocks(id) ON DELETE CASCADE",
     );
   });
 });

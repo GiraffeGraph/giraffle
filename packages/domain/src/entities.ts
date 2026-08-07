@@ -74,7 +74,7 @@ export interface CanvasElement {
   version: number;
   versionNonce: number;
   isDeleted: boolean;
-  customData?: { girafflePageId?: Id };
+  customData?: { girafflePageId?: Id; giraffleTaskId?: Id };
   [key: string]: unknown;
 }
 

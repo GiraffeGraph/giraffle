@@ -1,4 +1,4 @@
-import type { Id, Page as PageModel } from "@giraffle/domain";
+import { pageAncestors, type Id, type Page as PageModel } from "@giraffle/domain";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
@@ -33,6 +33,7 @@ export default function Notes() {
   const [menuPage, setMenuPage] = useState<PageModel | null>(null);
 
   const active = snapshot.pages.filter((page) => !page.isArchived);
+  const boardPageIds = new Set(snapshot.boards.map((board) => board.pageId));
   const recents = [...active]
     .sort((left, right) => right.updatedAt - left.updatedAt)
     .slice(0, RECENT_LIMIT);
@@ -84,7 +85,11 @@ export default function Notes() {
                   },
                 ]}
               >
-                <Icon name="document-text-outline" size={18} color={colors.secondary} />
+                <Icon
+                  name={boardPageIds.has(page.id) ? "albums-outline" : "document-text-outline"}
+                  size={18}
+                  color={colors.secondary}
+                />
                 <Text numberOfLines={2} style={[typography.body, { color: colors.text }]}>
                   {page.title || "Untitled"}
                 </Text>
@@ -110,6 +115,7 @@ export default function Notes() {
 
           <PageTree
             pages={active}
+            boardPageIds={boardPageIds}
             onOpen={open}
             onAddChild={(parentId) => create(parentId)}
             onOpenMenu={setMenuPage}
@@ -132,6 +138,13 @@ function PageRowMenu({ page, close }: { page: PageModel | null; close: () => voi
   const { colors } = useTheme();
   const { run, snapshot } = useApp();
   const board = snapshot.boards.find((item) => item.pageId === page?.id);
+  const containsBoard = page
+    ? snapshot.boards.some(
+        (item) =>
+          item.pageId === page.id ||
+          pageAncestors(snapshot.pages, item.pageId).some((ancestor) => ancestor.id === page.id),
+      )
+    : false;
 
   if (!page) {
     return null;
@@ -175,12 +188,14 @@ function PageRowMenu({ page, close }: { page: PageModel | null; close: () => voi
             <Text style={[typography.body, { color: colors.text }]}>Move to top level</Text>
           </DividerRow>
         ) : null}
-        <DividerRow
-          onPress={() => action(() => run((repository) => repository.archivePage(page.id)))}
-        >
-          <Icon name="archive-outline" />
-          <Text style={[typography.body, { color: colors.text }]}>Move to archive</Text>
-        </DividerRow>
+        {containsBoard ? null : (
+          <DividerRow
+            onPress={() => action(() => run((repository) => repository.archivePage(page.id)))}
+          >
+            <Icon name="archive-outline" />
+            <Text style={[typography.body, { color: colors.text }]}>Move to archive</Text>
+          </DividerRow>
+        )}
         <DividerRow
           onPress={() => {
             close();

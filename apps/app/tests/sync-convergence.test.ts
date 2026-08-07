@@ -214,6 +214,8 @@ describe("cursor durability", () => {
   it("syncs a board as a visible page with canonical tasks", async () => {
     const boardId = await alpha.repository.createBoard("Release board");
     const taskId = await alpha.repository.createTask({ boardId, content: "Ship build" });
+    const inboxTaskId = await alpha.repository.createInboxTask("Prepare notes");
+    await alpha.repository.addTaskToBoard(inboxTaskId, boardId);
 
     await settle(alpha, beta);
 
@@ -221,12 +223,31 @@ describe("cursor durability", () => {
     const board = snapshot.boards.find((item) => item.id === boardId);
     expect(snapshot.pages.find((page) => page.id === board?.pageId)?.title).toBe("Release board");
     expect(snapshot.tasks.find((task) => task.id === taskId)?.pageId).toBe(board?.pageId);
+    expect(snapshot.tasks.find((task) => task.id === inboxTaskId)).toMatchObject({
+      boardId,
+      sourceLabel: "Inbox",
+    });
+    expect(snapshot.pages.find((page) => page.id === snapshot.tasks.find((task) => task.id === inboxTaskId)?.pageId)?.title).toBe("Inbox");
 
+    await alpha.repository.removeTaskFromBoard(inboxTaskId);
     await alpha.repository.updateBoard(boardId, { title: "Launch board" });
     await settle(alpha, beta);
 
     snapshot = await beta.repository.snapshot();
     expect(snapshot.pages.find((page) => page.id === board?.pageId)?.title).toBe("Launch board");
+    expect(snapshot.tasks.find((task) => task.id === inboxTaskId)).toMatchObject({
+      boardId: null,
+      sourceLabel: "Inbox",
+    });
+
+    await alpha.repository.deleteBoard(boardId);
+    await settle(alpha, beta);
+
+    snapshot = await beta.repository.snapshot();
+    expect(snapshot.boards.some((item) => item.id === boardId)).toBe(false);
+    expect(snapshot.pages.some((page) => page.id === board?.pageId)).toBe(false);
+    expect(snapshot.tasks.some((task) => task.id === taskId)).toBe(false);
+    expect(snapshot.tasks.some((task) => task.id === inboxTaskId)).toBe(true);
   });
 });
 

@@ -1,4 +1,4 @@
-import { documentPlainText, extractCanvasReferences, parseWikilinks, positionBetween, EMPTY_DOCUMENT, type Board, type BoardColumn, type BoardStatus, type Canvas, type CanvasElement, type Page, type Task, type TaskPriority, type TiptapDocument } from "@giraffle/domain";
+import { documentPlainText, extractCanvasReferences, extractCanvasTaskReferences, parseWikilinks, positionBetween, EMPTY_DOCUMENT, type Board, type BoardColumn, type BoardStatus, type Canvas, type CanvasElement, type Page, type Task, type TaskPriority, type TiptapDocument } from "@giraffle/domain";
 import { createSyncRecord, decodeSignedSyncRecord, encodeSignedSyncRecord, hashSignedSyncRecord, observeHybridClock, openSyncRecord, tickHybridClock, type SignedSyncRecordV1, type SyncOperationV1, type VersionStamp } from "@giraffle/protocol";
 import { applyYjsUpdate, mergeExcalidrawElements, mergeLwwRegister, resolveTreeParentAssignments, type TreeParentAssignment, type VersionedExcalidrawElement } from "@giraffle/sync";
 import * as Y from "yjs";
@@ -40,6 +40,8 @@ const MUTATION_FIELDS: Record<string, readonly string[]> = {
   "page.restore": ["isArchived", "parentId"],
   "task.create": ["presence", "content", "pageId", "boardId", "columnId", "priority", "position"],
   "task.move": ["columnId", "position"],
+  "task.board": ["columnId", "position"],
+  "task.unboard": ["columnId"],
   "task.delete": ["presence"],
   "board.create": ["presence", "title", "statusId", "position"],
   "board.move": ["position"],
@@ -166,7 +168,10 @@ export class VaultRepository {
       // A local write is by construction the newest thing this device knows, so
       // it takes every field it touched without a comparison.
       const stamp: VersionStamp = { clock, deviceId: this.deviceId, operationId: recordId };
-      for (const targetId of (Array.isArray(payload.ids) ? (payload.ids as string[]) : [objectId])) {
+      const targetIds = Array.isArray(payload.ids)
+        ? [...new Set([objectId, ...(payload.ids as string[])])]
+        : [objectId];
+      for (const targetId of targetIds) {
         for (const field of mutationFields(kind, payload)) await this.writeRegister(tx, targetId, field, stamp);
       }
 
@@ -217,7 +222,7 @@ export class VaultRepository {
   async snapshot(): Promise<AppSnapshot> {
     const [pageRows, taskRows, statusRows, boardRows, columnRows, canvasRows, backlinkRows, syncRow, pendingRow] = await Promise.all([
       this.database.getAllAsync<Record<string, string | number | null>>("SELECT p.*, root.content_json AS document_json FROM pages p LEFT JOIN blocks root ON root.id = p.id || '-document' WHERE p.deleted = 0 ORDER BY p.is_pinned DESC, p.position_id, p.id"),
-      this.database.getAllAsync<Record<string, string | number | null>>("SELECT t.*, bl.page_id, bl.content_json, bt.board_id, bt.column_id, bt.position_id, CASE WHEN bt.board_id IS NOT NULL THEN b.title ELSE p.title END AS source_label, bl.created_at FROM task_metadata t JOIN blocks bl ON bl.id=t.block_id LEFT JOIN board_tasks bt ON bt.block_id=bl.id LEFT JOIN pages p ON p.id=bl.page_id LEFT JOIN boards b ON b.id=bt.board_id WHERE bl.deleted=0 AND ((bt.board_id IS NULL AND p.deleted=0) OR (bt.board_id IS NOT NULL AND b.deleted=0)) ORDER BY t.due_date, CAST(COALESCE(bt.position_id, bl.position_id) AS REAL)"),
+      this.database.getAllAsync<Record<string, string | number | null>>("SELECT t.*, bl.page_id, bl.content_json, bt.board_id, bt.column_id, bt.position_id, p.title AS source_label, bl.created_at FROM task_metadata t JOIN blocks bl ON bl.id=t.block_id LEFT JOIN board_tasks bt ON bt.block_id=bl.id LEFT JOIN pages p ON p.id=bl.page_id LEFT JOIN boards b ON b.id=bt.board_id WHERE bl.deleted=0 AND ((bt.board_id IS NULL AND p.deleted=0) OR (bt.board_id IS NOT NULL AND b.deleted=0)) ORDER BY t.due_date, CAST(COALESCE(bt.position_id, bl.position_id) AS REAL)"),
       this.database.getAllAsync<Record<string, string | number | null>>("SELECT * FROM board_statuses WHERE deleted=0 ORDER BY CAST(position_id AS REAL), id"),
       this.database.getAllAsync<Record<string, string | number | null>>("SELECT * FROM boards WHERE deleted=0 ORDER BY CAST(position_id AS REAL), id"),
       this.database.getAllAsync<Record<string, string | number | null>>("SELECT * FROM board_columns WHERE deleted=0 ORDER BY CAST(position_id AS REAL), id"),
@@ -349,6 +354,7 @@ export class VaultRepository {
       data.ids = ids;
       const placeholders = ids.map(() => "?").join(",");
       await tx.runAsync(`UPDATE pages SET deleted=1,updated_at=? WHERE id IN (${placeholders})`, now, ...ids);
+      await tx.runAsync(`UPDATE boards SET deleted=1,updated_at=? WHERE task_source_page_id IN (${placeholders})`, now, ...ids);
       await tx.runAsync(`DELETE FROM page_fts WHERE page_id IN (${placeholders})`, ...ids);
     });
   }
@@ -358,6 +364,13 @@ export class VaultRepository {
       const ids = await this.subtreeIds(tx, id);
       data.ids = ids;
       const placeholders = ids.map(() => "?").join(",");
+      if (isArchived) {
+        const board = await tx.getFirstAsync<{ id: string }>(
+          `SELECT id FROM boards WHERE deleted=0 AND task_source_page_id IN (${placeholders}) LIMIT 1`,
+          ...ids,
+        );
+        if (board) throw new Error("A board page cannot be archived. Delete the board instead.");
+      }
       await tx.runAsync(`UPDATE pages SET is_archived=?,updated_at=? WHERE id IN (${placeholders})`, Number(isArchived), now, ...ids);
     });
   }
@@ -415,8 +428,52 @@ export class VaultRepository {
       return id;
     });
   }
-  async updateTask(id: string, patch: Partial<Pick<Task, "content" | "completed" | "priority" | "dueDate" | "durationMinutes" | "description" | "columnId">>): Promise<void> {
-    await this.mutate(id, "task.metadata", patch, async (tx, now) => { const current = await tx.getFirstAsync<Record<string, string | number | null>>("SELECT t.*, b.content_json, b.page_id FROM task_metadata t JOIN blocks b ON b.id=t.block_id WHERE block_id=?", id); if (!current) throw new Error("Task not found"); if (patch.content !== undefined) await tx.runAsync("UPDATE blocks SET content_json=?,updated_at=? WHERE id=?", JSON.stringify({ text: patch.content }), now, id); await tx.runAsync("UPDATE task_metadata SET completed=?,priority=?,due_date=?,duration_minutes=?,description=?,updated_at=? WHERE block_id=?", patch.completed === undefined ? Number(current.completed ?? 0) : Number(patch.completed), patch.priority === undefined ? (current.priority ?? null) : patch.priority, patch.dueDate === undefined ? (current.due_date ?? null) : patch.dueDate, patch.durationMinutes === undefined ? (current.duration_minutes ?? null) : patch.durationMinutes, patch.description === undefined ? (current.description ?? null) : patch.description, now, id); if (patch.completed !== undefined) { const attrs = JSON.stringify({ id, checked: patch.completed }); await tx.runAsync("UPDATE blocks SET attributes_json=?,updated_at=? WHERE id=?", attrs, now, id); } if (patch.columnId) await tx.runAsync("UPDATE board_tasks SET column_id=?,updated_at=? WHERE block_id=?", patch.columnId, now, id); await tx.runAsync("UPDATE pages SET updated_at=? WHERE id=?",now,String(current.page_id)); await this.rebuildPageSearch(tx,String(current.page_id)); });
+  async addTaskToBoard(taskId: string, boardId: string, columnId?: string): Promise<void> {
+    const data: MutationData = { boardId, columnId: columnId ?? null };
+    await this.mutate(taskId, "task.board", data, async (tx, now) => {
+      const task = await tx.getFirstAsync<{ id: string }>(
+        "SELECT id FROM blocks WHERE id=? AND type='taskItem' AND deleted=0",
+        taskId,
+      );
+      if (!task) throw new Error("Task not found");
+      const column = columnId
+        ? await tx.getFirstAsync<{ id: string }>(
+            "SELECT id FROM board_columns WHERE id=? AND board_id=? AND deleted=0",
+            columnId,
+            boardId,
+          )
+        : await tx.getFirstAsync<{ id: string }>(
+            "SELECT id FROM board_columns WHERE board_id=? AND deleted=0 ORDER BY CAST(position_id AS REAL),id LIMIT 1",
+            boardId,
+          );
+      if (!column) throw new Error("Board has no available column");
+      const last = await tx.getFirstAsync<{ position_id: string }>(
+        "SELECT position_id FROM board_tasks WHERE column_id=? ORDER BY CAST(position_id AS REAL) DESC LIMIT 1",
+        column.id,
+      );
+      const position = numericPosition(last?.position_id ?? null, null);
+      data.columnId = column.id;
+      data.position = position;
+      await tx.runAsync(
+        "INSERT INTO board_tasks(board_id,block_id,column_id,position_id,created_at,updated_at) VALUES (?,?,?,?,?,?) ON CONFLICT(block_id) DO UPDATE SET board_id=excluded.board_id,column_id=excluded.column_id,position_id=excluded.position_id,updated_at=excluded.updated_at",
+        boardId,
+        taskId,
+        column.id,
+        position,
+        now,
+        now,
+      );
+    });
+  }
+
+  async removeTaskFromBoard(taskId: string): Promise<void> {
+    await this.mutate(taskId, "task.unboard", { columnId: null }, async (tx) => {
+      await tx.runAsync("DELETE FROM board_tasks WHERE block_id=?", taskId);
+    });
+  }
+
+  async updateTask(id: string, patch: Partial<Pick<Task, "content" | "completed" | "priority" | "dueDate" | "durationMinutes" | "description">>): Promise<void> {
+    await this.mutate(id, "task.metadata", patch, async (tx, now) => { const current = await tx.getFirstAsync<Record<string, string | number | null>>("SELECT t.*, b.content_json, b.page_id FROM task_metadata t JOIN blocks b ON b.id=t.block_id WHERE block_id=?", id); if (!current) throw new Error("Task not found"); if (patch.content !== undefined) await tx.runAsync("UPDATE blocks SET content_json=?,updated_at=? WHERE id=?", JSON.stringify({ text: patch.content }), now, id); await tx.runAsync("UPDATE task_metadata SET completed=?,priority=?,due_date=?,duration_minutes=?,description=?,updated_at=? WHERE block_id=?", patch.completed === undefined ? Number(current.completed ?? 0) : Number(patch.completed), patch.priority === undefined ? (current.priority ?? null) : patch.priority, patch.dueDate === undefined ? (current.due_date ?? null) : patch.dueDate, patch.durationMinutes === undefined ? (current.duration_minutes ?? null) : patch.durationMinutes, patch.description === undefined ? (current.description ?? null) : patch.description, now, id); if (patch.completed !== undefined) { const attrs = JSON.stringify({ id, checked: patch.completed }); await tx.runAsync("UPDATE blocks SET attributes_json=?,updated_at=? WHERE id=?", attrs, now, id); } await tx.runAsync("UPDATE pages SET updated_at=? WHERE id=?",now,String(current.page_id)); await this.rebuildPageSearch(tx,String(current.page_id)); });
   }
   /**
    * Places a board task in `columnId`, directly after `afterTaskId` or first in
@@ -425,6 +482,19 @@ export class VaultRepository {
   async moveTask(id: string, columnId: string, afterTaskId: string | null): Promise<void> {
     const data: MutationData = { columnId, afterTaskId };
     await this.mutate(id, "task.move", data, async (tx, now) => {
+      const placement = await tx.getFirstAsync<{ board_id: string }>(
+        "SELECT board_id FROM board_tasks WHERE block_id=?",
+        id,
+      );
+      if (!placement) throw new Error("Board task not found");
+      const targetColumn = await tx.getFirstAsync<{ board_id: string }>(
+        "SELECT board_id FROM board_columns WHERE id=? AND deleted=0",
+        columnId,
+      );
+      if (!targetColumn || targetColumn.board_id !== placement.board_id) {
+        throw new Error("Target column belongs to another board");
+      }
+      data.boardId = placement.board_id;
       const anchor = afterTaskId
         ? await tx.getFirstAsync<{ position_id: string }>("SELECT position_id FROM board_tasks WHERE block_id=? AND column_id=?", afterTaskId, columnId)
         : null;
@@ -463,10 +533,34 @@ export class VaultRepository {
       await tx.runAsync("UPDATE boards SET position_id=?,updated_at=? WHERE id=?", position, now, id);
     });
   }
-  async deleteBoard(id:string):Promise<void>{await this.mutate(id,"board.delete",{},async(tx,now)=>{const board=await tx.getFirstAsync<{task_source_page_id:string}>("SELECT task_source_page_id FROM boards WHERE id=?",id);await tx.runAsync("UPDATE boards SET deleted=1,updated_at=? WHERE id=?",now,id);if(board){await tx.runAsync("UPDATE pages SET deleted=1,updated_at=? WHERE id=?",now,board.task_source_page_id);await tx.runAsync("DELETE FROM page_fts WHERE page_id=?",board.task_source_page_id);}});}
+  async deleteBoard(id: string): Promise<void> {
+    const data: MutationData = {};
+    await this.mutate(id, "board.delete", data, async (tx, now) => {
+      const board = await tx.getFirstAsync<{ task_source_page_id: string }>(
+        "SELECT task_source_page_id FROM boards WHERE id=?",
+        id,
+      );
+      if (!board) return;
+      const ids = await this.subtreeIds(tx, board.task_source_page_id);
+      data.ids = ids;
+      const placeholders = ids.map(() => "?").join(",");
+      await tx.runAsync(
+        `UPDATE boards SET deleted=1,updated_at=? WHERE id=? OR task_source_page_id IN (${placeholders})`,
+        now,
+        id,
+        ...ids,
+      );
+      await tx.runAsync(
+        `UPDATE pages SET deleted=1,updated_at=? WHERE id IN (${placeholders})`,
+        now,
+        ...ids,
+      );
+      await tx.runAsync(`DELETE FROM page_fts WHERE page_id IN (${placeholders})`, ...ids);
+    });
+  }
   async createColumn(boardId:string,title="New column"):Promise<string>{const id=createId();const data:MutationData={id,boardId,title};return this.mutate(id,"board-column.create",data,async(tx,now)=>{const position=String(now);data.position=position;await tx.runAsync("INSERT INTO board_columns(id,board_id,title,position_id,created_at,updated_at) VALUES (?,?,?,?,?,?)",id,boardId,title,position,now,now);return id;});}
   async updateColumn(id:string,patch:Partial<Pick<BoardColumn,"title"|"color">>):Promise<void>{await this.mutate(id,"board-column.metadata",patch,async(tx,now)=>{const c=await tx.getFirstAsync<Record<string,string|null>>("SELECT * FROM board_columns WHERE id=?",id);if(!c)throw new Error("Column not found");await tx.runAsync("UPDATE board_columns SET title=?,color=?,updated_at=? WHERE id=?",patch.title??String(c.title),patch.color===undefined?(c.color??null):patch.color,now,id);});}
-  async deleteColumn(id:string,moveToId:string):Promise<void>{await this.mutate(id,"board-column.delete",{moveToId},async(tx,now)=>{await tx.runAsync("UPDATE board_tasks SET column_id=?,updated_at=? WHERE column_id=?",moveToId,now,id);await tx.runAsync("UPDATE board_columns SET deleted=1,updated_at=? WHERE id=?",now,id);});}
+  async deleteColumn(id:string,moveToId:string):Promise<void>{await this.mutate(id,"board-column.delete",{moveToId},async(tx,now)=>{const source=await tx.getFirstAsync<{board_id:string}>("SELECT board_id FROM board_columns WHERE id=? AND deleted=0",id);const target=await tx.getFirstAsync<{board_id:string}>("SELECT board_id FROM board_columns WHERE id=? AND deleted=0",moveToId);if(!source||!target||source.board_id!==target.board_id)throw new Error("Tasks can only move within the same board");await tx.runAsync("UPDATE board_tasks SET column_id=?,updated_at=? WHERE column_id=?",moveToId,now,id);await tx.runAsync("UPDATE board_columns SET deleted=1,updated_at=? WHERE id=?",now,id);});}
 
   async createStatus(title="New status"):Promise<string>{const id=createId();const data:MutationData={id,title};return this.mutate(id,"board-status.create",data,async(tx,now)=>{const position=String(now);data.position=position;await tx.runAsync("INSERT INTO board_statuses(id,title,position_id,created_at,updated_at) VALUES (?,?,?,?,?)",id,title,position,now,now);return id;});}
   async updateStatus(id:string,title:string):Promise<void>{await this.mutate(id,"board-status.rename",{title},async(tx,now)=>{await tx.runAsync("UPDATE board_statuses SET title=?,updated_at=? WHERE id=?",title,now,id);});}
@@ -474,10 +568,10 @@ export class VaultRepository {
 
   // Excalidraw coordinates are floats and canonical CBOR carries only safe
   // integers, so a scene travels as a JSON string rather than as CBOR values.
-  async createCanvas(title="New map"):Promise<string>{const id=createId();return this.mutate(id,"canvas.create",{id,title,elements:"[]",appState:"{}"},async(tx,now)=>{await tx.runAsync("INSERT INTO canvases(id,title,elements_json,app_state_json,created_at,updated_at) VALUES (?,?,'[]','{}',?,?)",id,title,now,now);return id;});}
+  async createCanvas(title="New canvas"):Promise<string>{const id=createId();return this.mutate(id,"canvas.create",{id,title,elements:"[]",appState:"{}"},async(tx,now)=>{await tx.runAsync("INSERT INTO canvases(id,title,elements_json,app_state_json,created_at,updated_at) VALUES (?,?,'[]','{}',?,?)",id,title,now,now);return id;});}
   async saveCanvas(id:string,elements:CanvasElement[],appState:Record<string,unknown>={}):Promise<void>{await this.mutate(id,"canvas.scene",{elements:JSON.stringify(elements),appState:JSON.stringify(appState)},async(tx,now)=>{await this.storeCanvasScene(tx,id,elements,appState,now);});}
 
-  private async storeCanvasScene(tx:Tx,id:string,elements:CanvasElement[],appState:Record<string,unknown>,now:number):Promise<void>{await tx.runAsync("UPDATE canvases SET elements_json=?,app_state_json=?,updated_at=? WHERE id=?",JSON.stringify(elements),JSON.stringify(appState),now,id);await tx.runAsync("DELETE FROM canvas_references WHERE canvas_id=?",id);for(const ref of extractCanvasReferences(elements))await tx.runAsync("INSERT INTO canvas_references(canvas_id,element_id,page_id) VALUES (?,?,?)",id,ref.elementId,ref.pageId);}
+  private async storeCanvasScene(tx:Tx,id:string,elements:CanvasElement[],appState:Record<string,unknown>,now:number):Promise<void>{await tx.runAsync("UPDATE canvases SET elements_json=?,app_state_json=?,updated_at=? WHERE id=?",JSON.stringify(elements),JSON.stringify(appState),now,id);await tx.runAsync("DELETE FROM canvas_references WHERE canvas_id=?",id);await tx.runAsync("DELETE FROM canvas_task_references WHERE canvas_id=?",id);for(const ref of extractCanvasReferences(elements))await tx.runAsync("INSERT INTO canvas_references(canvas_id,element_id,page_id) VALUES (?,?,?)",id,ref.elementId,ref.pageId);for(const ref of extractCanvasTaskReferences(elements))await tx.runAsync("INSERT INTO canvas_task_references(canvas_id,element_id,task_id) VALUES (?,?,?)",id,ref.elementId,ref.taskId);}
   async renameCanvas(id:string,title:string):Promise<void>{await this.mutate(id,"canvas.rename",{title},async(tx,now)=>{await tx.runAsync("UPDATE canvases SET title=?,updated_at=? WHERE id=?",title,now,id);});}
   async deleteCanvas(id:string):Promise<void>{await this.mutate(id,"canvas.delete",{},async(tx,now)=>{await tx.runAsync("UPDATE canvases SET deleted=1,updated_at=? WHERE id=?",now,id);});}
 
@@ -638,6 +732,7 @@ export class VaultRepository {
       if (kind === "page.delete") {
         if (!(await this.claimRegister(tx, targetId, "presence", stamp))) continue;
         await tx.runAsync("UPDATE pages SET deleted=1,updated_at=? WHERE id=?", now, targetId);
+        await tx.runAsync("UPDATE boards SET deleted=1,updated_at=? WHERE task_source_page_id=?", now, targetId);
         await tx.runAsync("DELETE FROM page_fts WHERE page_id=?", targetId);
         touchedTree = true;
         continue;
@@ -647,6 +742,13 @@ export class VaultRepository {
         if (!(field in data)) continue;
         if (!(await this.claimRegister(tx, targetId, field, stamp))) continue;
         const raw = data[field];
+        if (field === "isArchived" && raw === true) {
+          const board = await tx.getFirstAsync<{ id: string }>(
+            "SELECT id FROM boards WHERE deleted=0 AND task_source_page_id=?",
+            targetId,
+          );
+          if (board) continue;
+        }
         const value = field === "isPinned" || field === "isArchived" ? Number(raw === true) : (raw as string | null);
         await tx.runAsync(`UPDATE pages SET ${column}=?,updated_at=? WHERE id=?`, value, now, targetId);
         if (field === "title") await tx.runAsync("UPDATE page_fts SET title=? WHERE page_id=?", String(raw), targetId);
@@ -706,6 +808,30 @@ export class VaultRepository {
       return;
     }
 
+    if (kind === "task.unboard") {
+      if (await this.claimRegister(tx, objectId, "columnId", stamp)) {
+        await tx.runAsync("DELETE FROM board_tasks WHERE block_id=?", objectId);
+      }
+      return;
+    }
+
+    if (kind === "task.board") {
+      const boardId = typeof data.boardId === "string" ? data.boardId : null;
+      const columnId = typeof data.columnId === "string" ? data.columnId : null;
+      if (!boardId || !columnId || !(await this.claimRegister(tx, objectId, "columnId", stamp))) return;
+      const position = typeof data.position === "string" ? data.position : String(now);
+      await tx.runAsync(
+        "INSERT INTO board_tasks(board_id,block_id,column_id,position_id,created_at,updated_at) VALUES (?,?,?,?,?,?) ON CONFLICT(block_id) DO UPDATE SET board_id=excluded.board_id,column_id=excluded.column_id,position_id=excluded.position_id,updated_at=excluded.updated_at",
+        boardId,
+        objectId,
+        columnId,
+        position,
+        now,
+        now,
+      );
+      return;
+    }
+
     if ("content" in data && (await this.claimRegister(tx, objectId, "content", stamp))) {
       await tx.runAsync("UPDATE blocks SET content_json=?,updated_at=? WHERE id=?", JSON.stringify({ text: String(data.content) }), now, objectId);
     }
@@ -744,10 +870,17 @@ export class VaultRepository {
     if (kind === "board.delete") {
       if (await this.claimRegister(tx, objectId, "presence", stamp)) {
         const board = await tx.getFirstAsync<{ task_source_page_id: string }>("SELECT task_source_page_id FROM boards WHERE id=?", objectId);
+        const pageIds = Array.isArray(data.ids)
+          ? (data.ids as string[])
+          : board
+            ? [board.task_source_page_id]
+            : [];
         await tx.runAsync("UPDATE boards SET deleted=1,updated_at=? WHERE id=?", now, objectId);
-        if (board) {
-          await tx.runAsync("UPDATE pages SET deleted=1,updated_at=? WHERE id=?", now, board.task_source_page_id);
-          await tx.runAsync("DELETE FROM page_fts WHERE page_id=?", board.task_source_page_id);
+        for (const pageId of pageIds) {
+          if (!(await this.claimRegister(tx, pageId, "presence", stamp))) continue;
+          await tx.runAsync("UPDATE pages SET deleted=1,updated_at=? WHERE id=?", now, pageId);
+          await tx.runAsync("UPDATE boards SET deleted=1,updated_at=? WHERE task_source_page_id=?", now, pageId);
+          await tx.runAsync("DELETE FROM page_fts WHERE page_id=?", pageId);
         }
       }
       return;
@@ -778,7 +911,15 @@ export class VaultRepository {
 
     if (kind === "board-column.delete") {
       if (!(await this.claimRegister(tx, objectId, "presence", stamp))) return;
-      if (typeof data.moveToId === "string") await tx.runAsync("UPDATE board_tasks SET column_id=?,updated_at=? WHERE column_id=?", data.moveToId, now, objectId);
+      if (typeof data.moveToId === "string") {
+        const pair = await tx.getFirstAsync<{ source_board_id: string; target_board_id: string }>(
+          "SELECT source.board_id source_board_id,target.board_id target_board_id FROM board_columns source JOIN board_columns target ON target.id=? WHERE source.id=?",
+          data.moveToId,
+          objectId,
+        );
+        if (!pair || pair.source_board_id !== pair.target_board_id) return;
+        await tx.runAsync("UPDATE board_tasks SET column_id=?,updated_at=? WHERE column_id=?", data.moveToId, now, objectId);
+      }
       await tx.runAsync("UPDATE board_columns SET deleted=1,updated_at=? WHERE id=?", now, objectId);
       return;
     }
@@ -813,7 +954,7 @@ export class VaultRepository {
     const existing = await tx.getFirstAsync<{ elements_json: string; app_state_json: string }>("SELECT elements_json, app_state_json FROM canvases WHERE id=?", objectId);
     if (!existing) {
       if (kind === "canvas.delete") return;
-      await tx.runAsync("INSERT INTO canvases(id,title,elements_json,app_state_json,created_at,updated_at) VALUES (?,?,'[]','{}',?,?)", objectId, typeof data.title === "string" ? data.title : "New map", now, now);
+      await tx.runAsync("INSERT INTO canvases(id,title,elements_json,app_state_json,created_at,updated_at) VALUES (?,?,'[]','{}',?,?)", objectId, typeof data.title === "string" ? data.title : "New canvas", now, now);
     }
 
     if (kind === "canvas.delete") {

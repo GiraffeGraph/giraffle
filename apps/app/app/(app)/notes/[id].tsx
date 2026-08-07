@@ -6,7 +6,7 @@ import {
   type Page as PageModel,
   type TiptapDocument,
 } from "@giraffle/domain";
-import { router, useLocalSearchParams } from "expo-router";
+import { Redirect, router, useLocalSearchParams } from "expo-router";
 import { File } from "expo-file-system";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, AppState, Linking, Modal, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
@@ -45,6 +45,7 @@ export default function NoteEditor() {
   const insets = useSafeAreaInsets();
   const { snapshot, run } = useApp();
   const page = snapshot.pages.find((item) => item.id === id);
+  const board = snapshot.boards.find((item) => item.pageId === id);
   const [menu, setMenu] = useState(false);
   const [moveSheet, setMoveSheet] = useState(false);
   // A page that already has tasks opens showing them; an empty one stays quiet.
@@ -131,6 +132,8 @@ export default function NoteEditor() {
     },
     [id, run],
   );
+
+  if (board) return <Redirect href={`/trek/${board.id}`} />;
 
   if (!page || !draft) {
     return (
@@ -265,6 +268,13 @@ export default function NoteEditor() {
                   },
                 ]}
               />
+              {task.boardId ? (
+                <Button
+                  icon="albums-outline"
+                  accessibilityLabel="Open board"
+                  onPress={() => router.push(`/trek/${task.boardId}`)}
+                />
+              ) : null}
               <Button
                 icon="trash-outline"
                 tone="danger"

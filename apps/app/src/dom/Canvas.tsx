@@ -12,10 +12,11 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties } from "re
 import {
   liveElements,
   pageIdForElement,
-  pageReferenceSkeleton,
+  referenceSkeleton,
   sceneMatches,
   sceneViewport,
-  type PageReferenceRequest,
+  taskIdForElement,
+  type CanvasReferenceRequest,
 } from "./scene";
 import { canvasCssVariables, type CanvasTheme } from "./theme";
 
@@ -26,10 +27,11 @@ export interface CanvasProps {
   /** Seeds the scene. Later revisions are not pushed back in; see below. */
   elements: CanvasElement[];
   theme: CanvasTheme;
-  /** A page the host wants placed on the canvas, or null when there is none. */
-  pendingPage: PageReferenceRequest | null;
+  /** A canonical page or task the host wants placed on the canvas. */
+  pendingReference: CanvasReferenceRequest | null;
   onChange: (elements: CanvasElement[], appState: Record<string, unknown>) => void;
   onOpenPage: (pageId: string) => void;
+  onOpenTask: (taskId: string) => void;
   onError: (message: string) => void;
   dom?: DOMProps;
 }
@@ -60,9 +62,10 @@ function describe(error: unknown): string {
 export default function Canvas({
   elements,
   theme,
-  pendingPage,
+  pendingReference,
   onChange,
   onOpenPage,
+  onOpenTask,
   onError,
 }: CanvasProps) {
   const [api, setApi] = useState<ExcalidrawImperativeAPI | null>(null);
@@ -70,7 +73,7 @@ export default function Canvas({
   // back, so adopting later revisions would fight the user's own strokes.
   const [seed] = useState(() => elements);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const appliedPage = useRef<string | null>(null);
+  const appliedReference = useRef<string | null>(null);
   const published = useRef<CanvasElement[]>(seed);
 
   const publish = useCallback(
@@ -114,11 +117,15 @@ export default function Canvas({
   }, [api, theme.bg]);
 
   useEffect(() => {
-    if (!api || !pendingPage || appliedPage.current === pendingPage.elementId) return;
-    appliedPage.current = pendingPage.elementId;
+    if (
+      !api ||
+      !pendingReference ||
+      appliedReference.current === pendingReference.elementId
+    ) return;
+    appliedReference.current = pendingReference.elementId;
     try {
       const existing = api.getSceneElements();
-      const skeleton = pageReferenceSkeleton(pendingPage, existing.length);
+      const skeleton = referenceSkeleton(pendingReference, existing.length);
       const added = convertToExcalidrawElements([skeleton as never]);
       const next = [...existing, ...added];
       api.updateScene({ elements: next });
@@ -126,7 +133,7 @@ export default function Canvas({
     } catch (error) {
       onError(describe(error));
     }
-  }, [api, onError, pendingPage, publish]);
+  }, [api, onError, pendingReference, publish]);
 
   return (
     <div className="giraffle-canvas" style={canvasCssVariables(theme) as CSSProperties}>
@@ -142,10 +149,11 @@ export default function Canvas({
         // Opening a linked page belongs to the native screen, not the canvas.
         onLinkOpen={(element, event) => {
           const pageId = pageIdForElement(element);
-          if (pageId) {
-            event.preventDefault();
-            onOpenPage(pageId);
-          }
+          const taskId = taskIdForElement(element);
+          if (!pageId && !taskId) return;
+          event.preventDefault();
+          if (pageId) onOpenPage(pageId);
+          else if (taskId) onOpenTask(taskId);
         }}
       />
     </div>

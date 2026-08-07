@@ -16,6 +16,7 @@ const CANONICAL_TABLES = [
   "board_tasks",
   "canvases",
   "canvas_references",
+  "canvas_task_references",
   "media_manifests",
 ];
 
@@ -78,6 +79,7 @@ describe("SQLCipher schema", () => {
       "idx_board_tasks_position",
       "idx_links_target",
       "idx_canvas_refs_page",
+      "idx_canvas_task_refs_task",
       "idx_outbox_retry",
     ]) {
       expect(sql).toContain(index);

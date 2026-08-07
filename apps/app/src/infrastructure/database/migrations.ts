@@ -63,6 +63,13 @@ DELETE FROM page_fts WHERE page_id IN (SELECT task_source_page_id FROM boards WH
 INSERT INTO page_fts(page_id,title,body)
 SELECT p.id, p.title, '' FROM pages p JOIN boards b ON b.task_source_page_id=p.id WHERE b.deleted=0;
 `
+}, {
+  version: 4,
+  name: "canvas-task-references",
+  sql: `
+CREATE TABLE canvas_task_references(canvas_id TEXT NOT NULL REFERENCES canvases(id) ON DELETE CASCADE, element_id TEXT NOT NULL, task_id TEXT NOT NULL REFERENCES blocks(id) ON DELETE CASCADE, PRIMARY KEY(canvas_id, element_id));
+CREATE INDEX idx_canvas_task_refs_task ON canvas_task_references(task_id);
+`
 }];
 
 export const CURRENT_SCHEMA_VERSION = migrations.at(-1)?.version ?? 0;

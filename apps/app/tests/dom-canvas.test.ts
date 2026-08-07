@@ -3,8 +3,10 @@ import {
   liveElements,
   pageIdForElement,
   pageReferenceSkeleton,
+  referenceSkeleton,
   sceneMatches,
   sceneViewport,
+  taskIdForElement,
 } from "@/dom/scene";
 import { canvasCssVariables, type CanvasTheme } from "@/dom/theme";
 
@@ -65,7 +67,7 @@ describe("page references", () => {
 
   test("a reference carries the id and nonce the host minted", () => {
     const skeleton = pageReferenceSkeleton(
-      { pageId: "page-1", title: "Field Notes", elementId: "element-1", versionNonce: 99 },
+      { kind: "page", pageId: "page-1", title: "Field Notes", elementId: "element-1", versionNonce: 99 },
       0,
     );
 
@@ -74,16 +76,31 @@ describe("page references", () => {
       id: "element-1",
       versionNonce: 99,
       label: { text: "Field Notes" },
+      link: "giraffle://page/page-1",
       customData: { girafflePageId: "page-1" },
     });
   });
 
   test("cards lay out two per row so a busy canvas does not stack them", () => {
-    const request = { pageId: "p", title: "t", elementId: "e", versionNonce: 1 };
+    const request = { kind: "page" as const, pageId: "p", title: "t", elementId: "e", versionNonce: 1 };
 
     expect(pageReferenceSkeleton(request, 0)).toMatchObject({ x: 24, y: 24 });
     expect(pageReferenceSkeleton(request, 1)).toMatchObject({ x: 284, y: 24 });
     expect(pageReferenceSkeleton(request, 2)).toMatchObject({ x: 24, y: 164 });
+  });
+
+  test("a task reference keeps the canonical task id", () => {
+    const skeleton = referenceSkeleton(
+      { kind: "task", taskId: "task-1", title: "Ship build", elementId: "element-2", versionNonce: 7 },
+      0,
+    );
+
+    expect(skeleton).toMatchObject({
+      label: { text: "Ship build" },
+      link: "giraffle://task/task-1",
+      customData: { giraffleTaskId: "task-1" },
+    });
+    expect(taskIdForElement(skeleton)).toBe("task-1");
   });
 });
 

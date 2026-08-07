@@ -1,13 +1,14 @@
 import type { CanvasElement } from "@giraffle/domain";
 import { router, useLocalSearchParams } from "expo-router";
 import { useRef, useState } from "react";
-import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { EditableText } from "@/components/ui/EditableText";
 import { Button, DividerRow, EmptyState, Icon } from "@/components/ui/primitives";
 import { useTheme } from "@/design/ThemeProvider";
 import { spacing, typography } from "@/design/tokens";
 import Canvas from "@/dom/Canvas";
+import type { CanvasReferenceRequest } from "@/dom/scene";
 import { offlineDomProps } from "@/dom/offline";
 import { createId } from "@/platform/ids";
 import { useApp } from "@/state/AppProvider";
@@ -21,18 +22,14 @@ export default function CanvasEditor() {
   const { snapshot, run } = useApp();
   const canvas = snapshot.canvases.find((item) => item.id === id);
   const [picker, setPicker] = useState(false);
+  const [pickerQuery, setPickerQuery] = useState("");
   const [saveState, setSaveState] = useState<CanvasSaveState>("saved");
   const saveRevision = useRef(0);
   const pendingScene = useRef<{
     elements: CanvasElement[];
     appState: Record<string, unknown>;
   } | null>(null);
-  const [add, setAdd] = useState<{
-    pageId: string;
-    title: string;
-    elementId: string;
-    versionNonce: number;
-  } | null>(null);
+  const [add, setAdd] = useState<CanvasReferenceRequest | null>(null);
 
   if (!canvas) {
     return (
@@ -46,7 +43,19 @@ export default function CanvasEditor() {
     );
   }
 
-  const activePages = snapshot.pages.filter((page) => !page.isArchived);
+  const normalizedQuery = pickerQuery.trim().toLocaleLowerCase();
+  const activePages = snapshot.pages.filter(
+    (page) =>
+      !page.isArchived &&
+      (!normalizedQuery || page.title.toLocaleLowerCase().includes(normalizedQuery)),
+  );
+  const activeTasks = snapshot.tasks.filter(
+    (task) =>
+      !task.completed &&
+      (!normalizedQuery ||
+        task.content.toLocaleLowerCase().includes(normalizedQuery) ||
+        task.sourceLabel.toLocaleLowerCase().includes(normalizedQuery)),
+  );
   const saveScene = (elements: CanvasElement[], appState: Record<string, unknown>) => {
     pendingScene.current = { elements, appState };
     setSaveState("saving");
@@ -98,15 +107,18 @@ export default function CanvasEditor() {
           </Text>
         )}
         <Button
-          label="Add page"
-          icon="document-attach-outline"
-          onPress={() => setPicker(true)}
+          label="Add"
+          icon="add"
+          onPress={() => {
+            setPickerQuery("");
+            setPicker(true);
+          }}
         />
       </View>
       <View style={styles.canvas}>
         <Canvas
           elements={canvas.elements}
-          pendingPage={add}
+          pendingReference={add}
           theme={{
             bg: colors.background,
             dot: colors.border,
@@ -117,7 +129,15 @@ export default function CanvasEditor() {
             accent: colors.accent,
             danger: colors.danger,
           }}
-          onOpenPage={(pageId) => router.push(`/notes/${pageId}`)}
+          onOpenPage={(pageId) => {
+            const board = snapshot.boards.find((item) => item.pageId === pageId);
+            router.push(board ? `/trek/${board.id}` : `/notes/${pageId}`);
+          }}
+          onOpenTask={(taskId) => {
+            const task = snapshot.tasks.find((item) => item.id === taskId);
+            if (!task) return;
+            router.push(`/notes/${task.pageId}`);
+          }}
           onError={() => setSaveState("error")}
           onChange={(elements, appState) => {
             setAdd(null);
@@ -140,45 +160,106 @@ export default function CanvasEditor() {
           edges={["bottom"]}
           style={[styles.sheet, { backgroundColor: colors.surfaceStrong }]}
         >
-          <Text style={[typography.title, { color: colors.text }]}>Add page reference</Text>
-          {activePages.length ? (
-            activePages.map((page) => (
-              <DividerRow
-                key={page.id}
-                onPress={() => {
-                  setAdd({
-                    pageId: page.id,
-                    title: page.title,
-                    elementId: createId(),
-                    versionNonce: Math.floor(Math.random() * 2_147_483_647),
-                  });
-                  setPicker(false);
-                }}
-              >
-                <Icon name="document-outline" />
-                <Text style={[typography.body, { color: colors.text, flex: 1 }]}>
-                  {page.title}
-                </Text>
-                <Icon name="add" color={colors.accent} />
-              </DividerRow>
-            ))
-          ) : (
-            <View style={styles.pickerEmpty}>
-              <Text style={[typography.body, { color: colors.secondary }]}>
-                Create a page first, then return here to place it on the canvas.
-              </Text>
-              <Button
-                label="Create page"
-                tone="accent"
-                onPress={() => {
-                  setPicker(false);
-                  void run((repository) => repository.createPage())
-                    .then((pageId) => router.push(`/notes/${pageId}`))
-                    .catch(() => undefined);
-                }}
-              />
-            </View>
-          )}
+          <Text style={[typography.title, { color: colors.text }]}>Add to canvas</Text>
+          <View
+            style={[
+              styles.search,
+              { borderColor: colors.border, backgroundColor: colors.surface },
+            ]}
+          >
+            <Icon name="search-outline" size={18} color={colors.muted} />
+            <TextInput
+              value={pickerQuery}
+              onChangeText={setPickerQuery}
+              placeholder="Find a page, board, or task"
+              placeholderTextColor={colors.faint}
+              style={[styles.searchInput, typography.body, { color: colors.text }]}
+            />
+          </View>
+          <ScrollView keyboardShouldPersistTaps="handled">
+            {activePages.length ? (
+              <View>
+                <Text style={[styles.sectionLabel, typography.label, { color: colors.muted }]}>Pages and boards</Text>
+                {activePages.map((page) => {
+                  const board = snapshot.boards.find((item) => item.pageId === page.id);
+                  return (
+                    <DividerRow
+                      key={page.id}
+                      onPress={() => {
+                        setAdd({
+                          kind: "page",
+                          pageId: page.id,
+                          title: page.title,
+                          elementId: createId(),
+                          versionNonce: Math.floor(Math.random() * 2_147_483_647),
+                        });
+                        setPicker(false);
+                      }}
+                    >
+                      <Icon name={board ? "albums-outline" : "document-outline"} />
+                      <Text style={[typography.body, { color: colors.text, flex: 1 }]}>
+                        {page.title}
+                      </Text>
+                      <Text style={[typography.caption, { color: colors.muted }]}>
+                        {board ? "Board" : "Page"}
+                      </Text>
+                    </DividerRow>
+                  );
+                })}
+              </View>
+            ) : null}
+
+            {activeTasks.length ? (
+              <View>
+                <Text style={[styles.sectionLabel, typography.label, { color: colors.muted }]}>Tasks</Text>
+                {activeTasks.map((task) => (
+                  <DividerRow
+                    key={task.id}
+                    onPress={() => {
+                      setAdd({
+                        kind: "task",
+                        taskId: task.id,
+                        title: task.content,
+                        elementId: createId(),
+                        versionNonce: Math.floor(Math.random() * 2_147_483_647),
+                      });
+                      setPicker(false);
+                    }}
+                  >
+                    <Icon name="checkbox-outline" />
+                    <View style={{ flex: 1 }}>
+                      <Text numberOfLines={1} style={[typography.body, { color: colors.text }]}>
+                        {task.content}
+                      </Text>
+                      <Text numberOfLines={1} style={[typography.caption, { color: colors.muted }]}>
+                        {task.sourceLabel}
+                      </Text>
+                    </View>
+                    <Icon name="add" color={colors.accent} />
+                  </DividerRow>
+                ))}
+              </View>
+            ) : null}
+
+            {!activePages.length && !activeTasks.length ? (
+              <View style={styles.pickerEmpty}>
+                {normalizedQuery ? (
+                  <Text style={[typography.body, { color: colors.secondary }]}>No matches</Text>
+                ) : (
+                  <Button
+                    label="Create page"
+                    tone="accent"
+                    onPress={() => {
+                      setPicker(false);
+                      void run((repository) => repository.createPage())
+                        .then((pageId) => router.push(`/notes/${pageId}`))
+                        .catch(() => undefined);
+                    }}
+                  />
+                )}
+              </View>
+            ) : null}
+          </ScrollView>
         </SafeAreaView>
       </Modal>
     </View>
@@ -197,6 +278,17 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   scrim: { flex: 1 },
-  sheet: { maxHeight: "65%", padding: spacing.lg, gap: spacing.sm },
+  sheet: { maxHeight: "72%", padding: spacing.lg, gap: spacing.sm },
+  search: {
+    minHeight: 44,
+    paddingHorizontal: spacing.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  searchInput: { flex: 1, minWidth: 0 },
+  sectionLabel: { paddingTop: spacing.md, paddingBottom: spacing.xs },
   pickerEmpty: { gap: spacing.lg, paddingVertical: spacing.lg },
 });

@@ -1,8 +1,9 @@
 import type { Task } from "@giraffle/domain";
 import { router, useLocalSearchParams } from "expo-router";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { AddBoardTaskSheet } from "@/components/boards/AddBoardTaskSheet";
 import {
   DragSortItem,
   DragSortProvider,
@@ -37,6 +38,7 @@ function BoardScreen() {
   const insets = useSafeAreaInsets();
   const { snapshot, run } = useApp();
   const drag = useDragSort();
+  const [addColumnId, setAddColumnId] = useState<string | null>(null);
   const board = snapshot.boards.find((item) => item.id === id);
   const columns = useMemo(
     () => snapshot.columns.filter((item) => item.boardId === id),
@@ -97,11 +99,10 @@ function BoardScreen() {
     );
   }
 
-  const addTask = (columnId: string) => {
-    void run((repository) =>
-      repository.createTask({ boardId: id, columnId, content: "New task" }),
-    );
-  };
+  const addColumn = columns.find((column) => column.id === addColumnId);
+  const unassignedTasks = snapshot.tasks.filter(
+    (task) => !task.boardId && !task.completed,
+  );
 
   return (
     <Page scroll={false}>
@@ -114,9 +115,6 @@ function BoardScreen() {
             style={[typography.heading, { flex: 1 }]}
           />
         </View>
-        <Text style={[typography.body, { color: colors.secondary }]}>
-          The same task appears in Boards, Calendar, and Priority.
-        </Text>
       </View>
       <ScrollView
         horizontal
@@ -151,7 +149,7 @@ function BoardScreen() {
                   <Button
                     icon="add"
                     accessibilityLabel={`Add task to ${column.title}`}
-                    onPress={() => addTask(column.id)}
+                    onPress={() => setAddColumnId(column.id)}
                   />
                 </View>
               </DragSortItem>
@@ -223,27 +221,37 @@ function BoardScreen() {
                               );
                               const next = columns[(currentIndex + 1) % columns.length];
                               if (next) {
+                                const last = cardsOf(boardTasks, next.id).at(-1);
                                 void run((repository) =>
-                                  repository.updateTask(task.id, { columnId: next.id }),
+                                  repository.moveTask(task.id, next.id, last?.id ?? null),
                                 );
                               }
                             }}
                           />
                         ) : null}
                         <Button
-                          icon="trash-outline"
-                          tone="danger"
-                          accessibilityLabel="Delete task"
+                          icon={task.pageId === board.pageId ? "trash-outline" : "remove-circle-outline"}
+                          tone={task.pageId === board.pageId ? "danger" : "quiet"}
+                          accessibilityLabel={task.pageId === board.pageId ? "Delete task" : "Remove from board"}
                           onPress={() =>
-                            Alert.alert("Delete task?", `“${task.content}” will be removed.`, [
-                              { text: "Cancel", style: "cancel" },
-                              {
-                                text: "Delete",
-                                style: "destructive",
-                                onPress: () =>
-                                  void run((repository) => repository.deleteTask(task.id)),
-                              },
-                            ])
+                            task.pageId === board.pageId
+                              ? Alert.alert("Delete task?", `“${task.content}” will be removed everywhere.`, [
+                                  { text: "Cancel", style: "cancel" },
+                                  {
+                                    text: "Delete",
+                                    style: "destructive",
+                                    onPress: () =>
+                                      void run((repository) => repository.deleteTask(task.id)),
+                                  },
+                                ])
+                              : Alert.alert("Remove from board?", `“${task.content}” will remain in ${task.sourceLabel}.`, [
+                                  { text: "Cancel", style: "cancel" },
+                                  {
+                                    text: "Remove",
+                                    onPress: () =>
+                                      void run((repository) => repository.removeTaskFromBoard(task.id)),
+                                  },
+                                ])
                           }
                         />
                       </View>
@@ -257,7 +265,11 @@ function BoardScreen() {
                   );
                 })}
               </ScrollView>
-              <Button label="Add task" icon="add-outline" onPress={() => addTask(column.id)} />
+              <Button
+                label="Add task"
+                icon="add-outline"
+                onPress={() => setAddColumnId(column.id)}
+              />
             </View>
           );
         })}
@@ -269,6 +281,26 @@ function BoardScreen() {
           />
         </View>
       </ScrollView>
+      <AddBoardTaskSheet
+        visible={Boolean(addColumn)}
+        columnTitle={addColumn?.title ?? ""}
+        tasks={unassignedTasks}
+        onClose={() => setAddColumnId(null)}
+        onCreate={(content) => {
+          if (!addColumn) return;
+          setAddColumnId(null);
+          void run((repository) =>
+            repository.createTask({ boardId: id, columnId: addColumn.id, content }),
+          );
+        }}
+        onAdd={(taskId) => {
+          if (!addColumn) return;
+          setAddColumnId(null);
+          void run((repository) =>
+            repository.addTaskToBoard(taskId, id, addColumn.id),
+          );
+        }}
+      />
     </Page>
   );
 }

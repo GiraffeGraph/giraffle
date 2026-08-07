@@ -36,4 +36,45 @@ describe("boards are pages", () => {
     expect(snapshot.pages.some((page) => page.id === board?.pageId)).toBe(false);
     expect(snapshot.tasks.some((item) => item.id === taskId)).toBe(false);
   });
+
+  it("can place an existing task on a board without changing its source page", async () => {
+    const client = await createClient({
+      deviceId: "board-assignment-device",
+      secrets: await createVaultSecrets(),
+    });
+
+    const taskId = await client.repository.createInboxTask("Prepare brief");
+    const boardId = await client.repository.createBoard("Launch plan");
+    await client.repository.addTaskToBoard(taskId, boardId);
+
+    let task = (await client.repository.snapshot()).tasks.find((item) => item.id === taskId);
+    expect(task).toMatchObject({ boardId, sourceLabel: "Inbox" });
+    expect((await client.repository.snapshot()).pages.find((page) => page.id === task?.pageId)?.title).toBe("Inbox");
+
+    await client.repository.removeTaskFromBoard(taskId);
+    task = (await client.repository.snapshot()).tasks.find((item) => item.id === taskId);
+    expect(task).toMatchObject({ boardId: null, columnId: null, sourceLabel: "Inbox" });
+  });
+
+  it("keeps board and page deletion in one lifecycle", async () => {
+    const client = await createClient({
+      deviceId: "board-lifecycle-device",
+      secrets: await createVaultSecrets(),
+    });
+
+    const parentId = await client.repository.createPage({ title: "Area" });
+    const boardId = await client.repository.createBoard("Launch plan");
+    const board = (await client.repository.snapshot()).boards.find((item) => item.id === boardId);
+    expect(board).toBeDefined();
+
+    await client.repository.movePage(board!.pageId, parentId);
+    await expect(client.repository.archivePage(parentId)).rejects.toThrow(
+      "A board page cannot be archived",
+    );
+
+    await client.repository.deletePage(parentId);
+    const snapshot = await client.repository.snapshot();
+    expect(snapshot.pages.some((page) => page.id === parentId || page.id === board?.pageId)).toBe(false);
+    expect(snapshot.boards.some((item) => item.id === boardId)).toBe(false);
+  });
 });

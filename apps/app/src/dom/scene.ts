@@ -1,11 +1,22 @@
 import type { CanvasElement } from "@giraffle/domain";
 
 export interface PageReferenceRequest {
+  kind: "page";
   pageId: string;
   title: string;
   elementId: string;
   versionNonce: number;
 }
+
+export interface TaskReferenceRequest {
+  kind: "task";
+  taskId: string;
+  title: string;
+  elementId: string;
+  versionNonce: number;
+}
+
+export type CanvasReferenceRequest = PageReferenceRequest | TaskReferenceRequest;
 
 export interface SceneViewport {
   scrollX: number;
@@ -63,15 +74,23 @@ export function pageIdForElement(element: unknown): string | null {
   return typeof pageId === "string" && pageId.length > 0 ? pageId : null;
 }
 
+/** The task id a canvas element links to, or null when it links to nothing. */
+export function taskIdForElement(element: unknown): string | null {
+  if (typeof element !== "object" || element === null) return null;
+  const custom = (element as { customData?: { giraffleTaskId?: unknown } }).customData;
+  const taskId = custom?.giraffleTaskId;
+  return typeof taskId === "string" && taskId.length > 0 ? taskId : null;
+}
+
 /**
- * A labelled rectangle standing in for a page. Excalidraw fills in the rest of
- * the element from this skeleton, which is why the shape stays this small.
- * Cards are laid out two per row so a busy canvas does not stack them.
+ * A labelled card standing in for a canonical page or task. Excalidraw fills
+ * in the remaining fields; cards are laid out two per row.
  */
-export function pageReferenceSkeleton(
-  request: PageReferenceRequest,
+export function referenceSkeleton(
+  request: CanvasReferenceRequest,
   index: number,
 ): Record<string, unknown> {
+  const task = request.kind === "task";
   return {
     type: "rectangle",
     id: request.elementId,
@@ -79,8 +98,26 @@ export function pageReferenceSkeleton(
     x: 24 + (index % 2) * 260,
     y: 24 + Math.floor(index / 2) * 140,
     width: 220,
-    height: 100,
+    height: task ? 80 : 100,
+    roundness: { type: 3 },
+    backgroundColor: task ? "#fff4d6" : "#e7f0ff",
+    fillStyle: "solid",
     label: { text: request.title },
-    customData: { girafflePageId: request.pageId },
+    link:
+      request.kind === "page"
+        ? `giraffle://page/${encodeURIComponent(request.pageId)}`
+        : `giraffle://task/${encodeURIComponent(request.taskId)}`,
+    customData:
+      request.kind === "page"
+        ? { girafflePageId: request.pageId }
+        : { giraffleTaskId: request.taskId },
   };
+}
+
+/** Kept as the page-specific public helper used by existing clients. */
+export function pageReferenceSkeleton(
+  request: PageReferenceRequest,
+  index: number,
+): Record<string, unknown> {
+  return referenceSkeleton(request, index);
 }
