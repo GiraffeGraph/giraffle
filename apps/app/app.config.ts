@@ -38,7 +38,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     ["expo-splash-screen", { image: "./assets/splash.png", imageWidth: 160, backgroundColor: "#f5efe5", dark: { backgroundColor: "#191919" } }],
     ["expo-secure-store", { configureAndroidBackup: true, faceIDPermission: "Unlock your encrypted Giraffle vault." }],
     ["expo-sqlite", { useSQLCipher: true, enableFTS: true }],
-    ["react-native-libsodium", {}]
+    ["react-native-libsodium", {}],
+    "./plugins/withoutAssetSourcemaps"
   ],
   experiments: { typedRoutes: true },
   extra: {
