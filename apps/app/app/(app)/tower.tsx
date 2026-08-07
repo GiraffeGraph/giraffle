@@ -24,6 +24,7 @@ const quadrants = [
 ] as const;
 
 const QUADRANT_SLOT = "quadrant:";
+const QUADRANT_PREVIEW_LIMIT = 3;
 type Filter = "active" | "all" | "done";
 
 export default function PriorityMatrix() {
@@ -39,6 +40,9 @@ function PriorityScreen() {
   const { snapshot, run } = useApp();
   const drag = useDragSort();
   const [filter, setFilter] = useState<Filter>("active");
+  const [expandedQuadrants, setExpandedQuadrants] = useState<Set<TaskPriority>>(
+    () => new Set(),
+  );
 
   const visibleTasks = useMemo(
     () =>
@@ -76,6 +80,15 @@ function PriorityScreen() {
   const openSource = (task: Task) => {
     if (task.boardId) router.push(`/trek/${task.boardId}`);
     else router.push(`/notes/${task.pageId}`);
+  };
+
+  const toggleQuadrant = (priority: TaskPriority) => {
+    setExpandedQuadrants((current) => {
+      const next = new Set(current);
+      if (next.has(priority)) next.delete(priority);
+      else next.add(priority);
+      return next;
+    });
   };
 
   return (
@@ -134,6 +147,11 @@ function PriorityScreen() {
               {quadrants.map((quadrant) => {
                 const slotId = `${QUADRANT_SLOT}${quadrant.id}`;
                 const tasks = visibleTasks.filter((task) => task.priority === quadrant.id);
+                const expanded = expandedQuadrants.has(quadrant.id);
+                const shownTasks = expanded
+                  ? tasks
+                  : tasks.slice(0, QUADRANT_PREVIEW_LIMIT);
+                const hiddenCount = tasks.length - shownTasks.length;
                 const receiving = drag.target?.id === slotId;
 
                 return (
@@ -170,7 +188,7 @@ function PriorityScreen() {
                       </View>
 
                       <View style={styles.quadrantTasks}>
-                        {tasks.map((task) => {
+                        {shownTasks.map((task) => {
                           const index = quadrants.findIndex((item) => item.id === quadrant.id);
                           const next = quadrants[index + 1]?.id ?? null;
                           return (
@@ -194,6 +212,24 @@ function PriorityScreen() {
                           <View style={styles.quadrantEmpty}>
                             <Text style={[typography.caption, { color: colors.faint }]}>—</Text>
                           </View>
+                        ) : null}
+                        {hiddenCount > 0 || expanded ? (
+                          <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel={expanded ? "Show fewer tasks" : `Show ${hiddenCount} more tasks`}
+                            onPress={() => toggleQuadrant(quadrant.id)}
+                            style={({ pressed }) => [
+                              styles.moreButton,
+                              {
+                                borderTopColor: colors.border,
+                                opacity: pressed ? 0.55 : 1,
+                              },
+                            ]}
+                          >
+                            <Text style={[typography.label, { color: colors.accent }]}>
+                              {expanded ? "Show less" : `+${hiddenCount} more`}
+                            </Text>
+                          </Pressable>
                         ) : null}
                       </View>
                     </View>
@@ -279,6 +315,7 @@ const styles = StyleSheet.create({
   matrix: { flexDirection: "row", flexWrap: "wrap", gap: spacing.md },
   quadrantSlot: { flexBasis: "47%", flexGrow: 1, minWidth: 150 },
   quadrant: {
+    flex: 1,
     minHeight: 240,
     padding: spacing.md,
     borderWidth: StyleSheet.hairlineWidth,
@@ -295,6 +332,12 @@ const styles = StyleSheet.create({
   },
   quadrantTasks: { gap: spacing.sm },
   quadrantEmpty: { minHeight: 88, alignItems: "center", justifyContent: "center" },
+  moreButton: {
+    minHeight: 40,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   taskCard: {
     minHeight: 62,
     paddingVertical: spacing.xs,
