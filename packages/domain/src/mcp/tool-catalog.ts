@@ -331,15 +331,14 @@ export const MCP_TOOL_SCHEMAS: McpToolSchema[] = [
     }),
   },
 
-  // Trek (Kanban). A board IS a page (boardId === pageId) and a card IS a task
-  // block (cardId === blockId), so a dated card also shows in Stride and a
-  // prioritized card also shows in Tower.
+  // Boards (Kanban). Every board owns a visible page and every card is a
+  // canonical task block, so scheduling and priority are shared with Tasks.
   {
     name: "kanban_list_boards",
     mcpName: "giraffle-trek-list-boards",
     destructive: false,
     description:
-      "List the user's Trek (Kanban) boards with column and card counts. A board is a note; boardId === noteId. Use this first to discover board ids.",
+      "List the user's Kanban boards with column and card counts. Each board owns a visible page. Use this first to discover board ids.",
     inputSchema: z.object({}),
   },
   {
@@ -366,7 +365,7 @@ export const MCP_TOOL_SCHEMAS: McpToolSchema[] = [
     mcpName: "giraffle-trek-get-board",
     destructive: false,
     description:
-      "Get one Trek board in full: ordered columns and the ordered cards in each (with priority, dueDate, completed). cardId === blockId; the same cards appear in Stride/Tower.",
+      "Get one board in full: ordered columns and cards with priority, due date, and completion. cardId === blockId; the same tasks appear in Calendar and Priority.",
     inputSchema: z.object({ boardId: z.string().min(1) }),
   },
   {
@@ -374,7 +373,7 @@ export const MCP_TOOL_SCHEMAS: McpToolSchema[] = [
     mcpName: "giraffle-trek-create-board",
     destructive: true,
     description:
-      "Create a Trek board (a note seeded with To do / In progress / Done columns). Returns the board with its column ids.",
+      "Create a board with a visible page and an initial To do column. Returns the board with its column ids.",
     inputSchema: z.object({ title: z.string().min(1).max(220) }),
   },
   {
@@ -392,7 +391,7 @@ export const MCP_TOOL_SCHEMAS: McpToolSchema[] = [
     name: "kanban_delete_board",
     mcpName: "giraffle-trek-delete-board",
     destructive: true,
-    description: "Delete a Trek board (deletes the underlying note and all its cards).",
+    description: "Delete a board, its page, and all its cards.",
     inputSchema: z.object({ boardId: z.string().min(1) }),
   },
   {

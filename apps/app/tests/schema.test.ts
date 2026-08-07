@@ -9,7 +9,6 @@ const CANONICAL_TABLES = [
   "pages",
   "blocks",
   "links",
-  "page_priorities",
   "task_metadata",
   "board_statuses",
   "boards",

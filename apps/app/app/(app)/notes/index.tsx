@@ -37,7 +37,10 @@ export default function Notes() {
     .sort((left, right) => right.updatedAt - left.updatedAt)
     .slice(0, RECENT_LIMIT);
 
-  const open = (pageId: Id) => router.push(`/notes/${pageId}`);
+  const open = (pageId: Id) => {
+    const board = snapshot.boards.find((item) => item.pageId === pageId);
+    router.push(board ? `/trek/${board.id}` : `/notes/${pageId}`);
+  };
 
   const create = (parentId?: Id) => {
     void run((repository) => repository.createPage(parentId ? { parentId } : {}))
@@ -127,7 +130,8 @@ export default function Notes() {
 
 function PageRowMenu({ page, close }: { page: PageModel | null; close: () => void }) {
   const { colors } = useTheme();
-  const { run } = useApp();
+  const { run, snapshot } = useApp();
+  const board = snapshot.boards.find((item) => item.pageId === page?.id);
 
   if (!page) {
     return null;
@@ -181,17 +185,19 @@ function PageRowMenu({ page, close }: { page: PageModel | null; close: () => voi
           onPress={() => {
             close();
             Alert.alert(
-              "Delete page permanently?",
-              "This page and every page inside it will be removed. This cannot be undone.",
+              board ? "Delete board permanently?" : "Delete page permanently?",
+              board
+                ? "This board and all its tasks will be removed. This cannot be undone."
+                : "This page and every page inside it will be removed. This cannot be undone.",
               [
                 { text: "Cancel", style: "cancel" },
                 {
                   text: "Delete",
                   style: "destructive",
                   onPress: () =>
-                    void run((repository) => repository.deletePage(page.id)).catch(
-                      () => undefined,
-                    ),
+                    void run((repository) =>
+                      board ? repository.deleteBoard(board.id) : repository.deletePage(page.id),
+                    ).catch(() => undefined),
                 },
               ],
             );

@@ -9,7 +9,6 @@ CREATE TABLE vault_metadata(id TEXT PRIMARY KEY, protocol_version INTEGER NOT NU
 CREATE TABLE pages(id TEXT PRIMARY KEY, title TEXT NOT NULL, icon TEXT, parent_page_id TEXT REFERENCES pages(id) ON DELETE CASCADE, position_id TEXT NOT NULL, is_pinned INTEGER NOT NULL DEFAULT 0, is_archived INTEGER NOT NULL DEFAULT 0, deleted INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL);
 CREATE TABLE blocks(id TEXT PRIMARY KEY, page_id TEXT NOT NULL REFERENCES pages(id) ON DELETE CASCADE, parent_id TEXT REFERENCES blocks(id) ON DELETE CASCADE, type TEXT NOT NULL, content_json TEXT NOT NULL, attributes_json TEXT NOT NULL, position_id TEXT NOT NULL, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL);
 CREATE TABLE links(id TEXT PRIMARY KEY, source_page_id TEXT NOT NULL REFERENCES pages(id) ON DELETE CASCADE, source_block_id TEXT REFERENCES blocks(id) ON DELETE CASCADE, target_raw TEXT NOT NULL, target_page_id TEXT REFERENCES pages(id) ON DELETE SET NULL, UNIQUE(source_page_id, source_block_id, target_raw));
-CREATE TABLE page_priorities(page_id TEXT PRIMARY KEY REFERENCES pages(id) ON DELETE CASCADE, slot TEXT NOT NULL, updated_at INTEGER NOT NULL);
 CREATE TABLE task_metadata(block_id TEXT PRIMARY KEY REFERENCES blocks(id) ON DELETE CASCADE, completed INTEGER NOT NULL DEFAULT 0, priority TEXT, due_date TEXT, duration_minutes INTEGER, description TEXT, updated_at INTEGER NOT NULL);
 CREATE TABLE board_statuses(id TEXT PRIMARY KEY, title TEXT NOT NULL, color TEXT, position_id TEXT NOT NULL, deleted INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL);
 CREATE TABLE boards(id TEXT PRIMARY KEY, status_id TEXT REFERENCES board_statuses(id) ON DELETE SET NULL, title TEXT NOT NULL, icon TEXT, task_source_page_id TEXT NOT NULL UNIQUE REFERENCES pages(id) ON DELETE CASCADE, position_id TEXT NOT NULL, deleted INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL);
@@ -48,6 +47,21 @@ CREATE TABLE page_documents(page_id TEXT PRIMARY KEY REFERENCES pages(id) ON DEL
 CREATE TABLE deferred_records(record_id TEXT PRIMARY KEY, server_seq INTEGER NOT NULL, key_epoch INTEGER NOT NULL, record BLOB NOT NULL, reason TEXT NOT NULL, created_at INTEGER NOT NULL);
 CREATE INDEX idx_blocks_page_live ON blocks(page_id, deleted);
 CREATE INDEX idx_deferred_seq ON deferred_records(server_seq);
+`
+}, {
+  version: 3,
+  name: "task-lenses-and-visible-boards",
+  sql: `
+DROP TABLE IF EXISTS page_priorities;
+UPDATE pages
+SET title = (SELECT boards.title FROM boards WHERE boards.task_source_page_id = pages.id),
+    icon = (SELECT boards.icon FROM boards WHERE boards.task_source_page_id = pages.id),
+    is_archived = 0,
+    updated_at = MAX(updated_at, COALESCE((SELECT boards.updated_at FROM boards WHERE boards.task_source_page_id = pages.id), updated_at))
+WHERE id IN (SELECT task_source_page_id FROM boards WHERE deleted = 0);
+DELETE FROM page_fts WHERE page_id IN (SELECT task_source_page_id FROM boards WHERE deleted = 0);
+INSERT INTO page_fts(page_id,title,body)
+SELECT p.id, p.title, '' FROM pages p JOIN boards b ON b.task_source_page_id=p.id WHERE b.deleted=0;
 `
 }];
 

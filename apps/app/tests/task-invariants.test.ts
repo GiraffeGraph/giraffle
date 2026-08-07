@@ -4,9 +4,9 @@ const sql = migrations[0]?.sql ?? "";
 const table = (name: string) => new RegExp(`CREATE TABLE ${name}\\(([^;]*)\\);`, "s").exec(sql)?.[1] ?? "";
 
 /**
- * One task, three lenses: the taskItem block is canonical, Trek places it on a
- * board, Stride reads its due date, Tower reads its priority. Nothing may hold
- * a second copy of a field another surface owns.
+ * One task, three lenses: the taskItem block is canonical, Boards place it in a
+ * workflow, Calendar reads its due date, and Priority reads its quadrant.
+ * Nothing may hold a second copy of a field another surface owns.
  */
 describe("shared task relational invariants", () => {
   test("board placement points at the canonical block instead of copying it", () => {
@@ -37,15 +37,12 @@ describe("shared task relational invariants", () => {
     }
   });
 
-  test("page placement in Tower is independent from task priority", () => {
-    const pagePriorities = table("page_priorities");
-
-    expect(pagePriorities).toContain("page_id TEXT PRIMARY KEY REFERENCES pages(id)");
-    expect(pagePriorities).toContain("slot TEXT NOT NULL");
-    expect(pagePriorities).not.toMatch(/\bblock_id\b/);
+  test("priority belongs only to canonical tasks", () => {
+    expect(sql).not.toContain("CREATE TABLE page_priorities");
+    expect(table("task_metadata")).toContain("priority");
   });
 
-  test("every board owns a private page so its tasks are still blocks", () => {
+  test("every board owns a page so its tasks remain canonical blocks", () => {
     expect(table("boards")).toContain(
       "task_source_page_id TEXT NOT NULL UNIQUE REFERENCES pages(id) ON DELETE CASCADE",
     );

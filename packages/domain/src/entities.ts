@@ -10,7 +10,6 @@ export type Id = string;
 
 /** Eisenhower placement, stored lowercase as the `slot` column value. */
 export type TaskPriority = "do" | "schedule" | "delegate" | "eliminate";
-export type PagePriority = TaskPriority;
 
 export interface Page {
   id: Id;
@@ -51,6 +50,7 @@ export interface BoardStatus {
 
 export interface Board {
   id: Id;
+  pageId: Id;
   statusId: Id | null;
   title: string;
   icon: string | null;

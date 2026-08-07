@@ -210,6 +210,24 @@ describe("cursor durability", () => {
     expect((await pageTitles(beta)).length).toBe(7);
     expect(Number(await beta.repository.pullCursor())).toBe(relay.records.length);
   });
+
+  it("syncs a board as a visible page with canonical tasks", async () => {
+    const boardId = await alpha.repository.createBoard("Release board");
+    const taskId = await alpha.repository.createTask({ boardId, content: "Ship build" });
+
+    await settle(alpha, beta);
+
+    let snapshot = await beta.repository.snapshot();
+    const board = snapshot.boards.find((item) => item.id === boardId);
+    expect(snapshot.pages.find((page) => page.id === board?.pageId)?.title).toBe("Release board");
+    expect(snapshot.tasks.find((task) => task.id === taskId)?.pageId).toBe(board?.pageId);
+
+    await alpha.repository.updateBoard(boardId, { title: "Launch board" });
+    await settle(alpha, beta);
+
+    snapshot = await beta.repository.snapshot();
+    expect(snapshot.pages.find((page) => page.id === board?.pageId)?.title).toBe("Launch board");
+  });
 });
 
 describe("failure tolerance", () => {

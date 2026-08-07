@@ -221,7 +221,7 @@ describe("web vault storage", () => {
     );
     await database.closeAsync();
 
-    expect(applied.map((row) => row.version)).toEqual([1, 2]);
+    expect(applied.map((row) => row.version)).toEqual([1, 2, 3]);
     expect(search?.name).toBe("page_fts");
   });
 });

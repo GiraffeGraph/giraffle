@@ -6,7 +6,6 @@ import type {
   Canvas,
   Id,
   Page,
-  PagePriority,
   Task,
 } from "@giraffle/domain";
 
@@ -32,7 +31,6 @@ export interface AppSnapshot {
   boards: Board[];
   columns: BoardColumn[];
   canvases: Canvas[];
-  pagePriorities: Record<Id, PagePriority>;
   backlinks: Backlink[];
   sync: SyncState;
 }
@@ -44,7 +42,6 @@ export const EMPTY_SNAPSHOT: AppSnapshot = {
   boards: [],
   columns: [],
   canvases: [],
-  pagePriorities: {},
   backlinks: [],
   sync: { pending: 0, lastSuccessAt: null, lastError: null, cursor: 0 },
 };
