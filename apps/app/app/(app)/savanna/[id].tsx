@@ -14,9 +14,6 @@ import { useApp } from "@/state/AppProvider";
 
 type CanvasSaveState = "saved" | "saving" | "error";
 
-/** Matches the floating tab bar in AppShell. */
-const TAB_BAR_HEIGHT = 58;
-
 export default function CanvasEditor() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { colors } = useTheme();
@@ -106,9 +103,7 @@ export default function CanvasEditor() {
           onPress={() => setPicker(true)}
         />
       </View>
-      {/* The tab bar floats over the screen, so the canvas ends above it and
-          Excalidraw's own toolbars stay reachable. */}
-      <View style={{ flex: 1, marginBottom: TAB_BAR_HEIGHT + insets.bottom }}>
+      <View style={styles.canvas}>
         <Canvas
           elements={canvas.elements}
           pendingPage={add}
@@ -192,6 +187,7 @@ export default function CanvasEditor() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
+  canvas: { flex: 1 },
   bar: {
     minHeight: 48,
     paddingHorizontal: 8,

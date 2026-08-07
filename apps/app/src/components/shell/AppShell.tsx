@@ -65,7 +65,9 @@ function NavigationButton({
       accessibilityState={{ selected: active }}
       onHoverIn={() => setHovered(true)}
       onHoverOut={() => setHovered(false)}
-      onPress={() => router.push(item.href as never)}
+      // Navigating rather than pushing: switching tabs reuses the route already
+      // in the stack instead of stacking a fresh copy on every tap.
+      onPress={() => router.navigate(item.href as never)}
       style={({ pressed }) => [
         orientation === "row" ? styles.bottomButton : styles.sidebarButton,
         {
@@ -221,12 +223,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
   },
+  /**
+   * A flex sibling of the content, not an overlay: the bar's height and the
+   * device's home indicator come out of the layout once, so no screen has to
+   * guess how much room to leave at its bottom edge.
+   */
   bottomBar: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 3,
     minHeight: 58,
     borderTopWidth: StyleSheet.hairlineWidth,
     flexDirection: "row",

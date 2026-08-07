@@ -278,7 +278,7 @@ const styles = StyleSheet.create({
   titleRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   boardScroll: { flex: 1 },
   columns: {
-    paddingBottom: 72,
+    paddingBottom: spacing.md,
     gap: spacing.xl,
     alignItems: "stretch",
   },

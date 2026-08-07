@@ -794,7 +794,6 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: spacing.md,
     paddingHorizontal: spacing.lg,
-    paddingBottom: 72,
   },
   dayBar: { flexDirection: "row", alignItems: "center", gap: spacing.sm, paddingBottom: 6 },
   week: { flex: 1 },
@@ -806,7 +805,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   weekGrid: {
-    paddingBottom: 96,
+    paddingBottom: spacing.md,
     flexDirection: "row",
     flexWrap: "wrap",
     gap: spacing.md,
