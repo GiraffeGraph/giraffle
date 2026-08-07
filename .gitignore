@@ -42,5 +42,6 @@ yarn-error.log*
 .pi/
 skills
 
-# claude code local
-/.claude/
+# claude code local, except project skills which are shared knowledge
+/.claude/*
+!/.claude/skills/
