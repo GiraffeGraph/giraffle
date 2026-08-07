@@ -35,7 +35,15 @@ export interface CanvasProps {
 }
 
 const STYLES = `
+/* Excalidraw measures its container, so every ancestor up to the document needs
+   a definite height — a percentage against an auto-height body collapses to 0
+   and the canvas renders nothing. */
+html, body, #root {
+  margin: 0;
+  height: 100%;
+}
 .giraffle-canvas {
+  box-sizing: border-box;
   width: 100%;
   height: 100%;
   background: var(--giraffle-canvas-bg);
