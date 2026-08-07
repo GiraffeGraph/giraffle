@@ -1,41 +1,84 @@
 import { router, usePathname } from "expo-router";
-import { Pressable, StyleSheet, View } from "react-native";
-import { Icon } from "@/components/ui/primitives";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Icon, type IconName } from "@/components/ui/primitives";
 import { useTheme } from "@/design/ThemeProvider";
-import { radii } from "@/design/tokens";
+import { radii, typography } from "@/design/tokens";
 
-/** Switches the task screens between the calendar and the priority grid. */
-export function TaskViewSwitch() {
+export type ScheduleViewMode = "day" | "week" | "month";
+
+const scheduleViews: readonly {
+  value: ScheduleViewMode;
+  label: string;
+  icon: IconName;
+}[] = [
+  { value: "day", label: "Day", icon: "today-outline" },
+  { value: "week", label: "Week", icon: "calendar-outline" },
+  { value: "month", label: "Month", icon: "calendar-number-outline" },
+];
+
+/** Switches between schedule modes and the priority grid without a second toolbar. */
+export function TaskViewSwitch({
+  scheduleMode = "day",
+  onScheduleModeChange,
+}: {
+  scheduleMode?: ScheduleViewMode;
+  onScheduleModeChange?(mode: ScheduleViewMode): void;
+}) {
   const { colors } = useTheme();
   const path = usePathname();
   const onCalendar = path.startsWith("/stride");
+  const current = scheduleViews.find((view) => view.value === scheduleMode) ?? scheduleViews[0]!;
+  const next = scheduleViews[(scheduleViews.indexOf(current) + 1) % scheduleViews.length]!;
+
+  const openSchedule = () => {
+    if (!onCalendar || !onScheduleModeChange) {
+      router.push("/stride");
+      return;
+    }
+    onScheduleModeChange(next.value);
+  };
 
   return (
-    <View style={[styles.switch, { borderColor: colors.border }]}>
+    <View style={[styles.switch, { borderColor: colors.border, backgroundColor: colors.surface }]}>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Calendar view"
+        accessibilityLabel={onCalendar ? `Switch to ${next.label} view` : "Schedule view"}
         accessibilityState={{ selected: onCalendar }}
-        onPress={() => router.push("/stride")}
-        style={[
-          styles.button,
-          { backgroundColor: onCalendar ? colors.accentSubtle : "transparent" },
+        onPress={openSchedule}
+        style={({ pressed }) => [
+          styles.scheduleButton,
+          {
+            backgroundColor: onCalendar ? colors.accentSubtle : "transparent",
+            opacity: pressed ? 0.58 : 1,
+          },
         ]}
       >
         <Icon
-          name="calendar-outline"
+          name={onCalendar ? current.icon : "calendar-outline"}
           size={17}
           color={onCalendar ? colors.accent : colors.secondary}
         />
+        <Text
+          numberOfLines={1}
+          style={[
+            typography.caption,
+            { color: onCalendar ? colors.accent : colors.secondary, fontWeight: "600" },
+          ]}
+        >
+          {onCalendar ? current.label : "Plan"}
+        </Text>
       </Pressable>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Priority view"
         accessibilityState={{ selected: !onCalendar }}
         onPress={() => router.push("/tower")}
-        style={[
-          styles.button,
-          { backgroundColor: onCalendar ? "transparent" : colors.accentSubtle },
+        style={({ pressed }) => [
+          styles.priorityButton,
+          {
+            backgroundColor: onCalendar ? "transparent" : colors.accentSubtle,
+            opacity: pressed ? 0.58 : 1,
+          },
         ]}
       >
         <Icon
@@ -56,5 +99,12 @@ const styles = StyleSheet.create({
     borderRadius: radii.sm,
     overflow: "hidden",
   },
-  button: { width: 36, alignItems: "center", justifyContent: "center" },
+  scheduleButton: {
+    width: 76,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 5,
+  },
+  priorityButton: { width: 36, alignItems: "center", justifyContent: "center" },
 });

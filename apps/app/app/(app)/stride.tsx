@@ -26,7 +26,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { ScreenTopbar } from "@/components/shell/ScreenTopbar";
 import { TaskViewSwitch } from "@/components/shell/TaskViewSwitch";
 import { DayGrid } from "@/components/stride/DayGrid";
-import { Button, DividerRow, Icon, Segment } from "@/components/ui/primitives";
+import { Button, DividerRow, Icon } from "@/components/ui/primitives";
 import { useTheme } from "@/design/ThemeProvider";
 import { radii, spacing, typography } from "@/design/tokens";
 import { useApp } from "@/state/AppProvider";
@@ -140,12 +140,11 @@ export default function Stride() {
 
   return (
     <>
-      <ScreenTopbar title="Tasks" aside={<TaskViewSwitch />} />
+      <ScreenTopbar
+        title="Tasks"
+        aside={<TaskViewSwitch scheduleMode={mode} onScheduleModeChange={setMode} />}
+      />
       <View style={[styles.screen, { backgroundColor: colors.background }]}>
-        <View style={styles.controls}>
-          <Segment values={["day", "week", "month"] as const} value={mode} onChange={setMode} />
-        </View>
-
         {mode === "day" ? (
           <>
             <View style={styles.dayBar}>
@@ -791,8 +790,12 @@ function MonthCell({
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, paddingHorizontal: spacing.lg, paddingBottom: 72 },
-  controls: { paddingVertical: spacing.md },
+  screen: {
+    flex: 1,
+    paddingTop: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: 72,
+  },
   dayBar: { flexDirection: "row", alignItems: "center", gap: spacing.sm, paddingBottom: 6 },
   week: { flex: 1 },
   weekToolbar: {
