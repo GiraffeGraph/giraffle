@@ -2,6 +2,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -40,6 +41,7 @@ interface DragSortValue {
   draggingId: string | null;
   target: DropTarget | null;
   register(slot: Slot): void;
+  registerMeasurement(id: string, measure: () => void): void;
   unregister(id: string): void;
   begin(id: string, blockedIds: readonly string[]): void;
   update(absoluteX: number, absoluteY: number): void;
@@ -54,6 +56,7 @@ const EDGE_RATIO = 0.28;
 
 export function DragSortProvider({ children }: PropsWithChildren) {
   const slots = useRef(new Map<string, Slot>());
+  const measurements = useRef(new Map<string, () => void>());
   const blocked = useRef<Set<string>>(new Set());
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [target, setTarget] = useState<DropTarget | null>(null);
@@ -63,11 +66,19 @@ export function DragSortProvider({ children }: PropsWithChildren) {
     slots.current.set(slot.id, slot);
   }, []);
 
+  const registerMeasurement = useCallback((id: string, measure: () => void) => {
+    measurements.current.set(id, measure);
+  }, []);
+
   const unregister = useCallback((id: string) => {
     slots.current.delete(id);
+    measurements.current.delete(id);
   }, []);
 
   const begin = useCallback((id: string, blockedIds: readonly string[]) => {
+    // Scroll views move rows without firing onLayout. Refresh every window
+    // coordinate when a drag begins so targets still match what is on screen.
+    for (const measure of measurements.current.values()) measure();
     blocked.current = new Set([id, ...blockedIds]);
     targetRef.current = null;
     setTarget(null);
@@ -122,8 +133,28 @@ export function DragSortProvider({ children }: PropsWithChildren) {
   }, []);
 
   const value = useMemo<DragSortValue>(
-    () => ({ draggingId, target, register, unregister, begin, update, end, cancel }),
-    [begin, cancel, draggingId, end, register, target, unregister, update],
+    () => ({
+      draggingId,
+      target,
+      register,
+      registerMeasurement,
+      unregister,
+      begin,
+      update,
+      end,
+      cancel,
+    }),
+    [
+      begin,
+      cancel,
+      draggingId,
+      end,
+      register,
+      registerMeasurement,
+      target,
+      unregister,
+      update,
+    ],
   );
 
   return <DragSortContext.Provider value={value}>{children}</DragSortContext.Provider>;
@@ -167,6 +198,8 @@ export function DragSortItem({
   const {
     draggingId,
     register,
+    registerMeasurement,
+    unregister,
     begin,
     update,
     end,
@@ -204,15 +237,23 @@ export function DragSortItem({
     ]).start();
   }, [scale, translateX, translateY]);
 
+  const measureInWindow = useCallback(() => {
+    viewRef.current?.measureInWindow((x, y, width, height) => {
+      register({ id, top: y, height, left: x, width, blocked: false, containerOnly });
+    });
+  }, [containerOnly, id, register]);
+
   const measure = useCallback(
-    (event: LayoutChangeEvent) => {
-      const { height } = event.nativeEvent.layout;
-      viewRef.current?.measureInWindow((x, y, width) => {
-        register({ id, top: y, height, left: x, width, blocked: false, containerOnly });
-      });
+    (_event: LayoutChangeEvent) => {
+      measureInWindow();
     },
-    [containerOnly, id, register],
+    [measureInWindow],
   );
+
+  useEffect(() => {
+    registerMeasurement(id, measureInWindow);
+    return () => unregister(id);
+  }, [id, measureInWindow, registerMeasurement, unregister]);
 
   const gesture = useMemo(
     () =>
