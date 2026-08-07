@@ -180,6 +180,7 @@ export default function Stride() {
                 setComposeAt(minutes);
                 setDraft("");
               }}
+              selectedMinutes={composeAt}
             />
           </>
         ) : mode === "week" ? (
@@ -284,7 +285,7 @@ function ScheduleTaskSheet({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Close task picker"
-          style={[styles.scrim, { backgroundColor: colors.scrim }]}
+          style={styles.scrim}
           onPress={onClose}
         />
         <SafeAreaView

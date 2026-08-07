@@ -45,6 +45,7 @@ export function DayGrid({
   onOpenTask,
   onToggleTask,
   onPickSlot,
+  selectedMinutes = null,
 }: {
   day: string;
   tasks: Task[];
@@ -54,6 +55,8 @@ export function DayGrid({
   onToggleTask(taskId: string): void;
   /** Holding empty space opens the task picker at that minute. */
   onPickSlot(minutes: number): void;
+  /** The slot currently being composed in the task sheet. */
+  selectedMinutes?: number | null;
 }) {
   const { colors } = useTheme();
   const [now, setNow] = useState(() => minutesNow());
@@ -171,11 +174,23 @@ export function DayGrid({
               const minutes = minutesAt(event.nativeEvent.pageY);
               if (minutes !== null) onPickSlot(minutes);
             }}
-            style={({ pressed }) => [
-              StyleSheet.absoluteFill,
-              { backgroundColor: pressed ? colors.accentSubtle : "transparent" },
-            ]}
+            style={StyleSheet.absoluteFill}
           />
+
+          {selectedMinutes !== null ? (
+            <View
+              pointerEvents="none"
+              style={[
+                styles.selectedSlot,
+                {
+                  top: (selectedMinutes / 60) * HOUR_HEIGHT,
+                  height: (DEFAULT_DURATION_MINUTES / 60) * HOUR_HEIGHT,
+                  backgroundColor: colors.accentSubtle,
+                  borderColor: colors.accent,
+                },
+              ]}
+            />
+          ) : null}
 
           {timed.map((block) => (
             <TimeBlock
@@ -324,6 +339,13 @@ const styles = StyleSheet.create({
   },
   hourLabel: { position: "absolute", left: 0, top: -7, width: GUTTER_WIDTH - 8, textAlign: "right" },
   nowLine: { position: "absolute", left: GUTTER_WIDTH, right: 0, height: 2, borderRadius: 1 },
+  selectedSlot: {
+    position: "absolute",
+    left: GUTTER_WIDTH,
+    right: 4,
+    borderWidth: 1,
+    borderRadius: radii.sm,
+  },
   block: {
     position: "absolute",
     left: GUTTER_WIDTH,
