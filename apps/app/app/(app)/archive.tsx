@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { Alert, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { ScreenTopbar } from "@/components/shell/ScreenTopbar";
 import { Page } from "@/components/ui/Page";
 import { Button, DividerRow, EmptyState, Icon } from "@/components/ui/primitives";
@@ -41,14 +41,21 @@ export default function Archive() {
         <View style={[styles.list, { borderTopColor: colors.border }]}>
           {pages.map((page) => (
             <DividerRow key={page.id}>
-              <Icon name="document-outline" />
-              <Text
-                numberOfLines={1}
-                style={[typography.body, { color: colors.text, flex: 1 }]}
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Open ${page.title}`}
+                onPress={() => router.push(`/notes/${page.id}`)}
+                style={({ pressed }) => [styles.pageLink, { opacity: pressed ? 0.55 : 1 }]}
               >
-                {page.title}
-              </Text>
-              <Button label="Open" onPress={() => router.push(`/notes/${page.id}`)} />
+                <Icon name="document-outline" />
+                <Text
+                  numberOfLines={1}
+                  style={[typography.body, { color: colors.text, flex: 1 }]}
+                >
+                  {page.title}
+                </Text>
+                <Icon name="chevron-forward" size={16} color={colors.faint} />
+              </Pressable>
               <Button
                 label="Restore"
                 onPress={() => void run((repository) => repository.restorePage(page.id))}
@@ -70,4 +77,12 @@ export default function Archive() {
 
 const styles = StyleSheet.create({
   list: { borderTopWidth: StyleSheet.hairlineWidth },
+  pageLink: {
+    flex: 1,
+    minWidth: 0,
+    minHeight: 56,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
 });

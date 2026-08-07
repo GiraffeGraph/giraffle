@@ -44,6 +44,9 @@ export function Page({
 const styles = StyleSheet.create({
   page: {
     flexGrow: 1,
+    width: "100%",
+    maxWidth: 1280,
+    alignSelf: "center",
     paddingTop: spacing.xl,
     paddingBottom: 96,
     gap: spacing.xl,

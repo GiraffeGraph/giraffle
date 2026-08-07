@@ -1,6 +1,6 @@
 import { router, usePathname } from "expo-router";
 import type { ReactNode } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Icon } from "@/components/ui/primitives";
 import { useTheme } from "@/design/ThemeProvider";
@@ -21,6 +21,7 @@ export function ScreenTopbar({
 }) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
   const path = usePathname();
   const onSearch = path.startsWith("/search");
 
@@ -30,6 +31,7 @@ export function ScreenTopbar({
         styles.bar,
         {
           paddingTop: insets.top + 6,
+          paddingHorizontal: width >= 768 ? 32 : 16,
           borderBottomColor: colors.border,
           backgroundColor: colors.background,
         },
@@ -61,7 +63,6 @@ export function ScreenTopbar({
 const styles = StyleSheet.create({
   bar: {
     minHeight: controls.default,
-    paddingHorizontal: 12,
     paddingBottom: 8,
     flexDirection: "row",
     alignItems: "center",

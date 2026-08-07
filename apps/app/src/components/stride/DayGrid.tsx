@@ -1,6 +1,6 @@
 import {
   DEFAULT_DURATION_MINUTES,
-  clampMinutes,
+  SNAP_MINUTES,
   formatClock,
   minutesNow,
   parseDue,
@@ -13,9 +13,19 @@ import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { useTheme } from "@/design/ThemeProvider";
 import { radii, typography } from "@/design/tokens";
 
-const HOUR_HEIGHT = 56;
-const MIN_BLOCK_MINUTES = 15;
+/** Tall enough that the shortest block a drag can produce still reads as a row. */
+const HOUR_HEIGHT = 80;
+const MIN_BLOCK_MINUTES = SNAP_MINUTES;
 const GUTTER_WIDTH = 46;
+
+/** Durations follow the same grid as start times, and never collapse to nothing. */
+function snapDuration(minutes: number): number {
+  return Math.max(MIN_BLOCK_MINUTES, Math.round(minutes / SNAP_MINUTES) * SNAP_MINUTES);
+}
+
+function minutesFromOffset(pixels: number): number {
+  return (pixels / HOUR_HEIGHT) * 60;
+}
 
 export interface ScheduledBlock {
   task: Task;
@@ -35,7 +45,6 @@ export function DayGrid({
   onOpenTask,
   onToggleTask,
   onPickSlot,
-  onDropRegister,
 }: {
   day: string;
   tasks: Task[];
@@ -43,10 +52,8 @@ export function DayGrid({
   onResizeTask(taskId: string, duration: number): void;
   onOpenTask(taskId: string): void;
   onToggleTask(taskId: string): void;
-  /** Tapping empty space starts a new task at that minute. */
+  /** Holding empty space opens the task picker at that minute. */
   onPickSlot(minutes: number): void;
-  /** Publishes a way to turn a screen Y into a minute, for backlog drops. */
-  onDropRegister?(resolve: ((absoluteY: number) => number | null) | null): void;
 }) {
   const { colors } = useTheme();
   const [now, setNow] = useState(() => minutesNow());
@@ -92,11 +99,6 @@ export function DayGrid({
     return snapMinutes((offsetInGrid / HOUR_HEIGHT) * 60);
   }, []);
 
-  useEffect(() => {
-    onDropRegister?.(minutesAt);
-    return () => onDropRegister?.(null);
-  }, [minutesAt, onDropRegister]);
-
   // Open on the current hour rather than at midnight.
   useEffect(() => {
     const target = Math.max(0, (now / 60) * HOUR_HEIGHT - HOUR_HEIGHT * 2);
@@ -141,15 +143,6 @@ export function DayGrid({
         scrollEventThrottle={16}
       >
         <View style={{ height: HOUR_HEIGHT * 24 }}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Add a task at this time"
-            onPress={(event) => {
-              const minutes = minutesAt(event.nativeEvent.pageY);
-              if (minutes !== null) onPickSlot(minutes);
-            }}
-            style={StyleSheet.absoluteFill}
-          />
           {Array.from({ length: 24 }, (_, hour) => (
             <View
               key={hour}
@@ -165,6 +158,25 @@ export function DayGrid({
             style={[styles.nowLine, { top: (now / 60) * HOUR_HEIGHT, backgroundColor: colors.accent }]}
           />
 
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Schedule a task at this time"
+            accessibilityHint="Choose an existing task or create a new one"
+            delayLongPress={180}
+            onPress={(event) => {
+              const minutes = minutesAt(event.nativeEvent.pageY);
+              if (minutes !== null) onPickSlot(minutes);
+            }}
+            onLongPress={(event) => {
+              const minutes = minutesAt(event.nativeEvent.pageY);
+              if (minutes !== null) onPickSlot(minutes);
+            }}
+            style={({ pressed }) => [
+              StyleSheet.absoluteFill,
+              { backgroundColor: pressed ? colors.accentSubtle : "transparent" },
+            ]}
+          />
+
           {timed.map((block) => (
             <TimeBlock
               key={block.task.id}
@@ -173,7 +185,6 @@ export function DayGrid({
               onResize={onResizeTask}
               onOpen={onOpenTask}
               onToggle={onToggleTask}
-              resolveMinutes={minutesAt}
             />
           ))}
         </View>
@@ -189,14 +200,12 @@ function TimeBlock({
   onResize,
   onOpen,
   onToggle,
-  resolveMinutes,
 }: {
   block: ScheduledBlock;
   onMove(taskId: string, minutes: number): void;
   onResize(taskId: string, duration: number): void;
   onOpen(taskId: string): void;
   onToggle(taskId: string): void;
-  resolveMinutes(absoluteY: number): number | null;
 }) {
   const { colors } = useTheme();
   const [preview, setPreview] = useState<{ minutes: number; duration: number } | null>(null);
@@ -204,40 +213,48 @@ function TimeBlock({
   const minutes = preview?.minutes ?? block.minutes;
   const duration = Math.max(MIN_BLOCK_MINUTES, preview?.duration ?? block.duration);
 
+  // Both gestures read the travelled distance rather than the finger's position
+  // on screen, so the block keeps the grip the drag started with instead of
+  // snapping its top edge under the fingertip.
   const move = useMemo(
     () =>
       Gesture.Pan()
         .activateAfterLongPress(180)
         .onUpdate((event) => {
-          const next = resolveMinutes(event.absoluteY);
-          if (next !== null) setPreview({ minutes: next, duration: block.duration });
+          setPreview({
+            minutes: snapMinutes(block.minutes + minutesFromOffset(event.translationY)),
+            duration: block.duration,
+          });
         })
-        .onEnd(() => {
-          if (preview) onMove(block.task.id, clampMinutes(preview.minutes));
+        .onEnd((event) => {
+          onMove(block.task.id, snapMinutes(block.minutes + minutesFromOffset(event.translationY)));
         })
         .onFinalize(() => setPreview(null))
         .runOnJS(true),
-    [block.duration, block.task.id, onMove, preview, resolveMinutes],
+    [block.duration, block.minutes, block.task.id, onMove],
   );
 
   const resize = useMemo(
     () =>
       Gesture.Pan()
+        // Claims the drag before the surrounding scroll view's own threshold,
+        // which would otherwise scroll the day away under the handle.
+        .activeOffsetY([-4, 4])
         .onUpdate((event) => {
-          const end = resolveMinutes(event.absoluteY);
-          if (end !== null) {
-            setPreview({
-              minutes: block.minutes,
-              duration: Math.max(MIN_BLOCK_MINUTES, snapMinutes(end - block.minutes)),
-            });
-          }
+          setPreview({
+            minutes: block.minutes,
+            duration: snapDuration(block.duration + minutesFromOffset(event.translationY)),
+          });
         })
-        .onEnd(() => {
-          if (preview) onResize(block.task.id, preview.duration);
+        .onEnd((event) => {
+          onResize(
+            block.task.id,
+            snapDuration(block.duration + minutesFromOffset(event.translationY)),
+          );
         })
         .onFinalize(() => setPreview(null))
         .runOnJS(true),
-    [block.minutes, block.task.id, onResize, preview, resolveMinutes],
+    [block.duration, block.minutes, block.task.id, onResize],
   );
 
   return (
@@ -247,7 +264,7 @@ function TimeBlock({
           styles.block,
           {
             top: (minutes / 60) * HOUR_HEIGHT,
-            height: Math.max(22, (duration / 60) * HOUR_HEIGHT - 3),
+            height: Math.max(30, (duration / 60) * HOUR_HEIGHT - 3),
             backgroundColor: colors.accentSubtle,
             borderColor: preview ? colors.accent : colors.border,
           },
@@ -272,9 +289,11 @@ function TimeBlock({
           >
             {block.task.content}
           </Text>
-          <Text style={[typography.caption, { color: colors.muted }]}>
-            {formatClock(minutes)} · {duration}m
-          </Text>
+          {duration >= 45 ? (
+            <Text style={[typography.caption, { color: colors.muted }]}>
+              {formatClock(minutes)} · {duration}m
+            </Text>
+          ) : null}
         </Pressable>
         <GestureDetector gesture={resize}>
           <View style={styles.resizeHandle}>
@@ -313,7 +332,23 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     overflow: "hidden",
   },
-  blockBody: { flex: 1, paddingHorizontal: 8, paddingTop: 4, gap: 1 },
-  resizeHandle: { height: 12, alignItems: "center", justifyContent: "center" },
-  resizeBar: { width: 26, height: 3, borderRadius: 2 },
+  blockBody: {
+    flex: 1,
+    justifyContent: "center",
+    paddingHorizontal: 8,
+    paddingTop: 1,
+    paddingBottom: 14,
+    gap: 1,
+  },
+  resizeHandle: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 18,
+    alignItems: "center",
+    justifyContent: "flex-end",
+    paddingBottom: 3,
+  },
+  resizeBar: { width: 40, height: 4, borderRadius: 2 },
 });

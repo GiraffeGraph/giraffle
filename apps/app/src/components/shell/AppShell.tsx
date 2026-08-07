@@ -1,6 +1,7 @@
 import { router, Slot, usePathname } from "expo-router";
 import { useState } from "react";
 import {
+  Image,
   Pressable,
   StyleSheet,
   Text,
@@ -114,9 +115,13 @@ export function AppShell() {
             },
           ]}
         >
-          <Text style={[typography.heading, styles.wordmark, { color: colors.text }]}>
-            Giraffle
-          </Text>
+          <View style={styles.brand}>
+            <Image source={require("../../../assets/icon.png")} style={styles.brandIcon} />
+            <View style={styles.brandCopy}>
+              <Text style={[typography.title, { color: colors.text }]}>Giraffle</Text>
+              <Text style={[typography.caption, { color: colors.muted }]}>Private workspace</Text>
+            </View>
+          </View>
           {mainNavigation.map((item) => (
             <NavigationButton
               key={item.href}
@@ -189,7 +194,16 @@ const styles = StyleSheet.create({
     gap: spacing.xxs,
     borderRightWidth: StyleSheet.hairlineWidth,
   },
-  wordmark: { paddingHorizontal: spacing.sm, paddingBottom: spacing.lg },
+  brand: {
+    minHeight: 54,
+    paddingHorizontal: spacing.sm,
+    marginBottom: spacing.md,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  brandIcon: { width: 32, height: 32, borderRadius: radii.sm },
+  brandCopy: { flex: 1, gap: 1 },
   sidebarButton: {
     minHeight: 40,
     paddingHorizontal: spacing.md,

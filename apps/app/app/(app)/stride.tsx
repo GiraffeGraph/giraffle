@@ -7,19 +7,29 @@ import {
   parseDue,
 } from "@giraffle/domain";
 import { router } from "expo-router";
-import { useCallback, useMemo, useRef, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
-import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import { useCallback, useMemo, useState } from "react";
+import {
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+  useWindowDimensions,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { ScreenTopbar } from "@/components/shell/ScreenTopbar";
 import { TaskViewSwitch } from "@/components/shell/TaskViewSwitch";
 import { DayGrid } from "@/components/stride/DayGrid";
-import { Button, DividerRow, EmptyState, Icon, Segment } from "@/components/ui/primitives";
+import { Button, DividerRow, Icon, Segment } from "@/components/ui/primitives";
 import { useTheme } from "@/design/ThemeProvider";
 import { radii, spacing, typography } from "@/design/tokens";
 import { useApp } from "@/state/AppProvider";
 
 type ViewMode = "day" | "week";
-type Filter = "active" | "all" | "done";
 
 function dayLabel(day: string): string {
   return new Date(`${day}T12:00:00`).toLocaleDateString(undefined, {
@@ -29,30 +39,44 @@ function dayLabel(day: string): string {
   });
 }
 
+function startOfWeek(day: string): string {
+  const date = new Date(`${day}T12:00:00`);
+  const mondayOffset = (date.getDay() + 6) % 7;
+  return addDays(day, -mondayOffset);
+}
+
+function weekRangeLabel(days: string[]): string {
+  const first = days[0];
+  const last = days.at(-1);
+  if (!first || !last) return "";
+  const start = new Date(`${first}T12:00:00`);
+  const end = new Date(`${last}T12:00:00`);
+  const sameMonth = start.getMonth() === end.getMonth();
+  const left = start.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  });
+  const right = end.toLocaleDateString(undefined, {
+    ...(sameMonth ? {} : { month: "short" as const }),
+    day: "numeric",
+    year: start.getFullYear() === end.getFullYear() ? undefined : "numeric",
+  });
+  return `${left} – ${right}`;
+}
+
 export default function Stride() {
   const { colors } = useTheme();
   const { snapshot, run } = useApp();
   const [mode, setMode] = useState<ViewMode>("day");
-  const [filter, setFilter] = useState<Filter>("active");
-  const [query, setQuery] = useState("");
   const [day, setDay] = useState(() => dayKey(new Date()));
   const [composeAt, setComposeAt] = useState<number | null>(null);
   const [draft, setDraft] = useState("");
   const today = dayKey(new Date());
-  const resolveMinutes = useRef<((absoluteY: number) => number | null) | null>(null);
 
-  const weekDays = useMemo(
-    () => Array.from({ length: 7 }, (_, index) => addDays(today, index)),
-    [today],
-  );
-
-  const normalizedQuery = query.trim().toLocaleLowerCase();
-  const backlog = snapshot.tasks.filter(
-    (task) =>
-      !task.dueDate &&
-      (filter === "all" || (filter === "done" ? task.completed : !task.completed)) &&
-      task.content.toLocaleLowerCase().includes(normalizedQuery),
-  );
+  const weekDays = useMemo(() => {
+    const first = startOfWeek(day);
+    return Array.from({ length: 7 }, (_, index) => addDays(first, index));
+  }, [day]);
 
   const openSource = useCallback(
     (taskId: string) => {
@@ -131,54 +155,16 @@ export default function Stride() {
                 setComposeAt(minutes);
                 setDraft("");
               }}
-              onDropRegister={(resolve) => {
-                resolveMinutes.current = resolve;
-              }}
             />
-            {composeAt === null ? null : (
-              <View style={[styles.composer, { borderTopColor: colors.border }]}>
-                <Text style={[typography.label, { color: colors.accent }]}>
-                  {formatClock(composeAt)}
-                </Text>
-                <TextInput
-                  autoFocus
-                  value={draft}
-                  onChangeText={setDraft}
-                  onSubmitEditing={() => {
-                    const content = draft.trim();
-                    if (content) {
-                      void run((repository) =>
-                        repository.createScheduledTask({
-                          content,
-                          dueDate: formatDue(day, composeAt),
-                          durationMinutes: DEFAULT_DURATION_MINUTES,
-                        }),
-                      ).catch(() => undefined);
-                    }
-                    setComposeAt(null);
-                    setDraft("");
-                  }}
-                  placeholder="New task"
-                  placeholderTextColor={colors.faint}
-                  returnKeyType="done"
-                  style={[styles.composerInput, { color: colors.text }]}
-                />
-                <Button
-                  icon="close"
-                  accessibilityLabel="Cancel"
-                  onPress={() => {
-                    setComposeAt(null);
-                    setDraft("");
-                  }}
-                />
-              </View>
-            )}
           </>
         ) : (
-          <WeekList
+          <WeekGrid
             days={weekDays}
             today={today}
             tasks={snapshot.tasks}
+            onPrevious={() => setDay((current) => addDays(current, -7))}
+            onNext={() => setDay((current) => addDays(current, 7))}
+            onToday={() => setDay(today)}
             onOpenDay={(target) => {
               setDay(target);
               setMode("day");
@@ -186,202 +172,311 @@ export default function Stride() {
             onToggleTask={toggleTask}
           />
         )}
-
-        <View style={[styles.backlog, { borderTopColor: colors.border }]}>
-          <View style={styles.backlogHead}>
-            <Text style={[typography.label, { color: colors.muted, flex: 1 }]}>
-              Backlog · hold a task and drop it on the grid
-            </Text>
-            <Segment values={["active", "all", "done"] as const} value={filter} onChange={setFilter} />
-          </View>
-          <TextInput
-            value={query}
-            onChangeText={setQuery}
-            placeholder="Search backlog"
-            placeholderTextColor={colors.faint}
-            style={[
-              styles.search,
-              { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface },
-            ]}
-          />
-          {backlog.length === 0 ? (
-            <EmptyState
-              icon="calendar-clear-outline"
-              title="Backlog clear"
-              body="Create a task in Notes or Trek, or unschedule one here."
-            />
-          ) : (
-            <ScrollView contentContainerStyle={styles.backlogList}>
-              {backlog.slice(0, 12).map((task) => (
-                <BacklogChip
-                  key={task.id}
-                  label={task.content}
-                  onOpen={() => openSource(task.id)}
-                  onDropAt={(absoluteY) => {
-                    const minutes = resolveMinutes.current?.(absoluteY) ?? null;
-                    if (minutes === null) return;
-                    scheduleAt(task.id, day, minutes);
-                  }}
-                />
-              ))}
-            </ScrollView>
-          )}
-        </View>
       </View>
+      <ScheduleTaskSheet
+        minutes={composeAt}
+        tasks={snapshot.tasks.filter((task) => !task.dueDate && !task.completed)}
+        draft={draft}
+        onChangeDraft={setDraft}
+        onClose={() => {
+          setComposeAt(null);
+          setDraft("");
+        }}
+        onChoose={(taskId) => {
+          if (composeAt === null) return;
+          scheduleAt(taskId, day, composeAt);
+          setComposeAt(null);
+          setDraft("");
+        }}
+        onCreate={() => {
+          const content = draft.trim();
+          if (!content || composeAt === null) return;
+          void run((repository) =>
+            repository.createScheduledTask({
+              content,
+              dueDate: formatDue(day, composeAt),
+              durationMinutes: DEFAULT_DURATION_MINUTES,
+            }),
+          ).catch(() => undefined);
+          setComposeAt(null);
+          setDraft("");
+        }}
+      />
     </>
   );
 }
 
-function BacklogChip({
-  label,
-  onOpen,
-  onDropAt,
+function ScheduleTaskSheet({
+  minutes,
+  tasks,
+  draft,
+  onChangeDraft,
+  onClose,
+  onChoose,
+  onCreate,
 }: {
-  label: string;
-  onOpen(): void;
-  onDropAt(absoluteY: number): void;
+  minutes: number | null;
+  tasks: { id: string; content: string; sourceLabel: string }[];
+  draft: string;
+  onChangeDraft(value: string): void;
+  onClose(): void;
+  onChoose(taskId: string): void;
+  onCreate(): void;
 }) {
   const { colors } = useTheme();
-  const [dragging, setDragging] = useState(false);
-
-  const gesture = useMemo(
-    () =>
-      Gesture.Pan()
-        .activateAfterLongPress(180)
-        .onStart(() => setDragging(true))
-        .onEnd((event) => onDropAt(event.absoluteY))
-        .onFinalize(() => setDragging(false))
-        .runOnJS(true),
-    [onDropAt],
-  );
 
   return (
-    <GestureDetector gesture={gesture}>
-      <Pressable
-        accessibilityRole="button"
-        onPress={onOpen}
-        style={[
-          styles.chip,
-          {
-            backgroundColor: colors.surface,
-            borderColor: dragging ? colors.accent : colors.border,
-            opacity: dragging ? 0.6 : 1,
-          },
-        ]}
+    <Modal visible={minutes !== null} transparent animationType="slide" onRequestClose={onClose}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={styles.modalRoot}
       >
-        <Icon name="ellipse-outline" size={13} color={colors.muted} />
-        <Text numberOfLines={1} style={[typography.caption, { color: colors.text }]}>
-          {label}
-        </Text>
-      </Pressable>
-    </GestureDetector>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Close task picker"
+          style={[styles.scrim, { backgroundColor: colors.scrim }]}
+          onPress={onClose}
+        />
+        <SafeAreaView
+          edges={["bottom"]}
+          style={[styles.sheet, { backgroundColor: colors.surfaceStrong }]}
+        >
+          <View style={styles.sheetHeading}>
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={[typography.title, { color: colors.text }]}>Schedule a task</Text>
+              <Text style={[typography.caption, { color: colors.accent }]}>
+                {minutes === null ? "" : formatClock(minutes)} · 30 minutes
+              </Text>
+            </View>
+            <Button icon="close" accessibilityLabel="Close" onPress={onClose} />
+          </View>
+
+          <View
+            style={[
+              styles.newTask,
+              { borderColor: colors.border, backgroundColor: colors.surface },
+            ]}
+          >
+            <TextInput
+              value={draft}
+              onChangeText={onChangeDraft}
+              onSubmitEditing={onCreate}
+              placeholder="Create a new task"
+              placeholderTextColor={colors.faint}
+              returnKeyType="done"
+              style={[styles.newTaskInput, typography.body, { color: colors.text }]}
+            />
+            <Button
+              label="Add"
+              icon="add"
+              tone="accent"
+              disabled={!draft.trim()}
+              onPress={onCreate}
+            />
+          </View>
+
+          <Text style={[typography.label, { color: colors.muted }]}>Or schedule an existing task</Text>
+          {tasks.length ? (
+            <ScrollView style={styles.taskPicker} keyboardShouldPersistTaps="handled">
+              {tasks.map((task) => (
+                <DividerRow key={task.id} onPress={() => onChoose(task.id)}>
+                  <Icon name="ellipse-outline" size={17} color={colors.muted} />
+                  <View style={{ flex: 1 }}>
+                    <Text numberOfLines={1} style={[typography.body, { color: colors.text }]}>
+                      {task.content}
+                    </Text>
+                    <Text numberOfLines={1} style={[typography.caption, { color: colors.muted }]}>
+                      {task.sourceLabel}
+                    </Text>
+                  </View>
+                  <Icon name="calendar-outline" size={17} color={colors.accent} />
+                </DividerRow>
+              ))}
+            </ScrollView>
+          ) : (
+            <Text style={[typography.body, { color: colors.secondary }]}>
+              No unscheduled tasks. Create one above.
+            </Text>
+          )}
+        </SafeAreaView>
+      </KeyboardAvoidingView>
+    </Modal>
   );
 }
 
-function WeekList({
+function WeekGrid({
   days,
   today,
   tasks,
+  onPrevious,
+  onNext,
+  onToday,
   onOpenDay,
   onToggleTask,
 }: {
   days: string[];
   today: string;
   tasks: { id: string; content: string; completed: boolean; dueDate: string | null }[];
+  onPrevious(): void;
+  onNext(): void;
+  onToday(): void;
   onOpenDay(day: string): void;
   onToggleTask(taskId: string): void;
 }) {
   const { colors } = useTheme();
+  const { width } = useWindowDimensions();
+  const cardWidth = width >= 1000 ? ("31%" as const) : ("48%" as const);
 
   return (
     <View style={styles.week}>
-      {days.map((day) => {
-        const dayTasks = tasks.filter((task) => parseDue(task.dueDate)?.day === day);
+      <View style={styles.weekToolbar}>
+        <Button icon="chevron-back" accessibilityLabel="Previous week" onPress={onPrevious} />
+        <Text style={[typography.title, { color: colors.text, flex: 1 }]}>
+          {weekRangeLabel(days)}
+        </Text>
+        {days.includes(today) ? null : <Button label="Today" onPress={onToday} />}
+        <Button icon="chevron-forward" accessibilityLabel="Next week" onPress={onNext} />
+      </View>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.weekGrid}>
+        {days.map((day) => {
+          const dayTasks = tasks.filter((task) => parseDue(task.dueDate)?.day === day);
+          const visible = dayTasks.slice(0, 3);
+          const isToday = day === today;
 
-        return (
-          <View key={day} style={[styles.weekDay, { borderBottomColor: colors.border }]}>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => onOpenDay(day)}
-              style={styles.weekHead}
+          return (
+            <View
+              key={day}
+              style={[
+                styles.dayCard,
+                {
+                  width: cardWidth,
+                  borderColor: isToday ? colors.accent : colors.border,
+                  backgroundColor: isToday ? colors.accentSubtle : colors.surface,
+                },
+              ]}
             >
-              <Text
-                style={[
-                  typography.label,
-                  { color: day === today ? colors.accent : colors.secondary, flex: 1 },
-                ]}
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Open ${dayLabel(day)}`}
+                onPress={() => onOpenDay(day)}
+                style={({ pressed }) => [styles.dayCardHead, { opacity: pressed ? 0.55 : 1 }]}
               >
-                {dayLabel(day)}
-                {day === today ? " · today" : ""}
-              </Text>
-              <Text style={[typography.caption, { color: colors.muted }]}>
-                {dayTasks.length || ""}
-              </Text>
-            </Pressable>
-            {dayTasks.map((task) => (
-              <DividerRow key={task.id}>
-                <Button
-                  icon={task.completed ? "checkmark-circle" : "ellipse-outline"}
-                  accessibilityLabel="Toggle task"
-                  onPress={() => onToggleTask(task.id)}
-                />
-                <Text
-                  numberOfLines={1}
-                  style={[
-                    typography.body,
-                    {
-                      color: task.completed ? colors.muted : colors.text,
-                      flex: 1,
-                      textDecorationLine: task.completed ? "line-through" : "none",
-                    },
-                  ]}
-                >
-                  {task.content}
+                <View style={{ flex: 1 }}>
+                  <Text style={[typography.label, { color: isToday ? colors.accent : colors.text }]}>
+                    {new Date(`${day}T12:00:00`).toLocaleDateString(undefined, {
+                      weekday: "short",
+                    })}
+                  </Text>
+                  <Text style={[typography.heading, styles.dayNumber, { color: colors.text }]}>
+                    {new Date(`${day}T12:00:00`).getDate()}
+                  </Text>
+                </View>
+                <Text style={[typography.caption, { color: colors.muted }]}>
+                  {dayTasks.length || "—"}
                 </Text>
-              </DividerRow>
-            ))}
-          </View>
-        );
-      })}
+              </Pressable>
+
+              <View style={styles.dayTasks}>
+                {visible.map((task) => (
+                  <Pressable
+                    key={task.id}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: task.completed }}
+                    onPress={() => onToggleTask(task.id)}
+                    style={({ pressed }) => [styles.cardTask, { opacity: pressed ? 0.55 : 1 }]}
+                  >
+                    <Icon
+                      name={task.completed ? "checkmark-circle" : "ellipse-outline"}
+                      size={15}
+                      color={task.completed ? colors.accent : colors.muted}
+                    />
+                    <Text
+                      numberOfLines={1}
+                      style={[
+                        typography.caption,
+                        {
+                          color: task.completed ? colors.muted : colors.text,
+                          flex: 1,
+                          textDecorationLine: task.completed ? "line-through" : "none",
+                        },
+                      ]}
+                    >
+                      {task.content}
+                    </Text>
+                  </Pressable>
+                ))}
+                {dayTasks.length > visible.length ? (
+                  <Text style={[typography.caption, { color: colors.muted }]}>
+                    +{dayTasks.length - visible.length}
+                  </Text>
+                ) : null}
+              </View>
+            </View>
+          );
+        })}
+      </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, paddingHorizontal: spacing.lg, paddingBottom: 96 },
+  screen: { flex: 1, paddingHorizontal: spacing.lg, paddingBottom: 72 },
   controls: { paddingVertical: spacing.md },
   dayBar: { flexDirection: "row", alignItems: "center", gap: spacing.sm, paddingBottom: 6 },
   week: { flex: 1 },
-  weekDay: { borderBottomWidth: StyleSheet.hairlineWidth, paddingBottom: 4 },
-  weekHead: { minHeight: 36, flexDirection: "row", alignItems: "center" },
-  composer: {
+  weekToolbar: {
+    minHeight: 44,
+    paddingBottom: spacing.md,
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.sm,
-    paddingVertical: 8,
-    borderTopWidth: StyleSheet.hairlineWidth,
   },
-  composerInput: { flex: 1, height: 38 },
-  // Capped so the backlog cannot squeeze the calendar down to a few hours;
-  // it scrolls internally instead of taking whatever height it wants.
-  backlog: {
-    paddingTop: spacing.md,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    gap: 8,
-    flexShrink: 0,
-    maxHeight: "38%",
+  weekGrid: {
+    paddingBottom: 96,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.md,
   },
-  backlogHead: { flexDirection: "row", alignItems: "center", gap: 12 },
-  search: { height: 38, borderWidth: 1, borderRadius: radii.sm, paddingHorizontal: 12 },
-  backlogList: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
-  chip: {
-    maxWidth: 190,
+  dayCard: {
+    minHeight: 148,
+    padding: spacing.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radii.md,
+    gap: spacing.sm,
+  },
+  dayCardHead: { flexDirection: "row", alignItems: "flex-start" },
+  dayNumber: { marginTop: 2 },
+  dayTasks: { gap: spacing.xs },
+  cardTask: {
+    minHeight: 25,
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 9,
-    paddingVertical: 7,
-    borderWidth: 1,
-    borderRadius: radii.sm,
+    gap: spacing.sm,
   },
+  modalRoot: { flex: 1, justifyContent: "flex-end" },
+  scrim: { position: "absolute", top: 0, right: 0, bottom: 0, left: 0 },
+  sheet: {
+    width: "100%",
+    maxWidth: 640,
+    maxHeight: "72%",
+    alignSelf: "center",
+    padding: spacing.lg,
+    paddingBottom: spacing.xl,
+    borderTopLeftRadius: radii.sheet,
+    borderTopRightRadius: radii.sheet,
+    gap: spacing.md,
+  },
+  sheetHeading: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  newTask: {
+    minHeight: 48,
+    paddingLeft: spacing.md,
+    paddingRight: spacing.xs,
+    borderWidth: 1,
+    borderRadius: radii.md,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  newTaskInput: { flex: 1, minHeight: 44 },
+  taskPicker: { maxHeight: 320 },
 });

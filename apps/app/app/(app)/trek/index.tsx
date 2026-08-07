@@ -1,6 +1,6 @@
 import { router } from "expo-router";
 import { useCallback, useMemo } from "react";
-import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import {
   DragSortItem,
   DragSortProvider,
@@ -9,7 +9,7 @@ import {
 } from "@/components/dnd/DragSortContext";
 import { ScreenTopbar } from "@/components/shell/ScreenTopbar";
 import { Page } from "@/components/ui/Page";
-import { Button, DividerRow, EmptyState, Icon } from "@/components/ui/primitives";
+import { Button, EmptyState, Icon } from "@/components/ui/primitives";
 import { useTheme } from "@/design/ThemeProvider";
 import { spacing, typography } from "@/design/tokens";
 import { useApp } from "@/state/AppProvider";
@@ -135,33 +135,30 @@ function TrekScreen() {
             const boards = snapshot.boards.filter(
               (board) => (board.statusId ?? UNSORTED) === status.id,
             );
+            const laneReceiving = drag.target?.id === laneKey(status.id);
             return (
-              <View
+              <DragSortItem
                 key={status.id}
-                style={[styles.lane, { borderTopColor: status.color ?? colors.accent }]}
+                id={laneKey(status.id)}
+                containerOnly
+                disabled
+                onDrop={handleDrop}
+                style={[
+                  styles.lane,
+                  {
+                    borderTopColor: status.color ?? colors.accent,
+                    backgroundColor: laneReceiving ? colors.hover : "transparent",
+                  },
+                ]}
               >
-                <DragSortItem
-                  id={laneKey(status.id)}
-                  containerOnly
-                  disabled
-                  onDrop={handleDrop}
-                >
-                  <View
-                    style={[
-                      styles.laneHead,
-                      drag.target?.id === laneKey(status.id)
-                        ? { backgroundColor: colors.hover }
-                        : null,
-                    ]}
-                  >
-                    <Text style={[typography.label, { color: colors.text, flex: 1 }]}>
-                      {status.title}
-                    </Text>
-                    <Text style={[typography.caption, { color: colors.muted }]}>
-                      {boards.length}
-                    </Text>
-                  </View>
-                </DragSortItem>
+                <View style={styles.laneHead}>
+                  <Text style={[typography.label, { color: colors.text, flex: 1 }]}>
+                    {status.title}
+                  </Text>
+                  <Text style={[typography.caption, { color: colors.muted }]}>
+                    {boards.length}
+                  </Text>
+                </View>
                 {boards.map((board) => {
                   /** A board row is not a container, so hovering its middle sorts after it. */
                   const zone =
@@ -170,6 +167,7 @@ function TrekScreen() {
                         ? "before"
                         : "after"
                       : null;
+                  const dragging = drag.draggingId === board.id;
                   return (
                     <DragSortItem
                       key={board.id}
@@ -183,27 +181,50 @@ function TrekScreen() {
                           zone === "before" ? { backgroundColor: colors.accent } : null,
                         ]}
                       />
-                      <DividerRow
-                        {...(drag.draggingId === board.id ? { style: styles.dragging } : {})}
+                      <View
+                        style={[
+                          styles.boardRow,
+                          {
+                            borderBottomColor: colors.border,
+                            backgroundColor: dragging ? colors.surfaceStrong : "transparent",
+                          },
+                        ]}
                       >
-                        <Icon name="albums-outline" size={17} />
-                        <View style={{ flex: 1 }}>
-                          <Text numberOfLines={1} style={[typography.title, { color: colors.text }]}>
-                            {board.title}
-                          </Text>
-                          <Text style={[typography.caption, { color: colors.muted }]}>
-                            {snapshot.tasks.filter((task) => task.boardId === board.id).length} tasks ·{" "}
-                            {snapshot.columns.filter((column) => column.boardId === board.id).length} columns
-                          </Text>
-                        </View>
-                        <Button label="Open" onPress={() => router.push(`/trek/${board.id}`)} />
-                        <Button
-                          icon="trash-outline"
-                          tone="danger"
-                          accessibilityLabel="Delete board"
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel={`Open ${board.title}`}
+                          accessibilityHint="Press and hold, then drag to move this board"
+                          onPress={() => router.push(`/trek/${board.id}`)}
+                          style={({ pressed }) => [
+                            styles.boardLink,
+                            { backgroundColor: pressed ? colors.hover : "transparent" },
+                          ]}
+                        >
+                          <Icon name="reorder-three-outline" size={18} color={colors.faint} />
+                          <View style={{ flex: 1 }}>
+                            <Text numberOfLines={1} style={[typography.title, { color: colors.text }]}>
+                              {board.title}
+                            </Text>
+                            <Text style={[typography.caption, { color: colors.muted }]}>
+                              {snapshot.tasks.filter((task) => task.boardId === board.id).length} tasks ·{" "}
+                              {snapshot.columns.filter((column) => column.boardId === board.id).length} columns
+                            </Text>
+                          </View>
+                          <Icon name="chevron-forward" size={16} color={colors.faint} />
+                        </Pressable>
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel={`Delete ${board.title}`}
+                          hitSlop={6}
                           onPress={() => confirmDelete(board.id, board.title)}
-                        />
-                      </DividerRow>
+                          style={({ pressed }) => [
+                            styles.deleteAction,
+                            { backgroundColor: pressed ? colors.hover : "transparent" },
+                          ]}
+                        >
+                          <Icon name="trash-outline" size={18} color={colors.danger} />
+                        </Pressable>
+                      </View>
                       <View
                         style={[
                           styles.edge,
@@ -218,7 +239,7 @@ function TrekScreen() {
                   icon="add-outline"
                   onPress={() => create(status.id === UNSORTED ? null : status.id)}
                 />
-              </View>
+              </DragSortItem>
             );
           })}
         </ScrollView>
@@ -230,8 +251,43 @@ function TrekScreen() {
 
 const styles = StyleSheet.create({
   lanes: { gap: spacing.xl, paddingBottom: 8 },
-  lane: { width: 300, borderTopWidth: 2 },
-  laneHead: { height: 38, flexDirection: "row", alignItems: "center" },
-  dragging: { opacity: 0.45 },
-  edge: { height: 2, borderRadius: 1 },
+  lane: {
+    width: 300,
+    minHeight: 180,
+    paddingHorizontal: spacing.xs,
+    paddingBottom: spacing.sm,
+    borderTopWidth: 2,
+    borderRadius: 4,
+  },
+  laneHead: {
+    height: 38,
+    paddingHorizontal: spacing.xs,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  boardRow: {
+    minHeight: 62,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderRadius: 7,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  boardLink: {
+    flex: 1,
+    minWidth: 0,
+    minHeight: 62,
+    paddingHorizontal: spacing.sm,
+    borderRadius: 7,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  deleteAction: {
+    width: 40,
+    height: 40,
+    borderRadius: 7,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  edge: { height: 3, borderRadius: 2 },
 });

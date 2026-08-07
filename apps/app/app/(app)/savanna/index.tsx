@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { Alert, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { ScreenTopbar } from "@/components/shell/ScreenTopbar";
 import { Page } from "@/components/ui/Page";
 import { Button, DividerRow, EmptyState, Icon } from "@/components/ui/primitives";
@@ -44,17 +44,24 @@ export default function Savanna() {
         <View style={[styles.list, { borderTopColor: colors.border }]}>
           {snapshot.canvases.map((canvas) => (
             <DividerRow key={canvas.id}>
-              <Icon name="map-outline" color={colors.accent} />
-              <View style={{ flex: 1 }}>
-                <Text numberOfLines={1} style={[typography.title, { color: colors.text }]}>
-                  {canvas.title}
-                </Text>
-                <Text style={[typography.caption, { color: colors.muted }]}>
-                  {canvas.elements.filter((element) => !element.isDeleted).length} elements · edited{" "}
-                  {new Date(canvas.updatedAt).toLocaleDateString()}
-                </Text>
-              </View>
-              <Button label="Open" onPress={() => router.push(`/savanna/${canvas.id}`)} />
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Open ${canvas.title}`}
+                onPress={() => router.push(`/savanna/${canvas.id}`)}
+                style={({ pressed }) => [styles.mapLink, { opacity: pressed ? 0.55 : 1 }]}
+              >
+                <Icon name="map-outline" color={colors.accent} />
+                <View style={{ flex: 1 }}>
+                  <Text numberOfLines={1} style={[typography.title, { color: colors.text }]}>
+                    {canvas.title}
+                  </Text>
+                  <Text style={[typography.caption, { color: colors.muted }]}>
+                    {canvas.elements.filter((element) => !element.isDeleted).length} elements · edited{" "}
+                    {new Date(canvas.updatedAt).toLocaleDateString()}
+                  </Text>
+                </View>
+                <Icon name="chevron-forward" size={16} color={colors.faint} />
+              </Pressable>
               <Button
                 icon="trash-outline"
                 tone="danger"
@@ -72,4 +79,12 @@ export default function Savanna() {
 
 const styles = StyleSheet.create({
   list: { borderTopWidth: StyleSheet.hairlineWidth },
+  mapLink: {
+    flex: 1,
+    minWidth: 0,
+    minHeight: 56,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
 });

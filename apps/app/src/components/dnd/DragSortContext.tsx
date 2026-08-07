@@ -8,6 +8,8 @@ import {
   type PropsWithChildren,
 } from "react";
 import {
+  Animated,
+  StyleSheet,
   View,
   type LayoutChangeEvent,
   type StyleProp,
@@ -74,12 +76,18 @@ export function DragSortProvider({ children }: PropsWithChildren) {
 
   const update = useCallback((absoluteX: number, absoluteY: number) => {
     let next: DropTarget | null = null;
+    let nextArea = Number.POSITIVE_INFINITY;
 
     for (const slot of slots.current.values()) {
       if (blocked.current.has(slot.id)) continue;
       if (absoluteY < slot.top || absoluteY > slot.top + slot.height) continue;
       // Side-by-side targets share a Y band, so both axes have to match.
       if (absoluteX < slot.left || absoluteX > slot.left + slot.width) continue;
+
+      // A lane can wrap its rows so its empty space remains droppable. When a
+      // row and its lane overlap, the smaller row is the more precise target.
+      const area = slot.width * slot.height;
+      if (area >= nextArea) continue;
 
       const offset = (absoluteY - slot.top) / slot.height;
       const zone: DropZone = slot.containerOnly
@@ -90,7 +98,7 @@ export function DragSortProvider({ children }: PropsWithChildren) {
             ? "after"
             : "inside";
       next = { id: slot.id, zone };
-      break;
+      nextArea = area;
     }
 
     if (next?.id !== targetRef.current?.id || next?.zone !== targetRef.current?.zone) {
@@ -156,17 +164,54 @@ export function DragSortItem({
    */
   style?: StyleProp<ViewStyle>;
 }>) {
-  const drag = useDragSort();
+  const {
+    draggingId,
+    register,
+    begin,
+    update,
+    end,
+    cancel,
+  } = useDragSort();
   const viewRef = useRef<View>(null);
+  const [translateX] = useState(() => new Animated.Value(0));
+  const [translateY] = useState(() => new Animated.Value(0));
+  const [scale] = useState(() => new Animated.Value(1));
+  const active = draggingId === id;
+
+  const settle = useCallback(() => {
+    Animated.parallel([
+      Animated.spring(translateX, {
+        toValue: 0,
+        stiffness: 260,
+        damping: 24,
+        mass: 0.7,
+        useNativeDriver: true,
+      }),
+      Animated.spring(translateY, {
+        toValue: 0,
+        stiffness: 260,
+        damping: 24,
+        mass: 0.7,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scale, {
+        toValue: 1,
+        stiffness: 260,
+        damping: 24,
+        mass: 0.7,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [scale, translateX, translateY]);
 
   const measure = useCallback(
     (event: LayoutChangeEvent) => {
       const { height } = event.nativeEvent.layout;
       viewRef.current?.measureInWindow((x, y, width) => {
-        drag.register({ id, top: y, height, left: x, width, blocked: false, containerOnly });
+        register({ id, top: y, height, left: x, width, blocked: false, containerOnly });
       });
     },
-    [containerOnly, drag, id],
+    [containerOnly, id, register],
   );
 
   const gesture = useMemo(
@@ -175,27 +220,72 @@ export function DragSortItem({
         .activateAfterLongPress(220)
         .enabled(!disabled)
         .onStart(() => {
-          drag.begin(id, blockedIds);
+          translateX.setValue(0);
+          translateY.setValue(0);
+          Animated.spring(scale, {
+            toValue: 1.025,
+            stiffness: 300,
+            damping: 22,
+            mass: 0.6,
+            useNativeDriver: true,
+          }).start();
+          begin(id, blockedIds);
         })
         .onUpdate((event) => {
-          drag.update(event.absoluteX, event.absoluteY);
+          translateX.setValue(event.translationX);
+          translateY.setValue(event.translationY);
+          update(event.absoluteX, event.absoluteY);
         })
         .onEnd(() => {
-          const target = drag.end();
+          const target = end();
           if (target) onDrop(id, target);
         })
         .onFinalize(() => {
-          drag.cancel();
+          settle();
+          cancel();
         })
         .runOnJS(true),
-    [blockedIds, disabled, drag, id, onDrop],
+    [
+      begin,
+      blockedIds,
+      cancel,
+      disabled,
+      end,
+      id,
+      onDrop,
+      scale,
+      settle,
+      translateX,
+      translateY,
+      update,
+    ],
   );
 
   return (
     <GestureDetector gesture={gesture}>
-      <View ref={viewRef} collapsable={false} onLayout={measure} style={style}>
+      <Animated.View
+        ref={viewRef}
+        collapsable={false}
+        onLayout={measure}
+        style={[
+          style,
+          active ? styles.lifted : null,
+          { transform: [{ translateX }, { translateY }, { scale }] },
+        ]}
+      >
         {children}
-      </View>
+      </Animated.View>
     </GestureDetector>
   );
 }
+
+const styles = StyleSheet.create({
+  lifted: {
+    zIndex: 2,
+    elevation: 6,
+    shadowColor: "#211d18",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.16,
+    shadowRadius: 12,
+  },
+});

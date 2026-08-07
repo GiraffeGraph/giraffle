@@ -13,3 +13,4 @@
 
 ## Product UI
 - Use simple user language everywhere, including optional detail sections; show raw technical values only when they are required to use the feature.
+- Do not add persistent instructional prose for direct-manipulation UI; make the interaction discoverable through the control itself and keep the screen visually quiet.
