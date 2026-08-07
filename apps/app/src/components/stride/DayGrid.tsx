@@ -27,6 +27,12 @@ function minutesFromOffset(pixels: number): number {
   return (pixels / HOUR_HEIGHT) * 60;
 }
 
+function selectionRange(anchor: number, current: number) {
+  const minutes = Math.min(anchor, current);
+  const duration = snapDuration(Math.abs(current - anchor));
+  return { minutes, duration };
+}
+
 export interface ScheduledBlock {
   task: Task;
   minutes: number;
@@ -46,6 +52,7 @@ export function DayGrid({
   onToggleTask,
   onPickSlot,
   selectedMinutes = null,
+  selectedDuration = DEFAULT_DURATION_MINUTES,
 }: {
   day: string;
   tasks: Task[];
@@ -53,13 +60,15 @@ export function DayGrid({
   onResizeTask(taskId: string, duration: number): void;
   onOpenTask(taskId: string): void;
   onToggleTask(taskId: string): void;
-  /** Holding empty space opens the task picker at that minute. */
-  onPickSlot(minutes: number): void;
-  /** The slot currently being composed in the task sheet. */
+  /** A tap uses the default duration; holding and dragging selects a range. */
+  onPickSlot(minutes: number, duration?: number): void;
+  /** The range currently being composed in the task sheet. */
   selectedMinutes?: number | null;
+  selectedDuration?: number;
 }) {
   const { colors } = useTheme();
   const [now, setNow] = useState(() => minutesNow());
+  const [draftSlot, setDraftSlot] = useState<{ minutes: number; duration: number } | null>(null);
   const gridTop = useRef(0);
   const scrollOffset = useRef(0);
   const scrollRef = useRef<ScrollView>(null);
@@ -101,6 +110,39 @@ export function DayGrid({
     if (offsetInGrid < 0) return null;
     return snapMinutes((offsetInGrid / HOUR_HEIGHT) * 60);
   }, []);
+
+  const createRange = useMemo(
+    () =>
+      Gesture.Pan()
+        .activateAfterLongPress(180)
+        .minDistance(0)
+        .onStart((event) => {
+          const anchor = snapMinutes(minutesFromOffset(event.y));
+          setDraftSlot({ minutes: anchor, duration: MIN_BLOCK_MINUTES });
+        })
+        .onUpdate((event) => {
+          const anchor = snapMinutes(minutesFromOffset(event.y - event.translationY));
+          const current = snapMinutes(minutesFromOffset(event.y));
+          setDraftSlot(selectionRange(anchor, current));
+        })
+        .onEnd((event) => {
+          const anchor = snapMinutes(minutesFromOffset(event.y - event.translationY));
+          const current = snapMinutes(minutesFromOffset(event.y));
+          const range = selectionRange(anchor, current);
+          onPickSlot(range.minutes, range.duration);
+        })
+        .onFinalize(() => {
+          setDraftSlot(null);
+        })
+        .runOnJS(true),
+    [onPickSlot],
+  );
+
+  const highlightedSlot =
+    draftSlot ??
+    (selectedMinutes === null
+      ? null
+      : { minutes: selectedMinutes, duration: selectedDuration });
 
   // Open on the current hour rather than at midnight.
   useEffect(() => {
@@ -161,35 +203,36 @@ export function DayGrid({
             style={[styles.nowLine, { top: (now / 60) * HOUR_HEIGHT, backgroundColor: colors.accent }]}
           />
 
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Schedule a task at this time"
-            accessibilityHint="Choose an existing task or create a new one"
-            delayLongPress={180}
-            onPress={(event) => {
-              const minutes = minutesAt(event.nativeEvent.pageY);
-              if (minutes !== null) onPickSlot(minutes);
-            }}
-            onLongPress={(event) => {
-              const minutes = minutesAt(event.nativeEvent.pageY);
-              if (minutes !== null) onPickSlot(minutes);
-            }}
-            style={StyleSheet.absoluteFill}
-          />
+          <GestureDetector gesture={createRange}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Schedule a task at this time"
+              accessibilityHint="Tap for 30 minutes, or hold and drag to select a duration"
+              onPress={(event) => {
+                const minutes = minutesAt(event.nativeEvent.pageY);
+                if (minutes !== null) onPickSlot(minutes, DEFAULT_DURATION_MINUTES);
+              }}
+              style={StyleSheet.absoluteFill}
+            />
+          </GestureDetector>
 
-          {selectedMinutes !== null ? (
+          {highlightedSlot ? (
             <View
               pointerEvents="none"
               style={[
                 styles.selectedSlot,
                 {
-                  top: (selectedMinutes / 60) * HOUR_HEIGHT,
-                  height: (DEFAULT_DURATION_MINUTES / 60) * HOUR_HEIGHT,
+                  top: (highlightedSlot.minutes / 60) * HOUR_HEIGHT,
+                  height: Math.max(30, (highlightedSlot.duration / 60) * HOUR_HEIGHT - 3),
                   backgroundColor: colors.accentSubtle,
                   borderColor: colors.accent,
                 },
               ]}
-            />
+            >
+              <Text style={[typography.caption, styles.selectedSlotLabel, { color: colors.text }]}>
+                {formatClock(highlightedSlot.minutes)} · {highlightedSlot.duration}m
+              </Text>
+            </View>
           ) : null}
 
           {timed.map((block) => (
@@ -343,9 +386,12 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: GUTTER_WIDTH,
     right: 4,
+    paddingHorizontal: 8,
+    paddingTop: 4,
     borderWidth: 1,
     borderRadius: radii.sm,
   },
+  selectedSlotLabel: { fontVariant: ["tabular-nums"] },
   block: {
     position: "absolute",
     left: GUTTER_WIDTH,

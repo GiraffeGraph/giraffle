@@ -94,6 +94,7 @@ export default function Stride() {
   const [mode, setMode] = useState<ViewMode>("day");
   const [day, setDay] = useState(() => dayKey(new Date()));
   const [composeAt, setComposeAt] = useState<number | null>(null);
+  const [composeDuration, setComposeDuration] = useState(DEFAULT_DURATION_MINUTES);
   const [previewDay, setPreviewDay] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const today = dayKey(new Date());
@@ -125,12 +126,12 @@ export default function Stride() {
   );
 
   const scheduleAt = useCallback(
-    (taskId: string, targetDay: string, minutes: number | null) => {
+    (taskId: string, targetDay: string, minutes: number | null, duration?: number) => {
       const task = snapshot.tasks.find((item) => item.id === taskId);
       void run((repository) =>
         repository.updateTask(taskId, {
           dueDate: formatDue(targetDay, minutes),
-          durationMinutes: task?.durationMinutes ?? DEFAULT_DURATION_MINUTES,
+          durationMinutes: duration ?? task?.durationMinutes ?? DEFAULT_DURATION_MINUTES,
         }),
       ).catch(() => undefined);
     },
@@ -176,11 +177,13 @@ export default function Stride() {
                   repository.updateTask(taskId, { durationMinutes: duration }),
                 ).catch(() => undefined)
               }
-              onPickSlot={(minutes) => {
+              onPickSlot={(minutes, duration = DEFAULT_DURATION_MINUTES) => {
                 setComposeAt(minutes);
+                setComposeDuration(duration);
                 setDraft("");
               }}
               selectedMinutes={composeAt}
+              selectedDuration={composeDuration}
             />
           </>
         ) : mode === "week" ? (
@@ -226,17 +229,20 @@ export default function Stride() {
       />
       <ScheduleTaskSheet
         minutes={composeAt}
+        duration={composeDuration}
         tasks={snapshot.tasks.filter((task) => !task.dueDate && !task.completed)}
         draft={draft}
         onChangeDraft={setDraft}
         onClose={() => {
           setComposeAt(null);
+          setComposeDuration(DEFAULT_DURATION_MINUTES);
           setDraft("");
         }}
         onChoose={(taskId) => {
           if (composeAt === null) return;
-          scheduleAt(taskId, day, composeAt);
+          scheduleAt(taskId, day, composeAt, composeDuration);
           setComposeAt(null);
+          setComposeDuration(DEFAULT_DURATION_MINUTES);
           setDraft("");
         }}
         onCreate={() => {
@@ -246,10 +252,11 @@ export default function Stride() {
             repository.createScheduledTask({
               content,
               dueDate: formatDue(day, composeAt),
-              durationMinutes: DEFAULT_DURATION_MINUTES,
+              durationMinutes: composeDuration,
             }),
           ).catch(() => undefined);
           setComposeAt(null);
+          setComposeDuration(DEFAULT_DURATION_MINUTES);
           setDraft("");
         }}
       />
@@ -259,6 +266,7 @@ export default function Stride() {
 
 function ScheduleTaskSheet({
   minutes,
+  duration,
   tasks,
   draft,
   onChangeDraft,
@@ -267,6 +275,7 @@ function ScheduleTaskSheet({
   onCreate,
 }: {
   minutes: number | null;
+  duration: number;
   tasks: { id: string; content: string; sourceLabel: string }[];
   draft: string;
   onChangeDraft(value: string): void;
@@ -296,7 +305,7 @@ function ScheduleTaskSheet({
             <View style={{ flex: 1, gap: 2 }}>
               <Text style={[typography.title, { color: colors.text }]}>Schedule a task</Text>
               <Text style={[typography.caption, { color: colors.accent }]}>
-                {minutes === null ? "" : formatClock(minutes)} · 30 minutes
+                {minutes === null ? "" : formatClock(minutes)} · {duration} minutes
               </Text>
             </View>
             <Button icon="close" accessibilityLabel="Close" onPress={onClose} />
