@@ -26,6 +26,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { ScreenTopbar } from "@/components/shell/ScreenTopbar";
 import { TaskViewSwitch } from "@/components/shell/TaskViewSwitch";
 import { DayGrid } from "@/components/stride/DayGrid";
+import { QuickTaskButton } from "@/components/tasks/QuickTaskButton";
 import { Button, DividerRow, Icon } from "@/components/ui/primitives";
 import { useTheme } from "@/design/ThemeProvider";
 import { radii, spacing, typography } from "@/design/tokens";
@@ -143,6 +144,7 @@ export default function Stride() {
       <ScreenTopbar
         title="Tasks"
         aside={<TaskViewSwitch scheduleMode={mode} onScheduleModeChange={setMode} />}
+        action={<QuickTaskButton />}
       />
       <View style={[styles.screen, { backgroundColor: colors.background }]}>
         {mode === "day" ? (

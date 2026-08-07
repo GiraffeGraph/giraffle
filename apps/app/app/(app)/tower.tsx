@@ -10,6 +10,7 @@ import {
 } from "@/components/dnd/DragSortContext";
 import { ScreenTopbar } from "@/components/shell/ScreenTopbar";
 import { TaskViewSwitch } from "@/components/shell/TaskViewSwitch";
+import { QuickTaskButton } from "@/components/tasks/QuickTaskButton";
 import { Page } from "@/components/ui/Page";
 import { Button, EmptyState, Icon, Segment } from "@/components/ui/primitives";
 import { useTheme } from "@/design/ThemeProvider";
@@ -93,7 +94,11 @@ function PriorityScreen() {
 
   return (
     <>
-      <ScreenTopbar title="Priority" aside={<TaskViewSwitch />} />
+      <ScreenTopbar
+        title="Priority"
+        aside={<TaskViewSwitch />}
+        action={<QuickTaskButton />}
+      />
       <Page>
         <View style={styles.toolbar}>
           <View style={{ flex: 1 }}>

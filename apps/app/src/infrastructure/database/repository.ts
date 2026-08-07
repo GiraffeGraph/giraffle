@@ -16,7 +16,7 @@ interface RepositoryOptions { database: VaultDatabase; vaultId: string; deviceId
 type Tx = Pick<VaultDatabase, "runAsync" | "getFirstAsync" | "getAllAsync" | "execAsync">;
 type MutationData = Record<string, unknown>;
 const parse = <T>(value: string): T => JSON.parse(value) as T;
-const DAILY_PAGE_TITLE = "Daily";
+const TASK_INBOX_TITLE = "Inbox";
 const KEY_EPOCH = 1;
 const bool = (value: number) => value === 1;
 const crypto = vaultCryptoProvider;
@@ -379,17 +379,21 @@ export class VaultRepository {
       }
     });
   }
-  /**
-   * A task created from the calendar has no page of its own, so it lands in a
-   * single "Daily" page that is created on first use.
-   */
-  async createScheduledTask(input: { content: string; dueDate: string; durationMinutes: number }): Promise<string> {
+  /** General tasks stay canonical blocks in one visible Inbox page. */
+  private async taskInboxPageId(): Promise<string> {
     const existing = await this.database.getFirstAsync<{ id: string }>(
       "SELECT id FROM pages WHERE deleted=0 AND is_archived=0 AND title=? ORDER BY created_at LIMIT 1",
-      DAILY_PAGE_TITLE,
+      TASK_INBOX_TITLE,
     );
-    const pageId = existing?.id ?? (await this.createPage({ title: DAILY_PAGE_TITLE }));
-    const taskId = await this.createTask({ pageId, content: input.content });
+    return existing?.id ?? (await this.createPage({ title: TASK_INBOX_TITLE }));
+  }
+
+  async createInboxTask(content: string): Promise<string> {
+    return this.createTask({ pageId: await this.taskInboxPageId(), content });
+  }
+
+  async createScheduledTask(input: { content: string; dueDate: string; durationMinutes: number }): Promise<string> {
+    const taskId = await this.createInboxTask(input.content);
     await this.updateTask(taskId, {
       dueDate: input.dueDate,
       durationMinutes: input.durationMinutes,
