@@ -1,9 +1,3 @@
-<!-- BEGIN:nextjs-agent-rules -->
-# This is NOT the Next.js you know
-
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
-<!-- END:nextjs-agent-rules -->
-
 # Utility Skills
 
 ## Caveman Mode
@@ -13,4 +7,9 @@ This project supports the **Caveman Skill Environment** for token efficiency and
 - **Code Review**: Use `caveman-review` for concise PR feedback.
 - **Efficiency**: Use `caveman-stats` to see token savings.
 
-Refer to `skills/caveman/SKILL.md` for full instructions.
+# Building and running
+
+Native builds, the Android APK, and driving a simulator are covered by the
+project skill `.claude/skills/build-and-run/SKILL.md`. Read it before running
+any Expo or Gradle command — it records the flags and platform gaps that a
+green test suite does not catch.
