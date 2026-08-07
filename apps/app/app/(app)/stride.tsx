@@ -5,10 +5,12 @@ import {
   formatClock,
   formatDue,
   parseDue,
+  type Task,
 } from "@giraffle/domain";
 import { router } from "expo-router";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  Animated,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -29,7 +31,9 @@ import { useTheme } from "@/design/ThemeProvider";
 import { radii, spacing, typography } from "@/design/tokens";
 import { useApp } from "@/state/AppProvider";
 
-type ViewMode = "day" | "week";
+const AnimatedSafeAreaView = Animated.createAnimatedComponent(SafeAreaView);
+
+type ViewMode = "day" | "week" | "month";
 
 function dayLabel(day: string): string {
   return new Date(`${day}T12:00:00`).toLocaleDateString(undefined, {
@@ -43,6 +47,26 @@ function startOfWeek(day: string): string {
   const date = new Date(`${day}T12:00:00`);
   const mondayOffset = (date.getDay() + 6) % 7;
   return addDays(day, -mondayOffset);
+}
+
+function addMonths(day: string, offset: number): string {
+  const date = new Date(`${day}T12:00:00`);
+  date.setDate(1);
+  date.setMonth(date.getMonth() + offset);
+  return dayKey(date);
+}
+
+function monthCells(day: string): string[] {
+  const first = `${day.slice(0, 7)}-01`;
+  const start = startOfWeek(first);
+  return Array.from({ length: 42 }, (_, index) => addDays(start, index));
+}
+
+function monthLabel(day: string): string {
+  return new Date(`${day.slice(0, 7)}-01T12:00:00`).toLocaleDateString(undefined, {
+    month: "long",
+    year: "numeric",
+  });
 }
 
 function weekRangeLabel(days: string[]): string {
@@ -70,6 +94,7 @@ export default function Stride() {
   const [mode, setMode] = useState<ViewMode>("day");
   const [day, setDay] = useState(() => dayKey(new Date()));
   const [composeAt, setComposeAt] = useState<number | null>(null);
+  const [previewDay, setPreviewDay] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const today = dayKey(new Date());
 
@@ -117,7 +142,7 @@ export default function Stride() {
       <ScreenTopbar title="Tasks" aside={<TaskViewSwitch />} />
       <View style={[styles.screen, { backgroundColor: colors.background }]}>
         <View style={styles.controls}>
-          <Segment values={["day", "week"] as const} value={mode} onChange={setMode} />
+          <Segment values={["day", "week", "month"] as const} value={mode} onChange={setMode} />
         </View>
 
         {mode === "day" ? (
@@ -157,7 +182,7 @@ export default function Stride() {
               }}
             />
           </>
-        ) : (
+        ) : mode === "week" ? (
           <WeekGrid
             days={weekDays}
             today={today}
@@ -165,14 +190,39 @@ export default function Stride() {
             onPrevious={() => setDay((current) => addDays(current, -7))}
             onNext={() => setDay((current) => addDays(current, 7))}
             onToday={() => setDay(today)}
+            onPreviewDay={setPreviewDay}
             onOpenDay={(target) => {
               setDay(target);
               setMode("day");
             }}
             onToggleTask={toggleTask}
           />
+        ) : (
+          <MonthGrid
+            day={day}
+            today={today}
+            tasks={snapshot.tasks}
+            onPrevious={() => setDay((current) => addMonths(current, -1))}
+            onNext={() => setDay((current) => addMonths(current, 1))}
+            onToday={() => setDay(today)}
+            onPreviewDay={setPreviewDay}
+            onOpenDay={(target) => {
+              setDay(target);
+              setMode("day");
+            }}
+          />
         )}
       </View>
+      <DayPreview
+        day={previewDay}
+        tasks={snapshot.tasks}
+        onClose={() => setPreviewDay(null)}
+        onOpen={(target) => {
+          setPreviewDay(null);
+          setDay(target);
+          setMode("day");
+        }}
+      />
       <ScheduleTaskSheet
         minutes={composeAt}
         tasks={snapshot.tasks.filter((task) => !task.dueDate && !task.completed)}
@@ -304,6 +354,192 @@ function ScheduleTaskSheet({
   );
 }
 
+function DayPreview({
+  day,
+  tasks,
+  onClose,
+  onOpen,
+}: {
+  day: string | null;
+  tasks: Task[];
+  onClose(): void;
+  onOpen(day: string): void;
+}) {
+  const { colors } = useTheme();
+  const [scale] = useState(() => new Animated.Value(0.92));
+  const [opacity] = useState(() => new Animated.Value(0));
+  const dayTasks = day
+    ? tasks.filter((task) => parseDue(task.dueDate)?.day === day)
+    : [];
+
+  useEffect(() => {
+    if (!day) return;
+    scale.setValue(0.92);
+    opacity.setValue(0);
+    Animated.parallel([
+      Animated.spring(scale, {
+        toValue: 1,
+        stiffness: 260,
+        damping: 22,
+        mass: 0.72,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacity, {
+        toValue: 1,
+        duration: 140,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [day, opacity, scale]);
+
+  return (
+    <Modal visible={day !== null} transparent animationType="fade" onRequestClose={onClose}>
+      <View style={styles.previewRoot}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Close day preview"
+          style={[styles.scrim, { backgroundColor: colors.scrim }]}
+          onPress={onClose}
+        />
+        <AnimatedSafeAreaView
+          style={[
+            styles.previewCard,
+            {
+              backgroundColor: colors.surfaceStrong,
+              borderColor: colors.border,
+              opacity,
+              transform: [{ scale }],
+            },
+          ]}
+        >
+          <View style={styles.previewHeading}>
+            <View style={{ flex: 1, gap: spacing.xs }}>
+              <Text style={[typography.heading, { color: colors.text }]}>
+                {day
+                  ? new Date(`${day}T12:00:00`).toLocaleDateString(undefined, {
+                      weekday: "long",
+                      month: "long",
+                      day: "numeric",
+                    })
+                  : ""}
+              </Text>
+              <Text style={[typography.caption, { color: colors.muted }]}>
+                {dayTasks.length} {dayTasks.length === 1 ? "task" : "tasks"}
+              </Text>
+            </View>
+            <Button icon="close" accessibilityLabel="Close preview" onPress={onClose} />
+          </View>
+
+          <ScrollView style={styles.previewTasks} showsVerticalScrollIndicator={false}>
+            {dayTasks.length ? (
+              dayTasks.map((task) => {
+                const due = parseDue(task.dueDate);
+                return (
+                  <DividerRow key={task.id}>
+                    <Icon
+                      name={task.completed ? "checkmark-circle" : "ellipse-outline"}
+                      size={17}
+                      color={task.completed ? colors.accent : colors.muted}
+                    />
+                    <Text
+                      numberOfLines={2}
+                      style={[
+                        typography.body,
+                        {
+                          color: task.completed ? colors.muted : colors.text,
+                          flex: 1,
+                          textDecorationLine: task.completed ? "line-through" : "none",
+                        },
+                      ]}
+                    >
+                      {task.content}
+                    </Text>
+                    <Text style={[typography.caption, { color: colors.muted }]}>
+                      {due?.minutes === null || due?.minutes === undefined
+                        ? "All day"
+                        : formatClock(due.minutes)}
+                    </Text>
+                  </DividerRow>
+                );
+              })
+            ) : (
+              <View style={styles.previewEmpty}>
+                <Icon name="calendar-clear-outline" size={22} color={colors.faint} />
+                <Text style={[typography.body, { color: colors.muted }]}>No tasks</Text>
+              </View>
+            )}
+          </ScrollView>
+
+          <Button
+            label="Open day"
+            icon="arrow-forward"
+            tone="accent"
+            onPress={() => {
+              if (day) onOpen(day);
+            }}
+          />
+        </AnimatedSafeAreaView>
+      </View>
+    </Modal>
+  );
+}
+
+function DayCardHeader({
+  day,
+  taskCount,
+  today,
+  onOpen,
+  onPreview,
+}: {
+  day: string;
+  taskCount: number;
+  today: boolean;
+  onOpen(): void;
+  onPreview(): void;
+}) {
+  const { colors } = useTheme();
+  const held = useRef(false);
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Open ${dayLabel(day)}`}
+      accessibilityHint="Press and hold to preview"
+      delayLongPress={240}
+      onLongPress={() => {
+        held.current = true;
+        onPreview();
+      }}
+      onPress={() => {
+        if (held.current) {
+          held.current = false;
+          return;
+        }
+        onOpen();
+      }}
+      onPressOut={() => {
+        setTimeout(() => {
+          held.current = false;
+        }, 0);
+      }}
+      style={({ pressed }) => [
+        styles.dayCardHead,
+        { opacity: pressed ? 0.72 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] },
+      ]}
+    >
+      <View style={{ flex: 1 }}>
+        <Text style={[typography.label, { color: today ? colors.accent : colors.text }]}>
+          {new Date(`${day}T12:00:00`).toLocaleDateString(undefined, { weekday: "short" })}
+        </Text>
+        <Text style={[typography.heading, styles.dayNumber, { color: colors.text }]}>
+          {new Date(`${day}T12:00:00`).getDate()}
+        </Text>
+      </View>
+      <Text style={[typography.caption, { color: colors.muted }]}>{taskCount || "—"}</Text>
+    </Pressable>
+  );
+}
+
 function WeekGrid({
   days,
   today,
@@ -312,6 +548,7 @@ function WeekGrid({
   onNext,
   onToday,
   onOpenDay,
+  onPreviewDay,
   onToggleTask,
 }: {
   days: string[];
@@ -321,6 +558,7 @@ function WeekGrid({
   onNext(): void;
   onToday(): void;
   onOpenDay(day: string): void;
+  onPreviewDay(day: string): void;
   onToggleTask(taskId: string): void;
 }) {
   const { colors } = useTheme();
@@ -355,26 +593,13 @@ function WeekGrid({
                 },
               ]}
             >
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`Open ${dayLabel(day)}`}
-                onPress={() => onOpenDay(day)}
-                style={({ pressed }) => [styles.dayCardHead, { opacity: pressed ? 0.55 : 1 }]}
-              >
-                <View style={{ flex: 1 }}>
-                  <Text style={[typography.label, { color: isToday ? colors.accent : colors.text }]}>
-                    {new Date(`${day}T12:00:00`).toLocaleDateString(undefined, {
-                      weekday: "short",
-                    })}
-                  </Text>
-                  <Text style={[typography.heading, styles.dayNumber, { color: colors.text }]}>
-                    {new Date(`${day}T12:00:00`).getDate()}
-                  </Text>
-                </View>
-                <Text style={[typography.caption, { color: colors.muted }]}>
-                  {dayTasks.length || "—"}
-                </Text>
-              </Pressable>
+              <DayCardHeader
+                day={day}
+                taskCount={dayTasks.length}
+                today={isToday}
+                onOpen={() => onOpenDay(day)}
+                onPreview={() => onPreviewDay(day)}
+              />
 
               <View style={styles.dayTasks}>
                 {visible.map((task) => (
@@ -419,6 +644,142 @@ function WeekGrid({
   );
 }
 
+const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
+
+function MonthGrid({
+  day,
+  today,
+  tasks,
+  onPrevious,
+  onNext,
+  onToday,
+  onOpenDay,
+  onPreviewDay,
+}: {
+  day: string;
+  today: string;
+  tasks: Task[];
+  onPrevious(): void;
+  onNext(): void;
+  onToday(): void;
+  onOpenDay(day: string): void;
+  onPreviewDay(day: string): void;
+}) {
+  const { colors } = useTheme();
+  const days = useMemo(() => monthCells(day), [day]);
+  const month = day.slice(0, 7);
+  const currentMonth = today.slice(0, 7) === month;
+
+  return (
+    <View style={styles.month}>
+      <View style={styles.weekToolbar}>
+        <Button icon="chevron-back" accessibilityLabel="Previous month" onPress={onPrevious} />
+        <Text style={[typography.title, { color: colors.text, flex: 1 }]}>
+          {monthLabel(day)}
+        </Text>
+        {currentMonth ? null : <Button label="Today" onPress={onToday} />}
+        <Button icon="chevron-forward" accessibilityLabel="Next month" onPress={onNext} />
+      </View>
+
+      <View style={[styles.monthCalendar, { borderColor: colors.border }]}>
+        <View style={styles.monthWeekdays}>
+          {WEEKDAY_LABELS.map((label) => (
+            <Text
+              key={label}
+              style={[typography.caption, styles.monthWeekday, { color: colors.muted }]}
+            >
+              {label}
+            </Text>
+          ))}
+        </View>
+        <View style={styles.monthCells}>
+          {days.map((cellDay) => (
+            <MonthCell
+              key={cellDay}
+              day={cellDay}
+              taskCount={tasks.filter((task) => parseDue(task.dueDate)?.day === cellDay).length}
+              outside={cellDay.slice(0, 7) !== month}
+              selected={cellDay === day}
+              today={cellDay === today}
+              onOpen={() => onOpenDay(cellDay)}
+              onPreview={() => onPreviewDay(cellDay)}
+            />
+          ))}
+        </View>
+      </View>
+    </View>
+  );
+}
+
+function MonthCell({
+  day,
+  taskCount,
+  outside,
+  selected,
+  today,
+  onOpen,
+  onPreview,
+}: {
+  day: string;
+  taskCount: number;
+  outside: boolean;
+  selected: boolean;
+  today: boolean;
+  onOpen(): void;
+  onPreview(): void;
+}) {
+  const { colors } = useTheme();
+  const held = useRef(false);
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Open ${dayLabel(day)}`}
+      accessibilityHint="Press and hold to preview"
+      delayLongPress={240}
+      onLongPress={() => {
+        held.current = true;
+        onPreview();
+      }}
+      onPress={() => {
+        if (held.current) {
+          held.current = false;
+          return;
+        }
+        onOpen();
+      }}
+      onPressOut={() => {
+        setTimeout(() => {
+          held.current = false;
+        }, 0);
+      }}
+      style={({ pressed }) => [
+        styles.monthCell,
+        {
+          opacity: outside ? 0.38 : 1,
+          borderColor: selected ? colors.accent : colors.border,
+          backgroundColor: today ? colors.accentSubtle : pressed ? colors.hover : "transparent",
+          transform: [{ scale: pressed ? 0.96 : 1 }],
+        },
+      ]}
+    >
+      <Text style={[typography.label, { color: today ? colors.accent : colors.text }]}>
+        {new Date(`${day}T12:00:00`).getDate()}
+      </Text>
+      {taskCount ? (
+        <View style={styles.monthTaskCount}>
+          {Array.from({ length: Math.min(taskCount, 3) }, (_, index) => (
+            <View key={index} style={[styles.monthDot, { backgroundColor: colors.accent }]} />
+          ))}
+          {taskCount > 3 ? (
+            <Text style={[typography.caption, { color: colors.muted }]}>+{taskCount - 3}</Text>
+          ) : null}
+        </View>
+      ) : null}
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
   screen: { flex: 1, paddingHorizontal: spacing.lg, paddingBottom: 72 },
   controls: { paddingVertical: spacing.md },
@@ -451,6 +812,42 @@ const styles = StyleSheet.create({
     minHeight: 25,
     flexDirection: "row",
     alignItems: "center",
+    gap: spacing.sm,
+  },
+  month: { flex: 1 },
+  monthCalendar: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radii.md,
+    overflow: "hidden",
+  },
+  monthWeekdays: { flexDirection: "row" },
+  monthWeekday: { width: "14.285%", paddingVertical: spacing.sm, textAlign: "center" },
+  monthCells: { flexDirection: "row", flexWrap: "wrap" },
+  monthCell: {
+    width: "14.285%",
+    minHeight: 64,
+    padding: spacing.sm,
+    borderWidth: StyleSheet.hairlineWidth,
+    gap: spacing.sm,
+  },
+  monthTaskCount: { flexDirection: "row", alignItems: "center", gap: 3 },
+  monthDot: { width: 5, height: 5, borderRadius: 3 },
+  previewRoot: { flex: 1, alignItems: "center", justifyContent: "center", padding: spacing.lg },
+  previewCard: {
+    width: "100%",
+    maxWidth: 520,
+    maxHeight: "72%",
+    padding: spacing.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radii.sheet,
+    gap: spacing.md,
+  },
+  previewHeading: { flexDirection: "row", alignItems: "flex-start", gap: spacing.sm },
+  previewTasks: { maxHeight: 360 },
+  previewEmpty: {
+    minHeight: 120,
+    alignItems: "center",
+    justifyContent: "center",
     gap: spacing.sm,
   },
   modalRoot: { flex: 1, justifyContent: "flex-end" },
