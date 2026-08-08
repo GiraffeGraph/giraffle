@@ -5,11 +5,11 @@
 <h1 align="center">Giraffle</h1>
 
 <p align="center">
-  A private, offline-first knowledge workspace for iOS, Android and the browser. Your notes live on your device. If you want them on a second device, you host a relay that only ever sees ciphertext.
+  A private, offline-first workspace for notes, tasks, boards and visual planning — built once for iOS, Android and the browser. Your data stays on your device; optional self-hosted sync only relays ciphertext.
 </p>
 
 <p align="center">
-  <img alt="Expo" src="https://img.shields.io/badge/Expo-React%20Native-000020?logo=expo&logoColor=white">
+  <img alt="Expo SDK 57" src="https://img.shields.io/badge/Expo-SDK%2057-000020?logo=expo&logoColor=white">
   <img alt="React 19" src="https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white">
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-6-3178C6?logo=typescript&logoColor=white">
   <img alt="SQLite" src="https://img.shields.io/badge/SQLite-encrypted-003B57?logo=sqlite&logoColor=white">
@@ -30,10 +30,14 @@
 ## Screenshots
 
 <p align="center">
-  <img src="./public/screenshots/ui-dark-1.png" alt="Giraffle dark theme screenshot 1" width="31%" />
-  <img src="./public/screenshots/ui-light.png" alt="Giraffle light theme screenshot" width="31%" />
-  <img src="./public/screenshots/ui-dark-2.png" alt="Giraffle dark theme screenshot 2" width="31%" />
+  <img src="./public/screenshots/tasks-light.png" alt="Giraffle task priority view" width="100%" />
 </p>
+<p align="center">
+  <img src="./public/screenshots/boards-dark.png" alt="Giraffle board with canonical tasks" width="49%" />
+  <img src="./public/screenshots/canvas-dark.png" alt="Giraffle Canvas with page and task references" width="49%" />
+</p>
+
+<p align="center"><sub>Priority, Boards and Canvas from the current Expo Universal client.</sub></p>
 
 ## Why Giraffle
 
@@ -53,26 +57,32 @@ What the relay *does* see: how many records exist, roughly how big they are, whe
 
 ## Features
 
-- Block editing with Tiptap: callouts, toggles, tables, images, code, task lists, slash commands
-- Wikilinks and backlinks between pages
-- Nested pages — any page can contain other pages, no separate folder concept
-- Kanban boards, where each board is also a page
-- Day, week and month planning plus task-only priority views over the same task records
-- Free-form canvas built on Excalidraw
-- Workspace search and archive
-- Markdown export through the system share sheet
-- Encrypted local database, device-held keys, and an access lock (PIN / biometrics)
-- Optional ciphertext-only sync between your own devices
+- **Notes:** Tiptap block editing, images, wikilinks, backlinks, nested pages and Markdown export
+- **Quick capture:** create an unscheduled, boardless and unprioritized task directly into Inbox
+- **Calendar:** day, week and month planning with drag, resize and range creation
+- **Priority:** Focus, Plan, Delegate and Drop as optional views over canonical tasks
+- **Boards:** Kanban workflow placement without copying a task or changing its source page
+- **Canvas:** Excalidraw shapes plus searchable live references to pages, boards and tasks
+- **Local first:** encrypted SQLite, device-held keys, offline reads/writes and a password or quick-PIN lock
+- **Optional sync:** ciphertext-only exchange between devices through a self-hosted blind relay
 
-### One task, multiple views
+### Current product model
 
-A task is one canonical block owned by a page. Board placement, calendar scheduling, and priority are optional dimensions on that same task—not copies. Boards are specialized pages, and Canvas stores live references to canonical pages, boards, and tasks alongside ordinary Excalidraw shapes.
+| Entity / view | Owns | Does not duplicate |
+| --- | --- | --- |
+| **Page** | A task's permanent context and source | Board position, date or priority |
+| **Board** | Optional board, column and ordering | Task text, completion, date or priority |
+| **Calendar** | Optional due date, start time and duration | Task content or board state |
+| **Priority** | Optional Focus / Plan / Delegate / Drop placement | Page or board data |
+| **Canvas** | Excalidraw scene and canonical entity references | Copies of pages, boards or tasks |
+
+A task is one canonical `taskItem` block. Quick tasks start in the visible **Inbox** page with no board, date or priority. Every view edits only its own optional dimension. A board is itself a specialized page, while Canvas links to canonical IDs instead of cloning content.
 
 ## Running the Client
 
 ### Prerequisites
 
-- Node.js 20+
+- Node.js 22 (the relay image and current development setup use Node 22)
 - Xcode (for iOS) or Android Studio (for Android). Neither is needed for the web target.
 
 ### Setup
@@ -165,7 +175,7 @@ SYNC_TOKENS=my-vault:$(openssl rand -base64 48) npm --prefix apps/server run dev
 
 ## Pairing a Second Device
 
-1. **Point both devices at the relay.** Set `EXPO_PUBLIC_SYNC_BASE_URL` to your relay's URL and give both the same vault id and token from `SYNC_TOKENS`.
+1. **Point both devices at the relay.** Set `EXPO_PUBLIC_SYNC_BASE_URL` to the relay URL. In the join screen, enter the same vault id and the matching `SYNC_TOKENS` value as the connection code.
 2. **The first device claims the vault.** It generates the vault key, wraps it with its own device key, and pushes encrypted records.
 3. **The new device asks to join.** Open the join screen; it registers itself and waits, unauthorized. The relay will not hand it any key material yet.
 4. **The first device approves it.** Approving signs the new device into the vault's device chain and uploads the vault key wrapped for that device alone. The relay relays that blob without being able to open it.

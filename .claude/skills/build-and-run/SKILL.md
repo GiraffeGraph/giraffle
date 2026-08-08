@@ -72,7 +72,7 @@ client only finds Metro through its deep link:
 
 ```bash
 xcrun simctl openurl "<UDID>" \
-  "com.giraffegraph.giraffle://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8081"
+  "giraffle://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8081"
 ```
 
 Use that to relaunch after any change that needs a fresh start. Watch the Metro

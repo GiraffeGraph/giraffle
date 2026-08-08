@@ -22,15 +22,15 @@ const laneKey = (laneId: string) => `${LANE_PREFIX}${laneId}`;
 const laneIdFromKey = (id: string) =>
   id.startsWith(LANE_PREFIX) ? id.slice(LANE_PREFIX.length) : null;
 
-export default function Trek() {
+export default function Boards() {
   return (
     <DragSortProvider>
-      <TrekScreen />
+      <BoardsScreen />
     </DragSortProvider>
   );
 }
 
-function TrekScreen() {
+function BoardsScreen() {
   const { colors } = useTheme();
   const { snapshot, run } = useApp();
   const drag = useDragSort();

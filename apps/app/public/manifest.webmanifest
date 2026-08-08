@@ -1,7 +1,7 @@
 {
   "name": "Giraffle",
   "short_name": "Giraffle",
-  "description": "An offline-first, end-to-end encrypted place for your notes, tasks and canvases.",
+  "description": "A private, offline-first workspace for notes, tasks, boards and visual planning.",
   "id": "/",
   "start_url": "/",
   "scope": "/",

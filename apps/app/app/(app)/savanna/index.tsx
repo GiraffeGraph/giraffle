@@ -7,7 +7,7 @@ import { useTheme } from "@/design/ThemeProvider";
 import { typography } from "@/design/tokens";
 import { useApp } from "@/state/AppProvider";
 
-export default function Savanna() {
+export default function CanvasList() {
   const { colors } = useTheme();
   const { snapshot, run } = useApp();
   const create = () => {

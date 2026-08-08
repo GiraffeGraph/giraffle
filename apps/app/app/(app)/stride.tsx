@@ -89,7 +89,7 @@ function weekRangeLabel(days: string[]): string {
   return `${left} – ${right}`;
 }
 
-export default function Stride() {
+export default function Tasks() {
   const { colors } = useTheme();
   const { snapshot, run } = useApp();
   const [mode, setMode] = useState<ViewMode>("day");

@@ -138,14 +138,14 @@ export const MCP_TOOL_SCHEMAS: McpToolSchema[] = [
     }),
   },
 
-  // Stride = calendar-based task scheduling. Tasks are taskItem blocks carrying
+  // Calendar scheduling. Tasks are canonical taskItem blocks carrying
   // a due date and a duration.
   {
     name: "stride_list_scheduled",
     mcpName: "giraffle-stride-list-scheduled",
     destructive: false,
     description:
-      "List scheduled Stride tasks (taskItems with a due date) within a date range. Provide ISO 8601 start and end timestamps.",
+      "List scheduled tasks within a date range. Provide ISO 8601 start and end timestamps.",
     inputSchema: z.object({
       start: z.string().min(1).max(40),
       end: z.string().min(1).max(40),
@@ -155,7 +155,7 @@ export const MCP_TOOL_SCHEMAS: McpToolSchema[] = [
     name: "stride_list_unscheduled",
     mcpName: "giraffle-stride-list-unscheduled",
     destructive: false,
-    description: "List unscheduled Stride tasks (taskItems with no due date). Up to 200 items.",
+    description: "List unscheduled tasks with no due date. Up to 200 items.",
     inputSchema: z.object({}),
   },
   {
@@ -163,7 +163,7 @@ export const MCP_TOOL_SCHEMAS: McpToolSchema[] = [
     mcpName: "giraffle-stride-create-task",
     destructive: true,
     description:
-      "Create a scheduled Stride task in the user's Daily note. Provide text, an ISO 8601 dueDate, and an estimated durationMinutes.",
+      "Create a scheduled task in the user's Inbox page. Provide text, an ISO 8601 dueDate, and an estimated durationMinutes.",
     inputSchema: z.object({
       text: z.string().min(1).max(2_000),
       dueDate: z.string().min(1).max(40),
@@ -195,7 +195,7 @@ export const MCP_TOOL_SCHEMAS: McpToolSchema[] = [
     name: "stride_toggle_task",
     mcpName: "giraffle-stride-toggle-task",
     destructive: true,
-    description: "Mark a Stride task complete or incomplete.",
+    description: "Mark a task complete or incomplete.",
     inputSchema: z.object({
       blockId: z.string().min(1),
       checked: z.boolean(),
@@ -205,7 +205,7 @@ export const MCP_TOOL_SCHEMAS: McpToolSchema[] = [
     name: "stride_update_task_text",
     mcpName: "giraffle-stride-update-task-text",
     destructive: true,
-    description: "Edit the text of a Stride task.",
+    description: "Edit the canonical task's text.",
     inputSchema: z.object({
       blockId: z.string().min(1),
       text: z.string().min(1).max(2_000),
@@ -215,13 +215,13 @@ export const MCP_TOOL_SCHEMAS: McpToolSchema[] = [
     name: "stride_delete_task",
     mcpName: "giraffle-stride-delete-task",
     destructive: true,
-    description: "Permanently delete a Stride task and its child blocks.",
+    description: "Permanently delete a canonical task and its child blocks.",
     inputSchema: z.object({
       blockId: z.string().min(1),
     }),
   },
 
-  // Tower Matrix = Eisenhower prioritization over the same task records.
+  // Priority = Eisenhower prioritization over the same canonical task records.
   {
     name: "tower_list_matrix",
     mcpName: "giraffle-tower-list-matrix",
@@ -282,13 +282,13 @@ export const MCP_TOOL_SCHEMAS: McpToolSchema[] = [
     }),
   },
 
-  // Savanna = free-form Excalidraw canvases. Element payloads can be large, so
+  // Canvas = free-form Excalidraw scenes. Element payloads can be large, so
   // the full array is only returned when explicitly requested.
   {
     name: "savanna_list",
     mcpName: "giraffle-savanna-list",
     destructive: false,
-    description: "List the user's Savanna canvases (id, title, timestamps, element count).",
+    description: "List the user's canvases with id, title, timestamps, and element count.",
     inputSchema: z.object({}),
   },
   {
@@ -296,7 +296,7 @@ export const MCP_TOOL_SCHEMAS: McpToolSchema[] = [
     mcpName: "giraffle-savanna-get",
     destructive: false,
     description:
-      "Get one Savanna canvas. By default returns metadata + element count; set includeElements to true to return the full Excalidraw element array and appState.",
+      "Get one canvas. By default returns metadata and element count; set includeElements to true for the full Excalidraw scene and appState.",
     inputSchema: z.object({
       id: z.string().min(1),
       includeElements: z.boolean().optional(),
@@ -306,7 +306,7 @@ export const MCP_TOOL_SCHEMAS: McpToolSchema[] = [
     name: "savanna_create",
     mcpName: "giraffle-savanna-create",
     destructive: true,
-    description: "Create a new empty Savanna canvas with an optional title.",
+    description: "Create a new empty canvas with an optional title.",
     inputSchema: z.object({
       title: z.string().max(220).optional(),
     }),
@@ -315,7 +315,7 @@ export const MCP_TOOL_SCHEMAS: McpToolSchema[] = [
     name: "savanna_rename",
     mcpName: "giraffle-savanna-rename",
     destructive: true,
-    description: "Rename a Savanna canvas.",
+    description: "Rename an existing canvas.",
     inputSchema: z.object({
       id: z.string().min(1),
       title: z.string().min(1).max(220),
@@ -325,7 +325,7 @@ export const MCP_TOOL_SCHEMAS: McpToolSchema[] = [
     name: "savanna_delete",
     mcpName: "giraffle-savanna-delete",
     destructive: true,
-    description: "Permanently delete a Savanna canvas.",
+    description: "Permanently delete a canvas.",
     inputSchema: z.object({
       id: z.string().min(1),
     }),
@@ -380,7 +380,7 @@ export const MCP_TOOL_SCHEMAS: McpToolSchema[] = [
     name: "kanban_update_board",
     mcpName: "giraffle-trek-update-board",
     destructive: true,
-    description: "Update a Trek board's title or icon.",
+    description: "Update a board's title or icon.",
     inputSchema: z.object({
       boardId: z.string().min(1),
       title: z.string().min(1).max(220).optional(),
@@ -398,7 +398,7 @@ export const MCP_TOOL_SCHEMAS: McpToolSchema[] = [
     name: "kanban_add_column",
     mcpName: "giraffle-trek-add-column",
     destructive: true,
-    description: "Add a column (status) to the end of a Trek board.",
+    description: "Add a workflow column to the end of a board.",
     inputSchema: z.object({
       boardId: z.string().min(1),
       title: z.string().min(1).max(160),
@@ -432,7 +432,7 @@ export const MCP_TOOL_SCHEMAS: McpToolSchema[] = [
     mcpName: "giraffle-trek-add-card",
     destructive: true,
     description:
-      "Add a card (task) to a column. Optionally set an Eisenhower priority, an ISO dueDate (with time — it will appear in Stride at that hour), and a duration in minutes.",
+      "Create a canonical task in a board column. Optionally set priority, an ISO dueDate, and duration in minutes; dated tasks also appear in Calendar.",
     inputSchema: z.object({
       boardId: z.string().min(1),
       columnId: z.string().min(1),
@@ -475,7 +475,7 @@ export const MCP_TOOL_SCHEMAS: McpToolSchema[] = [
     name: "kanban_delete_card",
     mcpName: "giraffle-trek-delete-card",
     destructive: true,
-    description: "Delete a card (task) from a Trek board.",
+    description: "Permanently delete the canonical task from every view, including its board.",
     inputSchema: z.object({ cardId: z.string().min(1) }),
   },
 ];
