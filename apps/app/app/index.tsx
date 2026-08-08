@@ -173,7 +173,7 @@ export default function VaultEntry() {
           contentContainerStyle={styles.scrollCenter}
         >
           <View style={styles.brand}>
-            <Image source={require("../assets/icon.png")} style={styles.logo} />
+            <Image source={require("../assets/brand-mark.png")} style={styles.logo} />
             <View>
               <Text style={[typography.heading, { color: colors.text }]}>Giraffle</Text>
               <Text style={[typography.caption, { color: colors.muted }]}>

@@ -25,7 +25,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     package: "com.giraffegraph.giraffle",
     adaptiveIcon: {
       foregroundImage: "./assets/adaptive-icon.png",
-      backgroundColor: "#f5efe5"
+      backgroundColor: "#101a28"
     },
     allowBackup: false
   },

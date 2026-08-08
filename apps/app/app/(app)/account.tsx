@@ -23,7 +23,7 @@ export default function Account() {
       <Page>
 
       <View style={styles.identity}>
-        <Image source={require("../../assets/icon.png")} style={styles.logo} />
+        <Image source={require("../../assets/brand-mark.png")} style={styles.logo} />
         <View style={styles.identityCopy}>
           <Text style={[typography.title, { color: colors.text }]}>Giraffle</Text>
           <Text style={[typography.caption, { color: colors.muted }]}>Ready to use</Text>

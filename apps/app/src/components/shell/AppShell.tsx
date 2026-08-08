@@ -118,7 +118,7 @@ export function AppShell() {
           ]}
         >
           <View style={styles.brand}>
-            <Image source={require("../../../assets/icon.png")} style={styles.brandIcon} />
+            <Image source={require("../../../assets/brand-mark.png")} style={styles.brandIcon} />
             <View style={styles.brandCopy}>
               <Text style={[typography.title, { color: colors.text }]}>Giraffle</Text>
               <Text style={[typography.caption, { color: colors.muted }]}>Private workspace</Text>

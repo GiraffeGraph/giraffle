@@ -4,7 +4,7 @@ electronVersion: 43.3.0
 asar: true
 compression: maximum
 directories:
-  buildResources: ../assets
+  buildResources: .
   output: ../release/macos
 files:
   - main.cjs
@@ -14,7 +14,7 @@ extraResources:
     to: web
 mac:
   category: public.app-category.productivity
-  icon: ../assets/icon.png
+  icon: icon.png
   target:
     - target: dmg
       arch:
