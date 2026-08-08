@@ -8,6 +8,11 @@ import type { VaultSecrets } from "@/sync/accessGrant";
 import { vaultCryptoProvider } from "@/sync/cryptoProvider";
 import type { DevicePublicIdentity } from "@/sync/deviceIdentity";
 import { noteDocumentFromYjs, noteDocumentState, openNoteDocument, reconcileNoteDocument } from "@/sync/noteDocument";
+import {
+  readVaultArchiveData,
+  restoreVaultArchive,
+} from "../archive/archivePersistence";
+import type { VaultArchiveData } from "../archive/vaultArchive";
 import { hash, signingPair, agreementPair } from "../crypto/vaultCrypto";
 import type { VaultKeys } from "../secure-storage/vaultKeys.contract";
 import type { VaultDatabase } from "./vaultDatabase";
@@ -43,12 +48,12 @@ const MUTATION_FIELDS: Record<string, readonly string[]> = {
   "task.board": ["columnId", "position"],
   "task.unboard": ["columnId"],
   "task.delete": ["presence"],
-  "board.create": ["presence", "title", "statusId", "position"],
+  "board.create": ["presence", "title", "icon", "statusId", "position"],
   "board.move": ["position"],
   "board.delete": ["presence"],
   "board-column.create": ["presence", "title", "boardId", "position"],
   "board-column.delete": ["presence"],
-  "board-status.create": ["presence", "title", "position"],
+  "board-status.create": ["presence", "title", "color", "position"],
   "board-status.rename": ["title"],
   "board-status.delete": ["presence"],
   "canvas.create": ["presence", "title", "scene"],
@@ -132,6 +137,23 @@ export class VaultRepository {
     });
   }
 
+  /** A joining device receives canonical statuses from sync, not local bootstrap rows. */
+  async prepareForJoinedVault(): Promise<void> {
+    await this.transaction(async (tx) => {
+      const metadata = await tx.getFirstAsync<{ device_sequence: number }>(
+        "SELECT device_sequence FROM vault_metadata WHERE id=?",
+        this.vaultId,
+      );
+      const content = await tx.getFirstAsync<{ count: number }>(
+        "SELECT (SELECT COUNT(*) FROM pages) + (SELECT COUNT(*) FROM canvases) AS count",
+      );
+      if (!metadata || metadata.device_sequence !== 0 || (content?.count ?? 0) !== 0) {
+        throw new Error("Joined vault preparation requires untouched local storage");
+      }
+      await tx.runAsync("DELETE FROM board_statuses");
+    });
+  }
+
   /**
    * Applies a local change and records the signed operation that reproduces it
    * elsewhere. `apply` runs first and may write computed values (a fractional
@@ -141,46 +163,56 @@ export class VaultRepository {
   private async mutate<T>(objectId: string, kind: string, data: MutationData, apply: (tx: Tx, now: number) => Promise<T>): Promise<T> {
     let result!: T;
     await this.transaction(async (tx) => {
-      const metadata = await tx.getFirstAsync<{ device_sequence: number; chain_head: Uint8Array; clock_physical_ms: number; clock_logical: number }>("SELECT device_sequence, chain_head, clock_physical_ms, clock_logical FROM vault_metadata WHERE id = ?", this.vaultId);
-      if (!metadata) throw new Error("Vault metadata is missing");
-      const recordId = createId();
-      const nextSequence = metadata.device_sequence + 1;
       const now = Date.now();
       result = await apply(tx, now);
-
-      const payload = canonicalData(data);
-      const clock = tickHybridClock({ physicalMs: metadata.clock_physical_ms, logical: metadata.clock_logical }, now);
-      const record = createSyncRecord(crypto, {
-        recordId,
-        vaultId: this.vaultId,
-        deviceId: this.deviceId,
-        deviceSequence: nextSequence,
-        previousRecordHash: metadata.chain_head,
-        keyEpoch: KEY_EPOCH,
-        contentKey: this.keys.contentKey,
-        locatorKey: this.keys.locatorKey,
-        signingPrivateKey: signingPair(this.keys.signingSeed).privateKey,
-        operation: { protocolVersion: 1, operationId: recordId, objectId, objectType: kind.split(".")[0] ?? "object", schemaVersion: 1, clock, mutation: { kind, data: payload as never } },
-      });
-      const encoded = encodeSignedSyncRecord(record);
-      const recordHash = hashSignedSyncRecord(crypto, record);
-
-      // A local write is by construction the newest thing this device knows, so
-      // it takes every field it touched without a comparison.
-      const stamp: VersionStamp = { clock, deviceId: this.deviceId, operationId: recordId };
-      const targetIds = Array.isArray(payload.ids)
-        ? [...new Set([objectId, ...(payload.ids as string[])])]
-        : [objectId];
-      for (const targetId of targetIds) {
-        for (const field of mutationFields(kind, payload)) await this.writeRegister(tx, targetId, field, stamp);
-      }
-
-      await tx.runAsync("INSERT INTO local_operations(record_id, device_sequence, record, record_hash, created_at) VALUES (?, ?, ?, ?, ?)", recordId, nextSequence, encoded, recordHash, now);
-      await tx.runAsync("INSERT INTO encrypted_outbox(record_id, next_attempt_at) VALUES (?, ?)", recordId, now);
-      await tx.runAsync("INSERT INTO applied_operations(record_id, applied_at) VALUES (?, ?)", recordId, now);
-      await tx.runAsync("UPDATE vault_metadata SET device_sequence = ?, chain_head = ?, clock_physical_ms = ?, clock_logical = ? WHERE id = ?", nextSequence, recordHash, clock.physicalMs, clock.logical, this.vaultId);
+      await this.recordMutation(tx, objectId, kind, data, now);
     });
     return result;
+  }
+
+  /** Appends one signed local operation after its materialized rows are durable in the transaction. */
+  private async recordMutation(
+    tx: Tx,
+    objectId: string,
+    kind: string,
+    data: MutationData,
+    now: number,
+  ): Promise<void> {
+    const metadata = await tx.getFirstAsync<{ device_sequence: number; chain_head: Uint8Array; clock_physical_ms: number; clock_logical: number }>("SELECT device_sequence, chain_head, clock_physical_ms, clock_logical FROM vault_metadata WHERE id = ?", this.vaultId);
+    if (!metadata) throw new Error("Vault metadata is missing");
+    const recordId = createId();
+    const nextSequence = metadata.device_sequence + 1;
+    const payload = canonicalData(data);
+    const clock = tickHybridClock({ physicalMs: metadata.clock_physical_ms, logical: metadata.clock_logical }, now);
+    const record = createSyncRecord(crypto, {
+      recordId,
+      vaultId: this.vaultId,
+      deviceId: this.deviceId,
+      deviceSequence: nextSequence,
+      previousRecordHash: metadata.chain_head,
+      keyEpoch: KEY_EPOCH,
+      contentKey: this.keys.contentKey,
+      locatorKey: this.keys.locatorKey,
+      signingPrivateKey: signingPair(this.keys.signingSeed).privateKey,
+      operation: { protocolVersion: 1, operationId: recordId, objectId, objectType: kind.split(".")[0] ?? "object", schemaVersion: 1, clock, mutation: { kind, data: payload as never } },
+    });
+    const encoded = encodeSignedSyncRecord(record);
+    const recordHash = hashSignedSyncRecord(crypto, record);
+
+    // A local write is by construction the newest thing this device knows, so
+    // it takes every field it touched without a comparison.
+    const stamp: VersionStamp = { clock, deviceId: this.deviceId, operationId: recordId };
+    const targetIds = Array.isArray(payload.ids)
+      ? [...new Set([objectId, ...(payload.ids as string[])])]
+      : [objectId];
+    for (const targetId of targetIds) {
+      for (const field of mutationFields(kind, payload)) await this.writeRegister(tx, targetId, field, stamp);
+    }
+
+    await tx.runAsync("INSERT INTO local_operations(record_id, device_sequence, record, record_hash, created_at) VALUES (?, ?, ?, ?, ?)", recordId, nextSequence, encoded, recordHash, now);
+    await tx.runAsync("INSERT INTO encrypted_outbox(record_id, next_attempt_at) VALUES (?, ?)", recordId, now);
+    await tx.runAsync("INSERT INTO applied_operations(record_id, applied_at) VALUES (?, ?)", recordId, now);
+    await tx.runAsync("UPDATE vault_metadata SET device_sequence = ?, chain_head = ?, clock_physical_ms = ?, clock_logical = ? WHERE id = ?", nextSequence, recordHash, clock.physicalMs, clock.logical, this.vaultId);
   }
 
   private async readRegister(tx: Tx, objectId: string, field: string): Promise<VersionStamp | undefined> {
@@ -232,12 +264,33 @@ export class VaultRepository {
       this.database.getFirstAsync<{ count: number }>("SELECT COUNT(*) AS count FROM encrypted_outbox")
     ]);
     const pages: Page[] = pageRows.map((r) => ({ id: String(r.id), title: String(r.title), icon: r.icon ? String(r.icon) : null, parentId: r.parent_page_id ? String(r.parent_page_id) : null, position: String(r.position_id), isPinned: bool(Number(r.is_pinned)), isArchived: bool(Number(r.is_archived)), document: r.document_json ? parse<TiptapDocument>(String(r.document_json)) : EMPTY_DOCUMENT, createdAt: Number(r.created_at), updatedAt: Number(r.updated_at) }));
-    const tasks: Task[] = taskRows.map((r) => ({ id: String(r.block_id), pageId: String(r.page_id), boardId: r.board_id ? String(r.board_id) : null, columnId: r.column_id ? String(r.column_id) : null, content: parse<{ text?: string }>(String(r.content_json)).text ?? "", completed: bool(Number(r.completed)), priority: r.priority as TaskPriority | null, dueDate: r.due_date ? String(r.due_date) : null, durationMinutes: r.duration_minutes === null ? null : Number(r.duration_minutes), description: r.description ? String(r.description) : null, position: String(r.position_id), sourceLabel: String(r.source_label), createdAt: Number(r.created_at), updatedAt: Number(r.updated_at) }));
+    const tasks: Task[] = taskRows.map((r) => ({ id: String(r.block_id), pageId: String(r.page_id), boardId: r.board_id ? String(r.board_id) : null, columnId: r.column_id ? String(r.column_id) : null, content: parse<{ text?: string }>(String(r.content_json)).text ?? "", completed: bool(Number(r.completed)), priority: r.priority as TaskPriority | null, dueDate: r.due_date === null ? null : String(r.due_date), durationMinutes: r.duration_minutes === null ? null : Number(r.duration_minutes), description: r.description === null ? null : String(r.description), position: String(r.position_id), sourceLabel: String(r.source_label), createdAt: Number(r.created_at), updatedAt: Number(r.updated_at) }));
     const statuses: BoardStatus[] = statusRows.map((r) => ({ id: String(r.id), title: String(r.title), color: r.color ? String(r.color) : null, position: String(r.position_id) }));
     const boards: Board[] = boardRows.map((r) => ({ id: String(r.id), pageId: String(r.task_source_page_id), statusId: r.status_id ? String(r.status_id) : null, title: String(r.page_title), icon: r.page_icon ? String(r.page_icon) : null, position: String(r.position_id), createdAt: Number(r.created_at), updatedAt: Number(r.updated_at) }));
     const columns: BoardColumn[] = columnRows.map((r) => ({ id: String(r.id), boardId: String(r.board_id), title: String(r.title), color: r.color ? String(r.color) : null, position: String(r.position_id) }));
     const canvases: Canvas[] = canvasRows.map((r) => ({ id: String(r.id), title: String(r.title), elements: parse<CanvasElement[]>(String(r.elements_json)), appState: parse<Record<string, unknown>>(String(r.app_state_json)), createdAt: Number(r.created_at), updatedAt: Number(r.updated_at) }));
     return { pages, tasks, statuses, boards, columns, canvases, backlinks: backlinkRows.map((r) => ({ sourcePageId: r.source_page_id, sourceTitle: r.source_title, targetPageId: r.target_page_id, targetRaw: r.target_raw })), sync: { pending: pendingRow?.count ?? 0, lastSuccessAt: syncRow?.last_success_at ?? null, lastError: syncRow?.last_error ?? null, cursor: syncRow?.server_seq ?? 0 } };
+  }
+
+  /** Logical, portable state only. Device identity and relay history never enter a backup. */
+  async archiveData(): Promise<VaultArchiveData> {
+    return this.transaction((tx) => readVaultArchiveData(tx, () => this.snapshot()));
+  }
+
+  /** Restore is delegated so archive persistence does not grow this repository further. */
+  async restoreArchive(data: VaultArchiveData): Promise<void> {
+    await restoreVaultArchive({
+      data,
+      vaultId: this.vaultId,
+      deviceId: this.deviceId,
+      transaction: (action) => this.transaction(action),
+      recordMutation: (tx, objectId, kind, mutation, now) =>
+        this.recordMutation(tx, objectId, kind, mutation, now),
+      storeCanvasScene: (tx, id, elements, appState, now) =>
+        this.storeCanvasScene(tx, id, elements, appState, now),
+      rewritePageLinks: (tx, pageId, body) => this.rewritePageLinks(tx, pageId, body),
+      rebuildPageSearch: (tx, pageId) => this.rebuildPageSearch(tx, pageId),
+    });
   }
 
   /** Fractional key placing a page after its last sibling under `parentId`. */
@@ -984,7 +1037,15 @@ export class VaultRepository {
     const existing = await tx.getFirstAsync<{ id: string }>("SELECT id FROM board_statuses WHERE id=?", objectId);
     if (!existing) {
       if (kind !== "board-status.create") return;
-      await tx.runAsync("INSERT INTO board_statuses(id,title,position_id,created_at,updated_at) VALUES (?,?,?,?,?)", objectId, typeof data.title === "string" ? data.title : "New status", typeof data.position === "string" ? data.position : String(now), now, now);
+      await tx.runAsync(
+        "INSERT INTO board_statuses(id,title,color,position_id,created_at,updated_at) VALUES (?,?,?,?,?,?)",
+        objectId,
+        typeof data.title === "string" ? data.title : "New status",
+        typeof data.color === "string" ? data.color : null,
+        typeof data.position === "string" ? data.position : String(now),
+        now,
+        now,
+      );
     }
 
     if (kind === "board-status.delete") {
@@ -994,8 +1055,14 @@ export class VaultRepository {
       return;
     }
 
-    if ("title" in data && (await this.claimRegister(tx, objectId, "title", stamp))) {
-      await tx.runAsync("UPDATE board_statuses SET title=?,updated_at=? WHERE id=?", String(data.title), now, objectId);
+    for (const [field, columnName] of Object.entries({ title: "title", color: "color", position: "position_id" })) {
+      if (!(field in data) || !(await this.claimRegister(tx, objectId, field, stamp))) continue;
+      await tx.runAsync(
+        `UPDATE board_statuses SET ${columnName}=?,updated_at=? WHERE id=?`,
+        data[field] as string | null,
+        now,
+        objectId,
+      );
     }
   }
 

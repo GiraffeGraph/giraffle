@@ -6,6 +6,7 @@ import { DividerRow, Icon } from "@/components/ui/primitives";
 import { useTheme } from "@/design/ThemeProvider";
 import { spacing, typography } from "@/design/tokens";
 import { useApp } from "@/state/AppProvider";
+import { version } from "../../package.json";
 
 const accountLinks = [
   { href: "/archive", label: "Archive", icon: "archive-outline" },
@@ -50,7 +51,7 @@ export default function Account() {
       </View>
 
       <Text style={[typography.caption, styles.version, { color: colors.muted }]}>
-        Version 0.1.0
+        Version {version}
       </Text>
     </Page>
     </>

@@ -1,6 +1,7 @@
 import { router } from "expo-router";
 import { Alert, StyleSheet, Text, View } from "react-native";
 import { AccessLockSection } from "@/components/settings/AccessLockSection";
+import { DataBackupSection } from "@/components/settings/DataBackupSection";
 import { DeviceConnectionSection } from "@/components/settings/DeviceConnectionSection";
 import { ScreenTopbar } from "@/components/shell/ScreenTopbar";
 import { Page } from "@/components/ui/Page";
@@ -49,6 +50,8 @@ export default function Settings() {
       <AccessLockSection />
 
       <DeviceConnectionSection />
+
+      <DataBackupSection />
 
       <View style={styles.safety}>
         <Text style={[typography.label, styles.sectionLabel, { color: colors.muted }]}>Your devices</Text>

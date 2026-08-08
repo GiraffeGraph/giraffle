@@ -65,6 +65,7 @@ What the relay *does* see: how many records exist, roughly how big they are, whe
 - **Canvas:** Excalidraw shapes plus searchable live references to pages, boards and tasks
 - **Local first:** encrypted SQLite, device-held keys, offline reads/writes and a password or quick-PIN lock
 - **Optional sync:** ciphertext-only exchange between devices through a self-hosted blind relay
+- **Encrypted backup:** password-protected full-workspace export and restore with a versioned `.giraffle` file
 
 ### Current product model
 
@@ -77,6 +78,12 @@ What the relay *does* see: how many records exist, roughly how big they are, whe
 | **Canvas** | Excalidraw scene and canonical entity references | Copies of pages, boards or tasks |
 
 A task is one canonical `taskItem` block. Quick tasks start in the visible **Inbox** page with no board, date or priority. Every view edits only its own optional dimension. A board is itself a specialized page, while Canvas links to canonical IDs instead of cloning content.
+
+### Backup is not sync
+
+Sync continuously replicates signed changes between devices in the same vault. A `.giraffle` backup is a password-encrypted point-in-time snapshot containing pages, tasks, boards, calendar metadata, priorities, canvases and archived content. It deliberately excludes device keys, quick PINs and relay credentials.
+
+Backups restore only into an empty vault that has never synced; import never merges with existing content. Restored entities become new local operations on the importing device, so enabling sync later publishes them through the normal sync protocol.
 
 ## Running the Client
 

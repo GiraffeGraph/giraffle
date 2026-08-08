@@ -8,6 +8,7 @@
 - One client: the Expo Universal app in `apps/app`, shipping iOS, Android and web from the same source, plus a sandboxed Electron shell for macOS in `apps/app/desktop`. `packages/*` is shared TypeScript consumed as source, with no build step, by the client, the relay and the root test suite.
 - Pages nest: a page can contain pages, and a Board is itself a specialized page. There is no folder concept.
 - The relay never holds a key. Any feature that needs to read note content has to run in the client — that includes an MCP host, whose tool contract lives in `packages/domain/src/mcp/`.
+- Backup is not replication: `.giraffle` files are password-encrypted logical snapshots without device identity or relay history. Import is restore-only into an empty, never-synced vault; imported entities are re-emitted as fresh local sync operations.
 - When removing a platform implementation, preserve reusable branding and mobile assets unless their deletion is explicitly requested.
 - Treat the project as greenfield until production launch: there is no user data to preserve, so destructive local resets and migration squashing are allowed; optimize for a clean final schema and revisit this rule before accepting real data.
 

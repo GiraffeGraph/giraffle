@@ -9,6 +9,12 @@ import {
 } from "react";
 import { AppState, type AppStateStatus } from "react-native";
 import { createId } from "@/platform/ids";
+import {
+  createVaultArchive,
+  openVaultArchive,
+  summarizeVaultArchive,
+  type VaultArchiveSummary,
+} from "@/infrastructure/archive/vaultArchive";
 import { EMPTY_SNAPSHOT, type AppSnapshot, type VaultSession } from "@/state/snapshot";
 import { agreementPair } from "@/infrastructure/crypto/vaultCrypto";
 import {
@@ -87,6 +93,9 @@ interface AppContextValue {
   lock(): Promise<void>;
   wipe(): Promise<void>;
   refresh(): Promise<void>;
+  createBackup(passphrase: string): Promise<Uint8Array>;
+  inspectBackup(bytes: Uint8Array, passphrase: string): Promise<VaultArchiveSummary>;
+  restoreBackup(bytes: Uint8Array, passphrase: string): Promise<VaultArchiveSummary>;
   run<T>(action: (repository: VaultRepository) => Promise<T>): Promise<T>;
 }
 
@@ -128,6 +137,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     (PendingJoin & { keys: LocalKeys; passphrase: string }) | null
   >(null);
   const engineRef = useRef<ReturnType<typeof createSyncEngine> | null>(null);
+  const syncInFlightRef = useRef<Promise<SyncOutcome> | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -175,6 +185,7 @@ export function AppProvider({ children }: PropsWithChildren) {
       if (keyRef.current) clearKeyMaterial(keyRef.current);
       keyRef.current = null;
       engineRef.current = null;
+      syncInFlightRef.current = null;
       mutationQueue.current = Promise.resolve();
       setRepository(null);
       setSession(null);
@@ -309,6 +320,7 @@ export function AppProvider({ children }: PropsWithChildren) {
           keys: keys.vaultKeys,
         });
         await stage("repository-initialize", () => repository.initialize());
+        await stage("prepare-joined-vault", () => repository.prepareForJoinedVault());
         await stage("device-enrollment", () =>
           enrollDevice(server, { vaultId, deviceId, repository, ...(deviceName ? { name: deviceName } : {}) }),
         );
@@ -378,9 +390,15 @@ export function AppProvider({ children }: PropsWithChildren) {
       deviceId: session.deviceId,
       repository,
     });
-    const outcome = await engineRef.current.run();
-    setSnapshot(await repository.snapshot());
-    return outcome;
+    const operation = engineRef.current.run();
+    syncInFlightRef.current = operation;
+    try {
+      const outcome = await operation;
+      setSnapshot(await repository.snapshot());
+      return outcome;
+    } finally {
+      if (syncInFlightRef.current === operation) syncInFlightRef.current = null;
+    }
   }, [repository, session]);
 
   const unlock = useCallback(
@@ -484,6 +502,26 @@ export function AppProvider({ children }: PropsWithChildren) {
     [repository],
   );
 
+  const createBackup = useCallback(async (passphrase: string) => {
+    if (!repository || !session) throw new Error("Vault is locked");
+    await mutationQueue.current;
+    return createVaultArchive(await repository.archiveData(), session.vaultId, passphrase);
+  }, [repository, session]);
+
+  const inspectBackup = useCallback(async (bytes: Uint8Array, passphrase: string) => {
+    return summarizeVaultArchive(openVaultArchive(bytes, passphrase));
+  }, []);
+
+  const restoreBackup = useCallback(async (bytes: Uint8Array, passphrase: string) => {
+    await syncInFlightRef.current;
+    if (await loadSyncConfiguration()) {
+      throw new Error("Disconnect sync before importing a backup");
+    }
+    const payload = openVaultArchive(bytes, passphrase);
+    await run((value) => value.restoreArchive(payload.data));
+    return summarizeVaultArchive(payload);
+  }, [run]);
+
   const wipe = useCallback(async () => {
     setPhase("booting");
     await close().catch(() => undefined);
@@ -528,6 +566,9 @@ export function AppProvider({ children }: PropsWithChildren) {
     lock,
     wipe,
     refresh,
+    createBackup,
+    inspectBackup,
+    restoreBackup,
     run,
   };
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

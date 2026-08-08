@@ -29,7 +29,7 @@ const sections = [
   {
     icon: "cloud-offline-outline" as const,
     title: "Your data",
-    body: "Your notes stay on this device. Encrypted sync to your own server is optional.",
+    body: "Your workspace stays on this device. Sync connects devices; encrypted backups provide a separate restore point.",
   },
 ];
 
