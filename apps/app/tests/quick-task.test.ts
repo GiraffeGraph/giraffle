@@ -31,4 +31,22 @@ describe("quick tasks", () => {
       sourceLabel: "Inbox",
     });
   });
+
+  it("restores the existing Inbox instead of creating a duplicate", async () => {
+    const client = await createClient({
+      deviceId: "archived-inbox-device",
+      secrets: await createVaultSecrets(),
+    });
+
+    const firstId = await client.repository.createInboxTask("First");
+    const first = (await client.repository.snapshot()).tasks.find((task) => task.id === firstId);
+    await client.repository.archivePage(first!.pageId);
+    expect((await client.repository.snapshot()).tasks).toHaveLength(0);
+
+    const secondId = await client.repository.createInboxTask("Second");
+    const snapshot = await client.repository.snapshot();
+    expect(snapshot.pages.filter((page) => page.title === "Inbox")).toHaveLength(1);
+    expect(snapshot.pages.find((page) => page.id === first?.pageId)?.isArchived).toBe(false);
+    expect(snapshot.tasks.map((task) => task.id).sort()).toEqual([firstId, secondId].sort());
+  });
 });

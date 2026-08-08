@@ -30,6 +30,10 @@ describe("boards are pages", () => {
     snapshot = await client.repository.snapshot();
     expect(snapshot.pages.find((page) => page.id === board?.pageId)?.title).toBe("Release plan");
 
+    await client.repository.updatePage(board!.pageId, { title: "Launch board" });
+    snapshot = await client.repository.snapshot();
+    expect(snapshot.boards.find((item) => item.id === boardId)?.title).toBe("Launch board");
+
     await client.repository.deleteBoard(boardId);
     snapshot = await client.repository.snapshot();
     expect(snapshot.boards.some((item) => item.id === boardId)).toBe(false);
@@ -54,6 +58,28 @@ describe("boards are pages", () => {
     await client.repository.removeTaskFromBoard(taskId);
     task = (await client.repository.snapshot()).tasks.find((item) => item.id === taskId);
     expect(task).toMatchObject({ boardId: null, columnId: null, sourceLabel: "Inbox" });
+
+    await client.repository.addTaskToBoard(taskId, boardId);
+    await client.repository.deleteBoard(boardId);
+    task = (await client.repository.snapshot()).tasks.find((item) => item.id === taskId);
+    expect(task).toMatchObject({ boardId: null, columnId: null, sourceLabel: "Inbox" });
+  });
+
+  it("deleting a task source page removes its board placement too", async () => {
+    const client = await createClient({
+      deviceId: "source-page-lifecycle-device",
+      secrets: await createVaultSecrets(),
+    });
+
+    const taskId = await client.repository.createInboxTask("Prepare brief");
+    const boardId = await client.repository.createBoard("Launch plan");
+    await client.repository.addTaskToBoard(taskId, boardId);
+    const task = (await client.repository.snapshot()).tasks.find((item) => item.id === taskId);
+
+    await client.repository.deletePage(task!.pageId);
+    const snapshot = await client.repository.snapshot();
+    expect(snapshot.tasks.some((item) => item.id === taskId)).toBe(false);
+    expect(snapshot.boards.some((item) => item.id === boardId)).toBe(true);
   });
 
   it("keeps board and page deletion in one lifecycle", async () => {

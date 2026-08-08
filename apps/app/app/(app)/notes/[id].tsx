@@ -233,11 +233,12 @@ export default function NoteEditor() {
             <Button
               label="Add task"
               icon="add"
-              onPress={() =>
+              onPress={() => {
+                setTasksOpen(true);
                 void run((repository) =>
                   repository.createTask({ pageId: page.id, content: "New task" }),
-                )
-              }
+                );
+              }}
             />
           </View>
           {tasksOpen ? (

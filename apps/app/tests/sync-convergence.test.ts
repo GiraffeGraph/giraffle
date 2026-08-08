@@ -240,6 +240,7 @@ describe("cursor durability", () => {
       sourceLabel: "Inbox",
     });
 
+    await alpha.repository.addTaskToBoard(inboxTaskId, boardId);
     await alpha.repository.deleteBoard(boardId);
     await settle(alpha, beta);
 
@@ -247,7 +248,10 @@ describe("cursor durability", () => {
     expect(snapshot.boards.some((item) => item.id === boardId)).toBe(false);
     expect(snapshot.pages.some((page) => page.id === board?.pageId)).toBe(false);
     expect(snapshot.tasks.some((task) => task.id === taskId)).toBe(false);
-    expect(snapshot.tasks.some((task) => task.id === inboxTaskId)).toBe(true);
+    expect(snapshot.tasks.find((task) => task.id === inboxTaskId)).toMatchObject({
+      boardId: null,
+      sourceLabel: "Inbox",
+    });
   });
 });
 
