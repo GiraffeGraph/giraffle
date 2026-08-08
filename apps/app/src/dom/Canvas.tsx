@@ -129,6 +129,12 @@ export default function Canvas({
       const added = convertToExcalidrawElements([skeleton as never]);
       const next = [...existing, ...added];
       api.updateScene({ elements: next });
+      api.scrollToContent(added, {
+        fitToViewport: true,
+        viewportZoomFactor: 0.28,
+        maxZoom: 1,
+        animate: true,
+      });
       publish(next, api.getAppState());
     } catch (error) {
       onError(describe(error));
