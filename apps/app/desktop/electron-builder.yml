@@ -1,0 +1,35 @@
+appId: com.giraffegraph.giraffle.desktop
+productName: Giraffle
+electronVersion: 43.3.0
+asar: true
+compression: maximum
+directories:
+  buildResources: ../assets
+  output: ../release/macos
+files:
+  - main.cjs
+  - package.json
+extraResources:
+  - from: ../dist
+    to: web
+mac:
+  category: public.app-category.productivity
+  icon: ../assets/icon.png
+  target:
+    - target: dmg
+      arch:
+        - universal
+  artifactName: Giraffle-${version}-macOS-${arch}.${ext}
+dmg:
+  title: Giraffle ${version}
+  artifactName: Giraffle-${version}-macOS-${arch}.${ext}
+  window:
+    width: 540
+    height: 380
+  contents:
+    - x: 150
+      y: 190
+    - x: 390
+      y: 190
+      type: link
+      path: /Applications

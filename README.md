@@ -5,7 +5,7 @@
 <h1 align="center">Giraffle</h1>
 
 <p align="center">
-  A private, offline-first workspace for notes, tasks, boards and visual planning — built once for iOS, Android and the browser. Your data stays on your device; optional self-hosted sync only relays ciphertext.
+  A private, offline-first workspace for notes, tasks, boards and visual planning on macOS, iOS, Android and the browser. Your data stays on your device; optional self-hosted sync only relays ciphertext.
 </p>
 
 <p align="center">
@@ -41,7 +41,7 @@
 
 ## Why Giraffle
 
-Giraffle is one app — an Expo Universal client that runs as a native iOS app, a native Android app, and a web app from the same source — plus an optional relay you can run to move changes between your own devices.
+Giraffle is one Expo Universal client for native iOS, native Android and web, with a hardened Electron shell for macOS. An optional relay moves encrypted changes between your own devices.
 
 Three rules shape every decision:
 
@@ -83,7 +83,7 @@ A task is one canonical `taskItem` block. Quick tasks start in the visible **Inb
 ### Prerequisites
 
 - Node.js 22 (the relay image and current development setup use Node 22)
-- Xcode (for iOS) or Android Studio (for Android). Neither is needed for the web target.
+- Xcode for iOS, Android Studio for Android, or a Mac for the macOS DMG. None is needed for the web target.
 
 ### Setup
 
@@ -99,6 +99,7 @@ cp .env.example .env      # optional; leave EXPO_PUBLIC_SYNC_BASE_URL blank to s
 npm run ios          # native iOS, builds a dev client
 npm run android      # native Android
 npm run web          # browser
+npm run desktop:dev  # macOS desktop shell
 npm start            # dev server for an already-installed dev client
 ```
 
@@ -119,10 +120,11 @@ From the repository root, `npm run verify` covers the shared packages instead �
 cd apps/app
 npm run export       # native JS bundles for iOS and Android
 npm run export:web   # static web build
+npm run desktop:mac  # unsigned universal macOS DMG for local testing
 npm run prebuild     # regenerate the native ios/ and android/ projects
 ```
 
-Store builds go through EAS; see `apps/app/eas.json` for the profiles.
+iOS and Android store builds go through EAS; see `apps/app/eas.json` for the profiles. The macOS artifact is written to `apps/app/release/macos/`. Public macOS distribution requires a Developer ID Application certificate and notarization; with signing credentials configured, use `npm run desktop:mac:signed`.
 
 ## Hosting the Sync Relay
 
@@ -187,7 +189,8 @@ Only a device that already holds the vault key can admit another one. The relay'
 
 ```text
 apps/
-  app/            Expo Universal client — iOS, Android, web
+  app/            Expo Universal client — iOS, Android, web, macOS desktop shell
+    desktop/      sandboxed Electron host and macOS packaging configuration
   server/         blind sync relay (Hono + SQLite), with its own Dockerfile
 packages/
   domain/         pages, tasks, boards, links, ordering, Markdown, MCP tool catalog

@@ -1,6 +1,6 @@
 ---
 name: build-and-run
-description: Build and run the Giraffle client on an iOS simulator, an Android phone, or the browser, and produce a shareable Android APK. Use when asked to build the app, make an APK, run it on a simulator or device, reproduce a UI bug on a real screen, or check that a change works outside the test suite.
+description: Build and run the Giraffle client on macOS, an iOS simulator, an Android phone, or the browser, and produce a macOS DMG or Android APK. Use when asked to build the app, make a DMG or APK, run it on a simulator or device, reproduce a UI bug on a real screen, or check that a change works outside the test suite.
 ---
 
 # Building and running Giraffle
@@ -56,6 +56,29 @@ APK=android/app/build/outputs/apk/release/app-release.apk
 unzip -l "$APK" | grep -c '\.map$'                    # must be 0
 unzip -l "$APK" | grep assets/index.android.bundle    # must exist
 ```
+
+## macOS DMG
+
+The desktop target is a hardened Electron shell around the encrypted Expo web
+client. It has no Node access in the renderer, denies runtime permissions, and
+serves the bundled app from a private secure scheme. Vault bytes remain sealed
+with XChaCha20-Poly1305 in Chromium's origin-private storage.
+
+```bash
+cd apps/app
+npm run desktop:dev          # export web and launch the local shell
+npm run desktop:mac          # unsigned universal macOS DMG
+```
+
+Output: `apps/app/release/macos/Giraffle-<version>-macOS-universal.dmg`.
+The unsigned build is for local testing and triggers Gatekeeper when copied to
+another Mac. Public distribution needs a Developer ID Application certificate
+and Apple notarization; once those credentials are configured, run
+`npm run desktop:mac:signed`.
+
+The desktop build uses the tiny `desktop/package.json` as its packaging root.
+Do not package from `apps/app/package.json`: electron-builder then copies the
+entire React Native dependency tree and turns a compact DMG into multiple GB.
 
 ## iOS simulator
 

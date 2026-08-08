@@ -5,7 +5,7 @@
 - `SYNC_TOKENS` is the relay's entire access-control system. The server replaces its token table from that variable on every boot, so removing a `vaultId:token` pair revokes it at the next restart.
 
 ## Architecture
-- One client: the Expo Universal app in `apps/app`, shipping iOS, Android and web from the same source. `packages/*` is shared TypeScript consumed as source, with no build step, by the client, the relay and the root test suite.
+- One client: the Expo Universal app in `apps/app`, shipping iOS, Android and web from the same source, plus a sandboxed Electron shell for macOS in `apps/app/desktop`. `packages/*` is shared TypeScript consumed as source, with no build step, by the client, the relay and the root test suite.
 - Pages nest: a page can contain pages, and a Board is itself a specialized page. There is no folder concept.
 - The relay never holds a key. Any feature that needs to read note content has to run in the client — that includes an MCP host, whose tool contract lives in `packages/domain/src/mcp/`.
 - When removing a platform implementation, preserve reusable branding and mobile assets unless their deletion is explicitly requested.

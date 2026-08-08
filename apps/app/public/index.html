@@ -86,17 +86,7 @@
       }
     </style>
 
-    <script id="giraffle-service-worker">
-      // Registered here so a cold start with no network still opens the vault.
-      // The worker caches the app shell only; vault bytes never reach it.
-      if ("serviceWorker" in navigator) {
-        window.addEventListener("load", function () {
-          navigator.serviceWorker.register("/service-worker.js").catch(function () {
-            // A blocked or unsupported worker only costs offline start-up.
-          });
-        });
-      }
-    </script>
+    <script src="/register-service-worker.js" defer></script>
   </head>
 
   <body>
