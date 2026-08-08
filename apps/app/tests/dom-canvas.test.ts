@@ -1,6 +1,7 @@
 import type { CanvasElement } from "@giraffle/domain";
 import {
   liveElements,
+  normalizeReferenceLinks,
   pageIdForElement,
   pageReferenceSkeleton,
   referenceSkeleton,
@@ -76,7 +77,7 @@ describe("page references", () => {
       id: "element-1",
       versionNonce: 99,
       label: { text: "Field Notes" },
-      link: "giraffle://page/page-1",
+      link: "https://giraffle.local/page/page-1",
       customData: { girafflePageId: "page-1" },
     });
   });
@@ -89,6 +90,17 @@ describe("page references", () => {
     expect(pageReferenceSkeleton(request, 2)).toMatchObject({ x: 24, y: 164 });
   });
 
+  test("normalizes legacy internal links before Excalidraw parses them", () => {
+    const [normalized] = normalizeReferenceLinks([
+      element("legacy", {
+        customData: { girafflePageId: "page-1" },
+        link: "giraffle://page/page-1",
+      }),
+    ]);
+
+    expect(normalized?.link).toBe("https://giraffle.local/page/page-1");
+  });
+
   test("a task reference keeps the canonical task id", () => {
     const skeleton = referenceSkeleton(
       { kind: "task", taskId: "task-1", title: "Ship build", elementId: "element-2", versionNonce: 7 },
@@ -97,7 +109,7 @@ describe("page references", () => {
 
     expect(skeleton).toMatchObject({
       label: { text: "Ship build" },
-      link: "giraffle://task/task-1",
+      link: "https://giraffle.local/task/task-1",
       customData: { giraffleTaskId: "task-1" },
     });
     expect(taskIdForElement(skeleton)).toBe("task-1");

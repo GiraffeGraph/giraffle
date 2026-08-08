@@ -11,6 +11,7 @@ import type { DOMProps } from "expo/dom";
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import {
   liveElements,
+  normalizeReferenceLinks,
   pageIdForElement,
   referenceSkeleton,
   sceneMatches,
@@ -71,7 +72,7 @@ export default function Canvas({
   const [api, setApi] = useState<ExcalidrawImperativeAPI | null>(null);
   // The host saves what comes out of here and sends the saved scene straight
   // back, so adopting later revisions would fight the user's own strokes.
-  const [seed] = useState(() => elements);
+  const [seed] = useState(() => normalizeReferenceLinks(elements));
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const appliedReference = useRef<string | null>(null);
   const published = useRef<CanvasElement[]>(seed);

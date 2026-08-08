@@ -82,6 +82,22 @@ export function taskIdForElement(element: unknown): string | null {
   return typeof taskId === "string" && taskId.length > 0 ? taskId : null;
 }
 
+/** Rewrites legacy custom-scheme links before Excalidraw parses the scene. */
+export function normalizeReferenceLinks(
+  elements: readonly CanvasElement[],
+): CanvasElement[] {
+  return elements.map((element) => {
+    const pageId = pageIdForElement(element);
+    const taskId = taskIdForElement(element);
+    const link = pageId
+      ? `https://giraffle.local/page/${encodeURIComponent(pageId)}`
+      : taskId
+        ? `https://giraffle.local/task/${encodeURIComponent(taskId)}`
+        : null;
+    return link && element.link !== link ? { ...element, link } : element;
+  });
+}
+
 /**
  * A labelled card standing in for a canonical page or task. Excalidraw fills
  * in the remaining fields; cards are laid out two per row.
@@ -105,8 +121,8 @@ export function referenceSkeleton(
     label: { text: request.title },
     link:
       request.kind === "page"
-        ? `giraffle://page/${encodeURIComponent(request.pageId)}`
-        : `giraffle://task/${encodeURIComponent(request.taskId)}`,
+        ? `https://giraffle.local/page/${encodeURIComponent(request.pageId)}`
+        : `https://giraffle.local/task/${encodeURIComponent(request.taskId)}`,
     customData:
       request.kind === "page"
         ? { girafflePageId: request.pageId }
