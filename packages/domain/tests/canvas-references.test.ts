@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  extractCanvasReferences,
-  extractCanvasTaskReferences,
-  type CanvasElement,
-} from "@giraffle/domain";
+import { extractCanvasReferences, type CanvasElement } from "@giraffle/domain";
 
 function element(overrides: Partial<CanvasElement> & { id: string }): CanvasElement {
   return {
@@ -53,22 +49,7 @@ describe("canvas references", () => {
     ).toEqual([{ elementId: "a", pageId: "page-new" }]);
   });
 
-  it("extracts canonical task links independently from page links", () => {
-    const scene = [
-      element({ id: "b", customData: { giraffleTaskId: "task-b" } }),
-      element({ id: "a", customData: { girafflePageId: "page-a" } }),
-    ];
-
-    expect(extractCanvasTaskReferences(scene)).toEqual([
-      { elementId: "b", taskId: "task-b" },
-    ]);
-    expect(extractCanvasReferences(scene)).toEqual([
-      { elementId: "a", pageId: "page-a" },
-    ]);
-  });
-
   it("returns nothing for an empty scene", () => {
     expect(extractCanvasReferences([])).toEqual([]);
-    expect(extractCanvasTaskReferences([])).toEqual([]);
   });
 });

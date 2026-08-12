@@ -11,8 +11,8 @@ import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import { EditorContent, useEditor } from "@tiptap/react";
 import { StarterKit } from "@tiptap/starter-kit";
 import type { DOMProps } from "expo/dom";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { assignBlockIds, ID_BEARING_NODES, isIdBearing, taskToggles } from "./document";
+import { useCallback, useEffect, useState } from "react";
+import { assignBlockIds, ID_BEARING_NODES, isIdBearing } from "./editor-document";
 import { editorCssVariables, type EditorTheme } from "./theme";
 import { wikilinkRanges } from "./wikilinks";
 
@@ -26,7 +26,6 @@ export interface EditorProps {
   document: TiptapDocument;
   theme: EditorTheme;
   onChange: (document: TiptapDocument) => void;
-  onTaskToggle: (taskId: string, checked: boolean) => void;
   onOpenLink: (target: string) => void;
   onFocusChange: (focused: boolean) => void;
   onError: (message: string) => void;
@@ -222,7 +221,6 @@ export default function Editor({
   document: incoming,
   theme,
   onChange,
-  onTaskToggle,
   onOpenLink,
   onFocusChange,
   onError,
@@ -232,7 +230,6 @@ export default function Editor({
   // those revisions would reset the selection mid-keystroke, so the incoming
   // value seeds the editor once and the editor owns it from there.
   const [seed] = useState(() => assignBlockIds(incoming));
-  const emitted = useRef<TiptapDocument>(seed);
 
   const openLink = useCallback(
     (target: string) => {
@@ -283,12 +280,7 @@ export default function Editor({
       },
     },
     onUpdate: ({ editor: instance }) => {
-      const next = instance.getJSON() as TiptapDocument;
-      for (const toggle of taskToggles(emitted.current, next)) {
-        onTaskToggle(toggle.taskId, toggle.checked);
-      }
-      emitted.current = next;
-      onChange(next);
+      onChange(instance.getJSON() as TiptapDocument);
     },
     onFocus: () => onFocusChange(true),
     onBlur: () => onFocusChange(false),

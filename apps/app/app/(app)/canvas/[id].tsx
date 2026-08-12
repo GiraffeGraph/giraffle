@@ -1,9 +1,8 @@
 import type { CanvasElement } from "@giraffle/domain";
 import { router, useLocalSearchParams } from "expo-router";
 import { useRef, useState } from "react";
-import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { TaskDetailSheet } from "@/components/tasks/TaskDetailSheet";
 import { EditableText } from "@/components/ui/EditableText";
 import { Button, DividerRow, EmptyState, Icon } from "@/components/ui/primitives";
 import { useTheme } from "@/design/ThemeProvider";
@@ -31,14 +30,6 @@ export default function CanvasEditor() {
     appState: Record<string, unknown>;
   } | null>(null);
   const [add, setAdd] = useState<CanvasReferenceRequest | null>(null);
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
-  const selectedTask = snapshot.tasks.find((task) => task.id === selectedTaskId) ?? null;
-  const selectedBoard = selectedTask?.boardId
-    ? snapshot.boards.find((board) => board.id === selectedTask.boardId)
-    : null;
-  const selectedSourceBoard = selectedTask
-    ? snapshot.boards.find((board) => board.pageId === selectedTask.pageId)
-    : null;
 
   if (!canvas) {
     return (
@@ -57,13 +48,6 @@ export default function CanvasEditor() {
     (page) =>
       !page.isArchived &&
       (!normalizedQuery || page.title.toLocaleLowerCase().includes(normalizedQuery)),
-  );
-  const activeTasks = snapshot.tasks.filter(
-    (task) =>
-      !task.completed &&
-      (!normalizedQuery ||
-        task.content.toLocaleLowerCase().includes(normalizedQuery) ||
-        task.sourceLabel.toLocaleLowerCase().includes(normalizedQuery)),
   );
   const saveScene = (elements: CanvasElement[], appState: Record<string, unknown>) => {
     pendingScene.current = { elements, appState };
@@ -138,11 +122,7 @@ export default function CanvasEditor() {
             accent: colors.accent,
             danger: colors.danger,
           }}
-          onOpenPage={(pageId) => {
-            const board = snapshot.boards.find((item) => item.pageId === pageId);
-            router.push(board ? `/boards/${board.id}` : `/pages/${pageId}`);
-          }}
-          onOpenTask={setSelectedTaskId}
+          onOpenPage={(pageId) => router.push(`/pages/${pageId}`)}
           onError={() => setSaveState("error")}
           onChange={(elements, appState) => {
             setAdd(null);
@@ -151,43 +131,6 @@ export default function CanvasEditor() {
           dom={offlineDomProps({ backgroundColor: colors.background, scrollEnabled: false })}
         />
       </View>
-      <TaskDetailSheet
-        task={selectedTask}
-        boardTitle={selectedBoard?.title}
-        onClose={() => setSelectedTaskId(null)}
-        onSave={(patch) => run((repository) => repository.updateTask(selectedTask!.id, patch))}
-        onOpenSource={() => {
-          if (!selectedTask) return;
-          setSelectedTaskId(null);
-          router.push(
-            selectedSourceBoard
-              ? `/boards/${selectedSourceBoard.id}`
-              : `/pages/${selectedTask.pageId}`,
-          );
-        }}
-        onRemoveFromBoard={
-          selectedTask?.boardId && selectedBoard && selectedTask.pageId !== selectedBoard.pageId
-            ? () => {
-                setSelectedTaskId(null);
-                void run((repository) => repository.removeTaskFromBoard(selectedTask.id));
-              }
-            : undefined
-        }
-        onDelete={() => {
-          if (!selectedTask) return;
-          Alert.alert("Delete task?", `“${selectedTask.content}” will be removed everywhere.`, [
-            { text: "Cancel", style: "cancel" },
-            {
-              text: "Delete",
-              style: "destructive",
-              onPress: () => {
-                setSelectedTaskId(null);
-                void run((repository) => repository.deleteTask(selectedTask.id));
-              },
-            },
-          ]);
-        }}
-      />
       <Modal
         visible={picker}
         transparent
@@ -213,7 +156,7 @@ export default function CanvasEditor() {
             <TextInput
               value={pickerQuery}
               onChangeText={setPickerQuery}
-              placeholder="Find a page, board, or task"
+              placeholder="Find a page"
               placeholderTextColor={colors.faint}
               style={[styles.searchInput, typography.body, { color: colors.text }]}
             />
@@ -221,15 +164,13 @@ export default function CanvasEditor() {
           <ScrollView keyboardShouldPersistTaps="handled">
             {activePages.length ? (
               <View>
-                <Text style={[styles.sectionLabel, typography.label, { color: colors.muted }]}>Pages and boards</Text>
+                <Text style={[styles.sectionLabel, typography.label, { color: colors.muted }]}>Pages</Text>
                 {activePages.map((page) => {
-                  const board = snapshot.boards.find((item) => item.pageId === page.id);
                   return (
                     <DividerRow
                       key={page.id}
                       onPress={() => {
                         setAdd({
-                          kind: "page",
                           pageId: page.id,
                           title: page.title,
                           elementId: createId(),
@@ -238,12 +179,9 @@ export default function CanvasEditor() {
                         setPicker(false);
                       }}
                     >
-                      <Icon name={board ? "albums-outline" : "document-outline"} />
+                      <Icon name="document-outline" />
                       <Text style={[typography.body, { color: colors.text, flex: 1 }]}>
                         {page.title}
-                      </Text>
-                      <Text style={[typography.caption, { color: colors.muted }]}>
-                        {board ? "Board" : "Page"}
                       </Text>
                     </DividerRow>
                   );
@@ -251,39 +189,7 @@ export default function CanvasEditor() {
               </View>
             ) : null}
 
-            {activeTasks.length ? (
-              <View>
-                <Text style={[styles.sectionLabel, typography.label, { color: colors.muted }]}>Tasks</Text>
-                {activeTasks.map((task) => (
-                  <DividerRow
-                    key={task.id}
-                    onPress={() => {
-                      setAdd({
-                        kind: "task",
-                        taskId: task.id,
-                        title: task.content,
-                        elementId: createId(),
-                        versionNonce: Math.floor(Math.random() * 2_147_483_647),
-                      });
-                      setPicker(false);
-                    }}
-                  >
-                    <Icon name="checkbox-outline" />
-                    <View style={{ flex: 1 }}>
-                      <Text numberOfLines={1} style={[typography.body, { color: colors.text }]}>
-                        {task.content}
-                      </Text>
-                      <Text numberOfLines={1} style={[typography.caption, { color: colors.muted }]}>
-                        {task.sourceLabel}
-                      </Text>
-                    </View>
-                    <Icon name="add" color={colors.accent} />
-                  </DividerRow>
-                ))}
-              </View>
-            ) : null}
-
-            {!activePages.length && !activeTasks.length ? (
+            {!activePages.length ? (
               <View style={styles.pickerEmpty}>
                 {normalizedQuery ? (
                   <Text style={[typography.body, { color: colors.secondary }]}>No matches</Text>

@@ -1,7 +1,7 @@
 import { vaultCryptoProvider } from "@/sync/cryptoProvider";
 import { openOriginByteStore } from "../storage/originByteStore";
 import { openSqliteImage } from "./sqliteWasm";
-import { repairPagePositions, runMigrations, type VaultDatabase } from "./vaultDatabase";
+import { initializeSchema, repairPagePositions, type VaultDatabase } from "./vaultDatabase";
 
 const IMAGE_NAME = "vault-image.v1";
 const NONCE_BYTES = 24;
@@ -136,7 +136,7 @@ export async function openEncryptedDatabase(
 
   try {
     await database.execAsync("PRAGMA foreign_keys = ON");
-    await runMigrations(database);
+    await initializeSchema(database);
     await repairPagePositions(database);
     await flush();
     return database;

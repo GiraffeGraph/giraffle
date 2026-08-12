@@ -9,7 +9,6 @@ const INDENT_STEP = 16;
 
 export function PageTreeRow({
   page,
-  isBoard,
   depth,
   hasChildren,
   expanded,
@@ -22,7 +21,6 @@ export function PageTreeRow({
   onOpenMenu,
 }: {
   page: Page;
-  isBoard: boolean;
   depth: number;
   hasChildren: boolean;
   expanded: boolean;
@@ -86,7 +84,7 @@ export function PageTreeRow({
           style={({ pressed }) => [styles.main, { opacity: pressed ? 0.6 : 1 }]}
         >
           <Icon
-            name={isBoard ? "albums-outline" : "document-text-outline"}
+            name="document-text-outline"
             size={16}
             color={colors.secondary}
           />

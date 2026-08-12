@@ -6,12 +6,13 @@ import {
   type Page as PageModel,
   type TiptapDocument,
 } from "@giraffle/domain";
-import { Redirect, router, useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { File } from "expo-file-system";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, AppState, Linking, Modal, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { TaskDetailSheet } from "@/components/tasks/TaskDetailSheet";
+import { ChildPageViews } from "@/components/pages/ChildPageViews";
+import { PagePlanningSheet } from "@/components/pages/PagePlanningSheet";
 import { EditableText } from "@/components/ui/EditableText";
 import { Button, DividerRow, EmptyState, Icon } from "@/components/ui/primitives";
 import { useTheme } from "@/design/ThemeProvider";
@@ -46,14 +47,9 @@ export default function PageEditor() {
   const insets = useSafeAreaInsets();
   const { snapshot, run } = useApp();
   const page = snapshot.pages.find((item) => item.id === id);
-  const board = snapshot.boards.find((item) => item.pageId === id);
   const [menu, setMenu] = useState(false);
   const [moveSheet, setMoveSheet] = useState(false);
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
-  // A page that already has tasks opens showing them; an empty one stays quiet.
-  const [tasksOpen, setTasksOpen] = useState(() =>
-    snapshot.tasks.some((task) => task.pageId === id),
-  );
+  const [planningSheet, setPlanningSheet] = useState(false);
   const [draft, setDraft] = useState<TiptapDocument | null>(page?.document ?? null);
   const [saveState, setSaveState] = useState<SaveState>("saved");
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -61,6 +57,14 @@ export default function PageEditor() {
   const dirtyRef = useRef(false);
   const revisionRef = useRef(0);
   const persistingRevisionRef = useRef<number | null>(null);
+
+  // Headless and sync writes update the canonical snapshot while this route can
+  // stay mounted. Adopt them unless the local editor has an unsaved draft.
+  useEffect(() => {
+    if (!page || dirtyRef.current) return;
+    setDraft(page.document);
+    draftRef.current = page.document;
+  }, [page]);
 
   const persist = useCallback(
     async (document: TiptapDocument, revision: number) => {
@@ -135,8 +139,6 @@ export default function PageEditor() {
     [id, run],
   );
 
-  if (board) return <Redirect href={`/boards/${board.id}`} />;
-
   if (!page || !draft) {
     return (
       <View style={[styles.fill, { backgroundColor: colors.background, paddingTop: 80 }]}>
@@ -162,11 +164,7 @@ export default function PageEditor() {
   };
   const ancestors = pageAncestors(snapshot.pages, page.id);
   const backlinks = snapshot.backlinks.filter((link) => link.targetPageId === page.id);
-  const pageTasks = snapshot.tasks.filter((task) => task.pageId === page.id);
-  const selectedTask = snapshot.tasks.find((task) => task.id === selectedTaskId) ?? null;
-  const selectedBoard = selectedTask?.boardId
-    ? snapshot.boards.find((item) => item.id === selectedTask.boardId)
-    : null;
+
 
   return (
     <View style={[styles.fill, { backgroundColor: colors.background }]}>
@@ -207,6 +205,11 @@ export default function PageEditor() {
           </Text>
         ) : null}
         <Button
+          icon="options-outline"
+          accessibilityLabel="Page planning"
+          onPress={() => setPlanningSheet(true)}
+        />
+        <Button
           icon="ellipsis-horizontal"
           accessibilityLabel="Page actions"
           onPress={() => setMenu(true)}
@@ -218,96 +221,7 @@ export default function PageEditor() {
           onSave={(title) => void run((repository) => repository.updatePage(page.id, { title }))}
           style={[typography.hero, { color: colors.text, marginBottom: 12 }]}
         />
-        <View style={[styles.taskSection, { borderColor: colors.border }]}>
-          <View style={styles.taskHeader}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityState={{ expanded: tasksOpen }}
-              onPress={() => setTasksOpen((value) => !value)}
-              style={styles.taskToggle}
-            >
-              <Icon
-                name={tasksOpen ? "chevron-down" : "chevron-forward"}
-                size={14}
-                color={colors.muted}
-              />
-              <Text style={[typography.label, { color: colors.muted }]}>
-                Tasks{pageTasks.length ? ` · ${pageTasks.length}` : ""}
-              </Text>
-            </Pressable>
-            <View style={styles.taskSpacer} />
-            <Button
-              label="Add task"
-              icon="add"
-              onPress={() => {
-                setTasksOpen(true);
-                void run((repository) =>
-                  repository.createTask({ pageId: page.id, content: "New task" }),
-                );
-              }}
-            />
-          </View>
-          {tasksOpen ? (
-          <ScrollView style={styles.taskList} nestedScrollEnabled keyboardShouldPersistTaps="handled">
-            {pageTasks.map((task) => (
-            <DividerRow key={task.id}>
-              <Button
-                icon={task.completed ? "checkmark-circle" : "ellipse-outline"}
-                accessibilityLabel={task.completed ? "Mark incomplete" : "Complete task"}
-                onPress={() =>
-                  void run((repository) =>
-                    repository.updateTask(task.id, { completed: !task.completed }),
-                  )
-                }
-              />
-              <EditableText
-                value={task.content}
-                placeholder="New task"
-                onSave={(content) =>
-                  void run((repository) => repository.updateTask(task.id, { content }))
-                }
-                style={[
-                  typography.body,
-                  {
-                    color: task.completed ? colors.muted : colors.text,
-                    flex: 1,
-                    textDecorationLine: task.completed ? "line-through" : "none",
-                  },
-                ]}
-              />
-              <Button
-                icon="information-circle-outline"
-                accessibilityLabel="Open task details"
-                onPress={() => setSelectedTaskId(task.id)}
-              />
-              {task.boardId ? (
-                <Button
-                  icon="albums-outline"
-                  accessibilityLabel="Open board"
-                  onPress={() => router.push(`/boards/${task.boardId}`)}
-                />
-              ) : null}
-              <Button
-                icon="trash-outline"
-                tone="danger"
-                accessibilityLabel="Delete task"
-                onPress={() =>
-                  Alert.alert("Delete task?", `“${task.content}” will be removed.`, [
-                    { text: "Cancel", style: "cancel" },
-                    {
-                      text: "Delete",
-                      style: "destructive",
-                      onPress: () =>
-                        void run((repository) => repository.deleteTask(task.id)),
-                    },
-                  ])
-                }
-              />
-            </DividerRow>
-            ))}
-          </ScrollView>
-          ) : null}
-        </View>
+        <ChildPageViews parent={page} />
         <Editor
           document={draft}
           theme={{
@@ -320,14 +234,6 @@ export default function PageEditor() {
           onError={() => setSaveState("error")}
           onFocusChange={(focused) => {
             if (!focused) flush();
-          }}
-          onTaskToggle={(taskId, checked) => {
-            // A checkbox in the document is only a task row when its stable id
-            // matches a canonical task; otherwise it remains document content.
-            if (!snapshot.tasks.some((task) => task.id === taskId)) return;
-            void run((repository) =>
-              repository.updateTask(taskId, { completed: checked }),
-            ).catch(() => undefined);
           }}
           onRequestAttachment={pickAttachment}
           onOpenLink={(target) => {
@@ -362,6 +268,7 @@ export default function PageEditor() {
           </View>
         ) : null}
       </View>
+      <PagePlanningSheet page={page} visible={planningSheet} onClose={() => setPlanningSheet(false)} />
       <PageMenu
         visible={menu}
         close={() => setMenu(false)}
@@ -372,35 +279,6 @@ export default function PageEditor() {
         onMove={() => {
           setMenu(false);
           setMoveSheet(true);
-        }}
-      />
-      <TaskDetailSheet
-        task={selectedTask}
-        boardTitle={selectedBoard?.title}
-        onClose={() => setSelectedTaskId(null)}
-        onSave={(patch) => run((repository) => repository.updateTask(selectedTask!.id, patch))}
-        onOpenSource={() => setSelectedTaskId(null)}
-        onRemoveFromBoard={
-          selectedTask?.boardId
-            ? () => {
-                setSelectedTaskId(null);
-                void run((repository) => repository.removeTaskFromBoard(selectedTask.id));
-              }
-            : undefined
-        }
-        onDelete={() => {
-          if (!selectedTask) return;
-          Alert.alert("Delete task?", `“${selectedTask.content}” will be removed everywhere.`, [
-            { text: "Cancel", style: "cancel" },
-            {
-              text: "Delete",
-              style: "destructive",
-              onPress: () => {
-                setSelectedTaskId(null);
-                void run((repository) => repository.deleteTask(selectedTask.id));
-              },
-            },
-          ]);
         }}
       />
       <MoveSheet
@@ -498,7 +376,7 @@ function PageMenu({
             close();
             Alert.alert(
               "Delete page permanently?",
-              "This page and its tasks will no longer be available. This cannot be undone.",
+              "This page and every page inside it will no longer be available. This cannot be undone.",
               [
                 { text: "Cancel", style: "cancel" },
                 {
@@ -590,20 +468,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.xl,
   },
-  taskSection: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    marginBottom: spacing.lg,
-  },
-  taskList: { maxHeight: 180 },
-  taskHeader: {
-    minHeight: 42,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
-  },
-  taskToggle: { flexDirection: "row", alignItems: "center", gap: 6 },
-  taskSpacer: { flex: 1 },
   backlinks: {
     paddingVertical: 16,
     borderTopWidth: StyleSheet.hairlineWidth,

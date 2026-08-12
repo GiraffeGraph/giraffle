@@ -16,7 +16,6 @@ import {
   referenceSkeleton,
   sceneMatches,
   sceneViewport,
-  taskIdForElement,
   type CanvasReferenceRequest,
 } from "./scene";
 import { canvasCssVariables, type CanvasTheme } from "./theme";
@@ -28,11 +27,10 @@ export interface CanvasProps {
   /** Seeds the scene. Later revisions are not pushed back in; see below. */
   elements: CanvasElement[];
   theme: CanvasTheme;
-  /** A canonical page or task the host wants placed on the canvas. */
+  /** A canonical Page the host wants placed on the canvas. */
   pendingReference: CanvasReferenceRequest | null;
   onChange: (elements: CanvasElement[], appState: Record<string, unknown>) => void;
   onOpenPage: (pageId: string) => void;
-  onOpenTask: (taskId: string) => void;
   onError: (message: string) => void;
   dom?: DOMProps;
 }
@@ -66,7 +64,6 @@ export default function Canvas({
   pendingReference,
   onChange,
   onOpenPage,
-  onOpenTask,
   onError,
 }: CanvasProps) {
   const [api, setApi] = useState<ExcalidrawImperativeAPI | null>(null);
@@ -156,11 +153,9 @@ export default function Canvas({
         // Opening a linked page belongs to the native screen, not the canvas.
         onLinkOpen={(element, event) => {
           const pageId = pageIdForElement(element);
-          const taskId = taskIdForElement(element);
-          if (!pageId && !taskId) return;
+          if (!pageId) return;
           event.preventDefault();
-          if (pageId) onOpenPage(pageId);
-          else if (taskId) onOpenTask(taskId);
+          onOpenPage(pageId);
         }}
       />
     </div>

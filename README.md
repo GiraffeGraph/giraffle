@@ -5,7 +5,7 @@
 <h1 align="center">Giraffle</h1>
 
 <p align="center">
-  A private, offline-first workspace for pages, tasks, boards and visual planning on macOS, iOS, Android and the browser. Your data stays on your device; optional self-hosted sync only relays ciphertext.
+  A private, offline-first workspace for recursive pages, personal planning and visual thinking on macOS, iOS, Android and the browser. Your data stays on your device; optional self-hosted sync only relays ciphertext.
 </p>
 
 <p align="center">
@@ -21,6 +21,7 @@
   <a href="#screenshots">Screenshots</a> •
   <a href="#features">Features</a> •
   <a href="#running-the-client">Running the Client</a> •
+  <a href="#headless-cli">Headless CLI</a> •
   <a href="#building-the-client">Building</a> •
   <a href="#hosting-the-sync-relay">Hosting the Relay</a> •
   <a href="#pairing-a-second-device">Pairing</a> •
@@ -29,15 +30,7 @@
 
 ## Screenshots
 
-<p align="center">
-  <img src="./public/screenshots/tasks-light.png" alt="Giraffle task priority view" width="100%" />
-</p>
-<p align="center">
-  <img src="./public/screenshots/boards-dark.png" alt="Giraffle board with canonical tasks" width="49%" />
-  <img src="./public/screenshots/canvas-dark.png" alt="Giraffle Canvas with page and task references" width="49%" />
-</p>
-
-<p align="center"><sub>Priority, Boards and Canvas from the current Expo Universal client.</sub></p>
+Current screenshots are being refreshed for the universal recursive Page model.
 
 ## Why Giraffle
 
@@ -45,7 +38,7 @@ Giraffle is one Expo Universal client for native iOS, native Android and web, wi
 
 Three rules shape every decision:
 
-- **The device owns the data.** Every page, task, board and canvas is written to an encrypted SQLite database on the device. Every read and write works with the network off. There is no "loading" state waiting on a server.
+- **The device owns the data.** Every page and canvas is written to an encrypted SQLite database on the device. Every read and write works with the network off. There is no "loading" state waiting on a server.
 - **The relay is blind.** Content is encrypted on the device with keys the device never sends anywhere. The relay stores opaque blobs and the metadata it needs to order them. Whoever runs it — including you — cannot read a page.
 - **There is no account.** No sign-up, no email, no password, no server-side user record. A vault is identified by an id and an access token you generate yourself; a second device joins by being authorized by the first.
 
@@ -57,31 +50,34 @@ What the relay *does* see: how many records exist, roughly how big they are, whe
 
 ## Features
 
-- **Pages:** Tiptap block editing, images, wikilinks, backlinks, nested pages and Markdown export
-- **Quick capture:** create an unscheduled, boardless and unprioritized task directly into Inbox
-- **Calendar:** day, week and month planning with drag, resize and range creation
-- **Priority:** Focus, Plan, Delegate and Drop as optional views over canonical tasks
-- **Boards:** workflow placement without copying a task or changing its source page
-- **Canvas:** Excalidraw shapes plus searchable live references to pages, boards and tasks
+- **Universal pages:** every note, idea, project and finishable action is one recursive Page
+- **Custom states:** user-defined vocabulary mapped to stable Forever, Open and Done semantics
+- **Local categories:** each Page can group only its direct children with its own categories
+- **Planning lenses:** list, calendar and Focus / Plan / Delegate / Drop priority views over the same Pages
+- **Quick capture:** creates an Open child Page in Inbox; organizing it moves it to one real parent
+- **Canvas:** Excalidraw shapes plus searchable live references to canonical Pages
 - **Local first:** encrypted SQLite, device-held keys, offline reads/writes and a password or quick-PIN lock
+- **Headless CLI:** local agent and terminal control over the same macOS vault and canonical repository used by the UI
 - **Optional sync:** ciphertext-only exchange between devices through a self-hosted blind relay
 - **Encrypted backup:** password-protected full-workspace export and restore with a versioned `.giraffle` file
 
 ### Current product model
 
-| Entity / view | Owns | Does not duplicate |
-| --- | --- | --- |
-| **Page** | A task's permanent context and source | Board position, date or priority |
-| **Board** | Optional board, column and ordering | Task text, completion, date or priority |
-| **Calendar** | Optional due date, start time and duration | Task content or board state |
-| **Priority** | Optional Focus / Plan / Delegate / Drop placement | Page or board data |
-| **Canvas** | Excalidraw scene and canonical entity references | Copies of pages, boards or tasks |
+| Concept | Meaning |
+| --- | --- |
+| **Page** | The only canonical knowledge and planning entity; may contain direct child Pages |
+| **State** | Custom user label with Forever, Open or Done semantics |
+| **Category** | Optional grouping owned by one parent Page or the workspace root |
+| **Priority** | Optional Focus / Plan / Delegate / Drop placement |
+| **Calendar** | Optional local schedule and duration |
+| **Archive** | Visibility lifecycle independent from State |
+| **Canvas** | Excalidraw scene containing canonical Page references, never copies |
 
-A task is one canonical `taskItem` block. Quick tasks start in the visible **Inbox** page with no board, date or priority. Every view edits only its own optional dimension. A board is itself a specialized page, while Canvas links to canonical IDs instead of cloning content.
+A normal note starts in the default Forever state. Quick capture creates an Open child Page in the visible **Inbox**. Moving it to its real parent removes it from Inbox and clears any category owned by the previous parent. State, priority, schedule, document and descendants move with it. Every Page can present its direct children as a list, by local category, or by priority; global Plan and Calendar lenses may query the whole workspace.
 
 ### Backup is not sync
 
-Sync continuously replicates signed changes between devices in the same vault. A `.giraffle` backup is a password-encrypted point-in-time snapshot containing pages, tasks, boards, calendar metadata, priorities, canvases and archived content. It deliberately excludes device keys, quick PINs and relay credentials.
+Sync continuously replicates signed changes between devices in the same vault. A `.giraffle` backup is a password-encrypted point-in-time snapshot containing Pages, custom states, local categories, calendar metadata, priorities, canvases and archived content. It deliberately excludes device keys, quick PINs and relay credentials.
 
 Backups restore only into an empty vault that has never synced; import never merges with existing content. Restored entities become new local operations on the importing device, so enabling sync later publishes them through the normal sync protocol.
 
@@ -119,7 +115,54 @@ cd apps/app
 npm run verify       # lint + typecheck + tests + export
 ```
 
-From the repository root, `npm run verify` covers the shared packages instead — typecheck plus the `packages/*/tests` suites that pin the crypto, sync and domain behavior the client is built on.
+From the repository root, `npm run verify` covers the shared packages and headless path — typecheck, command/executor tests, CLI build/tests and desktop socket tests.
+
+## Headless CLI
+
+Giraffle can be controlled with no visible window. The CLI is a local adapter over the exact same encrypted vault and `VaultRepository` used by the macOS UI: CLI writes appear in the UI, UI writes appear in CLI reads, and every mutation follows the existing sync operation path. If the desktop runtime is not running, the CLI starts it invisibly.
+
+Install the public CLI and the matching desktop release:
+
+```bash
+npm install --global giraffle
+giraffle desktop install       # opens the signed desktop release download
+giraffle desktop status
+
+giraffle pages create "Release plan" --markdown "Ship on Friday"
+giraffle pages capture "Draft announcement"
+giraffle pages update PAGE_ID --priority do
+giraffle pages search release --json
+```
+
+For repository development instead, run `npm install`, `npm --prefix apps/cli install`, `npm run cli:build`, then `npm link --prefix apps/cli`. Without linking, use `npm run cli -- commands` from the repository root.
+
+### Automation and agent use
+
+Use `--json` for stable JSON output and exit codes, `--input` for a complete JSON input object, and `--stdin` for page content or quick capture. In non-interactive sessions, provide the passphrase through a protected file or the environment:
+
+```bash
+export GIRAFFLE_PASSPHRASE_FILE="$HOME/.config/giraffle/passphrase"
+
+echo "Meeting notes" | giraffle pages create "Standup" --stdin --json
+giraffle pages update PAGE_ID --state-id giraffle-state-done --json
+giraffle categories list PAGE_ID --json
+giraffle commands --json
+```
+
+`GIRAFFLE_PASSPHRASE` is also supported for ephemeral local automation. A command-line passphrase flag is deliberately not supported because process arguments can be inspected by other local processes. Exit code `0` means success, `2` means invalid command/input, `3` means an entity was not found, and `1` covers vault or runtime failures.
+
+The CLI never opens, copies or migrates vault storage. It talks to the desktop runtime through a per-user local socket protected by a random `0600` token; the sandboxed renderer receives only validated command input through a narrow preload bridge. The command registry and repository executor live in `packages/headless`; `apps/cli` only handles terminal parsing and transport. This keeps one persistence model and one mutation implementation.
+
+The npm package intentionally installs only the CLI. npm lifecycle scripts must not silently download or write an application into `/Applications`; `giraffle desktop install` explicitly opens the matching official release for user-approved installation. A future Homebrew Cask can install the notarized app and expose the CLI together.
+
+Useful discovery commands:
+
+```bash
+giraffle --help
+giraffle commands
+giraffle pages create --help
+giraffle states list --json
+```
 
 ## Building the Client
 
@@ -198,9 +241,11 @@ Only a device that already holds the vault key can admit another one. The relay'
 apps/
   app/            Expo Universal client — iOS, Android, web, macOS desktop shell
     desktop/      sandboxed Electron host and macOS packaging configuration
+  cli/            headless terminal adapter for the desktop vault runtime
   server/         blind sync relay (Hono + SQLite), with its own Dockerfile
 packages/
-  domain/         pages, tasks, boards, links, ordering, Markdown, MCP tool catalog
+  domain/         recursive pages, states, categories, links, ordering and Markdown
+  headless/       transport-neutral command registry and workspace application service
   protocol/       canonical CBOR, crypto provider, device chain, HLC, sync records
   sync/           key wrapping, checkpoints, Yjs and Excalidraw merge, blob crypto
 tests/vectors/    frozen protocol test vectors, shared by the client and the packages
@@ -208,11 +253,11 @@ public/           logo and screenshots used by this README
 docker-compose.yml  runs the relay
 ```
 
-The client and the relay each install and test themselves; the root workspace owns only `packages/*`.
+The client, CLI and relay install themselves independently; the root workspace owns `packages/*` and verifies the CLI as part of the repository quality gate.
 
 ## Agent Control
 
-`packages/domain/src/mcp/` holds the catalog of tools an agent can call against a workspace — covering pages, tasks, priority, canvases and boards with the same plain names used by the app. It is a contract, not a server: the relay is blind and cannot answer any of these calls, so an MCP host has to run inside a client that already holds the vault key. That host does not exist yet.
+A local agent runs the `giraffle` executable like any other command. `--json` provides deterministic success and error envelopes, `--input` accepts JSON directly or from a file/stdin, and mutations return canonical entity ids. The relay remains blind and is not involved in headless command execution.
 
 ## Releasing
 

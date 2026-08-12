@@ -1,10 +1,15 @@
-const { app, BrowserWindow, Menu, protocol, session, shell } = require("electron");
+const { app, BrowserWindow, Menu, ipcMain, protocol, session, shell } = require("electron");
 const { readFile, stat } = require("node:fs/promises");
 const path = require("node:path");
+const { startHeadlessServer } = require("./headless-server.cjs");
 
 const SCHEME = "giraffle-app";
 const APP_ORIGIN = `${SCHEME}://app`;
 let quitting = false;
+let headlessServer = null;
+let rendererSender = null;
+const headlessQueue = [];
+const pendingHeadless = new Map();
 const CONTENT_SECURITY_POLICY = [
   "default-src 'self'",
   "script-src 'self' 'wasm-unsafe-eval'",
@@ -166,7 +171,7 @@ function installMenu() {
   );
 }
 
-function createWindow() {
+function createWindow({ hidden = false } = {}) {
   const window = new BrowserWindow({
     title: "Giraffle",
     width: 1280,
@@ -176,6 +181,7 @@ function createWindow() {
     backgroundColor: "#191919",
     show: false,
     webPreferences: {
+      preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
@@ -183,7 +189,9 @@ function createWindow() {
     },
   });
 
-  window.once("ready-to-show", () => window.show());
+  window.once("ready-to-show", () => {
+    if (!hidden) window.show();
+  });
 
   // Keep the renderer (and its in-memory vault keys) alive when the macOS red
   // close button is used. Hiding still emits a background state, so the user's
@@ -206,11 +214,57 @@ function createWindow() {
     }
   });
 
+  window.on("closed", () => {
+    rendererSender = null;
+    const response = { ok: false, error: { code: "RUNTIME_CLOSED", message: "Giraffle runtime closed before completing the command" } };
+    for (const [id, pending] of pendingHeadless) pending.resolve({ id, ...response });
+    pendingHeadless.clear();
+    headlessQueue.length = 0;
+  });
+
   void window.loadURL(`${APP_ORIGIN}/`).catch((cause) => {
     console.error("Could not load the desktop client", cause);
     app.quit();
   });
+  return window;
 }
+
+function dispatchHeadless(request) {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      pendingHeadless.delete(request.id);
+      resolve({ id: request.id, ok: false, error: { code: "TIMEOUT", message: "Giraffle runtime did not become ready" } });
+    }, 25_000);
+    pendingHeadless.set(request.id, {
+      resolve: (response) => {
+        clearTimeout(timer);
+        resolve(response);
+      },
+    });
+    const window = BrowserWindow.getAllWindows()[0] ?? createWindow({ hidden: true });
+    if (window.isDestroyed()) {
+      pendingHeadless.delete(request.id);
+      clearTimeout(timer);
+      resolve({ id: request.id, ok: false, error: { code: "RUNTIME_CLOSED", message: "Giraffle runtime is unavailable" } });
+      return;
+    }
+    if (rendererSender && !rendererSender.isDestroyed()) rendererSender.send("giraffle-headless:request", request);
+    else headlessQueue.push(request);
+  });
+}
+
+ipcMain.on("giraffle-headless:ready", (event) => {
+  rendererSender = event.sender;
+  for (const request of headlessQueue.splice(0)) event.sender.send("giraffle-headless:request", request);
+});
+
+ipcMain.on("giraffle-headless:response", (event, response) => {
+  if (event.sender !== rendererSender) return;
+  const pending = pendingHeadless.get(response?.id);
+  if (!pending) return;
+  pendingHeadless.delete(response.id);
+  pending.resolve(response);
+});
 
 if (!app.requestSingleInstanceLock()) {
   app.quit();
@@ -225,6 +279,7 @@ if (!app.requestSingleInstanceLock()) {
 
   app.on("before-quit", () => {
     quitting = true;
+    void headlessServer?.close().catch(() => undefined);
   });
 
   app.whenReady().then(() => {
@@ -243,7 +298,10 @@ if (!app.requestSingleInstanceLock()) {
         },
       });
     });
-    createWindow();
+    createWindow({ hidden: process.argv.includes("--headless-service") && app.isPackaged });
+    void startHeadlessServer({ userData: app.getPath("userData"), dispatch: dispatchHeadless })
+      .then((server) => { headlessServer = server; })
+      .catch((cause) => console.error("Could not start headless control socket", cause));
 
     app.on("activate", () => {
       const window = BrowserWindow.getAllWindows()[0];

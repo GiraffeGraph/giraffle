@@ -4,10 +4,8 @@ import {
   normalizeReferenceLinks,
   pageIdForElement,
   pageReferenceSkeleton,
-  referenceSkeleton,
   sceneMatches,
   sceneViewport,
-  taskIdForElement,
 } from "@/dom/scene";
 import { canvasCssVariables, type CanvasTheme } from "@/dom/theme";
 
@@ -68,7 +66,7 @@ describe("page references", () => {
 
   test("a reference carries the id and nonce the host minted", () => {
     const skeleton = pageReferenceSkeleton(
-      { kind: "page", pageId: "page-1", title: "Field Research", elementId: "element-1", versionNonce: 99 },
+      { pageId: "page-1", title: "Field Research", elementId: "element-1", versionNonce: 99 },
       0,
     );
 
@@ -101,19 +99,7 @@ describe("page references", () => {
     expect(normalized?.link).toBe("https://giraffle.local/page/page-1");
   });
 
-  test("a task reference keeps the canonical task id", () => {
-    const skeleton = referenceSkeleton(
-      { kind: "task", taskId: "task-1", title: "Ship build", elementId: "element-2", versionNonce: 7 },
-      0,
-    );
 
-    expect(skeleton).toMatchObject({
-      label: { text: "Ship build" },
-      link: "https://giraffle.local/task/task-1",
-      customData: { giraffleTaskId: "task-1" },
-    });
-    expect(taskIdForElement(skeleton)).toBe("task-1");
-  });
 });
 
 describe("canvas theme", () => {

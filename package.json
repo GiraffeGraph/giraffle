@@ -1,6 +1,6 @@
 {
   "name": "giraffle",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "private": true,
   "workspaces": [
     "packages/*"
@@ -9,7 +9,9 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest",
     "test:run": "vitest run",
-    "verify": "npm run typecheck && npm run test:run",
+    "cli": "npm --prefix apps/cli run build --silent && node apps/cli/dist/giraffle.js",
+    "cli:build": "npm --prefix apps/cli run build",
+    "verify": "npm run typecheck && npm run test:run && npm --prefix apps/cli run verify && npm --prefix apps/app run desktop:test",
     "app": "npm --prefix apps/app run start",
     "app:web": "npm --prefix apps/app run web",
     "server": "npm --prefix apps/server run dev",

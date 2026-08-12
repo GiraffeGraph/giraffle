@@ -1,0 +1,43 @@
+{
+  "name": "giraffle",
+  "version": "0.12.0",
+  "description": "Headless CLI for the Giraffle desktop workspace",
+  "type": "module",
+  "license": "UNLICENSED",
+  "homepage": "https://github.com/GiraffeGraph/giraffle#headless-cli",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GiraffeGraph/giraffle.git",
+    "directory": "apps/cli"
+  },
+  "bugs": "https://github.com/GiraffeGraph/giraffle/issues",
+  "engines": {
+    "node": ">=20"
+  },
+  "os": [
+    "darwin"
+  ],
+  "files": [
+    "dist/",
+    "README.md"
+  ],
+  "bin": {
+    "giraffle": "dist/giraffle.js"
+  },
+  "scripts": {
+    "build": "esbuild src/cli.ts --bundle --platform=node --format=esm --outfile=dist/giraffle.js --banner:js='#!/usr/bin/env node' && chmod +x dist/giraffle.js",
+    "prepack": "npm run verify",
+    "typecheck": "tsc --noEmit",
+    "pretest": "npm run build",
+    "test": "vitest run",
+    "verify": "npm run typecheck && npm test"
+  },
+  "devDependencies": {
+    "@giraffle/domain": "file:../../packages/domain",
+    "@giraffle/headless": "file:../../packages/headless",
+    "@types/node": "^22.20.1",
+    "esbuild": "^0.28.2",
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.4"
+  }
+}

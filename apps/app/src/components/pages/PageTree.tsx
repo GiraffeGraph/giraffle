@@ -53,7 +53,6 @@ function subtreeIds(pages: Page[], pageId: Id): Id[] {
 
 export function PageTree(props: {
   pages: Page[];
-  boardPageIds: ReadonlySet<Id>;
   activePageId?: Id;
   onOpen(pageId: Id): void;
   onAddChild(parentId: Id): void;
@@ -69,7 +68,6 @@ export function PageTree(props: {
 
 function PageTreeBody({
   pages,
-  boardPageIds,
   activePageId,
   onOpen,
   onAddChild,
@@ -77,7 +75,6 @@ function PageTreeBody({
   onMove,
 }: {
   pages: Page[];
-  boardPageIds: ReadonlySet<Id>;
   activePageId?: Id;
   onOpen(pageId: Id): void;
   onAddChild(parentId: Id): void;
@@ -138,7 +135,6 @@ function PageTreeBody({
         >
           <PageTreeRow
             page={row.page}
-            isBoard={boardPageIds.has(row.page.id)}
             depth={row.depth}
             hasChildren={row.hasChildren}
             expanded={expanded.has(row.page.id)}

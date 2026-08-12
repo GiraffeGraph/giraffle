@@ -33,7 +33,7 @@ interface Slot {
   width: number;
   /** Rows that cannot receive a drop, e.g. a page's own subtree. */
   blocked: boolean;
-  /** Rows that only accept "inside", e.g. a board column. */
+  /** Regions that only accept an inside drop, such as a category lane. */
   containerOnly: boolean;
 }
 

@@ -8,6 +8,7 @@ import {
   type PropsWithChildren,
 } from "react";
 import { AppState, type AppStateStatus } from "react-native";
+import { installHeadlessBridge } from "@/headless/bridge";
 import { createId } from "@/platform/ids";
 import {
   createVaultArchive,
@@ -127,6 +128,7 @@ export function AppProvider({ children }: PropsWithChildren) {
   const [actionError, setActionError] = useState<string | null>(null);
   const [snapshot, setSnapshot] = useState<AppSnapshot>(EMPTY_SNAPSHOT);
   const [repository, setRepository] = useState<VaultRepository | null>(null);
+  const repositoryRef = useRef<VaultRepository | null>(null);
   const [session, setSession] = useState<VaultSession | null>(null);
   const [pinEnabled, setPinEnabled] = useState(false);
   const [lockTimeoutMs, setLockTimeoutMs] = useState(DEFAULT_LOCK_TIMEOUT_MS);
@@ -191,6 +193,7 @@ export function AppProvider({ children }: PropsWithChildren) {
       if (syncInFlightRef.current === syncing) syncInFlightRef.current = null;
       enrolledConnectionRef.current = null;
       mutationQueue.current = Promise.resolve();
+      repositoryRef.current = null;
       setRepository(null);
       setSession(null);
       setSnapshot(EMPTY_SNAPSHOT);
@@ -247,6 +250,7 @@ export function AppProvider({ children }: PropsWithChildren) {
           next.snapshot(),
         );
         keyRef.current = keys;
+        repositoryRef.current = next;
         setRepository(next);
         setSession({
           vaultId,
@@ -521,18 +525,19 @@ export function AppProvider({ children }: PropsWithChildren) {
 
   const run = useCallback(
     <T,>(action: (value: VaultRepository) => Promise<T>): Promise<T> => {
-      if (!repository) return Promise.reject(new Error("Vault is locked"));
+      const activeRepository = repositoryRef.current;
+      if (!activeRepository) return Promise.reject(new Error("Vault is locked"));
 
       const execute = async () => {
         let result: T;
         try {
-          result = await action(repository);
+          result = await action(activeRepository);
         } catch (cause) {
           setActionError(errorMessage(cause, "The change could not be saved"));
           throw cause;
         }
         try {
-          setSnapshot(await repository.snapshot());
+          setSnapshot(await activeRepository.snapshot());
           setActionError(null);
         } catch {
           setActionError("The change was saved, but the screen could not be refreshed.");
@@ -546,7 +551,7 @@ export function AppProvider({ children }: PropsWithChildren) {
       );
       return result;
     },
-    [repository],
+    [],
   );
 
   const createBackup = useCallback(async (passphrase: string) => {
@@ -558,6 +563,12 @@ export function AppProvider({ children }: PropsWithChildren) {
   const inspectBackup = useCallback(async (bytes: Uint8Array, passphrase: string) => {
     return summarizeVaultArchive(openVaultArchive(bytes, passphrase));
   }, []);
+
+  useEffect(() => installHeadlessBridge({
+    repository: () => repositoryRef.current,
+    unlock,
+    run,
+  }), [run, unlock]);
 
   const restoreBackup = useCallback(async (bytes: Uint8Array, passphrase: string) => {
     await syncInFlightRef.current;

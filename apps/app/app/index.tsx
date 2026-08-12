@@ -106,14 +106,23 @@ export default function VaultEntry() {
       const temporarilyBlocked =
         cause instanceof Error && cause.message === "Quick PIN is temporarily unavailable";
       if (isNewWorkspace) console.error("[giraffle:setup]", cause);
+      const credentialRejected =
+        cause instanceof Error &&
+        (cause.message === "PIN did not unlock this vault" ||
+          cause.message === "Passphrase did not unlock this vault");
+      if (!isNewWorkspace && !temporarilyBlocked && !credentialRejected) {
+        console.error("[giraffle:unlock]", cause);
+      }
       setError(
         isNewWorkspace
           ? "Setup could not be completed. Please try again."
           : temporarilyBlocked
             ? "Too many PIN attempts. Wait 30 seconds or use your full password."
-            : usingPin
-              ? "That PIN did not work."
-              : "That password did not work.",
+            : credentialRejected
+              ? usingPin
+                ? "That PIN did not work."
+                : "That password did not work."
+              : "Your password worked, but the vault could not be opened. Reset this local workspace or restore a backup.",
       );
     } finally {
       setBusy(false);

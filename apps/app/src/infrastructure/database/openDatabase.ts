@@ -1,5 +1,5 @@
 import * as SQLite from "expo-sqlite";
-import { repairPagePositions, runMigrations, type VaultDatabase } from "./vaultDatabase";
+import { initializeSchema, repairPagePositions, type VaultDatabase } from "./vaultDatabase";
 
 const DATABASE_NAME = "giraffle-vault.db";
 
@@ -41,7 +41,7 @@ export async function openEncryptedDatabase(
     await runSetup("memory security", "PRAGMA cipher_memory_security = ON");
     await runSetup("journal", "PRAGMA journal_mode = WAL");
     await database.getFirstAsync("SELECT count(*) AS count FROM sqlite_master");
-    await runMigrations(database);
+    await initializeSchema(database);
     await repairPagePositions(database);
     return database;
   } catch (cause) {

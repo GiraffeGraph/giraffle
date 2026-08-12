@@ -209,19 +209,19 @@ describe("web vault storage", () => {
     ).rejects.toThrow();
   });
 
-  test("the schema the device uses is the schema the browser migrates to", async () => {
+  test("native and browser use the same canonical schema", async () => {
     const keys = await createVault();
     const database = await openEncryptedDatabase(Uint8Array.from(keys.databaseKey));
 
-    const applied = await database.getAllAsync<{ version: number }>(
-      "SELECT version FROM schema_migrations ORDER BY version",
+    const pages = await database.getFirstAsync<{ name: string }>(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='pages'",
     );
     const search = await database.getFirstAsync<{ name: string }>(
       "SELECT name FROM sqlite_master WHERE type='table' AND name='page_fts'",
     );
     await database.closeAsync();
 
-    expect(applied.map((row) => row.version)).toEqual([1, 2, 3, 4, 5]);
+    expect(pages?.name).toBe("pages");
     expect(search?.name).toBe("page_fts");
   });
 });

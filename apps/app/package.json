@@ -1,6 +1,6 @@
 {
   "name": "giraffle-app",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "private": true,
   "main": "index.js",
   "scripts": {
@@ -19,6 +19,7 @@
     "export:web": "EXPO_NO_BUNDLE_SPLITTING=1 expo export --platform web",
     "desktop:sync": "node desktop/sync-version.cjs",
     "desktop:dev": "npm run export:web && electron desktop/main.cjs",
+    "desktop:test": "node --test desktop/*.test.cjs",
     "desktop:dir": "npm run desktop:sync && npm run export:web && CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --projectDir desktop --config electron-builder.yml --mac dir --universal",
     "desktop:mac": "npm run desktop:sync && npm run export:web && CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --projectDir desktop --config electron-builder.yml --mac dmg --universal",
     "desktop:mac:signed": "npm run desktop:sync && npm run export:web && electron-builder --projectDir desktop --config electron-builder.yml --mac dmg --universal"
@@ -27,6 +28,7 @@
     "@excalidraw/excalidraw": "^0.18.1",
     "@expo/vector-icons": "^15.1.1",
     "@giraffle/domain": "file:../../packages/domain",
+    "@giraffle/headless": "file:../../packages/headless",
     "@giraffle/protocol": "file:../../packages/protocol",
     "@giraffle/sync": "file:../../packages/sync",
     "@react-native-async-storage/async-storage": "2.2.0",
@@ -66,6 +68,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@babel/runtime": "^7.29.7",
     "@testing-library/react-native": "^14.0.1",
     "@types/jest": "^29.5.14",
     "@types/node": "^22.20.1",
@@ -89,6 +92,9 @@
     ],
     "setupFilesAfterEnv": [
       "<rootDir>/jest.setup.ts"
+    ],
+    "modulePaths": [
+      "<rootDir>/node_modules"
     ],
     "transformIgnorePatterns": [
       "node_modules/(?!((jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|native-base|react-native-svg|fractional-indexing))"

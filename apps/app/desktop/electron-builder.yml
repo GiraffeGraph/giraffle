@@ -8,12 +8,16 @@ directories:
   output: ../release/macos
 files:
   - main.cjs
+  - preload.cjs
+  - headless-server.cjs
   - package.json
 extraResources:
   - from: ../dist
     to: web
 mac:
   category: public.app-category.productivity
+  hardenedRuntime: true
+  gatekeeperAssess: false
   icon: icon.png
   target:
     - target: dmg

@@ -15,7 +15,7 @@ export default function Archive() {
   const confirmDelete = (pageId: string, title: string) => {
     Alert.alert(
       "Delete page permanently?",
-      `“${title}” and its tasks will no longer be available. This cannot be undone.`,
+      `“${title}” and every page inside it will no longer be available. This cannot be undone.`,
       [
         { text: "Cancel", style: "cancel" },
         {

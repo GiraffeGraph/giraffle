@@ -133,7 +133,7 @@ export function DataBackupSection() {
       resetAfterSuccess();
       Alert.alert(
         "Backup restored",
-        `${restored.pages} pages, ${restored.tasks} tasks, ${restored.boards} boards and ${restored.canvases} canvases were imported.`,
+        `${restored.pages} pages, ${restored.categories} categories and ${restored.canvases} canvases were imported.`,
       );
     } catch (cause) {
       setError(message(cause));
@@ -255,10 +255,10 @@ export function DataBackupSection() {
             {mode === "import-confirm" && summary ? (
               <View style={[styles.summary, { borderColor: colors.border, backgroundColor: colors.surface }]}>
                 <Text style={[typography.body, { color: colors.text }]}>
-                  {summary.pages} pages · {summary.tasks} tasks
+                  {summary.pages} pages · {summary.states} states
                 </Text>
                 <Text style={[typography.body, { color: colors.text }]}>
-                  {summary.boards} boards · {summary.canvases} canvases
+                  {summary.categories} categories · {summary.canvases} canvases
                 </Text>
                 <Text style={[typography.caption, { color: colors.muted }]}>
                   Exported {new Date(summary.exportedAt).toLocaleString()}

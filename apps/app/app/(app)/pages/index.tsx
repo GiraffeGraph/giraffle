@@ -1,4 +1,4 @@
-import { pageAncestors, type Id, type Page as PageModel } from "@giraffle/domain";
+import { type Id, type Page as PageModel } from "@giraffle/domain";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
@@ -33,15 +33,11 @@ export default function Pages() {
   const [menuPage, setMenuPage] = useState<PageModel | null>(null);
 
   const active = snapshot.pages.filter((page) => !page.isArchived);
-  const boardPageIds = new Set(snapshot.boards.map((board) => board.pageId));
   const recents = [...active]
     .sort((left, right) => right.updatedAt - left.updatedAt)
     .slice(0, RECENT_LIMIT);
 
-  const open = (pageId: Id) => {
-    const board = snapshot.boards.find((item) => item.pageId === pageId);
-    router.push(board ? `/boards/${board.id}` : `/pages/${pageId}`);
-  };
+  const open = (pageId: Id) => router.push(`/pages/${pageId}`);
 
   const create = (parentId?: Id) => {
     void run((repository) => repository.createPage(parentId ? { parentId } : {}))
@@ -60,7 +56,7 @@ export default function Pages() {
         <EmptyState
           icon="document-text-outline"
           title="Start with a page"
-          body="Write, plan a task, or capture an idea. Pages can live inside other pages."
+          body="Write, plan something, or capture an idea. Every page can contain more pages."
           action={<Button label="Create page" tone="accent" onPress={() => create()} />}
         />
       ) : (
@@ -86,7 +82,7 @@ export default function Pages() {
                 ]}
               >
                 <Icon
-                  name={boardPageIds.has(page.id) ? "albums-outline" : "document-text-outline"}
+                  name="document-text-outline"
                   size={18}
                   color={colors.secondary}
                 />
@@ -115,7 +111,6 @@ export default function Pages() {
 
           <PageTree
             pages={active}
-            boardPageIds={boardPageIds}
             onOpen={open}
             onAddChild={(parentId) => create(parentId)}
             onOpenMenu={setMenuPage}
@@ -136,15 +131,8 @@ export default function Pages() {
 
 function PageRowMenu({ page, close }: { page: PageModel | null; close: () => void }) {
   const { colors } = useTheme();
-  const { run, snapshot } = useApp();
-  const board = snapshot.boards.find((item) => item.pageId === page?.id);
-  const containsBoard = page
-    ? snapshot.boards.some(
-        (item) =>
-          item.pageId === page.id ||
-          pageAncestors(snapshot.pages, item.pageId).some((ancestor) => ancestor.id === page.id),
-      )
-    : false;
+  const { run } = useApp();
+
 
   if (!page) {
     return null;
@@ -188,22 +176,16 @@ function PageRowMenu({ page, close }: { page: PageModel | null; close: () => voi
             <Text style={[typography.body, { color: colors.text }]}>Move to top level</Text>
           </DividerRow>
         ) : null}
-        {containsBoard ? null : (
-          <DividerRow
-            onPress={() => action(() => run((repository) => repository.archivePage(page.id)))}
-          >
-            <Icon name="archive-outline" />
-            <Text style={[typography.body, { color: colors.text }]}>Move to archive</Text>
-          </DividerRow>
-        )}
+        <DividerRow onPress={() => action(() => run((repository) => repository.archivePage(page.id)))}>
+          <Icon name="archive-outline" />
+          <Text style={[typography.body, { color: colors.text }]}>Move to archive</Text>
+        </DividerRow>
         <DividerRow
           onPress={() => {
             close();
             Alert.alert(
-              board ? "Delete board permanently?" : "Delete page permanently?",
-              board
-                ? "Tasks created in this board will be deleted. Tasks added from other pages will remain at their source. This cannot be undone."
-                : "This page and every page inside it will be removed. This cannot be undone.",
+              "Delete page permanently?",
+              "This page and every page inside it will be removed. This cannot be undone.",
               [
                 { text: "Cancel", style: "cancel" },
                 {
@@ -211,7 +193,7 @@ function PageRowMenu({ page, close }: { page: PageModel | null; close: () => voi
                   style: "destructive",
                   onPress: () =>
                     void run((repository) =>
-                      board ? repository.deleteBoard(board.id) : repository.deletePage(page.id),
+                      repository.deletePage(page.id),
                     ).catch(() => undefined),
                 },
               ],

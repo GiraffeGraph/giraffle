@@ -16,7 +16,7 @@ interface SearchResult {
 
 export default function Search() {
   const { colors } = useTheme();
-  const { repository, snapshot } = useApp();
+  const { repository } = useApp();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [searching, setSearching] = useState(false);
@@ -93,8 +93,7 @@ export default function Search() {
             <DividerRow
               key={result.id}
               onPress={() => {
-                const board = snapshot.boards.find((item) => item.pageId === result.id);
-                router.push(board ? `/boards/${board.id}` : `/pages/${result.id}`);
+                router.push(`/pages/${result.id}`);
               }}
             >
               <Icon name="document-text-outline" />

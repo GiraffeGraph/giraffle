@@ -8,5 +8,5 @@ export * from "./src/link/link.types";
 export * from "./src/link/wikilink.parser";
 export * from "./src/link/document-text";
 export * from "./src/pages/tree";
-export * from "./src/tasks/schedule";
+export * from "./src/planning/schedule";
 export * from "./src/canvas/references";

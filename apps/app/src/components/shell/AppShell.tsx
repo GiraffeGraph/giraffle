@@ -22,8 +22,7 @@ interface NavigationItem {
 
 const mainNavigation: readonly NavigationItem[] = [
   { href: "/pages", label: "Pages", icon: "document-text-outline" },
-  { href: "/tasks", label: "Tasks", icon: "checkmark-circle-outline" },
-  { href: "/boards", label: "Boards", icon: "albums-outline" },
+  { href: "/plan", label: "Plan", icon: "compass-outline" },
   { href: "/canvas", label: "Canvas", icon: "map-outline" },
   { href: "/account", label: "Account", icon: "person-circle-outline" },
 ];
@@ -48,7 +47,8 @@ function NavigationButton({
 }) {
   const { colors } = useTheme();
   const [hovered, setHovered] = useState(false);
-  const tint = active ? colors.accent : colors.muted;
+  const iconTint = active ? colors.accent : colors.muted;
+  const labelTint = active ? colors.text : colors.secondary;
 
   return (
     <Pressable
@@ -65,19 +65,20 @@ function NavigationButton({
         {
           opacity: pressed ? 0.6 : 1,
           backgroundColor: active
-            ? colors.accentSubtle
+            ? orientation === "column" ? colors.hover : colors.accentSubtle
             : hovered
               ? colors.hover
               : "transparent",
+          borderLeftColor: orientation === "column" && active ? colors.accent : "transparent",
         },
       ]}
     >
-      <Icon name={item.icon} size={20} color={tint} />
+      <Icon name={item.icon} size={20} color={iconTint} />
       <Text
         numberOfLines={1}
         style={[
-          orientation === "row" ? typography.caption : typography.title,
-          { color: tint },
+          orientation === "row" ? typography.caption : styles.sidebarLabel,
+          { color: labelTint, fontWeight: active ? "600" : "500" },
         ]}
       >
         {item.label}
@@ -201,10 +202,16 @@ const styles = StyleSheet.create({
   sidebarButton: {
     minHeight: 40,
     paddingHorizontal: spacing.md,
+    borderLeftWidth: 2,
     borderRadius: radii.sm,
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.md,
+  },
+  sidebarLabel: {
+    fontSize: 14,
+    lineHeight: 20,
+    letterSpacing: -0.1,
   },
   errorBanner: {
     minHeight: 46,

@@ -1,15 +1,17 @@
 import type { TiptapDocument } from "./document/document.types";
 
-/**
- * The offline-first vault entity model: one flat graph of pages, tasks, boards
- * and canvases that every client materialises from its local store. Timestamps
- * are epoch milliseconds and positions are fractional index strings so two
- * devices can order siblings without a round trip.
- */
+/** One recursive identity for all knowledge and planning content. */
 export type Id = string;
 
-/** Eisenhower placement, stored lowercase as the `slot` column value. */
-export type TaskPriority = "do" | "schedule" | "delegate" | "eliminate";
+export type PageStateFamily = "forever" | "open" | "done";
+export type PagePriority = "do" | "schedule" | "delegate" | "eliminate";
+export type ChildView = "list" | "category" | "priority";
+
+export const DEFAULT_STATE_IDS: Record<PageStateFamily, Id> = {
+  forever: "giraffle-state-forever",
+  open: "giraffle-state-open",
+  done: "giraffle-state-done",
+};
 
 export interface PageBreadcrumb {
   id: Id;
@@ -17,12 +19,23 @@ export interface PageBreadcrumb {
   icon: string | null;
 }
 
+/**
+ * The universal recursive unit. A lightweight action and a long-lived note are
+ * the same Page; state and optional planning fields change how lenses present it.
+ */
 export interface Page {
   id: Id;
   title: string;
   icon: string | null;
   parentId: Id | null;
   position: string;
+  stateId: Id;
+  categoryId: Id | null;
+  priority: PagePriority | null;
+  scheduledAt: string | null;
+  durationMinutes: number | null;
+  description: string | null;
+  childView: ChildView;
   isPinned: boolean;
   isArchived: boolean;
   document: TiptapDocument;
@@ -30,57 +43,45 @@ export interface Page {
   updatedAt: number;
 }
 
-export interface Task {
-  id: Id;
-  pageId: Id;
-  boardId: Id | null;
-  columnId: Id | null;
-  content: string;
-  completed: boolean;
-  priority: TaskPriority | null;
-  dueDate: string | null;
-  durationMinutes: number | null;
-  description: string | null;
-  position: string;
-  sourceLabel: string;
-  createdAt: number;
-  updatedAt: number;
-}
-
-export interface BoardStatus {
+/** Custom vocabulary with stable semantics for global planning lenses. */
+export interface PageState {
   id: Id;
   title: string;
+  family: PageStateFamily;
   color: string | null;
-  position: string;
-}
-
-export interface Board {
-  id: Id;
-  pageId: Id;
-  statusId: Id | null;
-  title: string;
   icon: string | null;
   position: string;
-  createdAt: number;
-  updatedAt: number;
+  isDefault: boolean;
 }
 
-export interface BoardColumn {
+/** A grouping local to one parent's direct children; null parent means workspace root. */
+export interface PageCategory {
   id: Id;
-  boardId: Id;
+  parentId: Id | null;
   title: string;
   color: string | null;
   position: string;
+  stateIdOnEnter: Id | null;
 }
 
-/** An Excalidraw scene element; `customData` carries the Giraffle page link. */
+/** An Excalidraw scene element; customData points at one canonical Page. */
 export interface CanvasElement {
   id: Id;
   type: string;
   version: number;
   versionNonce: number;
   isDeleted: boolean;
-  customData?: { girafflePageId?: Id; giraffleTaskId?: Id };
+  customData?: {
+    girafflePageId?: Id;
+    giraffleManagedKey?: string;
+    giraffleManagedKind?: "node" | "label" | "edge" | "edge-label";
+    giraffleManagedPart?: "shape" | "text" | "line";
+    giraffleManagedText?: string;
+    giraffleManagedStyle?: string;
+    giraffleManagedFrom?: string;
+    giraffleManagedTo?: string;
+    giraffleManagedLabel?: string;
+  };
   [key: string]: unknown;
 }
 

@@ -6,13 +6,17 @@
 - `SYNC_TOKENS` is the relay's entire access-control system. The server replaces its token table from that variable on every boot, so removing a `vaultId:token` pair revokes it at the next restart.
 
 ## Architecture
+- Giraffle is permanently a personal knowledge and personal planning application; never evolve or evaluate its product model as team collaboration, multi-user project management, or enterprise workflow software.
 - One client: the Expo Universal app in `apps/app`, shipping iOS, Android and web from the same source, plus a sandboxed Electron shell for macOS in `apps/app/desktop`. `packages/*` is shared TypeScript consumed as source, with no build step, by the client, the relay and the root test suite.
-- Pages nest: a page can contain pages, and a Board is itself a specialized page. There is no folder concept.
-- The relay never holds a key. Any feature that needs to read page content has to run in the client — that includes an MCP host, whose tool contract lives in `packages/domain/src/mcp/`.
+- One recursive Page is the only canonical knowledge/planning entity. Pages contain direct child pages; planning meaning comes from custom state, and category/priority/calendar are reusable lenses over children rather than separate entities.
+- Page states are vault-customizable definitions mapped to the stable `forever`, `open`, or `done` families. Archive is an independent visibility lifecycle, not a state family. A captured open page starts in Inbox and moves to its real single parent when organized.
+- Categories belong to one parent page (or the workspace root). Moving a page to another parent clears its category while preserving state, priority, schedule, document, and descendants. Child views never flatten descendants.
+- The relay never holds a key. Headless automation is another adapter over the same canonical vault/repository used by the UI; never create a separate CLI vault or parallel persistence model. CLI writes must appear in the UI and UI writes in the CLI.
+- Public CLI/desktop distribution is deferred while the product is changing. Before publishing, follow `docs/releasing.md`; the npm CLI version must have a matching signed/notarized desktop GitHub release.
 - Do not describe any device as the permanent “main device.” The first device is only the vault founder/initial trusted approver; after enrollment, all authorized devices are equal peers using the relay independently.
 - Backup is not replication: `.giraffle` files are password-encrypted logical snapshots without device identity or relay history. Import is restore-only into an empty, never-synced vault; imported entities are re-emitted as fresh local sync operations.
 - When removing a platform implementation, preserve reusable branding and mobile assets unless their deletion is explicitly requested.
-- Treat all user vault data as production data from now on: no destructive resets or migration squashing. Schema, crypto, archive and sync changes require forward migrations, rollback/recovery planning and compatibility tests before release.
+- Before the first public vault-format release, keep only the canonical current schema and no hypothetical backward-compatibility layer. When installing a schema-squashed pre-release build, clear incompatible local app data if the user has confirmed no vault must survive; never claim it was preserved. After release, treat vault data as production data and require forward schema evolution plus recovery planning.
 - Current foreground automatic sync is acceptable for daily use; improve Drive-like realtime/background behavior incrementally while the user actively uses the app. Do not treat `.claude/sync-backlog.md` items as blockers unless a regression risks data loss.
 
 ## Testing

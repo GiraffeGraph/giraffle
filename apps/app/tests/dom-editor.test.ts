@@ -1,5 +1,5 @@
 import type { TiptapDocument } from "@giraffle/domain";
-import { assignBlockIds, ID_BEARING_NODES, taskToggles } from "@/dom/document";
+import { assignBlockIds, ID_BEARING_NODES } from "@/dom/editor-document";
 import { editorCssVariables } from "@/dom/theme";
 import { wikilinkRanges } from "@/dom/wikilinks";
 
@@ -73,50 +73,6 @@ describe("editor document model", () => {
     expect(ID_BEARING_NODES).toContain("taskItem");
     expect(ID_BEARING_NODES).not.toContain("text");
     expect(ID_BEARING_NODES).not.toContain("unsupportedNode");
-  });
-});
-
-describe("task toggles", () => {
-  const document = (checked: boolean): TiptapDocument => ({
-    type: "doc",
-    content: [
-      {
-        type: "taskList",
-        attrs: { id: "list" },
-        content: [{ type: "taskItem", attrs: { id: "task-1", checked }, content: [] }],
-      },
-    ],
-  });
-
-  test("reports a checkbox that flipped", () => {
-    expect(taskToggles(document(false), document(true))).toEqual([
-      { taskId: "task-1", checked: true },
-    ]);
-    expect(taskToggles(document(true), document(false))).toEqual([
-      { taskId: "task-1", checked: false },
-    ]);
-  });
-
-  test("stays quiet when nothing flipped", () => {
-    expect(taskToggles(document(false), document(false))).toEqual([]);
-  });
-
-  test("a newly typed task is not a toggle", () => {
-    const before: TiptapDocument = { type: "doc", content: [] };
-    expect(taskToggles(before, document(true))).toEqual([]);
-  });
-
-  test("a task without an id cannot be named, so it is not reported", () => {
-    const before: TiptapDocument = {
-      type: "doc",
-      content: [{ type: "taskItem", attrs: { checked: false }, content: [] }],
-    };
-    const after: TiptapDocument = {
-      type: "doc",
-      content: [{ type: "taskItem", attrs: { checked: true }, content: [] }],
-    };
-
-    expect(taskToggles(before, after)).toEqual([]);
   });
 });
 
