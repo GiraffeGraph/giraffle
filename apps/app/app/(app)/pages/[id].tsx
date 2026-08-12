@@ -12,6 +12,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, AppState, Linking, Modal, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChildPageViews } from "@/components/pages/ChildPageViews";
+import { PageMetaBar } from "@/components/pages/PageMetaBar";
 import { PagePlanningSheet } from "@/components/pages/PagePlanningSheet";
 import { EditableText } from "@/components/ui/EditableText";
 import { Button, DividerRow, EmptyState, Icon } from "@/components/ui/primitives";
@@ -219,8 +220,9 @@ export default function PageEditor() {
         <EditableText
           value={page.title}
           onSave={(title) => void run((repository) => repository.updatePage(page.id, { title }))}
-          style={[typography.hero, { color: colors.text, marginBottom: 12 }]}
+          style={[typography.hero, { color: colors.text, marginBottom: 8 }]}
         />
+        <PageMetaBar page={page} onOpenPlanning={() => setPlanningSheet(true)} />
         <ChildPageViews parent={page} />
         <Editor
           document={draft}
@@ -268,7 +270,9 @@ export default function PageEditor() {
           </View>
         ) : null}
       </View>
-      <PagePlanningSheet page={page} visible={planningSheet} onClose={() => setPlanningSheet(false)} />
+      {planningSheet ? (
+        <PagePlanningSheet page={page} visible onClose={() => setPlanningSheet(false)} />
+      ) : null}
       <PageMenu
         visible={menu}
         close={() => setMenu(false)}
@@ -463,10 +467,11 @@ const styles = StyleSheet.create({
   document: {
     flex: 1,
     width: "100%",
-    maxWidth: 760,
+    maxWidth: 780,
     alignSelf: "center",
     paddingHorizontal: spacing.xl,
-    paddingTop: spacing.xl,
+    paddingTop: spacing.xxl,
+    paddingBottom: spacing.xxxl,
   },
   backlinks: {
     paddingVertical: 16,

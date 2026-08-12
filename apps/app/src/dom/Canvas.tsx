@@ -27,9 +27,12 @@ export interface CanvasProps {
   /** Seeds the scene. Later revisions are not pushed back in; see below. */
   elements: CanvasElement[];
   theme: CanvasTheme;
+  /** Increments when the host receives a scene from CLI or sync. */
+  sceneRevision: number;
   /** A canonical Page the host wants placed on the canvas. */
   pendingReference: CanvasReferenceRequest | null;
   onChange: (elements: CanvasElement[], appState: Record<string, unknown>) => void;
+  fitRequest: number;
   onOpenPage: (pageId: string) => void;
   onError: (message: string) => void;
   dom?: DOMProps;
@@ -61,7 +64,9 @@ function describe(error: unknown): string {
 export default function Canvas({
   elements,
   theme,
+  sceneRevision,
   pendingReference,
+  fitRequest,
   onChange,
   onOpenPage,
   onError,
@@ -113,6 +118,20 @@ export default function Canvas({
     if (!api) return;
     api.updateScene({ appState: { viewBackgroundColor: theme.bg } });
   }, [api, theme.bg]);
+
+  useEffect(() => {
+    if (!api || sceneRevision <= 0) return;
+    const incoming = normalizeReferenceLinks(elements);
+    if (sceneMatches(incoming, published.current)) return;
+    published.current = incoming;
+    api.updateScene({ elements: incoming as never });
+  }, [api, elements, sceneRevision]);
+
+  useEffect(() => {
+    if (!api || fitRequest <= 0) return;
+    const current = api.getSceneElements();
+    if (current.length) api.scrollToContent(current, { fitToViewport: true, viewportZoomFactor: 0.12, maxZoom: 1, animate: true });
+  }, [api, fitRequest]);
 
   useEffect(() => {
     if (

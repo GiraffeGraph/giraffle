@@ -20,7 +20,7 @@ export function Page({
     styles.page,
     {
       backgroundColor: colors.background,
-      paddingHorizontal: width >= 768 ? spacing.xxl : spacing.lg,
+      paddingHorizontal: width >= 1100 ? spacing.xxxl : width >= 768 ? spacing.xxl : spacing.lg,
     },
   ];
 
@@ -45,9 +45,9 @@ const styles = StyleSheet.create({
   page: {
     flexGrow: 1,
     width: "100%",
-    maxWidth: 1280,
+    maxWidth: 1180,
     alignSelf: "center",
-    paddingTop: spacing.xl,
+    paddingTop: spacing.xxl,
     paddingBottom: 96,
     gap: spacing.xl,
   },

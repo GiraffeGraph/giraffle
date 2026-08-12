@@ -69,8 +69,7 @@ export function Button({
               : pressed || hovered
                 ? colors.hover
                 : "transparent",
-          opacity: disabled ? 0.42 : 1,
-          transform: [{ scale: pressed ? 0.98 : 1 }],
+          opacity: disabled ? 0.42 : pressed ? 0.82 : 1,
         },
       ]}
     >
@@ -289,6 +288,7 @@ export function Segment<T extends string>({
 const styles = StyleSheet.create({
   button: {
     minHeight: controls.default,
+    minWidth: controls.default,
     paddingHorizontal: 12,
     borderWidth: 1,
     borderRadius: radii.sm,
@@ -334,8 +334,8 @@ const styles = StyleSheet.create({
     minHeight: 156,
     paddingVertical: spacing.xl,
     paddingHorizontal: spacing.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: radii.lg,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     gap: spacing.md,
     alignItems: "flex-start",
     justifyContent: "center",

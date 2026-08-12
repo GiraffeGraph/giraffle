@@ -34,7 +34,9 @@ Current screenshots are being refreshed for the universal recursive Page model.
 
 ## Why Giraffle
 
-Giraffle is one Expo Universal client for native iOS, native Android and web, with a hardened Electron shell for macOS. An optional relay moves encrypted changes between your own devices.
+Giraffle is an opinionated personal tool built first for one person's real daily use. It is open source so its behavior can be inspected, learned from and forked—not because it aims to become team software or satisfy every workflow.
+
+One Expo Universal client serves native iOS, native Android and web, with a hardened Electron shell for macOS. An optional relay moves encrypted changes between your own devices.
 
 Three rules shape every decision:
 

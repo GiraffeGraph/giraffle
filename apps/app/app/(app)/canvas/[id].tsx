@@ -1,6 +1,6 @@
 import type { CanvasElement } from "@giraffle/domain";
 import { router, useLocalSearchParams } from "expo-router";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { EditableText } from "@/components/ui/EditableText";
@@ -30,6 +30,15 @@ export default function CanvasEditor() {
     appState: Record<string, unknown>;
   } | null>(null);
   const [add, setAdd] = useState<CanvasReferenceRequest | null>(null);
+  const [sceneRevision, setSceneRevision] = useState(0);
+  const [fitRequest, setFitRequest] = useState(0);
+  const seenUpdatedAt = useRef(canvas?.updatedAt ?? 0);
+
+  useEffect(() => {
+    if (!canvas || canvas.updatedAt === seenUpdatedAt.current) return;
+    seenUpdatedAt.current = canvas.updatedAt;
+    if (!pendingScene.current) setSceneRevision((value) => value + 1);
+  }, [canvas]);
 
   if (!canvas) {
     return (
@@ -100,6 +109,11 @@ export default function CanvasEditor() {
           </Text>
         )}
         <Button
+          icon="scan-outline"
+          accessibilityLabel="Fit canvas content"
+          onPress={() => setFitRequest((value) => value + 1)}
+        />
+        <Button
           label="Add"
           icon="add"
           onPress={() => {
@@ -111,6 +125,8 @@ export default function CanvasEditor() {
       <View style={styles.canvas}>
         <Canvas
           elements={canvas.elements}
+          sceneRevision={sceneRevision}
+          fitRequest={fitRequest}
           pendingReference={add}
           theme={{
             bg: colors.background,

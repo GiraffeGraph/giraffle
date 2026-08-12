@@ -34,7 +34,7 @@ export default function VaultEntry() {
   const [recoveryCode, setRecoveryCode] = useState<string | null>(null);
 
   if (phase === "ready" && !recoveryCode) {
-    return <Redirect href="/pages" />;
+    return <Redirect href="/today" />;
   }
 
   if (phase === "booting") {

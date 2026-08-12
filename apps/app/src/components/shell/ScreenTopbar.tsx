@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-na
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Icon } from "@/components/ui/primitives";
 import { useTheme } from "@/design/ThemeProvider";
-import { controls, typography } from "@/design/tokens";
+import { typography } from "@/design/tokens";
 
 /**
  * One bar per screen: title, that screen's primary action, and search. Keeping
@@ -33,7 +33,7 @@ export function ScreenTopbar({
           paddingTop: insets.top + 6,
           paddingHorizontal: width >= 768 ? 32 : 16,
           borderBottomColor: colors.border,
-          backgroundColor: colors.background,
+          backgroundColor: colors.surface,
         },
       ]}
     >
@@ -62,7 +62,7 @@ export function ScreenTopbar({
 
 const styles = StyleSheet.create({
   bar: {
-    minHeight: controls.default,
+    minHeight: 52,
     paddingBottom: 8,
     flexDirection: "row",
     alignItems: "center",
@@ -70,8 +70,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   button: {
-    width: 36,
-    height: 36,
+    width: 40,
+    height: 40,
     alignItems: "center",
     justifyContent: "center",
   },

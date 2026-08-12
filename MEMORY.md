@@ -6,7 +6,7 @@
 - `SYNC_TOKENS` is the relay's entire access-control system. The server replaces its token table from that variable on every boot, so removing a `vaultId:token` pair revokes it at the next restart.
 
 ## Architecture
-- Giraffle is permanently a personal knowledge and personal planning application; never evolve or evaluate its product model as team collaboration, multi-user project management, or enterprise workflow software.
+- Giraffle is permanently an opinionated personal knowledge and planning application built first for its sole primary user; open source enables inspection and forking, not team collaboration, multi-user project management, enterprise workflows, or broad-market compromise.
 - One client: the Expo Universal app in `apps/app`, shipping iOS, Android and web from the same source, plus a sandboxed Electron shell for macOS in `apps/app/desktop`. `packages/*` is shared TypeScript consumed as source, with no build step, by the client, the relay and the root test suite.
 - One recursive Page is the only canonical knowledge/planning entity. Pages contain direct child pages; planning meaning comes from custom state, and category/priority/calendar are reusable lenses over children rather than separate entities.
 - Page states are vault-customizable definitions mapped to the stable `forever`, `open`, or `done` families. Archive is an independent visibility lifecycle, not a state family. A captured open page starts in Inbox and moves to its real single parent when organized.

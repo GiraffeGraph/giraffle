@@ -33,7 +33,9 @@ export default function Pages() {
   const [menuPage, setMenuPage] = useState<PageModel | null>(null);
 
   const active = snapshot.pages.filter((page) => !page.isArchived);
+  const pinned = active.filter((page) => page.isPinned).slice(0, 8);
   const recents = [...active]
+    .filter((page) => !page.isPinned)
     .sort((left, right) => right.updatedAt - left.updatedAt)
     .slice(0, RECENT_LIMIT);
 
@@ -61,7 +63,8 @@ export default function Pages() {
         />
       ) : (
         <View style={styles.tree}>
-          <Text style={[typography.label, { color: colors.muted }]}>Recents</Text>
+          {pinned.length ? <><Text style={[typography.label, { color: colors.muted }]}>Pinned</Text><View style={styles.pinnedGrid}>{pinned.map((page) => <Pressable key={page.id} onPress={() => open(page.id)} style={({ pressed }) => [styles.pinnedRow,{ backgroundColor: pressed ? colors.hover : "transparent", borderBottomColor: colors.border }]}><Text style={styles.pageGlyph}>{page.icon || "·"}</Text><Text numberOfLines={1} style={[typography.body,{ color: colors.text,flex:1,fontWeight:"600" }]}>{page.title || "Untitled"}</Text><Icon name="arrow-forward" size={14} color={colors.faint}/></Pressable>)}</View></> : null}
+          <Text style={[typography.label, { color: colors.muted, marginTop: spacing.lg }]}>Recently touched</Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -75,8 +78,8 @@ export default function Pages() {
                 style={({ pressed }) => [
                   styles.recentCard,
                   {
-                    backgroundColor: colors.surface,
-                    borderColor: colors.border,
+                    backgroundColor: pressed ? colors.hover : "transparent",
+                    borderBottomColor: colors.border,
                     opacity: pressed ? 0.7 : 1,
                   },
                 ]}
@@ -215,11 +218,13 @@ const styles = StyleSheet.create({
     width: 148,
     minHeight: 104,
     padding: 12,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: radii.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     justifyContent: "space-between",
     gap: 6,
   },
+  pinnedGrid: { gap: 0 },
+  pinnedRow: { minHeight: 46, borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  pageGlyph: { width: 22, textAlign: "center", fontSize: 14 },
   sectionHead: {
     marginTop: 10,
     minHeight: 34,
