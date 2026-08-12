@@ -217,12 +217,12 @@ export function Loading() {
   );
 }
 
-function SegmentOption<T extends string>({
-  item,
+function SegmentOption({
+  label,
   selected,
   onPress,
 }: {
-  item: T;
+  label: string;
   selected: boolean;
   onPress(): void;
 }) {
@@ -253,7 +253,7 @@ function SegmentOption<T extends string>({
           { color: selected ? colors.accent : colors.secondary, textTransform: "capitalize" },
         ]}
       >
-        {item}
+        {label}
       </Text>
     </Pressable>
   );
@@ -263,10 +263,12 @@ export function Segment<T extends string>({
   values,
   value,
   onChange,
+  labelFor = (item) => item,
 }: {
   values: readonly T[];
   value: T;
   onChange: (value: T) => void;
+  labelFor?: (value: T) => string;
 }) {
   const { colors } = useTheme();
 
@@ -275,7 +277,7 @@ export function Segment<T extends string>({
       {values.map((item) => (
         <SegmentOption
           key={item}
-          item={item}
+          label={labelFor(item)}
           selected={item === value}
           onPress={() => onChange(item)}
         />

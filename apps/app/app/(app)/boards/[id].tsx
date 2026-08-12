@@ -1,9 +1,10 @@
 import type { Task } from "@giraffle/domain";
 import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
-import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { AddBoardTaskSheet } from "@/components/boards/AddBoardTaskSheet";
+import { nextBoardAccent } from "@/components/boards/colors";
 import {
   DragSortItem,
   DragSortProvider,
@@ -12,13 +13,14 @@ import {
 } from "@/components/dnd/DragSortContext";
 import { Page } from "@/components/ui/Page";
 import { EditableText } from "@/components/ui/EditableText";
+import { TaskDetailSheet } from "@/components/tasks/TaskDetailSheet";
 import { Button, EmptyState } from "@/components/ui/primitives";
 import { useTheme } from "@/design/ThemeProvider";
 import { spacing, typography } from "@/design/tokens";
 import { useApp } from "@/state/AppProvider";
 
-/** Cards follow their board position; the shared task list is ordered for the agenda screens. */
-function cardsOf(tasks: Task[], columnId: string): Task[] {
+/** Tasks follow their board position; the shared list is ordered for the planning screens. */
+function tasksInColumn(tasks: Task[], columnId: string): Task[] {
   return tasks
     .filter((task) => task.columnId === columnId)
     .sort((left, right) => Number(left.position) - Number(right.position));
@@ -39,6 +41,8 @@ function BoardScreen() {
   const { snapshot, run } = useApp();
   const drag = useDragSort();
   const [addColumnId, setAddColumnId] = useState<string | null>(null);
+  const [columnMenuId, setColumnMenuId] = useState<string | null>(null);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const board = snapshot.boards.find((item) => item.id === id);
   const columns = useMemo(
     () => snapshot.columns.filter((item) => item.boardId === id),
@@ -48,11 +52,15 @@ function BoardScreen() {
     () => snapshot.tasks.filter((task) => task.boardId === id),
     [id, snapshot.tasks],
   );
+  const selectedTask = snapshot.tasks.find((task) => task.id === selectedTaskId) ?? null;
+  const selectedSourceBoard = selectedTask
+    ? snapshot.boards.find((item) => item.pageId === selectedTask.pageId)
+    : null;
 
   /**
-   * Dropping a card back on its own column head would move nothing, so that
-   * head is the only target a card cannot use. Cards in other columns stay
-   * available: dropping on one places the card at that exact position.
+   * Dropping a task back on its own column head would move nothing, so that
+   * head is the only target it cannot use. Tasks in other columns stay
+   * available: dropping on one places the task at that exact position.
    */
   const blockedByColumn = useMemo(
     () => new Map(columns.map((column) => [column.id, [column.id]])),
@@ -64,7 +72,7 @@ function BoardScreen() {
       const column = columns.find((item) => item.id === target.id);
 
       if (column) {
-        const last = cardsOf(boardTasks, column.id).at(-1);
+        const last = tasksInColumn(boardTasks, column.id).at(-1);
         void run((repository) =>
           repository.moveTask(sourceId, column.id, last?.id ?? null),
         ).catch(() => undefined);
@@ -75,7 +83,7 @@ function BoardScreen() {
       const columnId = dropped?.columnId;
       if (!dropped || !columnId || dropped.id === sourceId) return;
 
-      const siblings = cardsOf(boardTasks, columnId);
+      const siblings = tasksInColumn(boardTasks, columnId);
       const index = siblings.findIndex((task) => task.id === dropped.id);
       const after = target.zone === "before" ? siblings[index - 1] : dropped;
 
@@ -93,13 +101,17 @@ function BoardScreen() {
           icon="alert-circle-outline"
           title="Board unavailable"
           body="This board may have been deleted."
-          action={<Button label="Back to Boards" onPress={() => router.replace("/trek")} />}
+          action={<Button label="Back to Boards" onPress={() => router.replace("/boards")} />}
         />
       </Page>
     );
   }
 
   const addColumn = columns.find((column) => column.id === addColumnId);
+  const menuColumn = columns.find((column) => column.id === columnMenuId);
+  const menuColumnIndex = menuColumn
+    ? columns.findIndex((column) => column.id === menuColumn.id)
+    : -1;
   const unassignedTasks = snapshot.tasks.filter(
     (task) => !task.boardId && !task.completed,
   );
@@ -124,7 +136,7 @@ function BoardScreen() {
         showsHorizontalScrollIndicator={false}
       >
         {columns.map((column) => {
-          const tasks = cardsOf(boardTasks, column.id);
+          const tasks = tasksInColumn(boardTasks, column.id);
           const receiving = drag.target?.id === column.id;
           return (
             <View
@@ -147,6 +159,11 @@ function BoardScreen() {
                   />
                   <Text style={[typography.caption, { color: colors.muted }]}>{tasks.length}</Text>
                   <Button
+                    icon="ellipsis-horizontal"
+                    accessibilityLabel={`${column.title} actions`}
+                    onPress={() => setColumnMenuId(column.id)}
+                  />
+                  <Button
                     icon="add"
                     accessibilityLabel={`Add task to ${column.title}`}
                     onPress={() => setAddColumnId(column.id)}
@@ -159,7 +176,7 @@ function BoardScreen() {
                 nestedScrollEnabled
               >
                 {tasks.map((task) => {
-                  /** A card is not a container, so hovering its middle lands the drop after it. */
+                  /** A task is not a container, so hovering its middle lands the drop after it. */
                   const zone =
                     drag.target?.id === task.id
                       ? drag.target.zone === "before"
@@ -211,6 +228,11 @@ function BoardScreen() {
                             },
                           ]}
                         />
+                        <Button
+                          icon="information-circle-outline"
+                          accessibilityLabel="Open task details"
+                          onPress={() => setSelectedTaskId(task.id)}
+                        />
                         {columns.length > 1 ? (
                           <Button
                             icon="arrow-forward-circle-outline"
@@ -221,7 +243,7 @@ function BoardScreen() {
                               );
                               const next = columns[(currentIndex + 1) % columns.length];
                               if (next) {
-                                const last = cardsOf(boardTasks, next.id).at(-1);
+                                const last = tasksInColumn(boardTasks, next.id).at(-1);
                                 void run((repository) =>
                                   repository.moveTask(task.id, next.id, last?.id ?? null),
                                 );
@@ -301,6 +323,129 @@ function BoardScreen() {
           );
         }}
       />
+      <Modal
+        visible={Boolean(menuColumn)}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setColumnMenuId(null)}
+      >
+        <Pressable
+          style={[styles.scrim, { backgroundColor: colors.scrim }]}
+          onPress={() => setColumnMenuId(null)}
+        />
+        <SafeAreaView
+          edges={["bottom"]}
+          style={[styles.columnSheet, { backgroundColor: colors.surfaceStrong }]}
+        >
+          <Text style={[typography.title, { color: colors.text }]}>
+            {menuColumn?.title}
+          </Text>
+          <Button
+            label="Change color"
+            icon="color-palette-outline"
+            onPress={() => {
+              if (!menuColumn) return;
+              setColumnMenuId(null);
+              void run((repository) =>
+                repository.updateColumn(menuColumn.id, {
+                  color: nextBoardAccent(menuColumn.color),
+                }),
+              );
+            }}
+          />
+          {menuColumn && menuColumnIndex > 0 ? (
+            <Button
+              label="Move left"
+              icon="arrow-back-outline"
+              onPress={() => {
+                setColumnMenuId(null);
+                void run((repository) =>
+                  repository.moveColumn(
+                    menuColumn.id,
+                    columns[menuColumnIndex - 2]?.id ?? null,
+                  ),
+                );
+              }}
+            />
+          ) : null}
+          {menuColumn && menuColumnIndex < columns.length - 1 ? (
+            <Button
+              label="Move right"
+              icon="arrow-forward-outline"
+              onPress={() => {
+                setColumnMenuId(null);
+                void run((repository) =>
+                  repository.moveColumn(menuColumn.id, columns[menuColumnIndex + 1]?.id ?? null),
+                );
+              }}
+            />
+          ) : null}
+          {menuColumn && columns.length > 1 ? (
+            <Button
+              label="Delete column"
+              icon="trash-outline"
+              tone="danger"
+              onPress={() => {
+                const target = columns[menuColumnIndex + 1] ?? columns[menuColumnIndex - 1];
+                if (!target) return;
+                setColumnMenuId(null);
+                Alert.alert(
+                  "Delete column?",
+                  `Tasks in “${menuColumn.title}” will move to “${target.title}”.`,
+                  [
+                    { text: "Cancel", style: "cancel" },
+                    {
+                      text: "Delete",
+                      style: "destructive",
+                      onPress: () =>
+                        void run((repository) =>
+                          repository.deleteColumn(menuColumn.id, target.id),
+                        ),
+                    },
+                  ],
+                );
+              }}
+            />
+          ) : null}
+        </SafeAreaView>
+      </Modal>
+      <TaskDetailSheet
+        task={selectedTask}
+        boardTitle={board.title}
+        onClose={() => setSelectedTaskId(null)}
+        onSave={(patch) => run((repository) => repository.updateTask(selectedTask!.id, patch))}
+        onOpenSource={() => {
+          if (!selectedTask) return;
+          setSelectedTaskId(null);
+          router.push(
+            selectedSourceBoard
+              ? `/boards/${selectedSourceBoard.id}`
+              : `/pages/${selectedTask.pageId}`,
+          );
+        }}
+        onRemoveFromBoard={
+          selectedTask && selectedTask.pageId !== board.pageId
+            ? () => {
+                setSelectedTaskId(null);
+                void run((repository) => repository.removeTaskFromBoard(selectedTask.id));
+              }
+            : undefined
+        }
+        onDelete={() => {
+          if (!selectedTask) return;
+          Alert.alert("Delete task?", `“${selectedTask.content}” will be removed everywhere.`, [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Delete",
+              style: "destructive",
+              onPress: () => {
+                setSelectedTaskId(null);
+                void run((repository) => repository.deleteTask(selectedTask.id));
+              },
+            },
+          ]);
+        }}
+      />
     </Page>
   );
 }
@@ -332,4 +477,12 @@ const styles = StyleSheet.create({
   dragging: { opacity: 0.45 },
   edge: { height: 2, borderRadius: 1 },
   addColumn: { width: 180, height: 60, borderWidth: 1, borderRadius: 9, padding: 10 },
+  scrim: { flex: 1 },
+  columnSheet: {
+    width: "100%",
+    maxWidth: 560,
+    alignSelf: "center",
+    padding: spacing.lg,
+    gap: spacing.sm,
+  },
 });

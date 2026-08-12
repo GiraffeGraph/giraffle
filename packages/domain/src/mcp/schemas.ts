@@ -1,7 +1,5 @@
 import { z } from "zod";
-import { BLOCK_TYPES, EISENHOWER_QUADRANTS } from "../note/note.types";
-
-export const IsoDateStringSchema = z.string();
+import { EDITOR_NODE_TYPES } from "../document/document.types";
 
 const JsonSchema: z.ZodType<unknown> = z.lazy(() =>
   z.union([
@@ -36,7 +34,7 @@ export const TiptapNodeSchema: z.ZodType<unknown> = z.lazy(() =>
 export const BlockNodeContentSchema: z.ZodType<unknown> = z.lazy(() =>
   z
     .object({
-      type: z.enum(BLOCK_TYPES),
+      type: z.enum(EDITOR_NODE_TYPES),
       attrs: z.record(z.string(), JsonSchema).optional(),
       content: z.array(TiptapNodeSchema).max(500).optional(),
       marks: z.array(BlockMarkSchema).max(20).optional(),
@@ -51,44 +49,26 @@ export const TiptapDocumentSchema = z
   })
   .strict();
 
-export const NoteMetadataSchema = z
+export const PageMetadataSchema = z
   .object({
-    id: z.string(),
+    id: z.string().min(1),
     title: z.string(),
     icon: z.string().nullable(),
-    coverImage: z.string().nullable().optional(),
     parentId: z.string().nullable(),
-    position: z.string().optional(),
+    position: z.string(),
     isPinned: z.boolean(),
     isArchived: z.boolean(),
-    quadrant: z.enum(EISENHOWER_QUADRANTS).nullable().optional(),
-    createdAt: IsoDateStringSchema,
-    updatedAt: IsoDateStringSchema,
+    createdAt: z.number().int().nonnegative(),
+    updatedAt: z.number().int().nonnegative(),
   })
   .strict();
 
-export const NoteWithDocumentSchema = z
+export const PageWithDocumentSchema = z
   .object({
-    metadata: NoteMetadataSchema,
+    metadata: PageMetadataSchema,
     document: TiptapDocumentSchema,
     markdown: z.string().optional(),
   })
   .strict();
 
-export const NoteListItemSchema = z
-  .object({
-    id: z.string(),
-    title: z.string(),
-    icon: z.string().nullable().optional(),
-    parentId: z.string().nullable().optional(),
-    isPinned: z.boolean().optional(),
-    position: z.string().optional(),
-    updatedAt: IsoDateStringSchema.optional(),
-  })
-  .strict();
-
-export const NoteIdentifierInputSchema = z
-  .object({
-    noteId: z.string().min(1),
-  })
-  .strict();
+export const TaskPrioritySchema = z.enum(["do", "schedule", "delegate", "eliminate"]);

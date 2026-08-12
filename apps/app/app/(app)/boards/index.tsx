@@ -7,7 +7,9 @@ import {
   useDragSort,
   type DropTarget,
 } from "@/components/dnd/DragSortContext";
+import { nextBoardAccent } from "@/components/boards/colors";
 import { ScreenTopbar } from "@/components/shell/ScreenTopbar";
+import { EditableText } from "@/components/ui/EditableText";
 import { Page } from "@/components/ui/Page";
 import { Button, EmptyState, Icon } from "@/components/ui/primitives";
 import { useTheme } from "@/design/ThemeProvider";
@@ -36,13 +38,13 @@ function BoardsScreen() {
   const drag = useDragSort();
   const create = (statusId: string | null = snapshot.statuses[0]?.id ?? null) => {
     void run((repository) => repository.createBoard("Untitled board", statusId))
-      .then((id) => router.push(`/trek/${id}`))
+      .then((id) => router.push(`/boards/${id}`))
       .catch(() => undefined);
   };
   const confirmDelete = (id: string, title: string) => {
     Alert.alert(
       "Delete board?",
-      `“${title}” and its board tasks will no longer be available.`,
+      `“${title}” and tasks created inside it will be deleted. Tasks added from other pages will remain at their source.`,
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -76,12 +78,11 @@ function BoardsScreen() {
       if (!source) return;
 
       const statusId = laneId === UNSORTED ? null : laneId;
-      void run(async (repository) => {
-        if ((source.statusId ?? UNSORTED) !== laneId) {
-          await repository.updateBoard(sourceId, { statusId });
-        }
-        await repository.moveBoard(sourceId, afterBoardId);
-      }).catch(() => undefined);
+      void run((repository) =>
+        (source.statusId ?? UNSORTED) === laneId
+          ? repository.moveBoard(sourceId, afterBoardId)
+          : repository.relocateBoard(sourceId, statusId, afterBoardId),
+      ).catch(() => undefined);
     },
     [run, snapshot.boards],
   );
@@ -152,12 +153,57 @@ function BoardsScreen() {
                 ]}
               >
                 <View style={styles.laneHead}>
-                  <Text style={[typography.label, { color: colors.text, flex: 1 }]}>
-                    {status.title}
-                  </Text>
+                  {status.id === UNSORTED ? (
+                    <Text style={[typography.label, { color: colors.text, flex: 1 }]}>
+                      {status.title}
+                    </Text>
+                  ) : (
+                    <EditableText
+                      value={status.title}
+                      onSave={(title) =>
+                        void run((repository) => repository.updateStatus(status.id, { title }))
+                      }
+                      style={[typography.label, { color: colors.text, flex: 1 }]}
+                    />
+                  )}
                   <Text style={[typography.caption, { color: colors.muted }]}>
                     {boards.length}
                   </Text>
+                  {status.id === UNSORTED ? null : (
+                    <>
+                      <Button
+                        icon="color-palette-outline"
+                        accessibilityLabel={`Change ${status.title} color`}
+                        onPress={() =>
+                          void run((repository) =>
+                            repository.updateStatus(status.id, {
+                              color: nextBoardAccent(status.color),
+                            }),
+                          )
+                        }
+                      />
+                      <Button
+                        icon="trash-outline"
+                        tone="danger"
+                        accessibilityLabel={`Delete ${status.title} status`}
+                        onPress={() =>
+                          Alert.alert(
+                            "Delete status?",
+                            `Boards in “${status.title}” will move to Unsorted.`,
+                            [
+                              { text: "Cancel", style: "cancel" },
+                              {
+                                text: "Delete",
+                                style: "destructive",
+                                onPress: () =>
+                                  void run((repository) => repository.deleteStatus(status.id)),
+                              },
+                            ],
+                          )
+                        }
+                      />
+                    </>
+                  )}
                 </View>
                 {boards.map((board) => {
                   /** A board row is not a container, so hovering its middle sorts after it. */
@@ -194,7 +240,7 @@ function BoardsScreen() {
                           accessibilityRole="button"
                           accessibilityLabel={`Open ${board.title}`}
                           accessibilityHint="Press and hold, then drag to move this board"
-                          onPress={() => router.push(`/trek/${board.id}`)}
+                          onPress={() => router.push(`/boards/${board.id}`)}
                           style={({ pressed }) => [
                             styles.boardLink,
                             { backgroundColor: pressed ? colors.hover : "transparent" },
@@ -242,6 +288,13 @@ function BoardsScreen() {
               </DragSortItem>
             );
           })}
+          <View style={[styles.addStatus, { borderColor: colors.border }]}>
+            <Button
+              label="Add status"
+              icon="add"
+              onPress={() => void run((repository) => repository.createStatus())}
+            />
+          </View>
         </ScrollView>
       )}
     </Page>
@@ -260,7 +313,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   laneHead: {
-    height: 38,
+    minHeight: 44,
     paddingHorizontal: spacing.xs,
     flexDirection: "row",
     alignItems: "center",
@@ -290,4 +343,5 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   edge: { height: 3, borderRadius: 2 },
+  addStatus: { width: 180, height: 60, padding: 10, borderWidth: 1, borderRadius: 9 },
 });

@@ -114,7 +114,7 @@ function reconcileBlock(block: Y.Map<unknown>, node: TiptapNode): boolean {
  * whole document each save, so this is where that snapshot becomes the character
  * level operations two devices can merge without losing either side's typing.
  */
-export function reconcileNoteDocument(document: Y.Doc, next: TiptapDocument) {
+export function reconcilePageDocument(document: Y.Doc, next: TiptapDocument) {
   const blocks = document.getArray<Y.Map<unknown>>(BLOCKS);
   const nodes = next.content ?? [];
 
@@ -176,7 +176,7 @@ function nodeFromBlock(block: Y.Map<unknown>): TiptapNode | null {
   };
 }
 
-export function noteDocumentFromYjs(document: Y.Doc): TiptapDocument {
+export function pageDocumentFromYjs(document: Y.Doc): TiptapDocument {
   const nodes = document
     .getArray<Y.Map<unknown>>(BLOCKS)
     .toArray()
@@ -187,12 +187,12 @@ export function noteDocumentFromYjs(document: Y.Doc): TiptapDocument {
 }
 
 /** Rebuilds a page's collaborative document from the state stored beside it. */
-export function openNoteDocument(state: Uint8Array | null): Y.Doc {
+export function openPageDocument(state: Uint8Array | null): Y.Doc {
   const document = createYjsDocument();
   if (state && state.length > 0) applyYjsUpdate(document, state);
   return document;
 }
 
-export function noteDocumentState(document: Y.Doc): Uint8Array {
+export function pageDocumentState(document: Y.Doc): Uint8Array {
   return encodeYjsCheckpoint(document);
 }

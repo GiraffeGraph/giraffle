@@ -11,7 +11,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { PageTree } from "@/components/notes/PageTree";
+import { PageTree } from "@/components/pages/PageTree";
 import { ScreenTopbar } from "@/components/shell/ScreenTopbar";
 import { Page } from "@/components/ui/Page";
 import { Button, DividerRow, EmptyState, Icon } from "@/components/ui/primitives";
@@ -27,7 +27,7 @@ function when(value: number): string {
   return days === 0 ? "Today" : days === 1 ? "Yesterday" : `${days} days ago`;
 }
 
-export default function Notes() {
+export default function Pages() {
   const { colors } = useTheme();
   const { snapshot, run } = useApp();
   const [menuPage, setMenuPage] = useState<PageModel | null>(null);
@@ -40,7 +40,7 @@ export default function Notes() {
 
   const open = (pageId: Id) => {
     const board = snapshot.boards.find((item) => item.pageId === pageId);
-    router.push(board ? `/trek/${board.id}` : `/notes/${pageId}`);
+    router.push(board ? `/boards/${board.id}` : `/pages/${pageId}`);
   };
 
   const create = (parentId?: Id) => {
@@ -52,7 +52,7 @@ export default function Notes() {
   return (
     <>
       <ScreenTopbar
-        title="Notes"
+        title="Pages"
         action={<Button icon="add" label="Page" tone="accent" onPress={() => create()} />}
       />
       <Page>
@@ -60,7 +60,7 @@ export default function Notes() {
         <EmptyState
           icon="document-text-outline"
           title="Start with a page"
-          body="Write a note, plan a task, or capture an idea. Pages can live inside other pages."
+          body="Write, plan a task, or capture an idea. Pages can live inside other pages."
           action={<Button label="Create page" tone="accent" onPress={() => create()} />}
         />
       ) : (
@@ -202,7 +202,7 @@ function PageRowMenu({ page, close }: { page: PageModel | null; close: () => voi
             Alert.alert(
               board ? "Delete board permanently?" : "Delete page permanently?",
               board
-                ? "This board and all its tasks will be removed. This cannot be undone."
+                ? "Tasks created in this board will be deleted. Tasks added from other pages will remain at their source. This cannot be undone."
                 : "This page and every page inside it will be removed. This cannot be undone.",
               [
                 { text: "Cancel", style: "cancel" },

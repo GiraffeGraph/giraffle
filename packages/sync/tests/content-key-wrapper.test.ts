@@ -30,8 +30,8 @@ function operation(recordId: string): SyncOperationV1 {
   return {
     protocolVersion: 1,
     operationId: recordId,
-    objectId: "note-1",
-    objectType: "note-metadata",
+    objectId: "page-1",
+    objectType: "page",
     schemaVersion: 1,
     clock: { physicalMs: 1_700_000_000_000, logical: 0 },
     mutation: { kind: "set-title", data: recordId },

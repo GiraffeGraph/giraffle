@@ -12,7 +12,12 @@ function hex(bytes: Uint8Array): string {
 export async function openEncryptedDatabase(
   key: Uint8Array,
 ): Promise<VaultDatabase> {
-  const database = await SQLite.openDatabaseAsync(DATABASE_NAME);
+  // Expo's Android close path can double-finalize cached SQLCipher statements on
+  // Android 10 and crash natively. Our query helpers finalize every statement,
+  // so skip the unsafe catch-all pass and let sqlite3_close verify that cleanly.
+  const database = await SQLite.openDatabaseAsync(DATABASE_NAME, {
+    finalizeUnusedStatementsBeforeClosing: false,
+  });
 
   try {
     await database.execAsync(`PRAGMA key = '${hex(key)}';`);

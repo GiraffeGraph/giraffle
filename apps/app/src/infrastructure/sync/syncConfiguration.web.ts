@@ -21,7 +21,7 @@ const AAD = encodeCanonical({
 /**
  * A browser has no Keychain to put a bearer token in, so the relay credentials
  * are sealed with the vault's content key instead. That ties them to the same
- * unlock as the notes: a locked tab cannot read the token any more than it can
+ * unlock as the content: a locked tab cannot read the token any more than it can
  * read a page.
  */
 export const saveSyncConfiguration: SyncConfigurationStore["saveSyncConfiguration"] =

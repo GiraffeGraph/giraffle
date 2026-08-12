@@ -70,6 +70,29 @@ SELECT p.id, p.title, '' FROM pages p JOIN boards b ON b.task_source_page_id=p.i
 CREATE TABLE canvas_task_references(canvas_id TEXT NOT NULL REFERENCES canvases(id) ON DELETE CASCADE, element_id TEXT NOT NULL, task_id TEXT NOT NULL REFERENCES blocks(id) ON DELETE CASCADE, PRIMARY KEY(canvas_id, element_id));
 CREATE INDEX idx_canvas_task_refs_task ON canvas_task_references(task_id);
 `
+}, {
+  version: 5,
+  name: "enforce-board-column-ownership",
+  sql: `
+CREATE UNIQUE INDEX idx_board_columns_board_id_id ON board_columns(board_id, id);
+CREATE TABLE board_tasks_v5(
+  board_id TEXT NOT NULL REFERENCES boards(id) ON DELETE CASCADE,
+  block_id TEXT NOT NULL UNIQUE REFERENCES blocks(id) ON DELETE CASCADE,
+  column_id TEXT NOT NULL,
+  position_id TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+  PRIMARY KEY(board_id, block_id),
+  FOREIGN KEY(board_id, column_id) REFERENCES board_columns(board_id, id)
+);
+INSERT INTO board_tasks_v5(board_id, block_id, column_id, position_id, created_at, updated_at)
+SELECT bt.board_id, bt.block_id, bt.column_id, bt.position_id, bt.created_at, bt.updated_at
+FROM board_tasks bt
+JOIN board_columns c ON c.id = bt.column_id AND c.board_id = bt.board_id;
+DROP TABLE board_tasks;
+ALTER TABLE board_tasks_v5 RENAME TO board_tasks;
+CREATE INDEX idx_board_tasks_position ON board_tasks(column_id, position_id);
+`
 }];
 
 export const CURRENT_SCHEMA_VERSION = migrations.at(-1)?.version ?? 0;

@@ -49,6 +49,14 @@ export function createSyncEngine(deps: {
       // Signature verification needs the other devices' public keys, so the
       // roster is refreshed before anything they signed is opened.
       await deps.repository.rememberDevices(await listDevices(deps.config, deps.vaultId));
+      await deps.repository.ensureBootstrapSyncRecords();
+
+      // A previous run may have received a record before its author was known,
+      // or stopped after durably deferring it. Retry those ciphertexts before
+      // advancing through newer relay records.
+      const retried = await deps.repository.retryDeferredRecords();
+      outcome.applied += retried.applied;
+      outcome.skipped += retried.skipped;
 
       outcome.pushed = await pushOutbox(deps.config, {
         vaultId: deps.vaultId,
@@ -79,7 +87,20 @@ export function createSyncEngine(deps: {
         if (!pulled.hasMore || pulled.records.length === 0) break;
       }
 
-      await deps.repository.recordSyncSuccess();
+      // Newer records in this same pull may satisfy a deferred record's foreign
+      // keys, so give the durable queue one more ordered pass before reporting.
+      const recovered = await deps.repository.retryDeferredRecords();
+      outcome.applied += recovered.applied;
+      outcome.skipped += recovered.skipped;
+
+      const unresolved = await deps.repository.deferredRecordSummary();
+      outcome.deferred = unresolved.count;
+      if (unresolved.count) {
+        outcome.error = `${unresolved.count} encrypted change${unresolved.count === 1 ? " is" : "s are"} waiting${unresolved.reason ? `: ${unresolved.reason}` : ""}`;
+        await deps.repository.recordSyncError(outcome.error);
+      } else {
+        await deps.repository.recordSyncSuccess();
+      }
     } catch (cause) {
       outcome.error = cause instanceof Error ? cause.message : "Sync failed";
       await deps.repository.recordSyncError(outcome.error).catch(() => undefined);

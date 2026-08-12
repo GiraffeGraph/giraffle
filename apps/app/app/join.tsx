@@ -36,7 +36,7 @@ export default function JoinVault() {
     };
   }, [pending, completeJoin]);
 
-  if (phase === "ready") return <Redirect href="/notes" />;
+  if (phase === "ready") return <Redirect href="/pages" />;
 
   const start = async () => {
     setError(null);
@@ -93,7 +93,7 @@ export default function JoinVault() {
             {pending ? (
               <>
                 <Text style={[typography.body, { color: colors.secondary }]}>
-                  On the device that already has your notes, open Settings, then Devices, and approve
+                  On the device that already has your workspace, open Settings, then Devices, and approve
                   this one. Check that it shows exactly this number before you approve.
                 </Text>
                 <Text
@@ -114,7 +114,7 @@ export default function JoinVault() {
             ) : (
               <>
                 <Text style={[typography.body, { color: colors.secondary }]}>
-                  {"Your notes stay encrypted. The server only passes them along, and this device gets its key from a device you already trust."}
+                  {"Your workspace stays encrypted. The server only passes them along, and this device gets its key from a device you already trust."}
                 </Text>
                 <Field
                   label="Server address"

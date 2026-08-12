@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Alert, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { ScreenTopbar } from "@/components/shell/ScreenTopbar";
 import { Page } from "@/components/ui/Page";
 import { Button, DividerRow, EmptyState, Icon } from "@/components/ui/primitives";
@@ -21,6 +21,7 @@ export default function Devices() {
   const [devices, setDevices] = useState<LinkableDevice[]>([]);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [approvalTarget, setApprovalTarget] = useState<LinkableDevice | null>(null);
 
   const [reloads, setReloads] = useState(0);
 
@@ -66,22 +67,8 @@ export default function Devices() {
 
   const approve = (target: LinkableDevice) => {
     if (!session || !repository) return;
-    Alert.alert(
-      "Approve this device?",
-      `Only continue if the other device shows exactly this number:\n\n${target.fingerprint}\n\nIf the numbers differ, someone else is trying to join.`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Numbers match",
-          onPress: () =>
-            void act("Device approved.", async () => {
-              const config = await loadSyncConfiguration();
-              if (!config) throw new Error("Save a connection first");
-              await approveDevice(config, { vaultId: session.vaultId, repository, target });
-            }),
-        },
-      ],
-    );
+    setMessage(null);
+    setApprovalTarget(target);
   };
 
   const thisDevice = devices.find((device) => device.isThisDevice);
@@ -99,6 +86,9 @@ export default function Devices() {
               void act("Sync finished.", async () => {
                 const outcome = await syncNow();
                 if (outcome.error) throw new Error(outcome.error);
+                if (outcome.deferred) {
+                  throw new Error(`${outcome.deferred} encrypted changes could not be applied`);
+                }
               })
             }
           />
@@ -158,6 +148,43 @@ export default function Devices() {
               </DividerRow>
             ))
           )}
+          {approvalTarget ? (
+            <View
+              style={[
+                styles.confirmation,
+                { borderColor: colors.border, backgroundColor: colors.surface },
+              ]}
+            >
+              <Text style={[typography.label, { color: colors.text }]}>Approve this device?</Text>
+              <Text style={[typography.body, { color: colors.secondary }]}>Only continue if the other device shows exactly this number:</Text>
+              <Text selectable style={[styles.fingerprint, typography.title, { color: colors.text }]}>
+                {approvalTarget.fingerprint}
+              </Text>
+              <Text style={[typography.caption, { color: colors.muted }]}>If the numbers differ, cancel. Someone else may be trying to join.</Text>
+              <View style={styles.actions}>
+                <Button label="Cancel" disabled={busy} onPress={() => setApprovalTarget(null)} />
+                <Button
+                  label="Numbers match — approve"
+                  tone="accent"
+                  disabled={busy}
+                  onPress={() =>
+                    session && repository
+                      ? void act("Device approved.", async () => {
+                          const config = await loadSyncConfiguration();
+                          if (!config) throw new Error("Save a connection first");
+                          await approveDevice(config, {
+                            vaultId: session.vaultId,
+                            repository,
+                            target: approvalTarget,
+                          });
+                          setApprovalTarget(null);
+                        })
+                      : undefined
+                  }
+                />
+              </View>
+            </View>
+          ) : null}
         </View>
 
         {snapshot.sync.lastError ? (
@@ -176,4 +203,13 @@ export default function Devices() {
 const styles = StyleSheet.create({
   section: { gap: spacing.sm },
   row: { flex: 1, gap: 2 },
+  confirmation: {
+    marginTop: spacing.sm,
+    padding: spacing.lg,
+    borderWidth: 1,
+    borderRadius: 12,
+    gap: spacing.sm,
+  },
+  fingerprint: { letterSpacing: 1 },
+  actions: { flexDirection: "row", justifyContent: "flex-end", gap: spacing.sm, flexWrap: "wrap" },
 });

@@ -12,7 +12,7 @@ export default function CanvasList() {
   const { snapshot, run } = useApp();
   const create = () => {
     void run((repository) => repository.createCanvas())
-      .then((id) => router.push(`/savanna/${id}`))
+      .then((id) => router.push(`/canvas/${id}`))
       .catch(() => undefined);
   };
   const confirmDelete = (id: string, title: string) => {
@@ -47,7 +47,7 @@ export default function CanvasList() {
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={`Open ${canvas.title}`}
-                onPress={() => router.push(`/savanna/${canvas.id}`)}
+                onPress={() => router.push(`/canvas/${canvas.id}`)}
                 style={({ pressed }) => [styles.mapLink, { opacity: pressed ? 0.55 : 1 }]}
               >
                 <Icon name="map-outline" color={colors.accent} />

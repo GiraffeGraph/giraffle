@@ -11,6 +11,7 @@ import { File } from "expo-file-system";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, AppState, Linking, Modal, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { TaskDetailSheet } from "@/components/tasks/TaskDetailSheet";
 import { EditableText } from "@/components/ui/EditableText";
 import { Button, DividerRow, EmptyState, Icon } from "@/components/ui/primitives";
 import { useTheme } from "@/design/ThemeProvider";
@@ -39,7 +40,7 @@ async function pickAttachment(accept: string[]): Promise<EditorAttachment | null
   };
 }
 
-export default function NoteEditor() {
+export default function PageEditor() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
@@ -48,6 +49,7 @@ export default function NoteEditor() {
   const board = snapshot.boards.find((item) => item.pageId === id);
   const [menu, setMenu] = useState(false);
   const [moveSheet, setMoveSheet] = useState(false);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   // A page that already has tasks opens showing them; an empty one stays quiet.
   const [tasksOpen, setTasksOpen] = useState(() =>
     snapshot.tasks.some((task) => task.pageId === id),
@@ -133,7 +135,7 @@ export default function NoteEditor() {
     [id, run],
   );
 
-  if (board) return <Redirect href={`/trek/${board.id}`} />;
+  if (board) return <Redirect href={`/boards/${board.id}`} />;
 
   if (!page || !draft) {
     return (
@@ -142,7 +144,7 @@ export default function NoteEditor() {
           icon="alert-circle-outline"
           title="Page unavailable"
           body="It may have been deleted on this device."
-          action={<Button label="Back to notes" onPress={() => router.replace("/notes")} />}
+          action={<Button label="Back to pages" onPress={() => router.replace("/pages")} />}
         />
       </View>
     );
@@ -161,6 +163,10 @@ export default function NoteEditor() {
   const ancestors = pageAncestors(snapshot.pages, page.id);
   const backlinks = snapshot.backlinks.filter((link) => link.targetPageId === page.id);
   const pageTasks = snapshot.tasks.filter((task) => task.pageId === page.id);
+  const selectedTask = snapshot.tasks.find((task) => task.id === selectedTaskId) ?? null;
+  const selectedBoard = selectedTask?.boardId
+    ? snapshot.boards.find((item) => item.id === selectedTask.boardId)
+    : null;
 
   return (
     <View style={[styles.fill, { backgroundColor: colors.background }]}>
@@ -174,9 +180,9 @@ export default function NoteEditor() {
           numberOfLines={1}
           style={[typography.caption, { color: colors.muted, flex: 1 }]}
         >
-          <Text onPress={() => router.replace("/notes")}>Pages</Text>
+          <Text onPress={() => router.replace("/pages")}>Pages</Text>
           {ancestors.map((item) => (
-            <Text key={item.id} onPress={() => router.replace(`/notes/${item.id}`)}>
+            <Text key={item.id} onPress={() => router.replace(`/pages/${item.id}`)}>
               {` / ${item.title}`}
             </Text>
           ))}
@@ -269,11 +275,16 @@ export default function NoteEditor() {
                   },
                 ]}
               />
+              <Button
+                icon="information-circle-outline"
+                accessibilityLabel="Open task details"
+                onPress={() => setSelectedTaskId(task.id)}
+              />
               {task.boardId ? (
                 <Button
                   icon="albums-outline"
                   accessibilityLabel="Open board"
-                  onPress={() => router.push(`/trek/${task.boardId}`)}
+                  onPress={() => router.push(`/boards/${task.boardId}`)}
                 />
               ) : null}
               <Button
@@ -310,12 +321,12 @@ export default function NoteEditor() {
           onFocusChange={(focused) => {
             if (!focused) flush();
           }}
-          onTaskToggle={(blockId, checked) => {
-            // A checkbox in the document is only a task row when the block was
-            // minted as one; otherwise the document change is the whole story.
-            if (!snapshot.tasks.some((task) => task.id === blockId)) return;
+          onTaskToggle={(taskId, checked) => {
+            // A checkbox in the document is only a task row when its stable id
+            // matches a canonical task; otherwise it remains document content.
+            if (!snapshot.tasks.some((task) => task.id === taskId)) return;
             void run((repository) =>
-              repository.updateTask(blockId, { completed: checked }),
+              repository.updateTask(taskId, { completed: checked }),
             ).catch(() => undefined);
           }}
           onRequestAttachment={pickAttachment}
@@ -324,7 +335,7 @@ export default function NoteEditor() {
               (item) => item.title.toLocaleLowerCase() === target.toLocaleLowerCase(),
             );
             if (next) {
-              router.push(`/notes/${next.id}`);
+              router.push(`/pages/${next.id}`);
               return;
             }
             // The editor can never navigate itself, so a web link leaves for
@@ -341,7 +352,7 @@ export default function NoteEditor() {
             {backlinks.map((link) => (
               <Pressable
                 key={`${link.sourcePageId}-${link.targetRaw}`}
-                onPress={() => router.push(`/notes/${link.sourcePageId}`)}
+                onPress={() => router.push(`/pages/${link.sourcePageId}`)}
               >
                 <Text style={[typography.body, { color: colors.link }]}>
                   {link.sourceTitle}
@@ -361,6 +372,35 @@ export default function NoteEditor() {
         onMove={() => {
           setMenu(false);
           setMoveSheet(true);
+        }}
+      />
+      <TaskDetailSheet
+        task={selectedTask}
+        boardTitle={selectedBoard?.title}
+        onClose={() => setSelectedTaskId(null)}
+        onSave={(patch) => run((repository) => repository.updateTask(selectedTask!.id, patch))}
+        onOpenSource={() => setSelectedTaskId(null)}
+        onRemoveFromBoard={
+          selectedTask?.boardId
+            ? () => {
+                setSelectedTaskId(null);
+                void run((repository) => repository.removeTaskFromBoard(selectedTask.id));
+              }
+            : undefined
+        }
+        onDelete={() => {
+          if (!selectedTask) return;
+          Alert.alert("Delete task?", `“${selectedTask.content}” will be removed everywhere.`, [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Delete",
+              style: "destructive",
+              onPress: () => {
+                setSelectedTaskId(null);
+                void run((repository) => repository.deleteTask(selectedTask.id));
+              },
+            },
+          ]);
         }}
       />
       <MoveSheet
@@ -419,7 +459,7 @@ function PageMenu({
               const childId = await run((repository) =>
                 repository.createPage({ parentId: pageId }),
               );
-              router.push(`/notes/${childId}`);
+              router.push(`/pages/${childId}`);
             })
           }
         >
@@ -444,7 +484,7 @@ function PageMenu({
               await run((repository) =>
                 repository.updatePage(pageId, { isArchived: !archived }),
               );
-              router.replace(archived ? `/notes/${pageId}` : "/notes");
+              router.replace(archived ? `/pages/${pageId}` : "/pages");
             })
           }
         >
@@ -466,7 +506,7 @@ function PageMenu({
                   style: "destructive",
                   onPress: () =>
                     void run((repository) => repository.deletePage(pageId))
-                      .then(() => router.replace("/notes"))
+                      .then(() => router.replace("/pages"))
                       .catch(() => undefined),
                 },
               ],

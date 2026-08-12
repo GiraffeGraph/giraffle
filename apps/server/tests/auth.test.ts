@@ -21,6 +21,24 @@ afterEach(() => {
 });
 
 describe("vault authorization", () => {
+  it("answers browser and Electron preflight requests", async () => {
+    const response = await harness.app.request(`/api/v1/vaults/${VAULT_ID}/sync/pull`, {
+      method: "OPTIONS",
+      headers: {
+        Origin: "giraffle-app://app",
+        "Access-Control-Request-Method": "GET",
+        "Access-Control-Request-Headers": "authorization,x-giraffle-device-id",
+      },
+    });
+
+    expect(response.status).toBe(204);
+    expect(response.headers.get("Access-Control-Allow-Origin")).toBe("*");
+    expect(response.headers.get("Access-Control-Allow-Headers")).toContain("Authorization");
+    expect(response.headers.get("Access-Control-Allow-Headers")).toContain(
+      "X-Giraffle-Device-Id",
+    );
+  });
+
   it("answers 401 when no bearer token is presented", async () => {
     const response = await harness.app.request(`/api/v1/vaults/${VAULT_ID}/sync/pull`);
 

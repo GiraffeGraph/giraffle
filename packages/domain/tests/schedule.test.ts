@@ -9,7 +9,7 @@ import {
   snapMinutes,
 } from "@giraffle/domain";
 
-describe("stride schedule", () => {
+describe("task schedule", () => {
   it("reads a bare day as all-day", () => {
     expect(parseDue("2026-08-05")).toEqual({ day: "2026-08-05", minutes: null });
   });

@@ -16,7 +16,6 @@ const scheduleViews: readonly {
   { value: "month", label: "Month", icon: "calendar-number-outline" },
 ];
 
-/** Switches between schedule modes and the priority grid without a second toolbar. */
 export function TaskViewSwitch({
   scheduleMode = "day",
   onScheduleModeChange,
@@ -26,13 +25,15 @@ export function TaskViewSwitch({
 }) {
   const { colors } = useTheme();
   const path = usePathname();
-  const onCalendar = path.startsWith("/stride");
+  const onList = path === "/tasks";
+  const onCalendar = path.startsWith("/tasks/calendar");
+  const onPriority = path.startsWith("/tasks/priority");
   const current = scheduleViews.find((view) => view.value === scheduleMode) ?? scheduleViews[0]!;
   const next = scheduleViews[(scheduleViews.indexOf(current) + 1) % scheduleViews.length]!;
 
-  const openSchedule = () => {
+  const openCalendar = () => {
     if (!onCalendar || !onScheduleModeChange) {
-      router.push("/stride");
+      router.push("/tasks/calendar");
       return;
     }
     onScheduleModeChange(next.value);
@@ -40,54 +41,68 @@ export function TaskViewSwitch({
 
   return (
     <View style={[styles.switch, { borderColor: colors.border, backgroundColor: colors.surface }]}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={onCalendar ? `Switch to ${next.label} view` : "Schedule view"}
-        accessibilityState={{ selected: onCalendar }}
-        onPress={openSchedule}
-        style={({ pressed }) => [
-          styles.scheduleButton,
-          {
-            backgroundColor: onCalendar ? colors.accentSubtle : "transparent",
-            opacity: pressed ? 0.58 : 1,
-          },
-        ]}
-      >
-        <Icon
-          name={onCalendar ? current.icon : "calendar-outline"}
-          size={17}
-          color={onCalendar ? colors.accent : colors.secondary}
-        />
-        <Text
-          numberOfLines={1}
-          style={[
-            typography.caption,
-            { color: onCalendar ? colors.accent : colors.secondary, fontWeight: "600" },
-          ]}
-        >
-          {onCalendar ? current.label : "Plan"}
-        </Text>
-      </Pressable>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Priority view"
-        accessibilityState={{ selected: !onCalendar }}
-        onPress={() => router.push("/tower")}
-        style={({ pressed }) => [
-          styles.priorityButton,
-          {
-            backgroundColor: onCalendar ? "transparent" : colors.accentSubtle,
-            opacity: pressed ? 0.58 : 1,
-          },
-        ]}
-      >
-        <Icon
-          name="grid-outline"
-          size={17}
-          color={onCalendar ? colors.secondary : colors.accent}
-        />
-      </Pressable>
+      <SwitchButton
+        selected={onList}
+        label="List"
+        icon="list-outline"
+        onPress={() => router.push("/tasks")}
+      />
+      <SwitchButton
+        selected={onCalendar}
+        label={onCalendar ? current.label : "Plan"}
+        icon={onCalendar ? current.icon : "calendar-outline"}
+        accessibilityLabel={onCalendar ? `Switch to ${next.label} view` : "Calendar view"}
+        onPress={openCalendar}
+      />
+      <SwitchButton
+        selected={onPriority}
+        label="Priority"
+        icon="grid-outline"
+        onPress={() => router.push("/tasks/priority")}
+      />
     </View>
+  );
+}
+
+function SwitchButton({
+  selected,
+  label,
+  icon,
+  accessibilityLabel,
+  onPress,
+}: {
+  selected: boolean;
+  label: string;
+  icon: IconName;
+  accessibilityLabel?: string;
+  onPress(): void;
+}) {
+  const { colors } = useTheme();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? `${label} view`}
+      accessibilityState={{ selected }}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.button,
+        {
+          backgroundColor: selected ? colors.accentSubtle : "transparent",
+          opacity: pressed ? 0.58 : 1,
+        },
+      ]}
+    >
+      <Icon name={icon} size={16} color={selected ? colors.accent : colors.secondary} />
+      <Text
+        numberOfLines={1}
+        style={[
+          typography.caption,
+          { color: selected ? colors.accent : colors.secondary, fontWeight: "600" },
+        ]}
+      >
+        {label}
+      </Text>
+    </Pressable>
   );
 }
 
@@ -99,12 +114,12 @@ const styles = StyleSheet.create({
     borderRadius: radii.sm,
     overflow: "hidden",
   },
-  scheduleButton: {
-    width: 76,
+  button: {
+    minWidth: 70,
+    paddingHorizontal: 9,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 5,
   },
-  priorityButton: { width: 36, alignItems: "center", justifyContent: "center" },
 });

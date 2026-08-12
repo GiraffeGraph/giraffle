@@ -9,40 +9,40 @@ describe("MCP tool catalog", () => {
     expect(new Set(mcpNames).size).toBe(mcpNames.length);
   });
 
-  it("covers every workspace surface an agent can drive", () => {
+  it("uses the same plain feature names as the app", () => {
     const prefixes = new Set(MCP_TOOL_SCHEMAS.map((tool) => tool.name.split("_")[0]));
     expect([...prefixes].sort()).toEqual([
-      "kanban",
-      "notes",
+      "boards",
+      "canvas",
       "pages",
-      "savanna",
-      "stride",
-      "tower",
+      "priority",
+      "tasks",
     ]);
+
   });
 
-  it("describes every tool for the agent that reads it", () => {
+  it("describes and validates every public tool", () => {
     for (const tool of MCP_TOOL_SCHEMAS) {
       expect(tool.description.length, tool.name).toBeGreaterThan(20);
       expect(tool.mcpName, tool.name).toMatch(/^giraffle-[a-z-]+$/);
     }
   });
 
-  it("validates arguments rather than trusting the caller", () => {
-    const search = MCP_TOOL_SCHEMAS.find((tool) => tool.name === "notes_search");
-    expect(search?.inputSchema.parse({})).toEqual({ query: "", limit: 20 });
-    expect(search?.inputSchema.safeParse({ limit: 500 }).success).toBe(false);
+  it("validates representative inputs", () => {
+    const search = MCP_TOOL_SCHEMAS.find((tool) => tool.name === "pages_search");
+    expect(search?.inputSchema.safeParse({ query: "release" }).success).toBe(true);
+    expect(search?.inputSchema.safeParse({ query: "", limit: 500 }).success).toBe(false);
 
-    // notes_append refuses a call that would append nothing.
-    const append = MCP_TOOL_SCHEMAS.find((tool) => tool.name === "notes_append");
-    expect(append?.inputSchema.safeParse({ noteId: "n1" }).success).toBe(false);
-    expect(append?.inputSchema.safeParse({ noteId: "n1", markdown: "hi" }).success).toBe(true);
+    const move = MCP_TOOL_SCHEMAS.find((tool) => tool.name === "boards_move_task");
+    expect(
+      move?.inputSchema.safeParse({ taskId: "t1", columnId: "c1", afterTaskId: null }).success,
+    ).toBe(true);
   });
 
-  it("marks mutating tools destructive", () => {
+  it("marks mutations as destructive", () => {
     const byName = new Map(MCP_TOOL_SCHEMAS.map((tool) => [tool.name, tool]));
-    expect(byName.get("notes_get")?.destructive).toBe(false);
-    expect(byName.get("notes_create")?.destructive).toBe(true);
-    expect(byName.get("kanban_delete_board")?.destructive).toBe(true);
+    expect(byName.get("pages_get")?.destructive).toBe(false);
+    expect(byName.get("pages_create")?.destructive).toBe(true);
+    expect(byName.get("boards_delete")?.destructive).toBe(true);
   });
 });

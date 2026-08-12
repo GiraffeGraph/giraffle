@@ -10,6 +10,7 @@ import {
 import { router } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  Alert,
   Animated,
   KeyboardAvoidingView,
   Modal,
@@ -25,8 +26,9 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ScreenTopbar } from "@/components/shell/ScreenTopbar";
 import { TaskViewSwitch } from "@/components/shell/TaskViewSwitch";
-import { DayGrid } from "@/components/stride/DayGrid";
+import { DayGrid } from "@/components/tasks/DayGrid";
 import { QuickTaskButton } from "@/components/tasks/QuickTaskButton";
+import { TaskDetailSheet } from "@/components/tasks/TaskDetailSheet";
 import { Button, DividerRow, Icon } from "@/components/ui/primitives";
 import { useTheme } from "@/design/ThemeProvider";
 import { radii, spacing, typography } from "@/design/tokens";
@@ -98,21 +100,20 @@ export default function Tasks() {
   const [composeDuration, setComposeDuration] = useState(DEFAULT_DURATION_MINUTES);
   const [previewDay, setPreviewDay] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const today = dayKey(new Date());
+  const selected = snapshot.tasks.find((task) => task.id === selectedId) ?? null;
+  const selectedBoard = selected?.boardId
+    ? snapshot.boards.find((board) => board.id === selected.boardId)
+    : null;
+  const selectedSourceBoard = selected
+    ? snapshot.boards.find((board) => board.pageId === selected.pageId)
+    : null;
 
   const weekDays = useMemo(() => {
     const first = startOfWeek(day);
     return Array.from({ length: 7 }, (_, index) => addDays(first, index));
   }, [day]);
-
-  const openSource = useCallback(
-    (taskId: string) => {
-      const task = snapshot.tasks.find((item) => item.id === taskId);
-      if (!task) return;
-      router.push(`/notes/${task.pageId}`);
-    },
-    [snapshot.tasks],
-  );
 
   const toggleTask = useCallback(
     (taskId: string) => {
@@ -169,7 +170,7 @@ export default function Tasks() {
             <DayGrid
               day={day}
               tasks={snapshot.tasks}
-              onOpenTask={openSource}
+              onOpenTask={setSelectedId}
               onToggleTask={toggleTask}
               onMoveTask={(taskId, minutes) => scheduleAt(taskId, day, minutes)}
               onResizeTask={(taskId, duration) =>
@@ -258,6 +259,39 @@ export default function Tasks() {
           setComposeAt(null);
           setComposeDuration(DEFAULT_DURATION_MINUTES);
           setDraft("");
+        }}
+      />
+      <TaskDetailSheet
+        task={selected}
+        boardTitle={selectedBoard?.title}
+        onClose={() => setSelectedId(null)}
+        onSave={(patch) => run((repository) => repository.updateTask(selected!.id, patch))}
+        onOpenSource={() => {
+          if (!selected) return;
+          setSelectedId(null);
+          router.push(selectedSourceBoard ? `/boards/${selectedSourceBoard.id}` : `/pages/${selected.pageId}`);
+        }}
+        onRemoveFromBoard={
+          selected?.boardId && selectedBoard && selected.pageId !== selectedBoard.pageId
+            ? () => {
+                setSelectedId(null);
+                void run((repository) => repository.removeTaskFromBoard(selected.id));
+              }
+            : undefined
+        }
+        onDelete={() => {
+          if (!selected) return;
+          Alert.alert("Delete task?", `“${selected.content}” will be removed everywhere.`, [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Delete",
+              style: "destructive",
+              onPress: () => {
+                setSelectedId(null);
+                void run((repository) => repository.deleteTask(selected.id));
+              },
+            },
+          ]);
         }}
       />
     </>

@@ -5,7 +5,7 @@
 <h1 align="center">Giraffle</h1>
 
 <p align="center">
-  A private, offline-first workspace for notes, tasks, boards and visual planning on macOS, iOS, Android and the browser. Your data stays on your device; optional self-hosted sync only relays ciphertext.
+  A private, offline-first workspace for pages, tasks, boards and visual planning on macOS, iOS, Android and the browser. Your data stays on your device; optional self-hosted sync only relays ciphertext.
 </p>
 
 <p align="center">
@@ -46,22 +46,22 @@ Giraffle is one Expo Universal client for native iOS, native Android and web, wi
 Three rules shape every decision:
 
 - **The device owns the data.** Every page, task, board and canvas is written to an encrypted SQLite database on the device. Every read and write works with the network off. There is no "loading" state waiting on a server.
-- **The relay is blind.** Content is encrypted on the device with keys the device never sends anywhere. The relay stores opaque blobs and the metadata it needs to order them. Whoever runs it — including you — cannot read a note.
+- **The relay is blind.** Content is encrypted on the device with keys the device never sends anywhere. The relay stores opaque blobs and the metadata it needs to order them. Whoever runs it — including you — cannot read a page.
 - **There is no account.** No sign-up, no email, no password, no server-side user record. A vault is identified by an id and an access token you generate yourself; a second device joins by being authorized by the first.
 
 ### The privacy model in plain terms
 
-Your notes are encrypted before they leave the app. The relay receives ciphertext, stores ciphertext, and hands ciphertext back to devices that hold the right token. It has no key, so a stolen database, a subpoena, or a curious operator yields nothing readable.
+Your content is encrypted before they leave the app. The relay receives ciphertext, stores ciphertext, and hands ciphertext back to devices that hold the right token. It has no key, so a stolen database, a subpoena, or a curious operator yields nothing readable.
 
 What the relay *does* see: how many records exist, roughly how big they are, when they were pushed, and which device pushed them. That is the cost of having a sync service at all. If you never turn sync on, it sees nothing, because you never run it.
 
 ## Features
 
-- **Notes:** Tiptap block editing, images, wikilinks, backlinks, nested pages and Markdown export
+- **Pages:** Tiptap block editing, images, wikilinks, backlinks, nested pages and Markdown export
 - **Quick capture:** create an unscheduled, boardless and unprioritized task directly into Inbox
 - **Calendar:** day, week and month planning with drag, resize and range creation
 - **Priority:** Focus, Plan, Delegate and Drop as optional views over canonical tasks
-- **Boards:** Kanban workflow placement without copying a task or changing its source page
+- **Boards:** workflow placement without copying a task or changing its source page
 - **Canvas:** Excalidraw shapes plus searchable live references to pages, boards and tasks
 - **Local first:** encrypted SQLite, device-held keys, offline reads/writes and a password or quick-PIN lock
 - **Optional sync:** ciphertext-only exchange between devices through a self-hosted blind relay
@@ -212,7 +212,7 @@ The client and the relay each install and test themselves; the root workspace ow
 
 ## Agent Control
 
-`packages/domain/src/mcp/` holds the catalog of tools an agent can call against a workspace — 42 tools covering pages, search, scheduling, priority, canvases and boards, with their names, descriptions and argument schemas. It is a contract, not a server: the relay is blind and cannot answer any of these calls, so an MCP host has to run inside a client that already holds the vault key. That host does not exist yet.
+`packages/domain/src/mcp/` holds the catalog of tools an agent can call against a workspace — covering pages, tasks, priority, canvases and boards with the same plain names used by the app. It is a contract, not a server: the relay is blind and cannot answer any of these calls, so an MCP host has to run inside a client that already holds the vault key. That host does not exist yet.
 
 ## Releasing
 

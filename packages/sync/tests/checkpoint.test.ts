@@ -55,9 +55,9 @@ describe("encrypted checkpoints", () => {
           },
         ],
         state: {
-          notes: [
+          pages: [
             {
-              id: "note-1",
+              id: "page-1",
               title: "Offline state",
               deleted: false,
             },
@@ -78,7 +78,7 @@ describe("encrypted checkpoints", () => {
 
     expect(encodeEncryptedCheckpoint(decoded)).toEqual(encoded);
     expect(payload.state).toEqual({
-      notes: [{ id: "note-1", title: "Offline state", deleted: false }],
+      pages: [{ id: "page-1", title: "Offline state", deleted: false }],
     });
     expect(
       checkpointFrontierMatchesHead(payload, "device-a", 7, deviceHead),

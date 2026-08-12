@@ -34,7 +34,7 @@ export default function VaultEntry() {
   const [recoveryCode, setRecoveryCode] = useState<string | null>(null);
 
   if (phase === "ready" && !recoveryCode) {
-    return <Redirect href="/notes" />;
+    return <Redirect href="/pages" />;
   }
 
   if (phase === "booting") {
@@ -193,10 +193,10 @@ export default function VaultEntry() {
             </Text>
             <Text style={[typography.body, { color: colors.secondary }]}>
               {isNewWorkspace
-                ? "Your notes stay private on this device. Encrypted server backup is optional."
+                ? "Your content stays private on this device. Encrypted server backup is optional."
                 : usingPin
                   ? "Use your quick PIN. Your full password remains available as a fallback."
-                  : "Enter your vault password to open your notes."}
+                  : "Enter your vault password to open your workspace."}
             </Text>
 
             {usingPin ? (

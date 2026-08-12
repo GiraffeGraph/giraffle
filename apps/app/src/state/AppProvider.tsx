@@ -59,6 +59,8 @@ import { createSyncEngine, type SyncOutcome } from "@/sync/engine";
 
 type UnlockMethod = "passphrase" | "pin";
 
+const AUTO_SYNC_INTERVAL_MS = 5_000;
+
 /** What the joining device shows while a trusted device decides about it. */
 export interface PendingJoin {
   vaultId: string;
@@ -136,8 +138,8 @@ export function AppProvider({ children }: PropsWithChildren) {
   const joinRef = useRef<
     (PendingJoin & { keys: LocalKeys; passphrase: string }) | null
   >(null);
-  const engineRef = useRef<ReturnType<typeof createSyncEngine> | null>(null);
   const syncInFlightRef = useRef<Promise<SyncOutcome> | null>(null);
+  const enrolledConnectionRef = useRef<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -179,13 +181,15 @@ export function AppProvider({ children }: PropsWithChildren) {
 
   const close = useCallback(async () => {
     await mutationQueue.current;
+    const syncing = syncInFlightRef.current;
+    if (syncing) await syncing.catch(() => undefined);
     try {
       if (repository) await repository.close();
     } finally {
       if (keyRef.current) clearKeyMaterial(keyRef.current);
       keyRef.current = null;
-      engineRef.current = null;
-      syncInFlightRef.current = null;
+      if (syncInFlightRef.current === syncing) syncInFlightRef.current = null;
+      enrolledConnectionRef.current = null;
       mutationQueue.current = Promise.resolve();
       setRepository(null);
       setSession(null);
@@ -381,25 +385,68 @@ export function AppProvider({ children }: PropsWithChildren) {
 
   const syncNow = useCallback(async () => {
     if (!repository || !session) throw new Error("Vault is locked");
-    const server = await loadSyncConfiguration();
-    if (!server) throw new Error("Save a connection first");
+    if (syncInFlightRef.current) return syncInFlightRef.current;
 
-    engineRef.current ??= createSyncEngine({
-      config: server,
-      vaultId: session.vaultId,
-      deviceId: session.deviceId,
-      repository,
-    });
-    const operation = engineRef.current.run();
-    syncInFlightRef.current = operation;
-    try {
-      const outcome = await operation;
+    const operation = (async () => {
+      const server = await loadSyncConfiguration();
+      if (!server) throw new Error("Save a connection first");
+
+      const connectionId = `${session.vaultId}:${session.deviceId}:${server.baseUrl}:${server.token}`;
+      if (enrolledConnectionRef.current !== connectionId) {
+        const status = await enrollDevice(server, {
+          vaultId: session.vaultId,
+          deviceId: session.deviceId,
+          repository,
+        });
+        if (status !== "active") throw new Error("This device is not approved for sync");
+        enrolledConnectionRef.current = connectionId;
+      }
+
+      const outcome = await createSyncEngine({
+        config: server,
+        vaultId: session.vaultId,
+        deviceId: session.deviceId,
+        repository,
+      }).run();
       setSnapshot(await repository.snapshot());
       return outcome;
+    })();
+
+    syncInFlightRef.current = operation;
+    try {
+      return await operation;
     } finally {
       if (syncInFlightRef.current === operation) syncInFlightRef.current = null;
     }
   }, [repository, session]);
+
+  // Keep active peers converged without making the user press a sync button.
+  // The relay remains blind: this only exchanges signed ciphertext records.
+  useEffect(() => {
+    if (phase !== "ready" || !repository || !session) return undefined;
+    let active = true;
+    let resumeTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const exchange = () => {
+      if (!active || AppState.currentState !== "active") return;
+      void syncNow().catch(() => undefined);
+    };
+
+    exchange();
+    const interval = setInterval(exchange, AUTO_SYNC_INTERVAL_MS);
+    const subscription = AppState.addEventListener("change", (next) => {
+      if (next !== "active") return;
+      // Let the lock listener run first; if it locks, effect cleanup cancels this.
+      resumeTimer = setTimeout(exchange, 250);
+    });
+
+    return () => {
+      active = false;
+      clearInterval(interval);
+      if (resumeTimer) clearTimeout(resumeTimer);
+      subscription.remove();
+    };
+  }, [phase, repository, session, syncNow]);
 
   const unlock = useCallback(
     async (credential: string, method: UnlockMethod = "passphrase") => {

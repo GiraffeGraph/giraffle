@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { buildNoteExportArtifact } from "@giraffle/domain";
+import { buildPageExportArtifact } from "@giraffle/domain";
 
-describe("note export", () => {
+describe("page export", () => {
   it("builds Markdown and MDX without publishing metadata", () => {
-    const artifact = buildNoteExportArtifact({
-      id: "note-1",
-      title: 'A "portable" note',
-      updatedAt: new Date("2026-04-12T10:00:00.000Z"),
+    const artifact = buildPageExportArtifact({
+      id: "page-1",
+      title: 'A "portable" page',
+      updatedAt: new Date("2026-04-12T10:00:00.000Z").getTime(),
       document: {
         type: "doc",
         content: [
@@ -19,13 +19,13 @@ describe("note export", () => {
     });
 
     expect(artifact).toEqual({
-      noteId: "note-1",
-      title: 'A "portable" note',
+      pageId: "page-1",
+      title: 'A "portable" page',
       markdown: "Hello",
       mdx: [
         "---",
-        'title: "A \\"portable\\" note"',
-        'noteId: "note-1"',
+        'title: "A \\"portable\\" page"',
+        'pageId: "page-1"',
         'updatedAt: "2026-04-12T10:00:00.000Z"',
         "---",
         "",

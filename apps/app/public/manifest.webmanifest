@@ -1,7 +1,7 @@
 {
   "name": "Giraffle",
   "short_name": "Giraffle",
-  "description": "A private, offline-first workspace for notes, tasks, boards and visual planning.",
+  "description": "A private, offline-first workspace for pages, tasks, boards and visual planning.",
   "id": "/",
   "start_url": "/",
   "scope": "/",

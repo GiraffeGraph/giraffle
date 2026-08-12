@@ -8,7 +8,7 @@ import { spacing, typography } from "@/design/tokens";
 const sections = [
   {
     icon: "document-text-outline" as const,
-    title: "Notes",
+    title: "Pages",
     body: "Keep pages and their related tasks together.",
   },
   {

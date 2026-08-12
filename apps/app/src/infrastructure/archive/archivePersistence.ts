@@ -2,10 +2,10 @@ import { documentPlainText, type Page, type TaskPriority } from "@giraffle/domai
 import * as Y from "yjs";
 import type { AppSnapshot } from "@/state/snapshot";
 import {
-  noteDocumentState,
-  openNoteDocument,
-  reconcileNoteDocument,
-} from "@/sync/noteDocument";
+  pageDocumentState,
+  openPageDocument,
+  reconcilePageDocument,
+} from "@/sync/pageDocument";
 import type { VaultDatabase } from "../database/vaultDatabase";
 import type { VaultArchiveData, VaultArchiveTask } from "./vaultArchive";
 
@@ -166,8 +166,8 @@ export async function restoreVaultArchive(input: {
     }
 
     for (const page of orderedPages) {
-      const collaborative = openNoteDocument(null);
-      reconcileNoteDocument(collaborative, page.document);
+      const collaborative = openPageDocument(null);
+      reconcilePageDocument(collaborative, page.document);
       await tx.runAsync(
         "INSERT INTO pages(id,title,icon,parent_page_id,position_id,is_pinned,is_archived,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?)",
         page.id, page.title, page.icon, page.parentId, page.position, Number(page.isPinned), Number(page.isArchived), page.createdAt, page.updatedAt,
@@ -178,7 +178,7 @@ export async function restoreVaultArchive(input: {
       );
       await tx.runAsync(
         "INSERT INTO page_documents(page_id,yjs_state,updated_at) VALUES (?,?,?)",
-        page.id, noteDocumentState(collaborative), page.updatedAt,
+        page.id, pageDocumentState(collaborative), page.updatedAt,
       );
       await tx.runAsync("INSERT INTO page_fts(page_id,title,body) VALUES (?,?, '')", page.id, page.title);
     }
@@ -245,8 +245,8 @@ export async function restoreVaultArchive(input: {
         isPinned: page.isPinned,
         isArchived: page.isArchived,
       }, now);
-      const collaborative = openNoteDocument(null);
-      reconcileNoteDocument(collaborative, page.document);
+      const collaborative = openPageDocument(null);
+      reconcilePageDocument(collaborative, page.document);
       await input.recordMutation(tx, page.id, "page.document", {
         update: Y.encodeStateAsUpdate(collaborative),
       }, now);

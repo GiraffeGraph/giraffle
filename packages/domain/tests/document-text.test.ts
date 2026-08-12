@@ -32,13 +32,13 @@ describe("document plain text", () => {
     const document = {
       type: "doc",
       content: [
-        { type: "paragraph", content: [{ type: "text", text: "See [[Field Notes]] and" }] },
+        { type: "paragraph", content: [{ type: "text", text: "See [[Field Research]] and" }] },
         { type: "paragraph", content: [{ type: "text", text: "[[Map|the map]]" }] },
       ],
     };
 
     expect(parseWikilinks(documentPlainText(document)).map((link) => link.target)).toEqual([
-      "Field Notes",
+      "Field Research",
       "Map",
     ]);
   });

@@ -1,8 +1,9 @@
 import type { CanvasElement } from "@giraffle/domain";
 import { router, useLocalSearchParams } from "expo-router";
 import { useRef, useState } from "react";
-import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { TaskDetailSheet } from "@/components/tasks/TaskDetailSheet";
 import { EditableText } from "@/components/ui/EditableText";
 import { Button, DividerRow, EmptyState, Icon } from "@/components/ui/primitives";
 import { useTheme } from "@/design/ThemeProvider";
@@ -30,6 +31,14 @@ export default function CanvasEditor() {
     appState: Record<string, unknown>;
   } | null>(null);
   const [add, setAdd] = useState<CanvasReferenceRequest | null>(null);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const selectedTask = snapshot.tasks.find((task) => task.id === selectedTaskId) ?? null;
+  const selectedBoard = selectedTask?.boardId
+    ? snapshot.boards.find((board) => board.id === selectedTask.boardId)
+    : null;
+  const selectedSourceBoard = selectedTask
+    ? snapshot.boards.find((board) => board.pageId === selectedTask.pageId)
+    : null;
 
   if (!canvas) {
     return (
@@ -131,13 +140,9 @@ export default function CanvasEditor() {
           }}
           onOpenPage={(pageId) => {
             const board = snapshot.boards.find((item) => item.pageId === pageId);
-            router.push(board ? `/trek/${board.id}` : `/notes/${pageId}`);
+            router.push(board ? `/boards/${board.id}` : `/pages/${pageId}`);
           }}
-          onOpenTask={(taskId) => {
-            const task = snapshot.tasks.find((item) => item.id === taskId);
-            if (!task) return;
-            router.push(`/notes/${task.pageId}`);
-          }}
+          onOpenTask={setSelectedTaskId}
           onError={() => setSaveState("error")}
           onChange={(elements, appState) => {
             setAdd(null);
@@ -146,6 +151,43 @@ export default function CanvasEditor() {
           dom={offlineDomProps({ backgroundColor: colors.background, scrollEnabled: false })}
         />
       </View>
+      <TaskDetailSheet
+        task={selectedTask}
+        boardTitle={selectedBoard?.title}
+        onClose={() => setSelectedTaskId(null)}
+        onSave={(patch) => run((repository) => repository.updateTask(selectedTask!.id, patch))}
+        onOpenSource={() => {
+          if (!selectedTask) return;
+          setSelectedTaskId(null);
+          router.push(
+            selectedSourceBoard
+              ? `/boards/${selectedSourceBoard.id}`
+              : `/pages/${selectedTask.pageId}`,
+          );
+        }}
+        onRemoveFromBoard={
+          selectedTask?.boardId && selectedBoard && selectedTask.pageId !== selectedBoard.pageId
+            ? () => {
+                setSelectedTaskId(null);
+                void run((repository) => repository.removeTaskFromBoard(selectedTask.id));
+              }
+            : undefined
+        }
+        onDelete={() => {
+          if (!selectedTask) return;
+          Alert.alert("Delete task?", `“${selectedTask.content}” will be removed everywhere.`, [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Delete",
+              style: "destructive",
+              onPress: () => {
+                setSelectedTaskId(null);
+                void run((repository) => repository.deleteTask(selectedTask.id));
+              },
+            },
+          ]);
+        }}
+      />
       <Modal
         visible={picker}
         transparent
@@ -252,7 +294,7 @@ export default function CanvasEditor() {
                     onPress={() => {
                       setPicker(false);
                       void run((repository) => repository.createPage())
-                        .then((pageId) => router.push(`/notes/${pageId}`))
+                        .then((pageId) => router.push(`/pages/${pageId}`))
                         .catch(() => undefined);
                     }}
                   />

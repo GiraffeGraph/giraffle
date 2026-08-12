@@ -13,8 +13,8 @@ describe("vault archive restore", () => {
     await source.repository.updatePage(board.pageId, { icon: "🚀" });
     const column = (await source.repository.snapshot()).columns.find((entry) => entry.boardId === boardId)!;
 
-    const notesPageId = await source.repository.createPage({ title: "Notes" });
-    await source.repository.saveDocument(notesPageId, {
+    const researchPageId = await source.repository.createPage({ title: "Research" });
+    await source.repository.saveDocument(researchPageId, {
       type: "doc",
       content: [
         {
@@ -24,7 +24,7 @@ describe("vault archive restore", () => {
         },
       ],
     });
-    const taskId = await source.repository.createTask({ pageId: notesPageId, content: "Ship it" });
+    const taskId = await source.repository.createTask({ pageId: researchPageId, content: "Ship it" });
     await source.repository.updateTask(taskId, {
       completed: true,
       priority: "do",
@@ -48,7 +48,7 @@ describe("vault archive restore", () => {
       version: 1,
       versionNonce: 1,
       isDeleted: false,
-      customData: { girafflePageId: notesPageId, giraffleTaskId: taskId },
+      customData: { girafflePageId: researchPageId, giraffleTaskId: taskId },
     };
     await source.repository.saveCanvas(canvasId, [element], { zoom: { value: 1.2 } });
 

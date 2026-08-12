@@ -31,7 +31,7 @@ export function isIdBearing(type: string): boolean {
 }
 
 export interface TaskToggle {
-  blockId: string;
+  taskId: string;
   checked: boolean;
 }
 
@@ -110,10 +110,10 @@ export function taskToggles(
   const previous = collectTaskStates(before);
   const toggles: TaskToggle[] = [];
 
-  for (const [blockId, checked] of collectTaskStates(after)) {
-    const wasChecked = previous.get(blockId);
+  for (const [taskId, checked] of collectTaskStates(after)) {
+    const wasChecked = previous.get(taskId);
     if (wasChecked !== undefined && wasChecked !== checked) {
-      toggles.push({ blockId, checked });
+      toggles.push({ taskId, checked });
     }
   }
 

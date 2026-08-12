@@ -1,4 +1,4 @@
-import type { TiptapDocument } from "./note/note.types";
+import type { TiptapDocument } from "./document/document.types";
 
 /**
  * The offline-first vault entity model: one flat graph of pages, tasks, boards
@@ -10,6 +10,12 @@ export type Id = string;
 
 /** Eisenhower placement, stored lowercase as the `slot` column value. */
 export type TaskPriority = "do" | "schedule" | "delegate" | "eliminate";
+
+export interface PageBreadcrumb {
+  id: Id;
+  title: string;
+  icon: string | null;
+}
 
 export interface Page {
   id: Id;

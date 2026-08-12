@@ -36,8 +36,8 @@ function archiveData(): VaultArchiveData {
         updatedAt: now + 1,
       },
       {
-        id: "page-notes",
-        title: "Notes",
+        id: "page-research",
+        title: "Research",
         icon: null,
         parentId: "page-board",
         position: "a1",
@@ -70,7 +70,7 @@ function archiveData(): VaultArchiveData {
     tasks: [
       {
         id: "task-1",
-        pageId: "page-notes",
+        pageId: "page-research",
         boardId: "board-1",
         columnId: "column-1",
         content: "Ship it",
@@ -82,7 +82,7 @@ function archiveData(): VaultArchiveData {
         position: "1",
         sourcePosition: "a0",
         boardPosition: "1",
-        sourceLabel: "Notes",
+        sourceLabel: "Research",
         createdAt: now,
         updatedAt: now + 3,
       },
@@ -150,7 +150,7 @@ describe("encrypted vault archives", () => {
 
   it("rejects page cycles before export", () => {
     const data = archiveData();
-    data.pages[0] = { ...data.pages[0]!, parentId: "page-notes" };
+    data.pages[0] = { ...data.pages[0]!, parentId: "page-research" };
 
     expect(() => createVaultArchive(data, "source-vault", PASSWORD)).toThrow(
       "page cycle",

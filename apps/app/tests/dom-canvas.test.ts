@@ -68,7 +68,7 @@ describe("page references", () => {
 
   test("a reference carries the id and nonce the host minted", () => {
     const skeleton = pageReferenceSkeleton(
-      { kind: "page", pageId: "page-1", title: "Field Notes", elementId: "element-1", versionNonce: 99 },
+      { kind: "page", pageId: "page-1", title: "Field Research", elementId: "element-1", versionNonce: 99 },
       0,
     );
 
@@ -76,13 +76,13 @@ describe("page references", () => {
       type: "rectangle",
       id: "element-1",
       versionNonce: 99,
-      label: { text: "Field Notes" },
+      label: { text: "Field Research" },
       link: "https://giraffle.local/page/page-1",
       customData: { girafflePageId: "page-1" },
     });
   });
 
-  test("cards lay out two per row so a busy canvas does not stack them", () => {
+  test("reference tiles lay out two per row so a busy canvas does not stack them", () => {
     const request = { kind: "page" as const, pageId: "p", title: "t", elementId: "e", versionNonce: 1 };
 
     expect(pageReferenceSkeleton(request, 0)).toMatchObject({ x: 24, y: 24 });
@@ -90,9 +90,9 @@ describe("page references", () => {
     expect(pageReferenceSkeleton(request, 2)).toMatchObject({ x: 24, y: 164 });
   });
 
-  test("normalizes legacy internal links before Excalidraw parses them", () => {
+  test("normalizes internal links before Excalidraw parses them", () => {
     const [normalized] = normalizeReferenceLinks([
-      element("legacy", {
+      element("reference", {
         customData: { girafflePageId: "page-1" },
         link: "giraffle://page/page-1",
       }),

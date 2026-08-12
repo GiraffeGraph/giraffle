@@ -1,5 +1,4 @@
-import type { Id, Page } from "../entities";
-import type { PageBreadcrumb } from "../note/note.types";
+import type { Id, Page, PageBreadcrumb } from "../entities";
 
 /**
  * Ancestors of a page, outermost first, excluding the page itself. The visited
@@ -52,7 +51,7 @@ export function selectableParentPages(pages: Page[], pageId: Id): Page[] {
   return pages.filter((page) => !blocked.has(page.id));
 }
 
-/** Full ancestor label of a page, e.g. "Project / Research / Notes". */
+/** Full ancestor label of a page, e.g. "Project / Research / Sources". */
 export function pageLabel(pages: Page[], page: Page): string {
   return [...pageAncestors(pages, page.id).map((item) => item.title), page.title].join(" / ");
 }

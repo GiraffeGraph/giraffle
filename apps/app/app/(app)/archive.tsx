@@ -44,7 +44,7 @@ export default function Archive() {
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={`Open ${page.title}`}
-                onPress={() => router.push(`/notes/${page.id}`)}
+                onPress={() => router.push(`/pages/${page.id}`)}
                 style={({ pressed }) => [styles.pageLink, { opacity: pressed ? 0.55 : 1 }]}
               >
                 <Icon name="document-outline" />

@@ -82,7 +82,7 @@ export function taskIdForElement(element: unknown): string | null {
   return typeof taskId === "string" && taskId.length > 0 ? taskId : null;
 }
 
-/** Rewrites legacy custom-scheme links before Excalidraw parses the scene. */
+/** Rewrites reference links into the canonical canvas URL format. */
 export function normalizeReferenceLinks(
   elements: readonly CanvasElement[],
 ): CanvasElement[] {
@@ -99,8 +99,8 @@ export function normalizeReferenceLinks(
 }
 
 /**
- * A labelled card standing in for a canonical page or task. Excalidraw fills
- * in the remaining fields; cards are laid out two per row.
+ * A labelled reference tile standing in for a canonical page or task.
+ * Excalidraw fills in the remaining fields; tiles are laid out two per row.
  */
 export function referenceSkeleton(
   request: CanvasReferenceRequest,

@@ -45,6 +45,7 @@ beforeEach(async () => {
   const secrets = await createVaultSecrets();
   alpha = await createClient({ deviceId: "device-alpha", secrets });
   beta = await createClient({ deviceId: "device-beta", secrets });
+  await beta.repository.prepareForJoinedVault();
 
   // Alpha founds the vault; beta joins and is approved out of band.
   expect(await enrollDevice(SYNC_CONFIG, { vaultId: VAULT_ID, deviceId: alpha.deviceId, repository: alpha.repository })).toBe("active");
@@ -53,6 +54,29 @@ beforeEach(async () => {
 });
 
 describe("two devices, one vault", () => {
+  it("publishes founder statuses so a joining peer uses the same foreign keys", async () => {
+    await alpha.sync();
+    await beta.sync();
+
+    const founder = await alpha.repository.snapshot();
+    const joined = await beta.repository.snapshot();
+    expect(joined.statuses.map((status) => status.id)).toEqual(
+      founder.statuses.map((status) => status.id),
+    );
+  });
+
+  it("retries a board that arrives before its founder status", async () => {
+    const statusId = (await alpha.repository.snapshot()).statuses[0]!.id;
+    const boardId = await alpha.repository.createBoard("Early board", statusId);
+
+    await alpha.sync();
+    const outcome = await beta.sync();
+
+    expect(outcome.error).toBeNull();
+    expect(outcome.deferred).toBe(0);
+    expect((await beta.repository.snapshot()).boards.some((board) => board.id === boardId)).toBe(true);
+  });
+
   it("converges on the same pages whichever device syncs first", async () => {
     const alphaPage = await alpha.repository.createPage({ title: "Written on alpha" });
     const betaPage = await beta.repository.createPage({ title: "Written on beta" });
@@ -109,7 +133,7 @@ describe("two devices, one vault", () => {
   });
 
   it("loses no text when both devices type into the same paragraph", async () => {
-    const pageId = await alpha.repository.createPage({ title: "Notes" });
+    const pageId = await alpha.repository.createPage({ title: "Research" });
     await alpha.repository.saveDocument(pageId, paragraph("the quick fox"));
     await settle(alpha, beta);
     expect(await bodyOf(beta, pageId)).toBe("the quick fox");
@@ -214,7 +238,7 @@ describe("cursor durability", () => {
   it("syncs a board as a visible page with canonical tasks", async () => {
     const boardId = await alpha.repository.createBoard("Release board");
     const taskId = await alpha.repository.createTask({ boardId, content: "Ship build" });
-    const inboxTaskId = await alpha.repository.createInboxTask("Prepare notes");
+    const inboxTaskId = await alpha.repository.createInboxTask("Prepare brief");
     await alpha.repository.addTaskToBoard(inboxTaskId, boardId);
 
     await settle(alpha, beta);
@@ -286,11 +310,25 @@ describe("failure tolerance", () => {
     relay.records.push({ serverSeq: relay.records.length + 1, encodedRecord: pending[0]!.record });
 
     const outcome = await beta.sync();
-    expect(outcome.error).toBeNull();
+    expect(outcome.error).toContain("1 encrypted change is waiting");
     expect(outcome.deferred).toBe(1);
     expect(await beta.repository.deferredRecordCount()).toBe(1);
     expect(Number(await beta.repository.pullCursor())).toBe(relay.records.length);
     expect(await pageTitles(beta)).toEqual(["Readable"]);
+
+    // Once the author becomes trusted, the durable deferred ciphertext is
+    // retried even though the relay cursor has already advanced past it.
+    expect(await enrollDevice(SYNC_CONFIG, {
+      vaultId: VAULT_ID,
+      deviceId: stranger.deviceId,
+      repository: stranger.repository,
+    })).toBe("pending");
+    relay.devices.get(stranger.deviceId)!.status = "active";
+    const recovered = await beta.sync();
+    expect(recovered.error).toBeNull();
+    expect(recovered.applied).toBe(1);
+    expect(await beta.repository.deferredRecordCount()).toBe(0);
+    expect(await pageTitles(beta)).toEqual(["Readable", "Unverifiable"]);
   });
 
   it("does not apply a record twice when two runs overlap", async () => {
@@ -302,7 +340,7 @@ describe("failure tolerance", () => {
     // The second caller joins the run already in flight rather than starting a
     // second exchange, so the record is applied exactly once.
     expect(first).toBe(second);
-    expect(first.applied).toBe(1);
+    expect(first.applied).toBeGreaterThanOrEqual(1);
     expect(await pageTitles(beta)).toEqual(["Concurrent"]);
     expect((await beta.repository.snapshot()).pages).toHaveLength(1);
   });

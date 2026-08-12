@@ -1,10 +1,10 @@
-const { app, BrowserWindow, Menu, net, protocol, session, shell } = require("electron");
-const { stat } = require("node:fs/promises");
+const { app, BrowserWindow, Menu, protocol, session, shell } = require("electron");
+const { readFile, stat } = require("node:fs/promises");
 const path = require("node:path");
-const { pathToFileURL } = require("node:url");
 
 const SCHEME = "giraffle-app";
 const APP_ORIGIN = `${SCHEME}://app`;
+let quitting = false;
 const CONTENT_SECURITY_POLICY = [
   "default-src 'self'",
   "script-src 'self' 'wasm-unsafe-eval'",
@@ -53,6 +53,20 @@ function isInside(root, candidate) {
   return candidate === root || candidate.startsWith(`${root}${path.sep}`);
 }
 
+const CONTENT_TYPES = {
+  ".css": "text/css; charset=utf-8",
+  ".html": "text/html; charset=utf-8",
+  ".ico": "image/x-icon",
+  ".js": "text/javascript; charset=utf-8",
+  ".json": "application/json; charset=utf-8",
+  ".png": "image/png",
+  ".svg": "image/svg+xml",
+  ".ttf": "font/ttf",
+  ".wasm": "application/wasm",
+  ".webmanifest": "application/manifest+json; charset=utf-8",
+  ".xml": "application/xml; charset=utf-8",
+};
+
 async function resolveAsset(webRoot, requestUrl) {
   if (!isApplicationUrl(requestUrl)) return null;
   const url = new URL(requestUrl);
@@ -89,7 +103,12 @@ function installApplicationProtocol() {
     if (request.method !== "GET") return new Response("Method not allowed", { status: 405 });
     const asset = await resolveAsset(webRoot, request.url);
     if (!asset) return new Response("Not found", { status: 404 });
-    return net.fetch(pathToFileURL(asset).toString());
+    const body = await readFile(asset);
+    return new Response(body, {
+      headers: {
+        "Content-Type": CONTENT_TYPES[path.extname(asset).toLowerCase()] ?? "application/octet-stream",
+      },
+    });
   });
 }
 
@@ -166,6 +185,15 @@ function createWindow() {
 
   window.once("ready-to-show", () => window.show());
 
+  // Keep the renderer (and its in-memory vault keys) alive when the macOS red
+  // close button is used. Hiding still emits a background state, so the user's
+  // configured lock timeout applies when the window is opened again.
+  window.on("close", (event) => {
+    if (process.platform !== "darwin" || quitting) return;
+    event.preventDefault();
+    window.hide();
+  });
+
   window.webContents.setWindowOpenHandler(({ url }) => {
     if (url.startsWith("https://")) void shell.openExternal(url);
     return { action: "deny" };
@@ -195,6 +223,10 @@ if (!app.requestSingleInstanceLock()) {
     window.focus();
   });
 
+  app.on("before-quit", () => {
+    quitting = true;
+  });
+
   app.whenReady().then(() => {
     installApplicationProtocol();
     installMenu();
@@ -214,7 +246,13 @@ if (!app.requestSingleInstanceLock()) {
     createWindow();
 
     app.on("activate", () => {
-      if (BrowserWindow.getAllWindows().length === 0) createWindow();
+      const window = BrowserWindow.getAllWindows()[0];
+      if (!window) {
+        createWindow();
+        return;
+      }
+      window.show();
+      window.focus();
     });
   });
 

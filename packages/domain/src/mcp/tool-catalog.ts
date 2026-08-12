@@ -1,481 +1,330 @@
 import { z } from "zod";
-import { BlockNodeContentSchema } from "./schemas";
+import { BlockNodeContentSchema, TaskPrioritySchema } from "./schemas";
 
-/**
- * The agent-facing contract of a Giraffle workspace, independent of storage.
- *
- * A tool is split in two: this catalog owns the wire contract (names, prose the
- * agent reads, argument validation, destructiveness) while the host that mounts
- * the catalog owns `execute`. The sync relay is blind — it holds ciphertext and
- * cannot answer a single one of these calls — so the only place an MCP host can
- * run is inside a client that already holds the vault key. Keeping the contract
- * here lets that host be written without re-deriving 42 schemas.
- */
+/** Storage-independent tool contract for a future client-side MCP host. */
 export interface McpToolSchema {
-  /** Stable internal identifier a host binds its handler to. */
+  /** Stable identifier used by the host implementation. */
   name: string;
-  /** Name exposed over MCP. */
+  /** Public name exposed over MCP. */
   mcpName: string;
   description: string;
-  /** Mutates the workspace; hosts should surface it as non-read-only. */
   destructive: boolean;
   inputSchema: z.ZodTypeAny;
 }
 
-const PRIORITY = z.enum(["DO", "SCHEDULE", "DELEGATE", "ELIMINATE"]);
-const MATRIX_SLOT = z.enum(["DO", "SCHEDULE", "DELEGATE", "ELIMINATE", "BACKLOG"]);
-const COLUMN_COLOR = z.enum(["neutral", "blue", "amber", "green", "red", "purple"]);
+const id = z.string().min(1).max(256);
+const nullableId = id.nullable();
+const dueDate = z.string().min(10).max(40).nullable();
+const duration = z.number().int().min(1).max(1_440).nullable();
+const taskFields = {
+  taskId: id,
+  content: z.string().min(1).max(2_000).optional(),
+  description: z.string().max(10_000).nullable().optional(),
+  priority: TaskPrioritySchema.nullable().optional(),
+  dueDate: dueDate.optional(),
+  durationMinutes: duration.optional(),
+  completed: z.boolean().optional(),
+};
 
 export const MCP_TOOL_SCHEMAS: McpToolSchema[] = [
   {
-    name: "notes_search",
-    mcpName: "giraffle-search-notes",
+    name: "pages_search",
+    mcpName: "giraffle-pages-search",
     destructive: false,
-    description:
-      "Search the user's workspace notes. Supports plain words, quoted phrases, /regex/, folder: filters, title: filters, -negative terms, and pinned:true/false.",
-    inputSchema: z.object({
-      query: z.string().max(220).default(""),
-      limit: z.number().int().min(1).max(120).default(20),
-    }),
+    description: "Search local page titles, page documents, and task text using plain words.",
+    inputSchema: z.object({ query: z.string().min(1).max(220), limit: z.number().int().min(1).max(50).default(20) }),
   },
   {
-    name: "notes_get",
-    mcpName: "giraffle-get-note",
+    name: "pages_get",
+    mcpName: "giraffle-pages-get",
     destructive: false,
-    description:
-      "Retrieve one note by noteId. Returns metadata, canonical Tiptap document, and Markdown rendering.",
-    inputSchema: z.object({
-      noteId: z.string().min(1),
-      includeArchived: z.boolean().optional(),
-    }),
+    description: "Read one page with its metadata, canonical Tiptap document, tasks, and Markdown rendering.",
+    inputSchema: z.object({ pageId: id, includeArchived: z.boolean().default(false) }),
   },
   {
-    name: "notes_export",
-    mcpName: "giraffle-export-note",
+    name: "pages_export",
+    mcpName: "giraffle-pages-export-markdown",
     destructive: false,
-    description: "Export a note as Markdown or MDX from its canonical block document.",
-    inputSchema: z.object({
-      noteId: z.string().min(1),
-      format: z.enum(["markdown", "mdx"]).default("markdown"),
-    }),
+    description: "Render one page's canonical document as Markdown.",
+    inputSchema: z.object({ pageId: id }),
   },
   {
-    name: "notes_backlinks",
-    mcpName: "giraffle-get-backlinks",
+    name: "pages_backlinks",
+    mcpName: "giraffle-pages-list-backlinks",
     destructive: false,
-    description: "Get persisted backlinks pointing to a note.",
-    inputSchema: z.object({ noteId: z.string().min(1) }),
+    description: "List pages whose documents link to the selected page.",
+    inputSchema: z.object({ pageId: id }),
   },
   {
     name: "pages_children",
-    mcpName: "giraffle-list-child-pages",
+    mcpName: "giraffle-pages-list-children",
     destructive: false,
-    description:
-      "List the child pages of one page. If pageId is omitted or null, lists the top-level pages.",
-    inputSchema: z.object({
-      pageId: z.string().min(1).nullable().optional(),
-    }),
+    description: "List direct child pages, or top-level pages when parentId is null.",
+    inputSchema: z.object({ parentId: nullableId.default(null) }),
   },
   {
-    name: "notes_create",
-    mcpName: "giraffle-create-note",
+    name: "pages_create",
+    mcpName: "giraffle-pages-create",
     destructive: true,
-    description:
-      "Create a note in the workspace. Optional initialMarkdown is parsed into canonical blocks; optional initialBlocks must be Tiptap block JSON.",
+    description: "Create a page, optionally nested inside another page and seeded with supported Tiptap blocks.",
     inputSchema: z.object({
       title: z.string().min(1).max(220),
-      parentId: z.string().min(1).optional(),
-      icon: z.string().max(20).optional(),
-      isPinned: z.boolean().optional(),
-      initialMarkdown: z.string().max(200_000).optional(),
-      initialBlocks: z.array(BlockNodeContentSchema).max(200).optional(),
+      parentId: nullableId.default(null),
+      icon: z.string().max(20).nullable().optional(),
+      isPinned: z.boolean().default(false),
+      blocks: z.array(BlockNodeContentSchema).max(200).optional(),
     }),
   },
   {
-    name: "notes_update",
-    mcpName: "giraffle-update-note",
+    name: "pages_update",
+    mcpName: "giraffle-pages-update",
     destructive: true,
-    description:
-      "Update note metadata such as title, pin state, folder, icon, cover image, or archive state. Use tower_assign_note for matrix placement.",
+    description: "Update a page title, icon, pin state, or archive state.",
     inputSchema: z.object({
-      noteId: z.string().min(1),
+      pageId: id,
       title: z.string().min(1).max(220).optional(),
       icon: z.string().max(20).nullable().optional(),
-      coverImage: z.string().max(2_000).nullable().optional(),
-      folderId: z.string().min(1).nullable().optional(),
       isPinned: z.boolean().optional(),
       isArchived: z.boolean().optional(),
     }),
   },
   {
-    name: "notes_append",
-    mcpName: "giraffle-append-blocks",
+    name: "pages_append",
+    mcpName: "giraffle-pages-append-blocks",
     destructive: true,
-    description:
-      "Append content to an existing note. Provide markdown for simple writes or Tiptap block JSON for precise canonical blocks.",
-    inputSchema: z
-      .object({
-        noteId: z.string().min(1),
-        parentBlockId: z.string().min(1).nullable().optional(),
-        afterBlockId: z.string().min(1).nullable().optional(),
-        markdown: z.string().max(200_000).optional(),
-        blocks: z.array(BlockNodeContentSchema).max(100).optional(),
-      })
-      .refine((v) => Boolean(v.markdown?.trim()) || Boolean(v.blocks?.length), {
-        message: "Provide markdown or at least one block.",
-      }),
+    description: "Append supported Tiptap blocks to an existing page document.",
+    inputSchema: z.object({ pageId: id, blocks: z.array(BlockNodeContentSchema).min(1).max(100) }),
   },
   {
-    name: "notes_move",
-    mcpName: "giraffle-move-note",
+    name: "pages_move",
+    mcpName: "giraffle-pages-move",
     destructive: true,
-    description:
-      "Move a note inside another page, or to the workspace root when targetParentId is null. Use afterNoteId to position relative to a sibling.",
-    inputSchema: z.object({
-      noteId: z.string().min(1),
-      targetParentId: z.string().min(1).nullable().optional(),
-      afterNoteId: z.string().min(1).nullable().optional(),
-    }),
+    description: "Move a page under another page or to the workspace root, with optional sibling placement.",
+    inputSchema: z.object({ pageId: id, parentId: nullableId, afterPageId: nullableId.default(null) }),
   },
 
-  // Calendar scheduling. Tasks are canonical taskItem blocks carrying
-  // a due date and a duration.
   {
-    name: "stride_list_scheduled",
-    mcpName: "giraffle-stride-list-scheduled",
+    name: "tasks_list_scheduled",
+    mcpName: "giraffle-tasks-list-scheduled",
     destructive: false,
-    description:
-      "List scheduled tasks within a date range. Provide ISO 8601 start and end timestamps.",
+    description: "List tasks whose local due date falls within an inclusive date range.",
+    inputSchema: z.object({ startDay: z.string().min(10).max(10), endDay: z.string().min(10).max(10) }),
+  },
+  {
+    name: "tasks_list_unscheduled",
+    mcpName: "giraffle-tasks-list-unscheduled",
+    destructive: false,
+    description: "List active tasks that have no due date.",
+    inputSchema: z.object({ limit: z.number().int().min(1).max(200).default(50) }),
+  },
+  {
+    name: "tasks_create",
+    mcpName: "giraffle-tasks-create",
+    destructive: true,
+    description: "Create a canonical task in a source page, defaulting to the visible Inbox page.",
     inputSchema: z.object({
-      start: z.string().min(1).max(40),
-      end: z.string().min(1).max(40),
+      content: z.string().min(1).max(2_000),
+      pageId: id.optional(),
+      dueDate: dueDate.optional(),
+      durationMinutes: duration.optional(),
+      priority: TaskPrioritySchema.nullable().optional(),
     }),
   },
   {
-    name: "stride_list_unscheduled",
-    mcpName: "giraffle-stride-list-unscheduled",
+    name: "tasks_update",
+    mcpName: "giraffle-tasks-update",
+    destructive: true,
+    description: "Update canonical task content, description, completion, due date, duration, or priority.",
+    inputSchema: z.object(taskFields),
+  },
+  {
+    name: "tasks_delete",
+    mcpName: "giraffle-tasks-delete",
+    destructive: true,
+    description: "Permanently delete a canonical task from its source page and every task view.",
+    inputSchema: z.object({ taskId: id }),
+  },
+
+  {
+    name: "priority_list",
+    mcpName: "giraffle-priority-list",
     destructive: false,
-    description: "List unscheduled tasks with no due date. Up to 200 items.",
+    description: "List canonical tasks grouped by their optional Focus, Plan, Delegate, or Drop priority.",
+    inputSchema: z.object({ includeCompleted: z.boolean().default(false) }),
+  },
+  {
+    name: "priority_set",
+    mcpName: "giraffle-priority-set",
+    destructive: true,
+    description: "Set or clear one canonical task's priority placement.",
+    inputSchema: z.object({ taskId: id, priority: TaskPrioritySchema.nullable() }),
+  },
+
+  {
+    name: "canvas_list",
+    mcpName: "giraffle-canvas-list",
+    destructive: false,
+    description: "List canvases with ids, titles, timestamps, and element counts.",
     inputSchema: z.object({}),
   },
   {
-    name: "stride_create_task",
-    mcpName: "giraffle-stride-create-task",
-    destructive: true,
-    description:
-      "Create a scheduled task in the user's Inbox page. Provide text, an ISO 8601 dueDate, and an estimated durationMinutes.",
-    inputSchema: z.object({
-      text: z.string().min(1).max(2_000),
-      dueDate: z.string().min(1).max(40),
-      durationMinutes: z.number().int().min(1).max(1_440).default(60),
-    }),
-  },
-  {
-    name: "stride_schedule_task",
-    mcpName: "giraffle-stride-schedule-task",
-    destructive: true,
-    description:
-      "Set or clear a task's due date. Pass an ISO 8601 dueDate to schedule, or null to move it back to the unscheduled backlog.",
-    inputSchema: z.object({
-      blockId: z.string().min(1),
-      dueDate: z.string().min(1).max(40).nullable(),
-    }),
-  },
-  {
-    name: "stride_set_duration",
-    mcpName: "giraffle-stride-set-duration",
-    destructive: true,
-    description: "Update a task's estimated duration in minutes.",
-    inputSchema: z.object({
-      blockId: z.string().min(1),
-      durationMinutes: z.number().int().min(1).max(1_440),
-    }),
-  },
-  {
-    name: "stride_toggle_task",
-    mcpName: "giraffle-stride-toggle-task",
-    destructive: true,
-    description: "Mark a task complete or incomplete.",
-    inputSchema: z.object({
-      blockId: z.string().min(1),
-      checked: z.boolean(),
-    }),
-  },
-  {
-    name: "stride_update_task_text",
-    mcpName: "giraffle-stride-update-task-text",
-    destructive: true,
-    description: "Edit the canonical task's text.",
-    inputSchema: z.object({
-      blockId: z.string().min(1),
-      text: z.string().min(1).max(2_000),
-    }),
-  },
-  {
-    name: "stride_delete_task",
-    mcpName: "giraffle-stride-delete-task",
-    destructive: true,
-    description: "Permanently delete a canonical task and its child blocks.",
-    inputSchema: z.object({
-      blockId: z.string().min(1),
-    }),
-  },
-
-  // Priority = Eisenhower prioritization over the same canonical task records.
-  {
-    name: "tower_list_matrix",
-    mcpName: "giraffle-tower-list-matrix",
+    name: "canvas_get",
+    mcpName: "giraffle-canvas-get",
     destructive: false,
-    description:
-      "List all matrix-scoped notes with their slot (DO/SCHEDULE/DELEGATE/ELIMINATE/BACKLOG) and per-quadrant task counts.",
-    inputSchema: z.object({}),
+    description: "Read one canvas, optionally including its complete Excalidraw scene.",
+    inputSchema: z.object({ canvasId: id, includeElements: z.boolean().default(false) }),
   },
   {
-    name: "tower_list_note_tasks",
-    mcpName: "giraffle-tower-list-note-tasks",
-    destructive: false,
-    description: "List the taskItem blocks of one note with their checked state and quadrant.",
-    inputSchema: z.object({
-      noteId: z.string().min(1),
-    }),
-  },
-  {
-    name: "tower_assign_note",
-    mcpName: "giraffle-tower-assign-note",
+    name: "canvas_create",
+    mcpName: "giraffle-canvas-create",
     destructive: true,
-    description:
-      "Assign a note to a matrix slot (DO/SCHEDULE/DELEGATE/ELIMINATE/BACKLOG), or pass null to remove it from the matrix.",
-    inputSchema: z.object({
-      noteId: z.string().min(1),
-      quadrant: MATRIX_SLOT.nullable(),
-    }),
+    description: "Create an empty canvas with an optional title.",
+    inputSchema: z.object({ title: z.string().min(1).max(220).default("New canvas") }),
   },
   {
-    name: "tower_add_task",
-    mcpName: "giraffle-tower-add-task",
-    destructive: true,
-    description: "Add a taskItem to a note's task list.",
-    inputSchema: z.object({
-      noteId: z.string().min(1),
-      text: z.string().min(1).max(2_000),
-    }),
-  },
-  {
-    name: "tower_assign_task",
-    mcpName: "giraffle-tower-assign-task",
-    destructive: true,
-    description:
-      "Assign a single taskItem block to an Eisenhower quadrant (DO/SCHEDULE/DELEGATE/ELIMINATE), or pass null to clear it.",
-    inputSchema: z.object({
-      blockId: z.string().min(1),
-      quadrant: PRIORITY.nullable(),
-    }),
-  },
-  {
-    name: "tower_toggle_task",
-    mcpName: "giraffle-tower-toggle-task",
-    destructive: true,
-    description: "Mark a taskItem block complete or incomplete.",
-    inputSchema: z.object({
-      blockId: z.string().min(1),
-      checked: z.boolean(),
-    }),
-  },
-
-  // Canvas = free-form Excalidraw scenes. Element payloads can be large, so
-  // the full array is only returned when explicitly requested.
-  {
-    name: "savanna_list",
-    mcpName: "giraffle-savanna-list",
-    destructive: false,
-    description: "List the user's canvases with id, title, timestamps, and element count.",
-    inputSchema: z.object({}),
-  },
-  {
-    name: "savanna_get",
-    mcpName: "giraffle-savanna-get",
-    destructive: false,
-    description:
-      "Get one canvas. By default returns metadata and element count; set includeElements to true for the full Excalidraw scene and appState.",
-    inputSchema: z.object({
-      id: z.string().min(1),
-      includeElements: z.boolean().optional(),
-    }),
-  },
-  {
-    name: "savanna_create",
-    mcpName: "giraffle-savanna-create",
-    destructive: true,
-    description: "Create a new empty canvas with an optional title.",
-    inputSchema: z.object({
-      title: z.string().max(220).optional(),
-    }),
-  },
-  {
-    name: "savanna_rename",
-    mcpName: "giraffle-savanna-rename",
+    name: "canvas_rename",
+    mcpName: "giraffle-canvas-rename",
     destructive: true,
     description: "Rename an existing canvas.",
-    inputSchema: z.object({
-      id: z.string().min(1),
-      title: z.string().min(1).max(220),
-    }),
+    inputSchema: z.object({ canvasId: id, title: z.string().min(1).max(220) }),
   },
   {
-    name: "savanna_delete",
-    mcpName: "giraffle-savanna-delete",
+    name: "canvas_delete",
+    mcpName: "giraffle-canvas-delete",
     destructive: true,
-    description: "Permanently delete a canvas.",
-    inputSchema: z.object({
-      id: z.string().min(1),
-    }),
+    description: "Permanently delete a canvas and its entity references.",
+    inputSchema: z.object({ canvasId: id }),
   },
 
-  // Boards (Kanban). Every board owns a visible page and every card is a
-  // canonical task block, so scheduling and priority are shared with Tasks.
   {
-    name: "kanban_list_boards",
-    mcpName: "giraffle-trek-list-boards",
+    name: "boards_list",
+    mcpName: "giraffle-boards-list",
     destructive: false,
-    description:
-      "List the user's Kanban boards with column and card counts. Each board owns a visible page. Use this first to discover board ids.",
+    description: "List boards with workflow column and canonical task counts.",
     inputSchema: z.object({}),
   },
   {
-    name: "kanban_list_board_statuses",
-    mcpName: "giraffle-trek-list-board-statuses",
+    name: "boards_list_statuses",
+    mcpName: "giraffle-boards-list-statuses",
     destructive: false,
-    description:
-      "List the board-of-boards status columns (the top level grouping boards sit in) with how many boards are in each.",
+    description: "List the top-level statuses used to organize boards.",
     inputSchema: z.object({}),
   },
   {
-    name: "kanban_set_board_status",
-    mcpName: "giraffle-trek-set-board-status",
+    name: "boards_create_status",
+    mcpName: "giraffle-boards-create-status",
     destructive: true,
-    description:
-      "Move a board into a board-of-boards status column (its top-level status). Use kanban_list_board_statuses for status ids.",
-    inputSchema: z.object({
-      boardId: z.string().min(1),
-      statusId: z.string().min(1),
-    }),
+    description: "Create a top-level board status.",
+    inputSchema: z.object({ title: z.string().min(1).max(160) }),
   },
   {
-    name: "kanban_get_board",
-    mcpName: "giraffle-trek-get-board",
+    name: "boards_update_status",
+    mcpName: "giraffle-boards-update-status",
+    destructive: true,
+    description: "Rename a top-level board status.",
+    inputSchema: z.object({ statusId: id, title: z.string().min(1).max(160) }),
+  },
+  {
+    name: "boards_delete_status",
+    mcpName: "giraffle-boards-delete-status",
+    destructive: true,
+    description: "Delete a top-level status and move its boards to Unsorted.",
+    inputSchema: z.object({ statusId: id }),
+  },
+  {
+    name: "boards_get",
+    mcpName: "giraffle-boards-get",
     destructive: false,
-    description:
-      "Get one board in full: ordered columns and cards with priority, due date, and completion. cardId === blockId; the same tasks appear in Calendar and Priority.",
-    inputSchema: z.object({ boardId: z.string().min(1) }),
+    description: "Read one board with ordered columns and canonical tasks.",
+    inputSchema: z.object({ boardId: id }),
   },
   {
-    name: "kanban_create_board",
-    mcpName: "giraffle-trek-create-board",
+    name: "boards_create",
+    mcpName: "giraffle-boards-create",
     destructive: true,
-    description:
-      "Create a board with a visible page and an initial To do column. Returns the board with its column ids.",
-    inputSchema: z.object({ title: z.string().min(1).max(220) }),
+    description: "Create a board, its canonical page, and its initial To do column.",
+    inputSchema: z.object({ title: z.string().min(1).max(220), statusId: nullableId.default(null) }),
   },
   {
-    name: "kanban_update_board",
-    mcpName: "giraffle-trek-update-board",
+    name: "boards_update",
+    mcpName: "giraffle-boards-update",
     destructive: true,
-    description: "Update a board's title or icon.",
+    description: "Update a board title, icon, or top-level status.",
     inputSchema: z.object({
-      boardId: z.string().min(1),
+      boardId: id,
       title: z.string().min(1).max(220).optional(),
       icon: z.string().max(20).nullable().optional(),
+      statusId: nullableId.optional(),
     }),
   },
   {
-    name: "kanban_delete_board",
-    mcpName: "giraffle-trek-delete-board",
+    name: "boards_move",
+    mcpName: "giraffle-boards-move",
     destructive: true,
-    description: "Delete a board, its page, and all its cards.",
-    inputSchema: z.object({ boardId: z.string().min(1) }),
+    description: "Move a board into a top-level status and place it after another board.",
+    inputSchema: z.object({ boardId: id, statusId: nullableId, afterBoardId: nullableId }),
   },
   {
-    name: "kanban_add_column",
-    mcpName: "giraffle-trek-add-column",
+    name: "boards_delete",
+    mcpName: "giraffle-boards-delete",
     destructive: true,
-    description: "Add a workflow column to the end of a board.",
-    inputSchema: z.object({
-      boardId: z.string().min(1),
-      title: z.string().min(1).max(160),
-      color: COLUMN_COLOR.nullable().optional(),
-    }),
+    description: "Delete a board and tasks sourced by its page; tasks added from other pages remain at their source.",
+    inputSchema: z.object({ boardId: id }),
   },
   {
-    name: "kanban_update_column",
-    mcpName: "giraffle-trek-update-column",
+    name: "boards_add_column",
+    mcpName: "giraffle-boards-add-column",
     destructive: true,
-    description: "Rename a column or change its accent color.",
-    inputSchema: z.object({
-      boardId: z.string().min(1),
-      columnId: z.string().min(1),
-      title: z.string().min(1).max(160).optional(),
-      color: COLUMN_COLOR.nullable().optional(),
-    }),
+    description: "Add a workflow column to a board.",
+    inputSchema: z.object({ boardId: id, title: z.string().min(1).max(160) }),
   },
   {
-    name: "kanban_delete_column",
-    mcpName: "giraffle-trek-delete-column",
+    name: "boards_update_column",
+    mcpName: "giraffle-boards-update-column",
     destructive: true,
-    description: "Delete a column; its cards move to the first remaining column.",
-    inputSchema: z.object({
-      boardId: z.string().min(1),
-      columnId: z.string().min(1),
-    }),
+    description: "Rename a workflow column or change its accent color.",
+    inputSchema: z.object({ columnId: id, title: z.string().min(1).max(160).optional(), color: z.string().max(32).nullable().optional() }),
   },
   {
-    name: "kanban_add_card",
-    mcpName: "giraffle-trek-add-card",
+    name: "boards_move_column",
+    mcpName: "giraffle-boards-move-column",
     destructive: true,
-    description:
-      "Create a canonical task in a board column. Optionally set priority, an ISO dueDate, and duration in minutes; dated tasks also appear in Calendar.",
-    inputSchema: z.object({
-      boardId: z.string().min(1),
-      columnId: z.string().min(1),
-      title: z.string().min(1).max(2_000),
-      description: z.string().max(10_000).nullable().optional(),
-      priority: PRIORITY.nullable().optional(),
-      dueDate: z.string().min(1).max(40).nullable().optional(),
-      durationMinutes: z.number().int().min(0).max(100_000).nullable().optional(),
-    }),
+    description: "Move a workflow column after another column, or to the first position.",
+    inputSchema: z.object({ columnId: id, afterColumnId: nullableId }),
   },
   {
-    name: "kanban_update_card",
-    mcpName: "giraffle-trek-update-card",
+    name: "boards_delete_column",
+    mcpName: "giraffle-boards-delete-column",
     destructive: true,
-    description:
-      "Update a card's title, description, priority, dueDate (ISO or null), duration, or completed state. cardId === blockId.",
-    inputSchema: z.object({
-      cardId: z.string().min(1),
-      title: z.string().min(1).max(2_000).optional(),
-      description: z.string().max(10_000).nullable().optional(),
-      priority: PRIORITY.nullable().optional(),
-      dueDate: z.string().min(1).max(40).nullable().optional(),
-      durationMinutes: z.number().int().min(0).max(100_000).nullable().optional(),
-      completed: z.boolean().optional(),
-    }),
+    description: "Delete a workflow column and move its tasks to another column on the same board.",
+    inputSchema: z.object({ columnId: id, moveToColumnId: id }),
   },
   {
-    name: "kanban_move_card",
-    mcpName: "giraffle-trek-move-card",
+    name: "boards_add_task",
+    mcpName: "giraffle-boards-add-task",
     destructive: true,
-    description:
-      "Move a card to a target column at a zero-based index (its Kanban status change). Pass a large toIndex to append.",
-    inputSchema: z.object({
-      cardId: z.string().min(1),
-      toColumnId: z.string().min(1),
-      toIndex: z.number().int().min(0).max(100_000).default(100_000),
-    }),
+    description: "Create a canonical task in a specific board column.",
+    inputSchema: z.object({ boardId: id, columnId: id, content: z.string().min(1).max(2_000) }),
   },
   {
-    name: "kanban_delete_card",
-    mcpName: "giraffle-trek-delete-card",
+    name: "boards_place_task",
+    mcpName: "giraffle-boards-place-task",
     destructive: true,
-    description: "Permanently delete the canonical task from every view, including its board.",
-    inputSchema: z.object({ cardId: z.string().min(1) }),
+    description: "Place an existing canonical task in a specific board column without changing its source page.",
+    inputSchema: z.object({ taskId: id, boardId: id, columnId: id }),
+  },
+  {
+    name: "boards_remove_task",
+    mcpName: "giraffle-boards-remove-task",
+    destructive: true,
+    description: "Remove a task from its board while keeping it in its source page.",
+    inputSchema: z.object({ taskId: id }),
+  },
+  {
+    name: "boards_move_task",
+    mcpName: "giraffle-boards-move-task",
+    destructive: true,
+    description: "Move a board task after another task in a target column, or to the first position.",
+    inputSchema: z.object({ taskId: id, columnId: id, afterTaskId: nullableId }),
   },
 ];

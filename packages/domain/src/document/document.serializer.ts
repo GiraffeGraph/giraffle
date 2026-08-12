@@ -1,18 +1,15 @@
-import { isRecord } from "../utils";
 import type {
   BlockMark,
   BlockNodeContent,
   TiptapDocument,
   TiptapNode,
-} from "./note.types";
+} from "./document.types";
 
 /**
  * Convert a Tiptap JSON document to Markdown.
  * Markdown remains a derived representation; the editor block AST stays canonical.
  *
- * Supported block types:
- * - paragraph, heading, bulletList, orderedList, codeBlock, blockquote
- * - callout, toggle, image, horizontalRule, table, taskList, kanban
+ * Supported block types match the extensions loaded by the app's Tiptap editor.
  */
 export function blocksToMarkdown(doc: TiptapDocument): string {
   if (!doc.content || doc.content.length === 0) {
@@ -73,22 +70,6 @@ function nodeToMarkdown(node: BlockNodeContent): string {
         .map((child) => `> ${nodeToMarkdown(child)}`)
         .join("\n");
 
-    case "callout": {
-      const tone = String(node.attrs?.tone ?? "info").toUpperCase();
-      const title = String(node.attrs?.title ?? "Callout");
-      const body = (node.content ?? []).map(nodeToMarkdown).join("\n\n");
-      const quotedBody = body
-        ? body.split("\n").map((line) => `> ${line}`).join("\n")
-        : "> ";
-      return `> [!${tone}] ${title}\n${quotedBody}`;
-    }
-
-    case "toggle": {
-      const summary = String(node.attrs?.summary ?? "Toggle");
-      const body = (node.content ?? []).map(nodeToMarkdown).join("\n\n");
-      return `<details>\n<summary>${escapeHtml(summary)}</summary>\n\n${body}\n\n</details>`;
-    }
-
     case "horizontalRule":
       return "---";
 
@@ -97,25 +78,6 @@ function nodeToMarkdown(node: BlockNodeContent): string {
       const alt = String(node.attrs?.alt ?? "");
       return `![${alt}](${src})`;
     }
-
-    case "table": {
-      const rows = extractTableRows(node);
-      const [header = [], ...body] = rows;
-      const headerLine = `| ${header.join(" | ")} |`;
-      const dividerLine = `| ${header.map(() => "---").join(" | ")} |`;
-      const bodyLines = body.map((row) => `| ${row.join(" | ")} |`).join("\n");
-      const caption =
-        typeof node.attrs?.caption === "string" && node.attrs.caption.trim()
-          ? `\n\n> ${node.attrs.caption}`
-          : "";
-
-      return `${headerLine}\n${dividerLine}${
-        bodyLines ? `\n${bodyLines}` : ""
-      }${caption}`;
-    }
-
-    case "kanban":
-      return kanbanToMarkdown(node);
 
     default:
       return inlineToMarkdown(node.content);
@@ -167,7 +129,7 @@ function inlineToMarkdown(content?: TiptapNode[]): string {
 /**
  * Parse Markdown into a Tiptap JSON document.
  * This remains intentionally small and explicit rather than pretending to be a full parser.
- * Future work can swap this boundary to remark/mdast without changing the note domain.
+ * Future work can swap this boundary to remark/mdast without changing the document model.
  */
 export function markdownToBlocks(markdown: string): TiptapDocument {
   const lines = markdown.split("\n");
@@ -268,62 +230,6 @@ export function markdownToBlocks(markdown: string): TiptapDocument {
       continue;
     }
 
-    const calloutMatch = line.match(/^>\s+\[!([A-Za-z]+)\]\s*(.*)$/);
-    if (calloutMatch) {
-      const tone = (calloutMatch[1] ?? "").toLowerCase();
-      const title = (calloutMatch[2] ?? "").trim() || "Callout";
-      const bodyLines: string[] = [];
-      index++;
-
-      while (index < lines.length && lineAt(index).startsWith(">")) {
-        bodyLines.push(lineAt(index).replace(/^>\s?/, ""));
-        index++;
-      }
-
-      const nestedDocument = markdownToBlocks(bodyLines.join("\n"));
-      content.push({
-        type: "callout",
-        attrs: { tone, title },
-        content:
-          nestedDocument.content.length > 0
-            ? nestedDocument.content
-            : [{ type: "paragraph" }],
-      });
-      continue;
-    }
-
-    if (line.trim() === "<details>") {
-      index++;
-      const summaryLine = lineAt(index);
-      const summaryMatch = summaryLine.match(/^<summary>(.*)<\/summary>$/);
-      const summary = summaryMatch?.[1]?.trim() || "Toggle";
-
-      if (summaryMatch) {
-        index++;
-      }
-
-      const bodyLines: string[] = [];
-      while (index < lines.length && lineAt(index).trim() !== "</details>") {
-        bodyLines.push(lineAt(index));
-        index++;
-      }
-
-      if (index < lines.length) {
-        index++;
-      }
-
-      const nestedDocument = markdownToBlocks(bodyLines.join("\n"));
-      content.push({
-        type: "toggle",
-        attrs: { summary },
-        content:
-          nestedDocument.content.length > 0
-            ? nestedDocument.content
-            : [{ type: "paragraph" }],
-      });
-      continue;
-    }
-
     if (line.startsWith("> ")) {
       const quoteLines: string[] = [];
 
@@ -385,44 +291,6 @@ export function markdownToBlocks(markdown: string): TiptapDocument {
       }
 
       content.push({ type: "orderedList", content: items });
-      continue;
-    }
-
-    const looksLikeTable =
-      line.includes("|") &&
-      index + 1 < lines.length &&
-      /^\|\s*[-: ]+\|/.test(lineAt(index + 1).trim());
-
-    if (looksLikeTable) {
-      const rows: string[][] = [parseMarkdownTableRow(line)];
-
-      index += 2;
-
-      while (index < lines.length && lineAt(index).includes("|")) {
-        rows.push(parseMarkdownTableRow(lineAt(index)));
-        index++;
-      }
-
-      const columnCount = Math.max(...rows.map((row) => row.length), 1);
-      const normalizedRows = rows.map((row) =>
-        Array.from({ length: columnCount }, (_, cellIndex) => row[cellIndex] ?? "")
-      );
-
-      content.push({
-        type: "table",
-        content: normalizedRows.map((row, rowIndex) => ({
-          type: "tableRow",
-          content: row.map((cell) => ({
-            type: rowIndex === 0 ? "tableHeader" : "tableCell",
-            content: [
-              {
-                type: "paragraph",
-                content: parseInlineMarkdown(cell),
-              },
-            ],
-          })),
-        })),
-      });
       continue;
     }
 
@@ -495,76 +363,6 @@ function pushTextNode(
   nodes.push(marks ? { type: "text", text, marks } : { type: "text", text });
 }
 
-function toTableRows(value: unknown): string[][] {
-  if (!Array.isArray(value)) {
-    return [
-      ["Column 1", "Column 2"],
-      ["Value", "Value"],
-    ];
-  }
-
-  return value.map((row) =>
-    Array.isArray(row) ? row.map((cell) => String(cell ?? "")) : [String(row)]
-  );
-}
-
-function extractTableRows(node: BlockNodeContent): string[][] {
-  if (Array.isArray(node.attrs?.rows)) {
-    return toTableRows(node.attrs.rows);
-  }
-
-  const rows = (node.content ?? [])
-    .filter(
-      (row): row is BlockNodeContent =>
-        row.type === "tableRow" && Array.isArray(row.content)
-    )
-    .map((row) =>
-      (row.content ?? [])
-        .filter(
-          (cell): cell is BlockNodeContent =>
-            cell.type === "tableCell" || cell.type === "tableHeader"
-        )
-        .map((cell) => tableCellToMarkdown(cell))
-    )
-    .filter((row) => row.length > 0);
-
-  return rows.length > 0 ? rows : toTableRows(undefined);
-}
-
-function tableCellToMarkdown(cell: BlockNodeContent): string {
-  const parts = (cell.content ?? [])
-    .map((child) => {
-      if (child.type === "paragraph") {
-        return inlineToMarkdown(child.content);
-      }
-
-      if (child.type === "text" && "text" in child) {
-        return child.text;
-      }
-
-      return nodeToMarkdown(child);
-    })
-    .map((part) => part.trim())
-    .filter(Boolean);
-
-  return parts.join("<br>");
-}
-
-function parseMarkdownTableRow(line: string): string[] {
-  const normalized = line.trim().replace(/^\|/, "").replace(/\|$/, "");
-  const cells = normalized.split("|").map((cell) => cell.trim());
-
-  return cells.length > 0 ? cells : [""];
-}
-
-function escapeHtml(value: string): string {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;");
-}
-
 function taskItemToMarkdown(node: BlockNodeContent): string {
   const checked = Boolean(node.attrs?.checked);
   const parts = (node.content ?? [])
@@ -583,33 +381,3 @@ function taskItemToMarkdown(node: BlockNodeContent): string {
     .filter(Boolean)
     .join("\n");
 }
-
-function kanbanToMarkdown(node: BlockNodeContent): string {
-  const title =
-    typeof node.attrs?.title === "string" && node.attrs.title.trim()
-      ? node.attrs.title
-      : "Kanban";
-  const columns = Array.isArray(node.attrs?.columns) ? node.attrs.columns : [];
-
-  const sections = columns
-    .filter((column): column is Record<string, unknown> => isRecord(column))
-    .map((column) => {
-      const heading =
-        typeof column.title === "string" && column.title.trim()
-          ? column.title
-          : "Column";
-      const cards = Array.isArray(column.cards) ? column.cards : [];
-      const lines = cards
-        .filter((card): card is Record<string, unknown> => isRecord(card))
-        .map((card) =>
-          typeof card.title === "string" && card.title.trim()
-            ? `- ${card.title}`
-            : "- "
-        );
-
-      return [`### ${heading}`, lines.join("\n") || "- "].join("\n");
-    });
-
-  return [`[Kanban] ${title}`, ...sections].join("\n\n");
-}
-

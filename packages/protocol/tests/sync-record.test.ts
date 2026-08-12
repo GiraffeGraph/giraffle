@@ -57,8 +57,8 @@ function titleOperation(input: {
   return {
     protocolVersion: 1,
     operationId: input.recordId,
-    objectId: input.objectId ?? "note-1",
-    objectType: "note-metadata",
+    objectId: input.objectId ?? "page-1",
+    objectType: "page",
     schemaVersion: 1,
     clock: {
       physicalMs: input.physicalMs,

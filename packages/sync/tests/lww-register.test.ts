@@ -70,31 +70,31 @@ describe("LWW registers and tree conflict repair", () => {
   });
 
   it("converges concurrent moves regardless of delivery order", () => {
-    const first = parent("note", "folder-a", stamp(10, "device-a", "move-a"));
-    const second = parent("note", "folder-b", stamp(10, "device-b", "move-b"));
-    const visible = new Set(["note", "folder-a", "folder-b"]);
+    const first = parent("page", "parent-a", stamp(10, "device-a", "move-a"));
+    const second = parent("page", "parent-b", stamp(10, "device-b", "move-b"));
+    const visible = new Set(["page", "parent-a", "parent-b"]);
 
-    expect(resolveTreeParentAssignments([first, second], visible).get("note")).toBe(
-      "folder-b",
+    expect(resolveTreeParentAssignments([first, second], visible).get("page")).toBe(
+      "parent-b",
     );
-    expect(resolveTreeParentAssignments([second, first], visible).get("note")).toBe(
-      "folder-b",
+    expect(resolveTreeParentAssignments([second, first], visible).get("page")).toBe(
+      "parent-b",
     );
   });
 
   it("detaches the oldest edge to repair concurrent move cycles", () => {
     const assignments = [
-      parent("folder-a", "folder-b", stamp(10, "device-a", "move-a")),
-      parent("folder-b", "folder-a", stamp(11, "device-b", "move-b")),
+      parent("folder-a", "parent-b", stamp(10, "device-a", "move-a")),
+      parent("parent-b", "folder-a", stamp(11, "device-b", "move-b")),
     ];
-    const visible = new Set(["folder-a", "folder-b"]);
+    const visible = new Set(["folder-a", "parent-b"]);
 
     const forward = resolveTreeParentAssignments(assignments, visible);
     const reversed = resolveTreeParentAssignments([...assignments].reverse(), visible);
 
     expect([...forward]).toEqual([
       ["folder-a", null],
-      ["folder-b", "folder-a"],
+      ["parent-b", "folder-a"],
     ]);
     expect([...reversed]).toEqual([...forward]);
   });

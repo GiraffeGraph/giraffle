@@ -18,26 +18,18 @@ interface NavigationItem {
   href: string;
   label: string;
   icon: IconName;
-  activePaths?: readonly string[];
 }
 
 const mainNavigation: readonly NavigationItem[] = [
-  { href: "/notes", label: "Notes", icon: "document-text-outline" },
-  {
-    href: "/stride",
-    label: "Tasks",
-    icon: "checkmark-circle-outline",
-    activePaths: ["/stride", "/tower"],
-  },
-  { href: "/trek", label: "Boards", icon: "albums-outline" },
-  { href: "/savanna", label: "Canvas", icon: "map-outline" },
+  { href: "/pages", label: "Pages", icon: "document-text-outline" },
+  { href: "/tasks", label: "Tasks", icon: "checkmark-circle-outline" },
+  { href: "/boards", label: "Boards", icon: "albums-outline" },
+  { href: "/canvas", label: "Canvas", icon: "map-outline" },
   { href: "/account", label: "Account", icon: "person-circle-outline" },
 ];
 
 function isActive(path: string, item: NavigationItem) {
-  return (item.activePaths ?? [item.href]).some((prefix) =>
-    path.startsWith(prefix),
-  );
+  return path.startsWith(item.href);
 }
 
 /**

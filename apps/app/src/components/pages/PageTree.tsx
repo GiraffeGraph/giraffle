@@ -2,7 +2,7 @@ import type { Id, Page } from "@giraffle/domain";
 import { useCallback, useMemo, useState } from "react";
 import { View } from "react-native";
 import { DragSortItem, DragSortProvider, useDragSort, type DropTarget } from "@/components/dnd/DragSortContext";
-import { PageTreeRow } from "@/components/notes/PageTreeRow";
+import { PageTreeRow } from "@/components/pages/PageTreeRow";
 
 export interface PageMove {
   pageId: Id;

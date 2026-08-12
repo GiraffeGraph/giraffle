@@ -2,7 +2,7 @@
   "name": "giraffle-desktop",
   "version": "0.11.0",
   "private": true,
-  "description": "A private, offline-first workspace for notes, tasks, boards and visual planning.",
+  "description": "A private, offline-first workspace for pages, tasks, boards and visual planning.",
   "author": "GiraffeGraph",
   "main": "main.cjs"
 }

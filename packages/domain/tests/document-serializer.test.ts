@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { markdownToBlocks } from "@giraffle/domain";
 
-describe("note markdown serializer", () => {
+describe("document Markdown serializer", () => {
   it("parses pasted markdown blocks into Tiptap nodes", () => {
     const document = markdownToBlocks(`# Heading\n\n- First\n- Second\n\n- [x] Done`);
 
@@ -45,7 +45,7 @@ describe("note markdown serializer", () => {
 
   it("parses inline markdown marks", () => {
     const document = markdownToBlocks(
-      "A **bold** *italic* `code` [link](https://example.com) [[Note|Wiki]]"
+      "A **bold** *italic* `code` [link](https://example.com) [[Page|Wiki]]"
     );
 
     expect(document.content[0]).toMatchObject({
@@ -70,7 +70,7 @@ describe("note markdown serializer", () => {
           marks: [
             {
               type: "wikilink",
-              attrs: { target: "Note", displayText: "Wiki" },
+              attrs: { target: "Page", displayText: "Wiki" },
             },
           ],
         },

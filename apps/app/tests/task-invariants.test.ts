@@ -5,7 +5,7 @@ const table = (name: string) => new RegExp(`CREATE TABLE ${name}\\(([^;]*)\\);`,
 
 /**
  * One task, three lenses: the taskItem block is canonical, Boards place it in a
- * workflow, Calendar reads its due date, and Priority reads its quadrant.
+ * workflow, Calendar reads its due date, and Priority reads its placement.
  * Nothing may hold a second copy of a field another surface owns.
  */
 describe("shared task relational invariants", () => {
@@ -24,6 +24,16 @@ describe("shared task relational invariants", () => {
 
     expect(boardTasks).toContain("PRIMARY KEY(board_id, block_id)");
     expect(boardTasks).toContain("column_id TEXT NOT NULL REFERENCES board_columns(id)");
+  });
+
+  test("the final schema requires a column to belong to the selected board", () => {
+    const ownershipMigration = migrations.find(
+      (migration) => migration.name === "enforce-board-column-ownership",
+    )?.sql;
+
+    expect(ownershipMigration).toContain(
+      "FOREIGN KEY(board_id, column_id) REFERENCES board_columns(board_id, id)",
+    );
   });
 
   test("task metadata hangs off the block, one row at most", () => {

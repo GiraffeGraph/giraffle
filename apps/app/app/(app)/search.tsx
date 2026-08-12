@@ -94,7 +94,7 @@ export default function Search() {
               key={result.id}
               onPress={() => {
                 const board = snapshot.boards.find((item) => item.pageId === result.id);
-                router.push(board ? `/trek/${board.id}` : `/notes/${result.id}`);
+                router.push(board ? `/boards/${board.id}` : `/pages/${result.id}`);
               }}
             >
               <Icon name="document-text-outline" />

@@ -5,16 +5,14 @@ import { useTheme } from "@/design/ThemeProvider";
 import { typography } from "@/design/tokens";
 import {
   clearSyncConfiguration,
-  enrollDevice,
   loadSyncConfiguration,
-  pushOutbox,
   saveSyncConfiguration,
 } from "@/infrastructure/sync/syncClient";
 import { useApp } from "@/state/AppProvider";
 
 export function DeviceConnectionSection() {
   const { colors } = useTheme();
-  const { session, repository, snapshot, refresh } = useApp();
+  const { session, repository, snapshot, syncNow } = useApp();
   const [serverAddress, setServerAddress] = useState("");
   const [connectionCode, setConnectionCode] = useState("");
   const [message, setMessage] = useState<string | null>(null);
@@ -74,26 +72,21 @@ export function DeviceConnectionSection() {
         setMessage("Save a connection first.");
         return;
       }
-      await enrollDevice(config, {
-        vaultId: session.vaultId,
-        deviceId: session.deviceId,
-        repository,
-      });
-      const count = await pushOutbox(config, {
-        vaultId: session.vaultId,
-        repository,
-      });
-      await refresh();
+      const outcome = await syncNow();
+      if (outcome.error) throw new Error(outcome.error);
+      if (outcome.deferred) {
+        throw new Error(`${outcome.deferred} encrypted changes could not be applied`);
+      }
+      const received = outcome.applied;
+      const sent = outcome.pushed;
       setMessage(
-        count
-          ? `${count} encrypted change${count === 1 ? "" : "s"} uploaded.`
+        sent || received
+          ? `Sync finished: ${sent} sent, ${received} received.`
           : "Everything is up to date.",
       );
     } catch (cause) {
       const reason = cause instanceof Error ? cause.message : "Sync failed";
-      await repository.recordSyncError(reason).catch(() => undefined);
-      await refresh().catch(() => undefined);
-      setMessage("We couldn't upload your encrypted changes. Please try again.");
+      setMessage(`We couldn't sync: ${reason}`);
     } finally {
       setBusy(false);
     }
@@ -104,7 +97,7 @@ export function DeviceConnectionSection() {
       .then(() => {
         setServerAddress("");
         setConnectionCode("");
-        setMessage("Connection removed. Your notes are still on this device.");
+        setMessage("Connection removed. Your content is still on this device.");
       })
       .catch(() => setMessage("The saved connection could not be removed."));
   };
@@ -114,7 +107,7 @@ export function DeviceConnectionSection() {
       <View style={styles.intro}>
         <Text style={[typography.title, { color: colors.text }]}>Encrypted sync</Text>
         <Text style={[typography.body, { color: colors.secondary }]}>
-          {"Upload this device's encrypted change queue to your Giraffle server."}
+          {"Changes sync automatically while Giraffle is open."}
         </Text>
       </View>
       <Field
@@ -141,7 +134,7 @@ export function DeviceConnectionSection() {
           onPress={() => void save()}
         />
         <Button
-          label={`Update${snapshot.sync.pending ? ` (${snapshot.sync.pending})` : ""}`}
+          label={`Sync now${snapshot.sync.pending ? ` (${snapshot.sync.pending})` : ""}`}
           icon="sync-outline"
           disabled={busy}
           onPress={() => void updateNow()}

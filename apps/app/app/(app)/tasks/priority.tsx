@@ -1,7 +1,7 @@
 import type { Task, TaskPriority } from "@giraffle/domain";
 import { router } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import {
   DragSortItem,
   DragSortProvider,
@@ -11,24 +11,25 @@ import {
 import { ScreenTopbar } from "@/components/shell/ScreenTopbar";
 import { TaskViewSwitch } from "@/components/shell/TaskViewSwitch";
 import { QuickTaskButton } from "@/components/tasks/QuickTaskButton";
+import { TaskDetailSheet } from "@/components/tasks/TaskDetailSheet";
 import { Page } from "@/components/ui/Page";
 import { Button, EmptyState, Icon, Segment } from "@/components/ui/primitives";
 import { useTheme } from "@/design/ThemeProvider";
 import { radii, spacing, typography } from "@/design/tokens";
 import { useApp } from "@/state/AppProvider";
 
-const quadrants = [
+const priorityGroups = [
   { id: "do", title: "Focus", caption: "Urgent · important", icon: "flame-outline" },
   { id: "schedule", title: "Plan", caption: "Important · not urgent", icon: "time-outline" },
   { id: "delegate", title: "Delegate", caption: "Urgent · can move", icon: "people-outline" },
   { id: "eliminate", title: "Drop", caption: "Low value", icon: "remove-circle-outline" },
 ] as const;
 
-const QUADRANT_SLOT = "quadrant:";
-const QUADRANT_PREVIEW_LIMIT = 3;
+const PRIORITY_SLOT = "group:";
+const PRIORITY_PREVIEW_LIMIT = 3;
 type Filter = "active" | "all" | "done";
 
-export default function PriorityMatrix() {
+export default function PriorityGrid() {
   return (
     <DragSortProvider>
       <PriorityScreen />
@@ -41,7 +42,8 @@ function PriorityScreen() {
   const { snapshot, run } = useApp();
   const drag = useDragSort();
   const [filter, setFilter] = useState<Filter>("active");
-  const [expandedQuadrants, setExpandedQuadrants] = useState<Set<TaskPriority>>(
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [expandedPriorities, setExpandedPriorities] = useState<Set<TaskPriority>>(
     () => new Set(),
   );
 
@@ -54,6 +56,13 @@ function PriorityScreen() {
   );
   const taskIds = useMemo(() => snapshot.tasks.map((task) => task.id), [snapshot.tasks]);
   const unprioritized = visibleTasks.filter((task) => task.priority === null);
+  const selected = snapshot.tasks.find((task) => task.id === selectedId) ?? null;
+  const selectedBoard = selected?.boardId
+    ? snapshot.boards.find((board) => board.id === selected.boardId)
+    : null;
+  const selectedSourceBoard = selected
+    ? snapshot.boards.find((board) => board.pageId === selected.pageId)
+    : null;
 
   const setPriority = useCallback(
     (taskId: string, priority: TaskPriority | null) => {
@@ -66,8 +75,8 @@ function PriorityScreen() {
 
   const handleDrop = useCallback(
     (sourceId: string, target: DropTarget) => {
-      if (!target.id.startsWith(QUADRANT_SLOT)) return;
-      setPriority(sourceId, target.id.slice(QUADRANT_SLOT.length) as TaskPriority);
+      if (!target.id.startsWith(PRIORITY_SLOT)) return;
+      setPriority(sourceId, target.id.slice(PRIORITY_SLOT.length) as TaskPriority);
     },
     [setPriority],
   );
@@ -78,12 +87,8 @@ function PriorityScreen() {
     ).catch(() => undefined);
   };
 
-  const openSource = (task: Task) => {
-    router.push(`/notes/${task.pageId}`);
-  };
-
-  const toggleQuadrant = (priority: TaskPriority) => {
-    setExpandedQuadrants((current) => {
+  const togglePriorityGroup = (priority: TaskPriority) => {
+    setExpandedPriorities((current) => {
       const next = new Set(current);
       if (next.has(priority)) next.delete(priority);
       else next.add(priority);
@@ -113,7 +118,7 @@ function PriorityScreen() {
           <EmptyState
             icon="checkmark-circle-outline"
             title={filter === "done" ? "No completed tasks" : "No active tasks"}
-            body="Tasks created in Notes or Boards appear here automatically."
+            body="Tasks created in Pages or Boards appear here automatically."
           />
         ) : (
           <>
@@ -138,7 +143,7 @@ function PriorityScreen() {
                         task={task}
                         dragging={drag.draggingId === task.id}
                         onToggle={() => toggleTask(task)}
-                        onOpen={() => openSource(task)}
+                        onOpen={() => setSelectedId(task.id)}
                         onNext={() => setPriority(task.id, "do")}
                       />
                     </DragSortItem>
@@ -147,54 +152,54 @@ function PriorityScreen() {
               </View>
             ) : null}
 
-            <View style={styles.matrix}>
-              {quadrants.map((quadrant) => {
-                const slotId = `${QUADRANT_SLOT}${quadrant.id}`;
-                const tasks = visibleTasks.filter((task) => task.priority === quadrant.id);
-                const expanded = expandedQuadrants.has(quadrant.id);
+            <View style={styles.grid}>
+              {priorityGroups.map((group) => {
+                const slotId = `${PRIORITY_SLOT}${group.id}`;
+                const tasks = visibleTasks.filter((task) => task.priority === group.id);
+                const expanded = expandedPriorities.has(group.id);
                 const shownTasks = expanded
                   ? tasks
-                  : tasks.slice(0, QUADRANT_PREVIEW_LIMIT);
+                  : tasks.slice(0, PRIORITY_PREVIEW_LIMIT);
                 const hiddenCount = tasks.length - shownTasks.length;
                 const receiving = drag.target?.id === slotId;
 
                 return (
                   <DragSortItem
-                    key={quadrant.id}
+                    key={group.id}
                     id={slotId}
                     containerOnly
                     disabled
                     onDrop={handleDrop}
-                    style={styles.quadrantSlot}
+                    style={styles.prioritySlot}
                   >
                     <View
                       style={[
-                        styles.quadrant,
+                        styles.group,
                         {
                           borderColor: receiving ? colors.accent : colors.border,
                           backgroundColor: receiving ? colors.accentSubtle : colors.surface,
                         },
                       ]}
                     >
-                      <View style={styles.quadrantHeading}>
-                        <View style={[styles.quadrantIcon, { backgroundColor: colors.accentSubtle }]}>
-                          <Icon name={quadrant.icon} size={18} color={colors.accent} />
+                      <View style={styles.priorityHeading}>
+                        <View style={[styles.priorityIcon, { backgroundColor: colors.accentSubtle }]}>
+                          <Icon name={group.icon} size={18} color={colors.accent} />
                         </View>
                         <View style={{ flex: 1 }}>
                           <Text style={[typography.title, { color: colors.text }]}>
-                            {quadrant.title}
+                            {group.title}
                           </Text>
                           <Text style={[typography.caption, { color: colors.muted }]}>
-                            {quadrant.caption}
+                            {group.caption}
                           </Text>
                         </View>
                         <Text style={[typography.caption, { color: colors.muted }]}>{tasks.length}</Text>
                       </View>
 
-                      <View style={styles.quadrantTasks}>
+                      <View style={styles.priorityTasks}>
                         {shownTasks.map((task) => {
-                          const index = quadrants.findIndex((item) => item.id === quadrant.id);
-                          const next = quadrants[index + 1]?.id ?? null;
+                          const index = priorityGroups.findIndex((item) => item.id === group.id);
+                          const next = priorityGroups[index + 1]?.id ?? null;
                           return (
                             <DragSortItem
                               key={task.id}
@@ -206,14 +211,14 @@ function PriorityScreen() {
                                 task={task}
                                 dragging={drag.draggingId === task.id}
                                 onToggle={() => toggleTask(task)}
-                                onOpen={() => openSource(task)}
+                                onOpen={() => setSelectedId(task.id)}
                                 onNext={() => setPriority(task.id, next)}
                               />
                             </DragSortItem>
                           );
                         })}
                         {tasks.length === 0 ? (
-                          <View style={styles.quadrantEmpty}>
+                          <View style={styles.priorityEmpty}>
                             <Text style={[typography.caption, { color: colors.faint }]}>—</Text>
                           </View>
                         ) : null}
@@ -221,7 +226,7 @@ function PriorityScreen() {
                           <Pressable
                             accessibilityRole="button"
                             accessibilityLabel={expanded ? "Show fewer tasks" : `Show ${hiddenCount} more tasks`}
-                            onPress={() => toggleQuadrant(quadrant.id)}
+                            onPress={() => togglePriorityGroup(group.id)}
                             style={({ pressed }) => [
                               styles.moreButton,
                               {
@@ -244,6 +249,39 @@ function PriorityScreen() {
           </>
         )}
       </Page>
+      <TaskDetailSheet
+        task={selected}
+        boardTitle={selectedBoard?.title}
+        onClose={() => setSelectedId(null)}
+        onSave={(patch) => run((repository) => repository.updateTask(selected!.id, patch))}
+        onOpenSource={() => {
+          if (!selected) return;
+          setSelectedId(null);
+          router.push(selectedSourceBoard ? `/boards/${selectedSourceBoard.id}` : `/pages/${selected.pageId}`);
+        }}
+        onRemoveFromBoard={
+          selected?.boardId && selectedBoard && selected.pageId !== selectedBoard.pageId
+            ? () => {
+                setSelectedId(null);
+                void run((repository) => repository.removeTaskFromBoard(selected.id));
+              }
+            : undefined
+        }
+        onDelete={() => {
+          if (!selected) return;
+          Alert.alert("Delete task?", `“${selected.content}” will be removed everywhere.`, [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Delete",
+              style: "destructive",
+              onPress: () => {
+                setSelectedId(null);
+                void run((repository) => repository.deleteTask(selected.id));
+              },
+            },
+          ]);
+        }}
+      />
     </>
   );
 }
@@ -316,9 +354,9 @@ const styles = StyleSheet.create({
   unprioritized: { gap: spacing.sm },
   unprioritizedTasks: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
   unprioritizedItem: { width: "100%", maxWidth: 420 },
-  matrix: { flexDirection: "row", flexWrap: "wrap", gap: spacing.md },
-  quadrantSlot: { flexBasis: "47%", flexGrow: 1, minWidth: 150 },
-  quadrant: {
+  grid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.md },
+  prioritySlot: { flexBasis: "47%", flexGrow: 1, minWidth: 150 },
+  group: {
     flex: 1,
     minHeight: 240,
     padding: spacing.md,
@@ -326,16 +364,16 @@ const styles = StyleSheet.create({
     borderRadius: radii.md,
     gap: spacing.md,
   },
-  quadrantHeading: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
-  quadrantIcon: {
+  priorityHeading: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  priorityIcon: {
     width: 34,
     height: 34,
     borderRadius: radii.sm,
     alignItems: "center",
     justifyContent: "center",
   },
-  quadrantTasks: { gap: spacing.sm },
-  quadrantEmpty: { minHeight: 88, alignItems: "center", justifyContent: "center" },
+  priorityTasks: { gap: spacing.sm },
+  priorityEmpty: { minHeight: 88, alignItems: "center", justifyContent: "center" },
   moreButton: {
     minHeight: 40,
     borderTopWidth: StyleSheet.hairlineWidth,

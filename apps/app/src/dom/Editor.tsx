@@ -26,7 +26,7 @@ export interface EditorProps {
   document: TiptapDocument;
   theme: EditorTheme;
   onChange: (document: TiptapDocument) => void;
-  onTaskToggle: (blockId: string, checked: boolean) => void;
+  onTaskToggle: (taskId: string, checked: boolean) => void;
   onOpenLink: (target: string) => void;
   onFocusChange: (focused: boolean) => void;
   onError: (message: string) => void;
@@ -136,14 +136,22 @@ const Wikilink = Extension.create({
 });
 
 const STYLES = `
-html, body {
+html, body, #root {
   margin: 0;
+  height: 100%;
   background: var(--giraffle-bg);
+}
+#root {
+  display: flex;
+  flex-direction: column;
 }
 .giraffle-shell {
   display: flex;
+  flex: 1;
   flex-direction: column;
-  min-height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   background: var(--giraffle-bg);
   color: var(--giraffle-ink);
   font: 16px/1.65 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -277,7 +285,7 @@ export default function Editor({
     onUpdate: ({ editor: instance }) => {
       const next = instance.getJSON() as TiptapDocument;
       for (const toggle of taskToggles(emitted.current, next)) {
-        onTaskToggle(toggle.blockId, toggle.checked);
+        onTaskToggle(toggle.taskId, toggle.checked);
       }
       emitted.current = next;
       onChange(next);

@@ -13,7 +13,7 @@ describe("editor document model", () => {
     const document: TiptapDocument = {
       type: "doc",
       content: [
-        { type: "paragraph", content: [{ type: "text", text: "Field notes" }] },
+        { type: "paragraph", content: [{ type: "text", text: "Field research" }] },
         {
           type: "taskList",
           content: [
@@ -72,7 +72,7 @@ describe("editor document model", () => {
   test("only blocks the editor registers carry an id", () => {
     expect(ID_BEARING_NODES).toContain("taskItem");
     expect(ID_BEARING_NODES).not.toContain("text");
-    expect(ID_BEARING_NODES).not.toContain("kanban");
+    expect(ID_BEARING_NODES).not.toContain("unsupportedNode");
   });
 });
 
@@ -90,10 +90,10 @@ describe("task toggles", () => {
 
   test("reports a checkbox that flipped", () => {
     expect(taskToggles(document(false), document(true))).toEqual([
-      { blockId: "task-1", checked: true },
+      { taskId: "task-1", checked: true },
     ]);
     expect(taskToggles(document(true), document(false))).toEqual([
-      { blockId: "task-1", checked: false },
+      { taskId: "task-1", checked: false },
     ]);
   });
 
@@ -122,15 +122,15 @@ describe("task toggles", () => {
 
 describe("wikilink ranges", () => {
   test("covers the brackets so the decoration wraps the whole link", () => {
-    const text = "see [[Field Notes]] later";
+    const text = "see [[Field Research]] later";
     const [range] = wikilinkRanges(text);
 
-    expect(range).toEqual({ from: 4, to: 19, target: "Field Notes" });
-    expect(text.slice(range?.from ?? 0, range?.to ?? 0)).toBe("[[Field Notes]]");
+    expect(range).toEqual({ from: 4, to: 22, target: "Field Research" });
+    expect(text.slice(range?.from ?? 0, range?.to ?? 0)).toBe("[[Field Research]]");
   });
 
   test("an alias links to the target, not the label", () => {
-    expect(wikilinkRanges("[[Field Notes|notes]]")[0]?.target).toBe("Field Notes");
+    expect(wikilinkRanges("[[Field Research|research]]")[0]?.target).toBe("Field Research");
   });
 
   test("finds every link in one text node", () => {

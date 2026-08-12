@@ -244,7 +244,7 @@ export function buildRecord(
       objectType: "page",
       schemaVersion: 1,
       clock: { physicalMs: 1_700_000_000_000 + options.sequence, logical: 0 },
-      mutation: { kind: "upsert", data: { title: `note ${options.sequence}` } },
+      mutation: { kind: "upsert", data: { title: `page ${options.sequence}` } },
     },
   });
 }

@@ -342,7 +342,7 @@ describe("relay blindness for sealed grants", () => {
     ).json()) as { records: { encodedRecord: string }[] };
 
     expect(body.records[0]!.encodedRecord).toBe(encode(encodeSignedSyncRecord(record)));
-    expect(Buffer.from(body.records[0]!.encodedRecord, "base64url").includes(Buffer.from("note 1"))).toBe(
+    expect(Buffer.from(body.records[0]!.encodedRecord, "base64url").includes(Buffer.from("page 1"))).toBe(
       false,
     );
   });

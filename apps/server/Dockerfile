@@ -25,7 +25,11 @@ COPY --from=deps /srv/apps/server/node_modules ./node_modules
 COPY apps/server/package.json ./
 COPY apps/server/src ./src
 
-RUN mkdir -p /data && chown -R node:node /data
+# The file: dependency resolves to /srv/packages/protocol. Dependencies imported
+# from that package must be discoverable from its own directory as well.
+RUN ln -s /srv/apps/server/node_modules /srv/packages/protocol/node_modules \
+    && mkdir -p /data \
+    && chown -R node:node /data
 VOLUME ["/data"]
 USER node
 EXPOSE 8787
