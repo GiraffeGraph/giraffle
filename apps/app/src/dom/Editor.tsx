@@ -12,8 +12,11 @@ import { EditorContent, useEditor } from "@tiptap/react";
 import { StarterKit } from "@tiptap/starter-kit";
 import type { DOMProps } from "expo/dom";
 import { useCallback, useEffect, useState } from "react";
+import { BlockControls } from "./block-controls";
 import { assignBlockIds, ID_BEARING_NODES, isIdBearing } from "./editor-document";
-import { editorCssVariables, type EditorTheme } from "./theme";
+import { EDITOR_STYLES } from "./editor-styles";
+import { SlashMenu } from "./slash-menu";
+import { editorCssVariables, editorMetricVariables, type EditorTheme } from "./theme";
 import { wikilinkRanges } from "./wikilinks";
 
 export interface EditorAttachment {
@@ -134,84 +137,6 @@ const Wikilink = Extension.create({
   },
 });
 
-const STYLES = `
-html, body, #root {
-  margin: 0;
-  height: 100%;
-  background: var(--giraffle-bg);
-}
-#root {
-  display: flex;
-  flex-direction: column;
-}
-.giraffle-shell {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  background: var(--giraffle-bg);
-  color: var(--giraffle-ink);
-  font: 16px/1.65 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  -webkit-text-size-adjust: 100%;
-}
-.giraffle-editor {
-  flex: 1;
-  outline: none;
-  padding: 2px 0 24px;
-  overflow-wrap: anywhere;
-  caret-color: var(--giraffle-ink);
-}
-.giraffle-editor p.is-editor-empty:first-child::before {
-  content: attr(data-placeholder);
-  color: var(--giraffle-muted);
-  float: left;
-  height: 0;
-  pointer-events: none;
-}
-.giraffle-editor a { color: var(--giraffle-link); }
-.giraffle-editor .giraffle-wikilink {
-  color: var(--giraffle-link);
-  text-decoration: underline dotted;
-  text-underline-offset: 3px;
-}
-.giraffle-editor img { max-width: 100%; height: auto; }
-.giraffle-editor blockquote {
-  margin: 0;
-  padding-left: 12px;
-  border-left: 3px solid var(--giraffle-muted);
-  color: var(--giraffle-muted);
-}
-.giraffle-editor pre {
-  padding: 10px 12px;
-  border-radius: 8px;
-  overflow-x: auto;
-  background: color-mix(in srgb, var(--giraffle-ink) 8%, transparent);
-}
-.giraffle-editor ul[data-type='taskList'] { list-style: none; padding-left: 4px; }
-.giraffle-editor ul[data-type='taskList'] li { display: flex; gap: 8px; align-items: flex-start; }
-.giraffle-editor ul[data-type='taskList'] li > label { user-select: none; }
-.giraffle-editor ul[data-type='taskList'] li > div { flex: 1; }
-.giraffle-toolbar {
-  position: sticky;
-  bottom: 0;
-  display: flex;
-  padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
-  background: transparent;
-}
-.giraffle-toolbar button {
-  appearance: none;
-  border: 1px solid color-mix(in srgb, var(--giraffle-muted) 45%, transparent);
-  border-radius: 999px;
-  padding: 6px 14px;
-  font: inherit;
-  font-size: 13px;
-  color: var(--giraffle-muted);
-  background: transparent;
-}
-`;
-
 function describe(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error);
   return message.slice(0, 300) || "Editor error";
@@ -243,12 +168,24 @@ export default function Editor({
       StarterKit.configure({
         // Links open on the native side; the web realm never navigates.
         link: { openOnClick: false, autolink: true },
+        // The line a dragged block will land on. ProseMirror already draws it
+        // while `view.dragging` is set, so the drag handle only has to say
+        // what is moving.
+        dropcursor: { color: "var(--giraffle-link)", width: 2, class: "giraffle-drop-line" },
       }),
       TaskList,
       TaskItem.configure({ nested: true }),
       Image,
-      Placeholder.configure({ placeholder: "Start writing…" }),
+      Placeholder.configure({
+        // Only a paragraph is offered the hint, and the stylesheet narrows that
+        // to the top level: inside a list or a quote the block a person is in
+        // already says what to type.
+        placeholder: ({ node }) =>
+          node.type.name === "paragraph" ? "Write, or press '/' for commands" : "",
+      }),
       BlockId,
+      BlockControls,
+      SlashMenu,
       Wikilink,
     ],
     content: seed,
@@ -312,7 +249,7 @@ export default function Editor({
   // and body itself, and a custom property set lower down never reaches them.
   useEffect(() => {
     const root = document.documentElement;
-    const variables = editorCssVariables(theme);
+    const variables = { ...editorMetricVariables(), ...editorCssVariables(theme) };
     for (const [name, value] of Object.entries(variables)) {
       root.style.setProperty(name, value);
     }
@@ -320,8 +257,8 @@ export default function Editor({
 
   return (
     <div className="giraffle-shell">
-      <style>{STYLES}</style>
-      <EditorContent editor={editor} />
+      <style>{EDITOR_STYLES}</style>
+      <EditorContent editor={editor} className="giraffle-editor-host" />
       <div className="giraffle-toolbar">
         <button type="button" onClick={attach}>
           Add image

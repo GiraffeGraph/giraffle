@@ -9,20 +9,24 @@ import {
 import { router, useLocalSearchParams } from "expo-router";
 import { File } from "expo-file-system";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Alert, AppState, Linking, Modal, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
+import { Alert, AppState, Linking, Modal, Platform, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChildPageViews } from "@/components/pages/ChildPageViews";
 import { PageMetaBar } from "@/components/pages/PageMetaBar";
 import { PagePlanningSheet } from "@/components/pages/PagePlanningSheet";
 import { EditableText } from "@/components/ui/EditableText";
+import { Page } from "@/components/ui/Page";
 import { Button, DividerRow, EmptyState, Icon } from "@/components/ui/primitives";
 import { useTheme } from "@/design/ThemeProvider";
-import { spacing, typography } from "@/design/tokens";
+import { radii, spacing, typography, WIDE_LAYOUT_MIN_WIDTH } from "@/design/tokens";
 import Editor, { type EditorAttachment } from "@/dom/Editor";
 import { offlineDomProps } from "@/dom/offline";
 import { useApp } from "@/state/AppProvider";
 
 type SaveState = "saved" | "saving" | "error";
+
+/** Enough of a spread to name most pages without shipping a picker library. */
+const ICON_CHOICES = ["📄", "📝", "✅", "📌", "💡", "🎯", "📚", "🗓️", "🌱", "🔥", "⭐", "🧭"];
 
 /** Attachments live inside the encrypted document, so they stay small. */
 const MAX_ATTACHMENT_BYTES = 2 * 1024 * 1024;
@@ -46,8 +50,10 @@ export default function PageEditor() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
   const { snapshot, run } = useApp();
   const page = snapshot.pages.find((item) => item.id === id);
+  const [iconHovered, setIconHovered] = useState(false);
   const [menu, setMenu] = useState(false);
   const [moveSheet, setMoveSheet] = useState(false);
   const [planningSheet, setPlanningSheet] = useState(false);
@@ -216,12 +222,26 @@ export default function PageEditor() {
           onPress={() => setMenu(true)}
         />
       </View>
-      <View style={styles.document}>
-        <EditableText
-          value={page.title}
-          onSave={(title) => void run((repository) => repository.updatePage(page.id, { title }))}
-          style={[typography.pageTitle, { color: colors.text, marginBottom: 4 }]}
-        />
+      <Page scroll={false} style={styles.document}>
+        <View
+          onPointerEnter={() => setIconHovered(true)}
+          onPointerLeave={() => setIconHovered(false)}
+          style={styles.titleBlock}
+        >
+          <PageIcon
+            icon={page.icon}
+            // A pointer can reveal the affordance on demand; a finger cannot, so
+            // a narrow screen keeps it in view.
+            revealed={iconHovered || Platform.OS !== "web" || width < WIDE_LAYOUT_MIN_WIDTH}
+            onChange={(icon) => void run((repository) => repository.updatePage(page.id, { icon }))}
+          />
+          <EditableText
+            value={page.title}
+            accessibilityLabel="Page title"
+            onSave={(title) => void run((repository) => repository.updatePage(page.id, { title }))}
+            style={[typography.pageTitle, { color: colors.text }]}
+          />
+        </View>
         <PageMetaBar page={page} onOpenPlanning={() => setPlanningSheet(true)} />
         <Editor
           document={draft}
@@ -269,7 +289,7 @@ export default function PageEditor() {
             ))}
           </View>
         ) : null}
-      </View>
+      </Page>
       {planningSheet ? (
         <PagePlanningSheet page={page} visible onClose={() => setPlanningSheet(false)} />
       ) : null}
@@ -291,6 +311,101 @@ export default function PageEditor() {
         page={page}
         pages={snapshot.pages.filter((item) => !item.isArchived)}
       />
+    </View>
+  );
+}
+
+/**
+ * The emoji a page wears. Inline choices plus a free-text box cover both the
+ * common case and the one nobody anticipated, without a picker dependency.
+ */
+function PageIcon({
+  icon,
+  revealed,
+  onChange,
+}: {
+  icon: string | null;
+  revealed: boolean;
+  onChange: (icon: string | null) => void;
+}) {
+  const { colors } = useTheme();
+  const [open, setOpen] = useState(false);
+  const [custom, setCustom] = useState("");
+  const pick = (next: string | null) => {
+    setOpen(false);
+    setCustom("");
+    onChange(next);
+  };
+
+  // The slot keeps its height even while empty, so revealing "Add icon" on
+  // hover never nudges the title out from under the pointer.
+  if (!icon && !revealed && !open) return <View style={styles.iconSlot} />;
+
+  return (
+    <View style={styles.iconSlot}>
+      {icon ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Page icon ${icon} — change or remove it`}
+          onPress={() => setOpen((value) => !value)}
+          style={({ pressed }) => [
+            styles.iconButton,
+            { backgroundColor: pressed ? colors.hover : "transparent" },
+          ]}
+        >
+          <Text style={styles.icon}>{icon}</Text>
+        </Pressable>
+      ) : (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Add a page icon"
+          onPress={() => setOpen((value) => !value)}
+          style={({ pressed }) => [
+            styles.addIcon,
+            { backgroundColor: pressed ? colors.hover : "transparent" },
+          ]}
+        >
+          <Icon name="happy-outline" size={15} color={colors.faint} />
+          <Text style={[typography.caption, { color: colors.muted }]}>Add icon</Text>
+        </Pressable>
+      )}
+      {open ? (
+        <View
+          style={[
+            styles.picker,
+            { backgroundColor: colors.surfaceStrong, borderColor: colors.border },
+          ]}
+        >
+          {ICON_CHOICES.map((choice) => (
+            <Pressable
+              key={choice}
+              accessibilityRole="button"
+              accessibilityLabel={`Use ${choice} as the page icon`}
+              onPress={() => pick(choice)}
+              style={({ pressed }) => [
+                styles.choice,
+                { backgroundColor: pressed ? colors.hover : "transparent" },
+              ]}
+            >
+              <Text style={styles.choiceIcon}>{choice}</Text>
+            </Pressable>
+          ))}
+          <TextInput
+            accessibilityLabel="Use another emoji as the page icon"
+            value={custom}
+            onChangeText={setCustom}
+            onSubmitEditing={() => {
+              const next = custom.trim();
+              if (next) pick(next);
+            }}
+            returnKeyType="done"
+            placeholder="Any emoji"
+            placeholderTextColor={colors.faint}
+            style={[typography.body, styles.customIcon, { color: colors.text, borderColor: colors.border }]}
+          />
+          {icon ? <Button label="Remove" accessibilityLabel="Remove the page icon" onPress={() => pick(null)} /> : null}
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -464,14 +579,37 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
   },
-  document: {
-    flex: 1,
-    width: "100%",
-    maxWidth: 780,
-    alignSelf: "center",
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.lg,
+  document: { gap: 0, paddingBottom: 0 },
+  titleBlock: { gap: spacing.xxs },
+  iconSlot: { minHeight: 26, alignItems: "flex-start" },
+  iconButton: { paddingHorizontal: spacing.xs, borderRadius: radii.sm },
+  icon: { fontSize: 46, lineHeight: 56 },
+  addIcon: {
+    minHeight: 26,
+    paddingHorizontal: spacing.xs,
+    borderRadius: radii.sm,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+  },
+  picker: {
+    marginTop: spacing.xs,
+    padding: spacing.xs,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radii.md,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: spacing.xxs,
+  },
+  choice: { minWidth: 30, minHeight: 30, borderRadius: radii.sm, alignItems: "center", justifyContent: "center" },
+  choiceIcon: { fontSize: 18 },
+  customIcon: {
+    minWidth: 110,
+    minHeight: 30,
+    paddingHorizontal: spacing.sm,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radii.sm,
   },
   backlinks: {
     paddingVertical: 12,

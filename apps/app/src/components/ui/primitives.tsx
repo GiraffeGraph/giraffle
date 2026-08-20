@@ -60,20 +60,19 @@ export function Button({
       style={({ pressed }) => [
         styles.button,
         {
-          borderColor: tone === "danger" ? colors.danger : "transparent",
           backgroundColor:
             tone === "accent"
-              ? pressed
+              ? colors.accent
+              : pressed
                 ? colors.pressed
-                : colors.accent
-              : pressed || hovered
-                ? colors.hover
-                : "transparent",
+                : hovered
+                  ? colors.hover
+                  : "transparent",
           opacity: disabled ? 0.42 : pressed ? 0.82 : 1,
         },
       ]}
     >
-      {icon ? <Icon name={icon} size={17} color={foreground} /> : null}
+      {icon ? <Icon name={icon} size={16} color={foreground} /> : null}
       {label ? <Text style={[styles.buttonText, { color: foreground }]}>{label}</Text> : null}
     </Pressable>
   );
@@ -194,13 +193,11 @@ export function EmptyState({
   const { colors } = useTheme();
 
   return (
-    <View style={[styles.empty, { borderColor: colors.border }]}>
-      <View style={[styles.emptyIcon, { backgroundColor: colors.accentSubtle }]}>
-        <Icon name={icon} size={24} color={colors.accent} />
-      </View>
+    <View style={styles.empty}>
+      <Icon name={icon} size={20} color={colors.faint} />
       <View style={styles.emptyCopy}>
-        <Text style={[typography.title, { color: colors.text }]}>{title}</Text>
-        <Text style={[typography.body, { color: colors.secondary }]}>{body}</Text>
+        <Text style={[typography.body, { color: colors.muted }]}>{title}</Text>
+        <Text style={[typography.caption, { color: colors.faint }]}>{body}</Text>
       </View>
       {action}
     </View>
@@ -238,18 +235,15 @@ function SegmentOption({
       style={({ pressed }) => [
         styles.segmentItem,
         {
-          backgroundColor: selected
-            ? colors.accentSubtle
-            : pressed || hovered
-              ? colors.hover
-              : "transparent",
+          borderBottomColor: selected ? colors.text : "transparent",
+          backgroundColor: pressed || hovered ? colors.hover : "transparent",
         },
       ]}
     >
       <Text
         style={[
-          typography.label,
-          { color: selected ? colors.accent : colors.secondary, textTransform: "capitalize" },
+          typography.title,
+          { color: selected ? colors.text : colors.muted, textTransform: "capitalize" },
         ]}
       >
         {label}
@@ -272,7 +266,7 @@ export function Segment<T extends string>({
   const { colors } = useTheme();
 
   return (
-    <View style={[styles.segment, { borderColor: colors.border, backgroundColor: colors.surface }]}>
+    <View style={[styles.segment, { borderBottomColor: colors.border }]}>
       {values.map((item) => (
         <SegmentOption
           key={item}
@@ -287,29 +281,28 @@ export function Segment<T extends string>({
 
 const styles = StyleSheet.create({
   button: {
-    minHeight: controls.default,
-    minWidth: controls.default,
-    paddingHorizontal: 12,
-    borderWidth: 1,
+    minHeight: controls.compact,
+    minWidth: controls.compact,
+    paddingHorizontal: spacing.sm,
     borderRadius: radii.sm,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
   },
-  buttonText: { ...typography.label },
+  buttonText: { ...typography.title, fontWeight: "500" },
   field: { gap: 6 },
   inputShell: {
-    minHeight: controls.comfortable,
+    minHeight: controls.default,
     borderWidth: 1,
     borderRadius: radii.sm,
     flexDirection: "row",
     alignItems: "center",
   },
-  input: { flex: 1, minHeight: controls.comfortable, paddingHorizontal: 12, ...typography.body },
+  input: { flex: 1, minHeight: controls.default, paddingHorizontal: spacing.sm, ...typography.body },
   revealButton: {
-    width: 44,
-    minHeight: controls.comfortable,
+    width: 36,
+    minHeight: controls.default,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -322,42 +315,31 @@ const styles = StyleSheet.create({
   },
   headerCopy: { flex: 1, gap: 4 },
   row: {
-    minHeight: 56,
-    paddingVertical: 10,
+    minHeight: 40,
+    paddingVertical: spacing.xs,
     paddingHorizontal: spacing.xs,
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: spacing.sm,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   empty: {
-    minHeight: 156,
-    paddingVertical: spacing.xl,
-    paddingHorizontal: spacing.lg,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    gap: spacing.md,
+    paddingVertical: spacing.lg,
+    flexDirection: "row",
     alignItems: "flex-start",
-    justifyContent: "center",
+    gap: spacing.sm,
   },
-  emptyIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: radii.md,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  emptyCopy: { maxWidth: 440, gap: spacing.xs },
+  emptyCopy: { flex: 1, maxWidth: 440, gap: spacing.xxs },
   loading: { flex: 1, alignItems: "center", justifyContent: "center" },
   segment: {
     flexDirection: "row",
-    borderWidth: 1,
-    borderRadius: radii.sm,
-    overflow: "hidden",
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    gap: spacing.xs,
   },
   segmentItem: {
-    paddingHorizontal: 13,
+    paddingHorizontal: spacing.sm,
     height: controls.compact,
+    borderBottomWidth: 2,
     justifyContent: "center",
   },
 });

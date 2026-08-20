@@ -31,6 +31,11 @@ import {
 } from "@/infrastructure/secure-storage/lockTimeout";
 import { createRecoveryCode } from "@/infrastructure/secure-storage/recoveryCode";
 import {
+  forgetUnlockedSession,
+  rememberUnlockedSession,
+  restoreUnlockedSession,
+} from "@/infrastructure/secure-storage/unlockedSession";
+import {
   clearKeyMaterial,
   clearLocalKeys,
   clearQuickPin,
@@ -133,6 +138,7 @@ export function AppProvider({ children }: PropsWithChildren) {
   const [pinEnabled, setPinEnabled] = useState(false);
   const [lockTimeoutMs, setLockTimeoutMs] = useState(DEFAULT_LOCK_TIMEOUT_MS);
   const keyRef = useRef<LocalKeys | null>(null);
+  const lockTimeoutRef = useRef(DEFAULT_LOCK_TIMEOUT_MS);
   const backgroundAt = useRef<number | null>(null);
   const pinFailures = useRef(0);
   const pinBlockedUntil = useRef(0);
@@ -143,43 +149,14 @@ export function AppProvider({ children }: PropsWithChildren) {
   const syncInFlightRef = useRef<Promise<SyncOutcome> | null>(null);
   const enrolledConnectionRef = useRef<string | null>(null);
 
-  useEffect(() => {
-    let active = true;
-    void (async () => {
-      try {
-        await initializeCrypto();
-        // Keys survive an uninstall in the keychain, the wrapper does not:
-        // a vault counts as present only when both halves are there.
-        const [hasKeys, hasWrapper, hasPin, timeout] = await Promise.all([
-          hasLocalVault(),
-          hasVaultWrapper(),
-          hasQuickPin(),
-          loadLockTimeout(),
-        ]);
-        const exists = hasKeys && hasWrapper;
-        if (!exists) {
-          await Promise.all([
-            clearLocalKeys(),
-            clearVaultWrapper(),
-            clearAccessLock(),
-            clearSyncConfiguration(),
-            deleteEncryptedDatabase(),
-          ]);
-        }
-        if (!active) return;
-        setPinEnabled(exists && hasPin);
-        setLockTimeoutMs(exists ? timeout : DEFAULT_LOCK_TIMEOUT_MS);
-        setPhase(exists ? "locked" : "onboarding");
-      } catch (cause) {
-        if (!active) return;
-        setError(errorMessage(cause, "Startup failed"));
-        setPhase("error");
-      }
-    })();
-    return () => {
-      active = false;
-    };
-  }, []);
+  const sessionExpiry = useCallback(
+    () =>
+      lockTimeoutRef.current < 0
+        ? Number.MAX_SAFE_INTEGER
+        : Date.now() + lockTimeoutRef.current,
+    [],
+  );
+
 
   const close = useCallback(async () => {
     await mutationQueue.current;
@@ -202,6 +179,7 @@ export function AppProvider({ children }: PropsWithChildren) {
 
   const lock = useCallback(async () => {
     setPhase("locked");
+    await forgetUnlockedSession().catch(() => undefined);
     await close().catch(() => undefined);
   }, [close]);
 
@@ -209,6 +187,11 @@ export function AppProvider({ children }: PropsWithChildren) {
     const listener = (next: AppStateStatus) => {
       if (next === "background" || next === "inactive") {
         backgroundAt.current ??= Date.now();
+        if (keyRef.current) {
+          void rememberUnlockedSession(keyRef.current, sessionExpiry()).catch(
+            () => undefined,
+          );
+        }
         return;
       }
       if (next !== "active") return;
@@ -226,7 +209,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     };
     const subscription = AppState.addEventListener("change", listener);
     return () => subscription.remove();
-  }, [lock, lockTimeoutMs, phase]);
+  }, [lock, lockTimeoutMs, phase, sessionExpiry]);
 
   const connect = useCallback(
     async (
@@ -260,13 +243,93 @@ export function AppProvider({ children }: PropsWithChildren) {
         setSnapshot(nextSnapshot);
         setActionError(null);
         setPhase("ready");
+        await rememberUnlockedSession(keys, sessionExpiry()).catch(() => undefined);
       } catch (cause) {
         await database.closeAsync().catch(() => undefined);
         throw cause;
       }
     },
-    [],
+    [sessionExpiry],
   );
+
+  const openWithKeys = useCallback(
+    async (keys: LocalKeys) => {
+      try {
+        const database = await openEncryptedDatabase(keys.databaseKey);
+        let metadata: { id: string; device_id: string } | null = null;
+        try {
+          metadata = await database.getFirstAsync<{ id: string; device_id: string }>(
+            "SELECT id,device_id FROM vault_metadata LIMIT 1",
+          );
+        } finally {
+          await database.closeAsync().catch(() => undefined);
+        }
+        if (!metadata) throw new Error("Vault metadata is missing");
+        await connect(keys, metadata.id, metadata.device_id);
+      } catch (cause) {
+        if (keyRef.current !== keys) clearKeyMaterial(keys);
+        throw cause;
+      }
+    },
+    [connect],
+  );
+
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      try {
+        await initializeCrypto();
+        // Keys survive an uninstall in the keychain, the wrapper does not:
+        // a vault counts as present only when both halves are there.
+        const [hasKeys, hasWrapper, hasPin, timeout] = await Promise.all([
+          hasLocalVault(),
+          hasVaultWrapper(),
+          hasQuickPin(),
+          loadLockTimeout(),
+        ]);
+        const exists = hasKeys && hasWrapper;
+        if (!exists) {
+          await Promise.all([
+            clearLocalKeys(),
+            clearVaultWrapper(),
+            clearAccessLock(),
+            clearSyncConfiguration(),
+            deleteEncryptedDatabase(),
+          ]);
+        }
+        if (!active) return;
+        setPinEnabled(exists && hasPin);
+        setLockTimeoutMs(exists ? timeout : DEFAULT_LOCK_TIMEOUT_MS);
+        lockTimeoutRef.current = exists ? timeout : DEFAULT_LOCK_TIMEOUT_MS;
+
+        // A reload is not a lock. Within the timeout the vault reopens itself,
+        // which is what the setting promises on every other platform.
+        const carried = exists ? await restoreUnlockedSession() : null;
+        if (!active) {
+          if (carried) clearKeyMaterial(carried);
+          return;
+        }
+        if (carried) {
+          try {
+            await openWithKeys(carried);
+            return;
+          } catch {
+            clearKeyMaterial(carried);
+            await forgetUnlockedSession().catch(() => undefined);
+            if (!active) return;
+          }
+        }
+        setPhase(exists ? "locked" : "onboarding");
+      } catch (cause) {
+        if (!active) return;
+        setError(errorMessage(cause, "Startup failed"));
+        setPhase("error");
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [openWithKeys]);
 
   const createVault = useCallback(
     async (passphrase: string, pin?: string) => {
@@ -475,25 +538,9 @@ export function AppProvider({ children }: PropsWithChildren) {
       }
       pinFailures.current = 0;
       pinBlockedUntil.current = 0;
-
-      try {
-        const database = await openEncryptedDatabase(keys.databaseKey);
-        let metadata: { id: string; device_id: string } | null = null;
-        try {
-          metadata = await database.getFirstAsync<{ id: string; device_id: string }>(
-            "SELECT id,device_id FROM vault_metadata LIMIT 1",
-          );
-        } finally {
-          await database.closeAsync().catch(() => undefined);
-        }
-        if (!metadata) throw new Error("Vault metadata is missing");
-        await connect(keys, metadata.id, metadata.device_id);
-      } catch (cause) {
-        if (keyRef.current !== keys) clearKeyMaterial(keys);
-        throw cause;
-      }
+      await openWithKeys(keys);
     },
-    [connect],
+    [openWithKeys],
   );
 
   const setQuickPin = useCallback(
@@ -514,10 +561,19 @@ export function AppProvider({ children }: PropsWithChildren) {
     [session],
   );
 
-  const setLockTimeout = useCallback(async (timeoutMs: number) => {
-    await saveLockTimeout(timeoutMs);
-    setLockTimeoutMs(timeoutMs);
-  }, []);
+  const setLockTimeout = useCallback(
+    async (timeoutMs: number) => {
+      await saveLockTimeout(timeoutMs);
+      setLockTimeoutMs(timeoutMs);
+      lockTimeoutRef.current = timeoutMs;
+      if (keyRef.current) {
+        await rememberUnlockedSession(keyRef.current, sessionExpiry()).catch(
+          () => undefined,
+        );
+      }
+    },
+    [sessionExpiry],
+  );
 
   const refresh = useCallback(async () => {
     if (repository) setSnapshot(await repository.snapshot());

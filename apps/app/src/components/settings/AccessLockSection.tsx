@@ -11,6 +11,8 @@ const timeoutOptions = [
   { value: 60_000, label: "After 1 minute" },
   { value: 5 * 60_000, label: "After 5 minutes" },
   { value: 15 * 60_000, label: "After 15 minutes" },
+  { value: 60 * 60_000, label: "After 1 hour" },
+  { value: 24 * 60 * 60_000, label: "After 1 day" },
   { value: -1, label: "Only when I lock it" },
 ] as const;
 

@@ -1,11 +1,12 @@
 import type { Id, Page } from "@giraffle/domain";
+import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { DropZone } from "@/components/dnd/DragSortContext";
 import { Icon } from "@/components/ui/primitives";
+import { layout, radii, spacing, typography } from "@/design/tokens";
 import { useTheme } from "@/design/ThemeProvider";
-import { radii, typography } from "@/design/tokens";
 
-const INDENT_STEP = 16;
+const INDENT_STEP = spacing.lg;
 
 export function PageTreeRow({
   page,
@@ -33,10 +34,14 @@ export function PageTreeRow({
   onOpenMenu(page: Page): void;
 }) {
   const { colors } = useTheme();
+  const [hovered, setHovered] = useState(false);
   const active = page.id === activePageId;
 
   return (
-    <View>
+    <View
+      onPointerEnter={() => setHovered(true)}
+      onPointerLeave={() => setHovered(false)}
+    >
       <View
         style={[
           styles.edge,
@@ -46,8 +51,12 @@ export function PageTreeRow({
       <View
         style={[
           styles.row,
-          { paddingLeft: 4 + depth * INDENT_STEP },
-          active ? { backgroundColor: colors.accentSubtle } : null,
+          { paddingLeft: spacing.xs + depth * INDENT_STEP },
+          active
+            ? { backgroundColor: colors.selected }
+            : hovered
+              ? { backgroundColor: colors.hover }
+              : null,
           dropZone === "inside"
             ? { backgroundColor: colors.hover, borderColor: colors.accent }
             : null,
@@ -73,28 +82,30 @@ export function PageTreeRow({
             <Icon
               name={expanded ? "chevron-down" : "chevron-forward"}
               size={15}
-              color={colors.secondary}
+              color={colors.faint}
             />
           ) : null}
         </Pressable>
 
         <Pressable
           accessibilityRole="button"
+          accessibilityLabel={page.title || "Untitled"}
+          accessibilityState={{ selected: active }}
           onPress={() => onOpen(page.id)}
           style={({ pressed }) => [styles.main, { opacity: pressed ? 0.6 : 1 }]}
         >
-          <Icon
-            name="document-text-outline"
-            size={16}
-            color={colors.secondary}
-          />
+          {page.icon ? (
+            <Text style={styles.glyph}>{page.icon}</Text>
+          ) : (
+            <Icon name="document-text-outline" size={16} color={colors.faint} />
+          )}
           <Text
             numberOfLines={1}
-            style={[typography.body, { color: colors.text, flex: 1 }]}
+            style={[typography.body, { color: active ? colors.text : colors.secondary, flex: 1 }]}
           >
             {page.title || "Untitled"}
           </Text>
-          {page.isPinned ? <Icon name="pin" size={12} color={colors.muted} /> : null}
+          {page.isPinned ? <Icon name="pin" size={12} color={colors.faint} /> : null}
         </Pressable>
 
         <Pressable
@@ -104,7 +115,7 @@ export function PageTreeRow({
           hitSlop={6}
           style={({ pressed }) => [styles.action, { opacity: pressed ? 0.5 : 1 }]}
         >
-          <Icon name="ellipsis-horizontal" size={16} color={colors.muted} />
+          <Icon name="ellipsis-horizontal" size={16} color={colors.faint} />
         </Pressable>
 
         <Pressable
@@ -114,7 +125,7 @@ export function PageTreeRow({
           hitSlop={6}
           style={({ pressed }) => [styles.action, { opacity: pressed ? 0.5 : 1 }]}
         >
-          <Icon name="add" size={17} color={colors.muted} />
+          <Icon name="add" size={17} color={colors.faint} />
         </Pressable>
       </View>
       <View
@@ -129,24 +140,30 @@ export function PageTreeRow({
 
 const styles = StyleSheet.create({
   row: {
-    minHeight: 42,
+    height: layout.rowHeight,
     borderRadius: radii.sm,
     borderWidth: 1,
     borderColor: "transparent",
     flexDirection: "row",
     alignItems: "center",
-    gap: 2,
+    gap: spacing.xxs,
   },
   dragging: { opacity: 0.45 },
   edge: { height: 2, borderRadius: 1 },
-  chevron: { width: 24, alignItems: "center", justifyContent: "center" },
+  chevron: { width: spacing.xl, alignItems: "center", justifyContent: "center" },
+  glyph: { width: 16, textAlign: "center", fontSize: typography.caption.fontSize },
   main: {
     flex: 1,
     minWidth: 0,
-    minHeight: 42,
+    height: "100%",
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: spacing.sm,
   },
-  action: { width: 32, height: 36, alignItems: "center", justifyContent: "center" },
+  action: {
+    width: layout.rowHeight,
+    height: layout.rowHeight,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 });

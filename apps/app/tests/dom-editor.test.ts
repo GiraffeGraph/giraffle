@@ -1,5 +1,7 @@
 import type { TiptapDocument } from "@giraffle/domain";
+import type { Editor } from "@tiptap/core";
 import { assignBlockIds, ID_BEARING_NODES } from "@/dom/editor-document";
+import { filterSlashCommands, SLASH_COMMANDS } from "@/dom/slash-menu";
 import { editorCssVariables } from "@/dom/theme";
 import { wikilinkRanges } from "@/dom/wikilinks";
 
@@ -109,5 +111,64 @@ describe("editor theme", () => {
       "--giraffle-link": "#00f",
       "--giraffle-bg": "#f5efe5",
     });
+  });
+});
+
+interface ChainCall {
+  name: string;
+  args: unknown[];
+}
+
+/** Stands in for the editor so a slash command's chain can be read back. */
+function recorder(): { calls: ChainCall[]; editor: Editor } {
+  const calls: ChainCall[] = [];
+  const chain: unknown = new Proxy(
+    {},
+    {
+      get: (_target, name: string) =>
+        (...args: unknown[]) => {
+          calls.push({ name, args });
+          return chain;
+        },
+    },
+  );
+  return { calls, editor: { chain: () => chain } as unknown as Editor };
+}
+
+describe("slash menu", () => {
+  test("an empty query offers every block", () => {
+    expect(filterSlashCommands("").map((command) => command.id)).toEqual(
+      SLASH_COMMANDS.map((command) => command.id),
+    );
+  });
+
+  test("filters on the title and on what a person might type instead", () => {
+    expect(filterSlashCommands("head").map((command) => command.id)).toEqual([
+      "heading1",
+      "heading2",
+      "heading3",
+    ]);
+    expect(filterSlashCommands("h2").map((command) => command.id)).toEqual(["heading2"]);
+    expect(filterSlashCommands("checkbox").map((command) => command.id)).toEqual(["taskList"]);
+    expect(filterSlashCommands("nothing at all")).toEqual([]);
+  });
+
+  test("a conversion replaces the typed query and keeps the block id", () => {
+    const { calls, editor } = recorder();
+    SLASH_COMMANDS.find((command) => command.id === "heading2")?.run(
+      editor,
+      { from: 1, to: 3 },
+      "block-1",
+    );
+
+    expect(calls).toContainEqual({ name: "deleteRange", args: [{ from: 1, to: 3 }] });
+    expect(calls).toContainEqual({ name: "setNode", args: ["heading", { level: 2, id: "block-1" }] });
+  });
+
+  test("a block with no id yet is converted without one, and the mint fills it in", () => {
+    const { calls, editor } = recorder();
+    SLASH_COMMANDS.find((command) => command.id === "text")?.run(editor, { from: 1, to: 2 }, null);
+
+    expect(calls).toContainEqual({ name: "setNode", args: ["paragraph", {}] });
   });
 });

@@ -1,12 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
   addDays,
+  addMonths,
   clampMinutes,
   dayKey,
   formatClock,
   formatDue,
+  monthCells,
   parseDue,
   snapMinutes,
+  startOfWeek,
 } from "@giraffle/domain";
 
 describe("page schedule", () => {
@@ -52,5 +55,34 @@ describe("page schedule", () => {
 
   it("day key follows the local calendar", () => {
     expect(dayKey(new Date(2026, 7, 5, 23, 30))).toBe("2026-08-05");
+  });
+});
+
+describe("calendar grids", () => {
+  it("starts a week on the Monday that owns the day", () => {
+    expect(startOfWeek("2026-08-21")).toBe("2026-08-17");
+    expect(startOfWeek("2026-08-17")).toBe("2026-08-17");
+    expect(startOfWeek("2026-08-23")).toBe("2026-08-17");
+  });
+
+  it("steps months from the first, so a long month cannot overshoot", () => {
+    expect(addMonths("2026-01-31", 1)).toBe("2026-02-01");
+    expect(addMonths("2026-03-15", -1)).toBe("2026-02-01");
+    expect(addMonths("2026-12-09", 1)).toBe("2027-01-01");
+  });
+
+  it("draws six whole weeks around the month", () => {
+    const cells = monthCells("2026-08-21");
+    expect(cells).toHaveLength(42);
+    expect(cells[0]).toBe("2026-07-27");
+    expect(cells.at(-1)).toBe("2026-09-06");
+    expect(cells.filter((day) => day.startsWith("2026-08"))).toHaveLength(31);
+  });
+
+  it("keeps every cell one day after the last", () => {
+    const cells = monthCells("2026-02-10");
+    for (let index = 1; index < cells.length; index += 1) {
+      expect(cells[index]).toBe(addDays(cells[index - 1] as string, 1));
+    }
   });
 });

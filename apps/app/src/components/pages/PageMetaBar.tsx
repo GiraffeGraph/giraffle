@@ -1,16 +1,13 @@
-import type{Page}from"@giraffle/domain";import{Pressable,StyleSheet,Text,View}from"react-native";import{Icon,type IconName}from"@/components/ui/primitives";import{useTheme}from"@/design/ThemeProvider";import{radii,spacing,typography}from"@/design/tokens";import{useApp}from"@/state/AppProvider";
+import type{Page}from"@giraffle/domain";import{useState}from"react";import{Pressable,StyleSheet,Text,View}from"react-native";import{Icon,type IconName}from"@/components/ui/primitives";import{useTheme}from"@/design/ThemeProvider";import{radii,spacing,typography}from"@/design/tokens";import{useApp}from"@/state/AppProvider";
 const priorityLabels:Record<string,string>={do:"Focus",schedule:"Plan",delegate:"Delegate",eliminate:"Drop"};
 /** "2026-08-17T09:30" reads as a machine value; a page shows it the way a person says it. */
 const scheduleLabel=(value:string,durationMinutes:number|null):string=>{const[day,time]=value.split("T");const date=new Date(`${day}T12:00:00`);const shown=Number.isNaN(date.getTime())?day:date.toLocaleDateString(undefined,{month:"short",day:"numeric"});return[shown,time?time.slice(0,5):null,durationMinutes?`${durationMinutes}m`:null].filter(Boolean).join(" · ");};
-/**
- * Only what the page actually carries earns a row of its own; everything unset
- * folds into one Plan chip so the document starts right under the title.
- */
-export function PageMetaBar({page,onOpenPlanning}:{page:Page;onOpenPlanning():void}){const{colors}=useTheme();const{snapshot}=useApp();const state=snapshot.states.find((item)=>item.id===page.stateId);
-const items:{key:string;label:string;icon:IconName;accent?:boolean}[]=[];
-if(state)items.push({key:"state",label:state.title,icon:state.family==="done"?"checkmark-circle-outline":state.family==="open"?"ellipse-outline":"bookmark-outline",accent:state.family==="open"});
-if(page.priority)items.push({key:"priority",label:priorityLabels[page.priority]??page.priority,icon:"flag-outline"});
-if(page.scheduledAt)items.push({key:"schedule",label:scheduleLabel(page.scheduledAt,page.durationMinutes),icon:"calendar-outline"});
-if(!page.priority||!page.scheduledAt)items.push({key:"plan",label:"Plan",icon:"options-outline"});
-return <View style={styles.bar}>{items.map((item)=><Pressable key={item.key} accessibilityRole="button" accessibilityLabel={item.key==="plan"?"Plan this page":`${item.label} — plan this page`} onPress={onOpenPlanning} style={({pressed})=>[styles.chip,{borderColor:colors.border,backgroundColor:item.accent?colors.accentSubtle:pressed?colors.hover:"transparent"}]}><Icon name={item.icon} size={12} color={item.accent?colors.accent:colors.faint}/><Text style={[typography.caption,{color:item.accent?colors.accent:colors.muted}]}>{item.label}</Text></Pressable>)}</View>}
-const styles=StyleSheet.create({bar:{flexDirection:"row",flexWrap:"wrap",gap:spacing.xs,marginBottom:spacing.sm},chip:{minHeight:24,paddingHorizontal:spacing.sm,borderWidth:StyleSheet.hairlineWidth,borderRadius:radii.full,flexDirection:"row",alignItems:"center",gap:5}});
+/** A property keeps its row whether or not it is set, so the block never reflows under the title. */
+function Row({icon,label,value,onPress}:{icon:IconName;label:string;value:string|null;onPress():void}){const{colors}=useTheme();const[hovered,setHovered]=useState(false);return <Pressable accessibilityRole="button" accessibilityLabel={`${label}: ${value??"empty"} — plan this page`} onHoverIn={()=>setHovered(true)} onHoverOut={()=>setHovered(false)} onPress={onPress} style={({pressed})=>[styles.row,{backgroundColor:pressed||hovered?colors.hover:"transparent"}]}><View style={styles.label}><Icon name={icon} size={14} color={colors.muted}/><Text numberOfLines={1} style={[typography.body,{flex:1,color:colors.muted}]}>{label}</Text></View><Text numberOfLines={1} style={[typography.body,{flex:1,color:value?colors.text:colors.faint}]}>{value??"Empty"}</Text></Pressable>;}
+export function PageMetaBar({page,onOpenPlanning}:{page:Page;onOpenPlanning():void}){const{snapshot}=useApp();const state=snapshot.states.find((item)=>item.id===page.stateId);
+return <View style={styles.block}>
+<Row icon={state?.family==="done"?"checkmark-circle-outline":state?.family==="open"?"ellipse-outline":"bookmark-outline"} label="State" value={state?.title??null} onPress={onOpenPlanning}/>
+<Row icon="flag-outline" label="Priority" value={page.priority?priorityLabels[page.priority]??page.priority:null} onPress={onOpenPlanning}/>
+<Row icon="calendar-outline" label="Date" value={page.scheduledAt?scheduleLabel(page.scheduledAt,page.durationMinutes):null} onPress={onOpenPlanning}/>
+</View>}
+const styles=StyleSheet.create({block:{marginTop:spacing.sm,marginBottom:spacing.md},row:{minHeight:30,paddingHorizontal:spacing.xs,borderRadius:radii.sm,flexDirection:"row",alignItems:"center",gap:spacing.sm},label:{width:110,flexDirection:"row",alignItems:"center",gap:spacing.sm}});

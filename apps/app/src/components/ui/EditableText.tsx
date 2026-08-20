@@ -8,12 +8,14 @@ export function EditableText({
   style,
   placeholder = "Untitled",
   multiline = false,
+  accessibilityLabel,
 }: {
   value: string;
   onSave: (value: string) => void;
   style?: StyleProp<TextStyle>;
   placeholder?: string;
   multiline?: boolean;
+  accessibilityLabel?: string;
 }) {
   const { colors } = useTheme();
   const [draft, setDraft] = useState(value);
@@ -62,6 +64,7 @@ export function EditableText({
 
   return (
     <TextInput
+      accessibilityLabel={accessibilityLabel ?? placeholder}
       value={draft}
       multiline={multiline}
       blurOnSubmit={!multiline}
