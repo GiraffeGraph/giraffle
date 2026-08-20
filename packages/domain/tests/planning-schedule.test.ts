@@ -6,6 +6,7 @@ import {
   dayKey,
   formatClock,
   formatDue,
+  groupPagesByDay,
   monthCells,
   parseDue,
   snapMinutes,
@@ -84,5 +85,25 @@ describe("calendar grids", () => {
     for (let index = 1; index < cells.length; index += 1) {
       expect(cells[index]).toBe(addDays(cells[index - 1] as string, 1));
     }
+  });
+});
+
+describe("calendar grouping", () => {
+  const page = (id: string, scheduledAt: string | null) => ({ id, scheduledAt });
+
+  it("buckets pages by the day they are due", () => {
+    const days = groupPagesByDay([page("a", "2026-08-21T09:30"), page("b", "2026-08-22"), page("c", "2026-08-21")]);
+    expect([...days.keys()].sort()).toEqual(["2026-08-21", "2026-08-22"]);
+    expect(days.get("2026-08-21")?.map((item) => item.id)).toEqual(["c", "a"]);
+  });
+
+  it("leaves unscheduled pages off the calendar", () => {
+    const days = groupPagesByDay([page("a", null), page("b", "tomorrow")]);
+    expect(days.size).toBe(0);
+  });
+
+  it("orders all-day pages ahead of timed ones", () => {
+    const days = groupPagesByDay([page("a", "2026-08-21T18:00"), page("b", "2026-08-21"), page("c", "2026-08-21T07:15")]);
+    expect(days.get("2026-08-21")?.map((item) => item.id)).toEqual(["b", "c", "a"]);
   });
 });

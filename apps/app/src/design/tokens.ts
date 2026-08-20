@@ -17,6 +17,8 @@ export const layout = {
   contentGutterNarrow: 24,
   /** One row in the sidebar tree. */
   rowHeight: 28,
+  /** The margin the editor's block controls live in, left of the text. */
+  blockGutter: 42,
 } as const;
 
 export const spacing = { xxs: 2, xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32, xxxl: 48 } as const;

@@ -80,3 +80,26 @@ export function formatClock(minutes: number): string {
 export function minutesNow(now = new Date()): number {
   return now.getHours() * 60 + now.getMinutes();
 }
+
+/**
+ * Scheduled pages bucketed by the calendar day they land on, each bucket in
+ * clock order. Anything without a due date is not on the calendar at all.
+ */
+export function groupPagesByDay<T extends { scheduledAt: string | null }>(pages: readonly T[]): Map<string, T[]> {
+  const days = new Map<string, T[]>();
+
+  for (const page of pages) {
+    const due = parseDue(page.scheduledAt)?.day;
+    if (!due) continue;
+
+    const bucket = days.get(due);
+    if (bucket) bucket.push(page);
+    else days.set(due, [page]);
+  }
+
+  for (const bucket of days.values()) {
+    bucket.sort((a, b) => (a.scheduledAt ?? "").localeCompare(b.scheduledAt ?? ""));
+  }
+
+  return days;
+}

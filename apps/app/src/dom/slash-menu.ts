@@ -22,6 +22,15 @@ function withId(blockId: string | null): Record<string, unknown> {
   return blockId === null ? {} : { id: blockId };
 }
 
+/** Its `run` is wired by the extension, which is where the host callback lives. */
+const imageCommand: SlashCommand = {
+  id: "image",
+  title: "Image",
+  hint: "Upload a picture",
+  keywords: ["photo", "picture", "upload", "g\u00f6rsel", "resim"],
+  run: () => undefined,
+};
+
 export const SLASH_COMMANDS: readonly SlashCommand[] = [
   {
     id: "text",
@@ -128,6 +137,7 @@ export const SLASH_COMMANDS: readonly SlashCommand[] = [
       editor.chain().focus().deleteRange(range).setNode("codeBlock", withId(blockId)).run();
     },
   },
+  imageCommand,
 ];
 
 export function filterSlashCommands(query: string): SlashCommand[] {
@@ -160,12 +170,19 @@ export function slashTrigger(state: EditorState): SlashTrigger | null {
   const paragraph = $from.parent;
   if (paragraph.type.name !== "paragraph") return null;
   if ($from.parentOffset !== paragraph.content.size) return null;
+
+  // A slash opens the menu wherever a new word begins, so a block can be
+  // converted mid-sentence without clearing the line first.
   const text = paragraph.textContent;
-  if (!text.startsWith("/") || text.length !== paragraph.content.size) return null;
-  const query = text.slice(1);
+  const slash = text.lastIndexOf("/");
+  if (slash === -1) return null;
+  if (slash > 0 && !/\s/.test(text.charAt(slash - 1))) return null;
+
+  const query = text.slice(slash + 1);
   if (/\s/.test(query)) return null;
+
   return {
-    from: $from.start(),
+    from: $from.start() + slash,
     to: $from.start() + text.length,
     query,
     blockId: typeof paragraph.attrs.id === "string" ? paragraph.attrs.id : null,
@@ -262,13 +279,20 @@ function slashMenuView(editor: Editor, view: EditorView): PluginView {
     );
 
     menu.hidden = false;
-    const caret = view.coordsAtPos(state.trigger.from);
+    // The live selection rectangle is where the caret actually is; a document
+    // position can map elsewhere once a block carries decorations.
+    const selection = view.dom.ownerDocument.getSelection();
+    const range = selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
+    const rect = range?.getBoundingClientRect();
+    const caret =
+      rect && rect.height > 0 ? rect : view.coordsAtPos(state.trigger.from);
     const frame = host.getBoundingClientRect();
     const below = caret.bottom + 6;
     const above = caret.top - menu.offsetHeight - 6;
     const flip = below + menu.offsetHeight > window.innerHeight && above > frame.top;
-    menu.style.left = `${caret.left - frame.left}px`;
-    menu.style.top = `${(flip ? above : below) - frame.top}px`;
+    const left = Math.min(caret.left, window.innerWidth - menu.offsetWidth - 8);
+    menu.style.left = `${Math.max(8, left)}px`;
+    menu.style.top = `${flip ? above : below}px`;
     menu.querySelector(".is-active")?.scrollIntoView({ block: "nearest" });
   };
 
@@ -295,8 +319,17 @@ function run(view: EditorView, editor: Editor): boolean {
  * matches — and Escape only hides it, leaving the typed text as the plain text
  * it already is.
  */
-export const SlashMenu = Extension.create({
+export interface SlashMenuOptions {
+  /** Picking a file happens outside the document, so the host does it. */
+  onInsertImage: ((editor: Editor) => void) | null;
+}
+
+export const SlashMenu = Extension.create<SlashMenuOptions>({
   name: "giraffleSlashMenu",
+
+  addOptions() {
+    return { onInsertImage: null };
+  },
 
   // Ahead of the keymaps, or Enter would split the paragraph before the menu
   // ever sees it.
@@ -304,6 +337,11 @@ export const SlashMenu = Extension.create({
 
   addProseMirrorPlugins() {
     const { editor } = this;
+    const { onInsertImage } = this.options;
+    imageCommand.run = (currentEditor, range) => {
+      currentEditor.chain().focus().deleteRange(range).run();
+      onInsertImage?.(currentEditor);
+    };
 
     return [
       new Plugin<SlashMenuState>({

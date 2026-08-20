@@ -30,7 +30,7 @@ export default function Settings() {
       <Page>
 
       <View>
-        <Text style={[typography.label, styles.sectionLabel, { color: colors.muted }]}>Appearance</Text>
+        <Text style={[typography.label, styles.sectionLabel, { color: colors.faint }]}>Appearance</Text>
         {appearanceOptions.map((option) => (
           <DividerRow
             key={option.value}
@@ -54,7 +54,7 @@ export default function Settings() {
       <DataBackupSection />
 
       <View style={styles.safety}>
-        <Text style={[typography.label, styles.sectionLabel, { color: colors.muted }]}>Your devices</Text>
+        <Text style={[typography.label, styles.sectionLabel, { color: colors.faint }]}>Your devices</Text>
         <Button
           label="Devices"
           icon="phone-portrait-outline"
@@ -63,7 +63,7 @@ export default function Settings() {
       </View>
 
       <View style={styles.safety}>
-        <Text style={[typography.label, styles.sectionLabel, { color: colors.muted }]}>On this device</Text>
+        <Text style={[typography.label, styles.sectionLabel, { color: colors.faint }]}>On this device</Text>
         <Button
           label="Lock Giraffle"
           icon="lock-closed-outline"
@@ -91,6 +91,11 @@ export default function Settings() {
 }
 
 const styles = StyleSheet.create({
-  sectionLabel: { marginBottom: spacing.sm },
+  sectionLabel: {
+    marginTop: spacing.xxl,
+    marginBottom: spacing.xs,
+    textTransform: "uppercase",
+    letterSpacing: 0.6,
+  },
   safety: { gap: spacing.sm },
 });

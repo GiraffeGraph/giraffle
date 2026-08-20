@@ -22,6 +22,7 @@ html, body, #root {
   flex: 1;
   flex-direction: column;
   min-height: 0;
+  overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
   background: var(--giraffle-bg);
@@ -40,6 +41,7 @@ html, body, #root {
 }
 .giraffle-editor {
   flex: 1;
+  box-sizing: border-box;
   outline: none;
   padding: 2px 0 24px;
   overflow-wrap: anywhere;
@@ -156,7 +158,7 @@ html, body, #root {
 .giraffle-block-handle:active { cursor: grabbing; }
 .giraffle-drop-line { border-radius: 999px; }
 .giraffle-slash-menu {
-  position: absolute;
+  position: fixed;
   z-index: 60;
   display: block;
   width: 232px;

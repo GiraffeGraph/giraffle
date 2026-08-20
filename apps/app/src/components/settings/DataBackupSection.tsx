@@ -161,7 +161,7 @@ export function DataBackupSection() {
 
   return (
     <View style={styles.section}>
-      <Text style={[typography.label, styles.sectionLabel, { color: colors.muted }]}>Backup</Text>
+      <Text style={[typography.label, styles.sectionLabel, { color: colors.faint }]}>Backup</Text>
       <Button
         label="Export workspace"
         icon="download-outline"
@@ -309,7 +309,12 @@ export function DataBackupSection() {
 
 const styles = StyleSheet.create({
   section: { gap: spacing.sm },
-  sectionLabel: { marginBottom: spacing.xs },
+  sectionLabel: {
+    marginTop: spacing.xxl,
+    marginBottom: spacing.xs,
+    textTransform: "uppercase",
+    letterSpacing: 0.6,
+  },
   modalRoot: { flex: 1, justifyContent: "flex-end" },
   modalRootWide: { justifyContent: "center", padding: spacing.xl },
   scrim: { position: "absolute", inset: 0 },

@@ -1,19 +1,39 @@
 import { pageAncestors, type Id, type PageBreadcrumb } from "@giraffle/domain";
 import { router, usePathname } from "expo-router";
-import { useMemo, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useSidebar } from "@/components/shell/AppShell";
+import { PageRowMenu, useSidebar } from "@/components/shell/AppShell";
 import { Icon } from "@/components/ui/primitives";
 import { useTheme } from "@/design/ThemeProvider";
 import { controls, layout, radii, spacing, typography, WIDE_LAYOUT_MIN_WIDTH } from "@/design/tokens";
 import { useApp } from "@/state/AppProvider";
 
 /**
+ * How long ago the page was touched, at the coarseness a person actually cares
+ * about: minutes while the edit is still in mind, then hours, then a date.
+ */
+function editedLabel(updatedAt: number): string {
+  const minutes = Math.floor((Date.now() - updatedAt) / 60_000);
+  if (minutes < 1) return "Edited just now";
+  if (minutes < 60) return `Edited ${minutes}m ago`;
+  if (minutes < 60 * 24) return `Edited ${Math.floor(minutes / 60)}h ago`;
+
+  const edited = new Date(updatedAt);
+  const sameYear = edited.getFullYear() === new Date().getFullYear();
+  return `Edited ${edited.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    ...(sameYear ? {} : { year: "numeric" }),
+  })}`;
+}
+
+/**
  * The trail to whatever is on screen, plus that screen's primary action. A page
- * gives `pageId` and the bar derives its own ancestors; screens that are not a
- * page pass a plain `title` and read as a single crumb. Narrow layouts have no
- * sidebar, so account and settings hang here instead.
+ * gives `pageId` and the bar derives its own ancestors, its edit recency and the
+ * actions that belong to it; screens that are not a page pass a plain `title`
+ * and read as a single crumb. Narrow layouts have no sidebar, so account and
+ * settings hang here instead.
  */
 export function ScreenTopbar({
   title,
@@ -21,31 +41,38 @@ export function ScreenTopbar({
   crumbs,
   action,
   aside,
+  onOpenMenu,
 }: {
   title?: string;
   pageId?: Id;
   crumbs?: readonly PageBreadcrumb[];
   action?: ReactNode;
   aside?: ReactNode;
+  /** A screen holding a richer page menu of its own opens that one instead. */
+  onOpenMenu?: () => void;
 }) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const { snapshot } = useApp();
+  const { snapshot, run } = useApp();
   const sidebar = useSidebar();
   const path = usePathname();
   const narrow = width < WIDE_LAYOUT_MIN_WIDTH;
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const page = useMemo(
+    () => (pageId ? snapshot.pages.find((candidate) => candidate.id === pageId) ?? null : null),
+    [pageId, snapshot.pages],
+  );
 
   const trail = useMemo<readonly PageBreadcrumb[]>(() => {
     if (crumbs) return crumbs;
-    if (!pageId) return [];
-    const page = snapshot.pages.find((candidate) => candidate.id === pageId);
     if (!page) return [];
     return [
-      ...pageAncestors(snapshot.pages, pageId),
+      ...pageAncestors(snapshot.pages, page.id),
       { id: page.id, title: page.title, icon: page.icon },
     ];
-  }, [crumbs, pageId, snapshot.pages]);
+  }, [crumbs, page, snapshot.pages]);
 
   return (
     <View
@@ -110,6 +137,49 @@ export function ScreenTopbar({
 
       {aside}
       {action}
+
+      {page ? (
+        <>
+          {narrow ? null : (
+            <Text numberOfLines={1} style={[typography.caption, { color: colors.muted }]}>
+              {editedLabel(page.updatedAt)}
+            </Text>
+          )}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={page.isPinned ? "Unpin this page" : "Pin this page"}
+            accessibilityState={{ selected: page.isPinned }}
+            onPress={() =>
+              void run((repository) =>
+                repository.updatePage(page.id, { isPinned: !page.isPinned }),
+              ).catch(() => undefined)
+            }
+            style={({ pressed }) => [
+              styles.button,
+              { backgroundColor: pressed ? colors.hover : "transparent" },
+            ]}
+          >
+            <Icon
+              name={page.isPinned ? "star" : "star-outline"}
+              size={16}
+              color={page.isPinned ? colors.accent : colors.faint}
+            />
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`${page.title || "Untitled"} options`}
+            onPress={() => (onOpenMenu ? onOpenMenu() : setMenuOpen(true))}
+            style={({ pressed }) => [
+              styles.button,
+              { backgroundColor: pressed ? colors.hover : "transparent" },
+            ]}
+          >
+            <Icon name="ellipsis-horizontal" size={16} color={colors.faint} />
+          </Pressable>
+          <PageRowMenu page={menuOpen ? page : null} close={() => setMenuOpen(false)} />
+        </>
+      ) : null}
+
       {narrow && !path.startsWith("/account") ? (
         <Pressable
           accessibilityRole="button"

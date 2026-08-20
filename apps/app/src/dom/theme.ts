@@ -4,7 +4,7 @@
  * properties inside the web realm.
  */
 
-import { documentScale, radii, spacing } from "@/design/tokens";
+import { documentScale, layout, radii, spacing } from "@/design/tokens";
 
 export interface EditorTheme {
   text: string;
@@ -46,7 +46,7 @@ const blockControl = 18;
  * hover, and a column that started at the edge would have them land on the
  * first character.
  */
-const documentGutter = blockControl * 2 + spacing.xxs + spacing.xs;
+const documentGutter = layout.blockGutter;
 
 /**
  * The document's scale and rhythm as CSS custom properties. The editor runs in

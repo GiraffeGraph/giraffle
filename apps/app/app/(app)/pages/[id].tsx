@@ -1,6 +1,5 @@
 import {
   blocksToMarkdown,
-  pageAncestors,
   pageLabel,
   selectableParentPages,
   type Page as PageModel,
@@ -10,15 +9,16 @@ import { router, useLocalSearchParams } from "expo-router";
 import { File } from "expo-file-system";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, AppState, Linking, Modal, Platform, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { ChildPageViews } from "@/components/pages/ChildPageViews";
 import { PageMetaBar } from "@/components/pages/PageMetaBar";
+import { ScreenTopbar } from "@/components/shell/ScreenTopbar";
 import { PagePlanningSheet } from "@/components/pages/PagePlanningSheet";
 import { EditableText } from "@/components/ui/EditableText";
 import { Page } from "@/components/ui/Page";
 import { Button, DividerRow, EmptyState, Icon } from "@/components/ui/primitives";
 import { useTheme } from "@/design/ThemeProvider";
-import { radii, spacing, typography, WIDE_LAYOUT_MIN_WIDTH } from "@/design/tokens";
+import { layout, radii, spacing, typography, WIDE_LAYOUT_MIN_WIDTH } from "@/design/tokens";
 import Editor, { type EditorAttachment } from "@/dom/Editor";
 import { offlineDomProps } from "@/dom/offline";
 import { useApp } from "@/state/AppProvider";
@@ -49,11 +49,16 @@ async function pickAttachment(accept: string[]): Promise<EditorAttachment | null
 export default function PageEditor() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { colors } = useTheme();
-  const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const { snapshot, run } = useApp();
   const page = snapshot.pages.find((item) => item.id === id);
   const [iconHovered, setIconHovered] = useState(false);
+  // The editor reserves a margin for its block controls only where a pointer can
+  // hover it, so the blocks above the document follow the same rule.
+  const gutter =
+    Platform.OS === "web" && width >= WIDE_LAYOUT_MIN_WIDTH
+      ? { paddingLeft: layout.blockGutter }
+      : null;
   const [menu, setMenu] = useState(false);
   const [moveSheet, setMoveSheet] = useState(false);
   const [planningSheet, setPlanningSheet] = useState(false);
@@ -159,74 +164,48 @@ export default function PageEditor() {
     );
   }
 
-  const leave = async () => {
-    if (timer.current) {
-      clearTimeout(timer.current);
-      timer.current = null;
-    }
-    if (dirtyRef.current && draftRef.current) {
-      await persist(draftRef.current, revisionRef.current);
-    }
-    router.back();
-  };
-  const ancestors = pageAncestors(snapshot.pages, page.id);
   const backlinks = snapshot.backlinks.filter((link) => link.targetPageId === page.id);
 
 
   return (
     <View style={[styles.fill, { backgroundColor: colors.background }]}>
-      <View style={[styles.breadcrumb, { paddingTop: insets.top, borderBottomColor: colors.border }]}>
-        <Button
-          icon="chevron-back"
-          accessibilityLabel="Back"
-          onPress={() => void leave()}
-        />
-        <Text
-          numberOfLines={1}
-          style={[typography.caption, { color: colors.muted, flex: 1 }]}
-        >
-          <Text onPress={() => router.replace("/pages")}>Pages</Text>
-          {ancestors.map((item) => (
-            <Text key={item.id} onPress={() => router.replace(`/pages/${item.id}`)}>
-              {` / ${item.title}`}
-            </Text>
-          ))}
-        </Text>
-        {saveState === "error" ? (
+      <ScreenTopbar
+        pageId={page.id}
+        onOpenMenu={() => setMenu(true)}
+        action={
           <Button
-            label="Retry save"
-            icon="refresh-outline"
-            tone="danger"
-            onPress={() => {
-              if (draftRef.current) {
-                void persist(draftRef.current, revisionRef.current);
-              }
-            }}
+            icon="options-outline"
+            accessibilityLabel="Page planning"
+            onPress={() => setPlanningSheet(true)}
           />
-        ) : saveState === "saving" ? (
-          <Text
-            accessibilityLiveRegion="polite"
-            style={[typography.caption, { color: colors.muted }]}
-          >
-            Saving…
-          </Text>
-        ) : null}
-        <Button
-          icon="options-outline"
-          accessibilityLabel="Page planning"
-          onPress={() => setPlanningSheet(true)}
-        />
-        <Button
-          icon="ellipsis-horizontal"
-          accessibilityLabel="Page actions"
-          onPress={() => setMenu(true)}
-        />
-      </View>
+        }
+        aside={
+          saveState === "error" ? (
+            <Button
+              label="Retry save"
+              icon="refresh-outline"
+              tone="danger"
+              onPress={() => {
+                if (draftRef.current) {
+                  void persist(draftRef.current, revisionRef.current);
+                }
+              }}
+            />
+          ) : saveState === "saving" ? (
+            <Text
+              accessibilityLiveRegion="polite"
+              style={[typography.caption, { color: colors.muted }]}
+            >
+              Saving…
+            </Text>
+          ) : null
+        }
+      />
       <Page scroll={false} style={styles.document}>
         <View
           onPointerEnter={() => setIconHovered(true)}
           onPointerLeave={() => setIconHovered(false)}
-          style={styles.titleBlock}
+          style={[styles.titleBlock, gutter]}
         >
           <PageIcon
             icon={page.icon}
@@ -242,7 +221,9 @@ export default function PageEditor() {
             style={[typography.pageTitle, { color: colors.text }]}
           />
         </View>
-        <PageMetaBar page={page} onOpenPlanning={() => setPlanningSheet(true)} />
+        <View style={gutter}>
+          <PageMetaBar page={page} onOpenPlanning={() => setPlanningSheet(true)} />
+        </View>
         <Editor
           document={draft}
           theme={{
@@ -271,7 +252,9 @@ export default function PageEditor() {
           }}
           dom={offlineDomProps({ backgroundColor: colors.background, scrollEnabled: true })}
         />
-        <ChildPageViews parent={page} />
+        <View style={gutter}>
+          <ChildPageViews parent={page} />
+        </View>
         {backlinks.length ? (
           <View style={[styles.backlinks, { borderTopColor: colors.border }]}>
             <Text style={[typography.label, { color: colors.muted }]}>
@@ -571,14 +554,6 @@ function MoveSheet({
 const styles = StyleSheet.create({
   fill: { flex: 1 },
   moveList: { maxHeight: 320 },
-  breadcrumb: {
-    height: 42,
-    paddingHorizontal: 10,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
   document: { gap: 0, paddingBottom: 0 },
   titleBlock: { gap: spacing.xxs },
   iconSlot: { minHeight: 26, alignItems: "flex-start" },

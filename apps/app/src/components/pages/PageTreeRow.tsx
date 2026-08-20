@@ -1,12 +1,20 @@
 import type { Id, Page } from "@giraffle/domain";
 import { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import type { DropZone } from "@/components/dnd/DragSortContext";
 import { Icon } from "@/components/ui/primitives";
 import { layout, radii, spacing, typography } from "@/design/tokens";
 import { useTheme } from "@/design/ThemeProvider";
 
 const INDENT_STEP = spacing.lg;
+
+// A pointer can ask for the row actions by hovering; a finger cannot, so a
+// touch screen keeps them in view.
+const HOVER_CAPABLE =
+  Platform.OS === "web" &&
+  typeof window !== "undefined" &&
+  typeof window.matchMedia === "function" &&
+  window.matchMedia("(hover: hover)").matches;
 
 export function PageTreeRow({
   page,
@@ -36,6 +44,9 @@ export function PageTreeRow({
   const { colors } = useTheme();
   const [hovered, setHovered] = useState(false);
   const active = page.id === activePageId;
+  // Fading rather than unmounting: the row keeps its width, and a pointer that
+  // can reach an action has already revealed it.
+  const actionOpacity = active || hovered || !HOVER_CAPABLE ? 1 : 0;
 
   return (
     <View
@@ -113,7 +124,7 @@ export function PageTreeRow({
           accessibilityLabel={`${page.title} options`}
           onPress={() => onOpenMenu(page)}
           hitSlop={6}
-          style={({ pressed }) => [styles.action, { opacity: pressed ? 0.5 : 1 }]}
+          style={({ pressed }) => [styles.action, { opacity: pressed ? 0.5 : actionOpacity }]}
         >
           <Icon name="ellipsis-horizontal" size={16} color={colors.faint} />
         </Pressable>
@@ -123,7 +134,7 @@ export function PageTreeRow({
           accessibilityLabel={`Add a page inside ${page.title}`}
           onPress={() => onAddChild(page.id)}
           hitSlop={6}
-          style={({ pressed }) => [styles.action, { opacity: pressed ? 0.5 : 1 }]}
+          style={({ pressed }) => [styles.action, { opacity: pressed ? 0.5 : actionOpacity }]}
         >
           <Icon name="add" size={17} color={colors.faint} />
         </Pressable>

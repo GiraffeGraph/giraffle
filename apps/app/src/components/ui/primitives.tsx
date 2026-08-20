@@ -315,7 +315,7 @@ const styles = StyleSheet.create({
   },
   headerCopy: { flex: 1, gap: 4 },
   row: {
-    minHeight: 40,
+    minHeight: 34,
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.xs,
     flexDirection: "row",

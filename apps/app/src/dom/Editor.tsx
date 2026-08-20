@@ -1,7 +1,7 @@
 "use dom";
 
 import { generateId, type TiptapDocument } from "@giraffle/domain";
-import { Extension } from "@tiptap/core";
+import { Extension, type Editor as TiptapEditor } from "@tiptap/core";
 import { Image } from "@tiptap/extension-image";
 import { Placeholder } from "@tiptap/extension-placeholder";
 import { TaskItem } from "@tiptap/extension-task-item";
@@ -156,6 +156,20 @@ export default function Editor({
   // value seeds the editor once and the editor owns it from there.
   const [seed] = useState(() => assignBlockIds(incoming));
 
+  // The extension list is built once, so the command works from the editor it
+  // is handed rather than from a captured instance.
+  const insertImage = useCallback(
+    (instance: TiptapEditor) => {
+      onRequestAttachment(["image/*"])
+        .then((attachment) => {
+          if (attachment) {
+            instance.chain().focus().setImage({ src: attachment.src, alt: attachment.alt }).run();
+          }
+        })
+        .catch((error: unknown) => onError(describe(error)));
+    },
+    [onError, onRequestAttachment],
+  );
   const openLink = useCallback(
     (target: string) => {
       if (target.length > 0) onOpenLink(target);
@@ -185,7 +199,7 @@ export default function Editor({
       }),
       BlockId,
       BlockControls,
-      SlashMenu,
+      SlashMenu.configure({ onInsertImage: insertImage }),
       Wikilink,
     ],
     content: seed,
@@ -234,16 +248,6 @@ export default function Editor({
     };
   }, [onError]);
 
-  const attach = useCallback(() => {
-    if (!editor) return;
-    onRequestAttachment(["image/*"])
-      .then((attachment) => {
-        if (attachment) {
-          editor.chain().focus().setImage({ src: attachment.src, alt: attachment.alt }).run();
-        }
-      })
-      .catch((error: unknown) => onError(describe(error)));
-  }, [editor, onError, onRequestAttachment]);
 
   // Written to the document root, not just the shell: the webview paints html
   // and body itself, and a custom property set lower down never reaches them.
@@ -259,11 +263,6 @@ export default function Editor({
     <div className="giraffle-shell">
       <style>{EDITOR_STYLES}</style>
       <EditorContent editor={editor} className="giraffle-editor-host" />
-      <div className="giraffle-toolbar">
-        <button type="button" onClick={attach}>
-          Add image
-        </button>
-      </div>
     </div>
   );
 }

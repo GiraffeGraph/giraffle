@@ -1,5 +1,5 @@
-import type { Id, Page } from "@giraffle/domain";
-import { useCallback, useMemo, useState } from "react";
+import { pageAncestors, type Id, type Page } from "@giraffle/domain";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View } from "react-native";
 import { DragSortItem, DragSortProvider, useDragSort, type DropTarget } from "@/components/dnd/DragSortContext";
 import { PageTreeRow } from "@/components/pages/PageTreeRow";
@@ -83,6 +83,26 @@ function PageTreeBody({
 }) {
   const [expanded, setExpanded] = useState<ReadonlySet<Id>>(() => new Set<Id>());
   const drag = useDragSort();
+  const pagesRef = useRef(pages);
+
+  useEffect(() => {
+    pagesRef.current = pages;
+  }, [pages]);
+
+  // Opening a nested page from search or a link has to reveal it in the tree.
+  // Only the active page drives this, so a branch closed by hand stays closed
+  // while its pages are edited.
+  useEffect(() => {
+    if (!activePageId) return;
+    const trail = pageAncestors(pagesRef.current, activePageId).map((crumb) => crumb.id);
+    if (!trail.length) return;
+    setExpanded((current) => {
+      if (trail.every((id) => current.has(id))) return current;
+      const next = new Set(current);
+      for (const id of trail) next.add(id);
+      return next;
+    });
+  }, [activePageId]);
 
   const rows = useMemo(
     () => flatten(pages, null, 0, expanded),

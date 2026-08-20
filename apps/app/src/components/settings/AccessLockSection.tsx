@@ -157,7 +157,7 @@ export function AccessLockSection() {
       ) : null}
 
       <View style={styles.timeout}>
-        <Text style={[typography.label, { color: colors.muted }]}>Lock after leaving Giraffle</Text>
+        <Text style={[typography.label, styles.groupLabel, { color: colors.faint }]}>Lock after leaving Giraffle</Text>
         {timeoutOptions.map((option) => (
           <DividerRow
             key={option.value}
@@ -189,6 +189,12 @@ export function AccessLockSection() {
 }
 
 const styles = StyleSheet.create({
+  groupLabel: {
+    marginTop: spacing.xl,
+    marginBottom: spacing.xs,
+    textTransform: "uppercase",
+    letterSpacing: 0.6,
+  },
   root: { gap: spacing.md },
   intro: { gap: spacing.xs },
   rowCopy: { flex: 1, gap: 2 },
