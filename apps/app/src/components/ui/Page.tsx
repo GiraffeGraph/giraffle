@@ -12,8 +12,13 @@ import { layout, spacing, WIDE_LAYOUT_MIN_WIDTH } from "@/design/tokens";
 export function Page({
   children,
   scroll = true,
+  wide = false,
   ...props
-}: PropsWithChildren<{ scroll?: boolean } & ScrollViewProps>) {
+}: PropsWithChildren<{
+  scroll?: boolean;
+  /** A table has columns to spend width on; prose has a measure to keep. */
+  wide?: boolean;
+} & ScrollViewProps>) {
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
   // The sidebar is part of the window but not of the page, so the roomy gutter
@@ -28,7 +33,7 @@ export function Page({
     styles.page,
     {
       backgroundColor: colors.background,
-      maxWidth: layout.contentWidth + gutter * 2,
+      maxWidth: wide ? layout.wideContentWidth + gutter * 2 : layout.contentWidth + gutter * 2,
       paddingHorizontal: gutter,
     },
   ];

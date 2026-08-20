@@ -12,6 +12,8 @@ export const layout = {
   topbarHeight: 45,
   /** The reading column. Wider than this and the eye loses the line start. */
   contentWidth: 708,
+  /** Views that spend width on columns rather than on a line of prose. */
+  wideContentWidth: 1100,
   /** Breathing room either side of the column on a roomy window. */
   contentGutter: 96,
   contentGutterNarrow: 24,
