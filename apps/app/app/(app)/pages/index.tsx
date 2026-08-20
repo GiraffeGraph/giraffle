@@ -1,44 +1,23 @@
 import { type Id, type Page as PageModel } from "@giraffle/domain";
 import { router } from "expo-router";
 import { useState } from "react";
-import {
-  Alert,
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { StyleSheet, View } from "react-native";
 import { PageTree } from "@/components/pages/PageTree";
+import { PageRowMenu } from "@/components/shell/AppShell";
 import { ScreenTopbar } from "@/components/shell/ScreenTopbar";
 import { Page } from "@/components/ui/Page";
-import { Button, DividerRow, EmptyState, Icon } from "@/components/ui/primitives";
-import { useTheme } from "@/design/ThemeProvider";
-import { radii, spacing, typography } from "@/design/tokens";
+import { Button, EmptyState } from "@/components/ui/primitives";
 import { useApp } from "@/state/AppProvider";
 
-const RECENT_LIMIT = 8;
-
-function when(value: number): string {
-  const difference = Math.max(0, Date.now() - value);
-  const days = Math.floor(difference / 86_400_000);
-  return days === 0 ? "Today" : days === 1 ? "Yesterday" : `${days} days ago`;
-}
-
+/**
+ * The tree a wide window keeps in its sidebar. A phone has no sidebar, so the
+ * same tree — the same rows, the same drag, the same menu — becomes a screen.
+ */
 export default function Pages() {
-  const { colors } = useTheme();
   const { snapshot, run } = useApp();
   const [menuPage, setMenuPage] = useState<PageModel | null>(null);
 
   const active = snapshot.pages.filter((page) => !page.isArchived);
-  const pinned = active.filter((page) => page.isPinned).slice(0, 8);
-  const recents = [...active]
-    .filter((page) => !page.isPinned)
-    .sort((left, right) => right.updatedAt - left.updatedAt)
-    .slice(0, RECENT_LIMIT);
-
   const open = (pageId: Id) => router.push(`/pages/${pageId}`);
 
   const create = (parentId?: Id) => {
@@ -51,188 +30,37 @@ export default function Pages() {
     <>
       <ScreenTopbar
         title="Pages"
-        action={<Button icon="add" label="Page" tone="accent" onPress={() => create()} />}
+        action={<Button icon="add" accessibilityLabel="New page" onPress={() => create()} />}
       />
       <Page>
-      {active.length === 0 ? (
-        <EmptyState
-          icon="document-text-outline"
-          title="Start with a page"
-          body="Write, plan something, or capture an idea. Every page can contain more pages."
-          action={<Button label="Create page" tone="accent" onPress={() => create()} />}
-        />
-      ) : (
-        <View style={styles.tree}>
-          {pinned.length ? <><Text style={[typography.label, { color: colors.muted }]}>Pinned</Text><View style={styles.pinnedGrid}>{pinned.map((page) => <Pressable key={page.id} onPress={() => open(page.id)} style={({ pressed }) => [styles.pinnedRow,{ backgroundColor: pressed ? colors.hover : "transparent", borderBottomColor: colors.border }]}><Text style={styles.pageGlyph}>{page.icon || "·"}</Text><Text numberOfLines={1} style={[typography.body,{ color: colors.text,flex:1,fontWeight:"600" }]}>{page.title || "Untitled"}</Text><Icon name="arrow-forward" size={14} color={colors.faint}/></Pressable>)}</View></> : null}
-          <Text style={[typography.label, { color: colors.muted, marginTop: spacing.lg }]}>Recently touched</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.recentRow}
-          >
-            {recents.map((page) => (
-              <Pressable
-                key={page.id}
-                accessibilityRole="button"
-                onPress={() => open(page.id)}
-                style={({ pressed }) => [
-                  styles.recentCard,
-                  {
-                    backgroundColor: pressed ? colors.hover : "transparent",
-                    borderBottomColor: colors.border,
-                    opacity: pressed ? 0.7 : 1,
-                  },
-                ]}
-              >
-                <Icon
-                  name="document-text-outline"
-                  size={18}
-                  color={colors.secondary}
-                />
-                <Text numberOfLines={2} style={[typography.body, { color: colors.text }]}>
-                  {page.title || "Untitled"}
-                </Text>
-                <Text style={[typography.caption, { color: colors.muted }]}>
-                  {when(page.updatedAt)}
-                </Text>
-              </Pressable>
-            ))}
-          </ScrollView>
-
-          <View style={styles.sectionHead}>
-            <Text style={[typography.label, { color: colors.muted }]}>Pages</Text>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Add a top-level page"
-              onPress={() => create()}
-              hitSlop={8}
-              style={({ pressed }) => [styles.sectionAction, { opacity: pressed ? 0.5 : 1 }]}
-            >
-              <Icon name="add" size={18} color={colors.muted} />
-            </Pressable>
-          </View>
-
-          <PageTree
-            pages={active}
-            onOpen={open}
-            onAddChild={(parentId) => create(parentId)}
-            onOpenMenu={setMenuPage}
-            onMove={(move) =>
-              void run((repository) =>
-                repository.movePage(move.pageId, move.parentId, move.afterPageId),
-              ).catch(() => undefined)
-            }
+        {active.length === 0 ? (
+          <EmptyState
+            icon="document-text-outline"
+            title="Start with a page"
+            body="Every page can hold more pages."
+            action={<Button label="New page" tone="accent" onPress={() => create()} />}
           />
-        </View>
-      )}
-
+        ) : (
+          <View style={styles.tree}>
+            <PageTree
+              pages={active}
+              onOpen={open}
+              onAddChild={create}
+              onOpenMenu={setMenuPage}
+              onMove={(move) =>
+                void run((repository) =>
+                  repository.movePage(move.pageId, move.parentId, move.afterPageId),
+                ).catch(() => undefined)
+              }
+            />
+          </View>
+        )}
         <PageRowMenu page={menuPage} close={() => setMenuPage(null)} />
       </Page>
     </>
   );
 }
 
-function PageRowMenu({ page, close }: { page: PageModel | null; close: () => void }) {
-  const { colors } = useTheme();
-  const { run } = useApp();
-
-
-  if (!page) {
-    return null;
-  }
-
-  const action = (work: () => Promise<unknown>) => {
-    close();
-    void work().catch(() => undefined);
-  };
-
-  return (
-    <Modal visible transparent animationType="slide" onRequestClose={close}>
-      <Pressable style={[styles.scrim, { backgroundColor: colors.scrim }]} onPress={close} />
-      <SafeAreaView
-        edges={["bottom"]}
-        style={[styles.sheet, { backgroundColor: colors.surfaceStrong }]}
-      >
-        <Text
-          numberOfLines={1}
-          style={[typography.label, { color: colors.muted, padding: spacing.md }]}
-        >
-          {page.title || "Untitled"}
-        </Text>
-        <DividerRow
-          onPress={() =>
-            action(() =>
-              run((repository) => repository.updatePage(page.id, { isPinned: !page.isPinned })),
-            )
-          }
-        >
-          <Icon name="pin-outline" />
-          <Text style={[typography.body, { color: colors.text }]}>
-            {page.isPinned ? "Unpin" : "Pin"} page
-          </Text>
-        </DividerRow>
-        {page.parentId ? (
-          <DividerRow
-            onPress={() => action(() => run((repository) => repository.movePage(page.id, null)))}
-          >
-            <Icon name="return-up-back-outline" />
-            <Text style={[typography.body, { color: colors.text }]}>Move to top level</Text>
-          </DividerRow>
-        ) : null}
-        <DividerRow onPress={() => action(() => run((repository) => repository.archivePage(page.id)))}>
-          <Icon name="archive-outline" />
-          <Text style={[typography.body, { color: colors.text }]}>Move to archive</Text>
-        </DividerRow>
-        <DividerRow
-          onPress={() => {
-            close();
-            Alert.alert(
-              "Delete page permanently?",
-              "This page and every page inside it will be removed. This cannot be undone.",
-              [
-                { text: "Cancel", style: "cancel" },
-                {
-                  text: "Delete",
-                  style: "destructive",
-                  onPress: () =>
-                    void run((repository) =>
-                      repository.deletePage(page.id),
-                    ).catch(() => undefined),
-                },
-              ],
-            );
-          }}
-        >
-          <Icon name="trash-outline" color={colors.danger} />
-          <Text style={[typography.body, { color: colors.danger }]}>Delete permanently</Text>
-        </DividerRow>
-      </SafeAreaView>
-    </Modal>
-  );
-}
-
 const styles = StyleSheet.create({
-  tree: { gap: 6 },
-  recentRow: { gap: 10, paddingVertical: 8, paddingRight: 8 },
-  recentCard: {
-    width: 148,
-    minHeight: 104,
-    padding: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    justifyContent: "space-between",
-    gap: 6,
-  },
-  pinnedGrid: { gap: 0 },
-  pinnedRow: { minHeight: 46, borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: "row", alignItems: "center", gap: spacing.sm },
-  pageGlyph: { width: 22, textAlign: "center", fontSize: 14 },
-  sectionHead: {
-    marginTop: 10,
-    minHeight: 34,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  sectionAction: { width: 32, height: 32, alignItems: "center", justifyContent: "center" },
-  scrim: { flex: 1 },
-  sheet: { borderTopLeftRadius: radii.lg, borderTopRightRadius: radii.lg },
+  tree: { paddingTop: 6 },
 });
