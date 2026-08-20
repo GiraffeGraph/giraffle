@@ -1,15 +1,248 @@
-import { dayKey,parseDue,type Page as PageModel } from "@giraffle/domain";
+import { dayKey, parseDue, type Page as PageModel } from "@giraffle/domain";
 import { router } from "expo-router";
-import { Pressable,StyleSheet,Text,useWindowDimensions,View } from "react-native";
+import { useCallback, useMemo } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { ScreenTopbar } from "@/components/shell/ScreenTopbar";
+import {
+  ThoughtField,
+  type ThoughtDestination,
+} from "@/components/today/ThoughtField";
 import { Page } from "@/components/ui/Page";
-import { Button,Icon } from "@/components/ui/primitives";
+import { Icon } from "@/components/ui/primitives";
 import { useTheme } from "@/design/ThemeProvider";
-import { radii,spacing,typography } from "@/design/tokens";
+import { radii, spacing, typography } from "@/design/tokens";
 import { useApp } from "@/state/AppProvider";
-const greeting=()=>{const hour=new Date().getHours();return hour<12?"Good morning":hour<18?"Good afternoon":"Good evening";};
-const relative=(value:number)=>{const days=Math.floor(Math.max(0,Date.now()-value)/86_400_000);return days===0?"today":days===1?"yesterday":`${days} days ago`;};
-export default function Today(){const{colors}=useTheme();const{snapshot,run}=useApp();const{width}=useWindowDimensions();const today=dayKey(new Date());const family=new Map(snapshot.states.map((state)=>[state.id,state.family]));const pages=snapshot.pages.filter((page)=>!page.isArchived),open=pages.filter((page)=>family.get(page.stateId)==="open"),scheduled=open.filter((page)=>parseDue(page.scheduledAt)?.day===today),overdue=open.filter((page)=>{const due=parseDue(page.scheduledAt)?.day;return due&&due<today;}),inProgress=open.filter((page)=>snapshot.states.find((state)=>state.id===page.stateId)?.title.toLocaleLowerCase().includes("progress")),inbox=pages.find((page)=>page.title==="Inbox"),captures=inbox?pages.filter((page)=>page.parentId===inbox.id):[],recent=[...pages].filter((page)=>page.id!==inbox?.id).sort((a,b)=>b.updatedAt-a.updatedAt).slice(0,6);const complete=(page:PageModel)=>{const done=snapshot.states.find((state)=>state.family==="done"&&state.isDefault)??snapshot.states.find((state)=>state.family==="done");if(done)void run((repository)=>repository.updatePage(page.id,{stateId:done.id}));};const capture=()=>void run((repository)=>repository.createCapture("Untitled")).then((id)=>router.push(`/pages/${id}`));return <><ScreenTopbar title="Today" action={<Button label="Capture" icon="flash-outline" tone="accent" onPress={capture}/>}/><Page><View style={styles.hero}><Text style={[typography.caption,{color:colors.accent,textTransform:"uppercase",letterSpacing:1.2,fontWeight:"700"}]}>{new Date().toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"})}</Text><Text accessibilityRole="header" style={[styles.greeting,{color:colors.text}]}>{greeting()}.</Text><Text style={[typography.body,{color:colors.secondary,maxWidth:520}]}>{scheduled.length?`${scheduled.length} ${scheduled.length===1?"thing":"things"} scheduled today.`:"No schedule to chase. Choose what matters."}{overdue.length?` ${overdue.length} overdue.`:""}</Text></View><View style={[styles.columns,width<1100 ? styles.stack : null]}><View style={styles.main}><FocusSection title="Today" icon="sunny-outline" pages={scheduled} empty="Nothing scheduled for today." onComplete={complete}/>{overdue.length?<FocusSection title="Overdue" icon="time-outline" pages={overdue} tone="danger" onComplete={complete}/>:null}{inProgress.length?<FocusSection title="In progress" icon="pulse-outline" pages={inProgress} onComplete={complete}/>:null}</View><View style={styles.aside}><CompactSection title="Inbox" count={captures.length} pages={captures.slice(0,5)} empty="Inbox is clear." {...(inbox ? { action: () => router.push(`/pages/${inbox.id}`) } : {})}/><CompactSection title="Recently touched" pages={recent} empty="Your recent Pages will gather here." showTime/></View></View></Page></>}
-function FocusSection({title,icon,pages,empty,onComplete,tone}:{title:string;icon:"sunny-outline"|"time-outline"|"pulse-outline";pages:PageModel[];empty?:string;onComplete(page:PageModel):void;tone?:"danger"}){const{colors}=useTheme();return <View style={styles.section}><View style={styles.sectionHead}><Icon name={icon} size={18} color={tone?colors.danger:colors.accent}/><Text style={[typography.title,{color:colors.text,flex:1}]}>{title}</Text><Text style={[typography.caption,{color:colors.muted}]}>{pages.length||""}</Text></View>{pages.length?<View style={[styles.focusList,{borderTopColor:colors.border}]}>{pages.map((page)=><View key={page.id} style={[styles.focusRow,{borderBottomColor:colors.border}]}><Pressable accessibilityRole="checkbox" accessibilityLabel={`Complete ${page.title}`} onPress={()=>onComplete(page)} style={[styles.check,{borderColor:colors.borderStrong}]}><View/></Pressable><Pressable onPress={()=>router.push(`/pages/${page.id}`)} style={{flex:1,minWidth:0,gap:2}}><Text numberOfLines={1} style={[typography.body,{color:colors.text,fontWeight:"600"}]}>{page.title}</Text><Text style={[typography.caption,{color:colors.muted}]}>{page.scheduledAt?.includes("T")?page.scheduledAt.slice(11):"All day"}{page.durationMinutes?` · ${page.durationMinutes} min`:""}</Text></Pressable><Icon name="chevron-forward" size={15} color={colors.faint}/></View>)}</View>:<View style={[styles.quietEmpty,{borderColor:colors.border}]}><Text style={[typography.body,{color:colors.muted}]}>{empty}</Text></View>}</View>}
-function CompactSection({title,pages,empty,count,action,showTime=false}:{title:string;pages:PageModel[];empty:string;count?:number;action?:()=>void;showTime?:boolean}){const{colors}=useTheme();return <View style={[styles.compact,{backgroundColor:colors.surface,borderColor:colors.border}]}><Pressable disabled={!action} onPress={action} style={styles.sectionHead}><Text style={[typography.title,{color:colors.text,flex:1}]}>{title}</Text>{typeof count==="number"?<Text style={[typography.caption,{color:colors.accent}]}>{count}</Text>:null}{action?<Icon name="arrow-forward" size={15} color={colors.muted}/>:null}</Pressable>{pages.length?pages.map((page)=><Pressable key={page.id} onPress={()=>router.push(`/pages/${page.id}`)} style={[styles.compactRow,{borderTopColor:colors.border}]}><Text numberOfLines={1} style={[typography.body,{flex:1,color:colors.secondary}]}>{page.title}</Text>{showTime?<Text style={[typography.caption,{color:colors.faint}]}>{relative(page.updatedAt)}</Text>:null}</Pressable>):<Text style={[typography.caption,{color:colors.faint,paddingVertical:spacing.md}]}>{empty}</Text>}</View>}
-const styles=StyleSheet.create({hero:{paddingTop:spacing.md,paddingBottom:spacing.lg,gap:spacing.xs},greeting:{fontSize:36,lineHeight:42,fontWeight:"700",letterSpacing:-1.1},columns:{flexDirection:"row",alignItems:"flex-start",gap:spacing.xxxl},stack:{flexDirection:"column"},main:{flex:1,minWidth:0,gap:spacing.xxl},aside:{width:"100%",maxWidth:340,gap:spacing.lg},section:{gap:spacing.sm},sectionHead:{minHeight:36,flexDirection:"row",alignItems:"center",gap:spacing.sm},focusList:{borderTopWidth:StyleSheet.hairlineWidth},focusRow:{minHeight:62,borderBottomWidth:StyleSheet.hairlineWidth,flexDirection:"row",alignItems:"center",gap:spacing.md},check:{width:22,height:22,borderRadius:radii.full,borderWidth:1.5,alignItems:"center",justifyContent:"center"},quietEmpty:{minHeight:76,paddingHorizontal:spacing.lg,borderWidth:StyleSheet.hairlineWidth,borderRadius:radii.md,justifyContent:"center"},compact:{padding:spacing.lg,borderWidth:StyleSheet.hairlineWidth,borderRadius:radii.lg},compactRow:{minHeight:46,borderTopWidth:StyleSheet.hairlineWidth,flexDirection:"row",alignItems:"center",gap:spacing.sm}});
+
+export default function Today() {
+  const { snapshot, run } = useApp();
+  const today = dayKey(new Date());
+
+  const { scheduled, overdue, inProgress, captures } = useMemo(() => {
+    const family = new Map(snapshot.states.map((state) => [state.id, state.family]));
+    // A custom open state is a stage deliberately chosen by the user. It reads
+    // as work in flight without depending on the state's custom title.
+    const staged = new Set(
+      snapshot.states
+        .filter((state) => state.family === "open" && !state.isDefault)
+        .map((state) => state.id),
+    );
+    const pages = snapshot.pages.filter((page) => !page.isArchived);
+    const open = pages.filter((page) => family.get(page.stateId) === "open");
+
+    return {
+      scheduled: open.filter((page) => parseDue(page.scheduledAt)?.day === today),
+      overdue: open.filter((page) => {
+        const due = parseDue(page.scheduledAt)?.day;
+        return due ? due < today : false;
+      }),
+      inProgress: open.filter((page) => staged.has(page.stateId)),
+      captures: snapshot.inboxPageId
+        ? pages.filter((page) => page.parentId === snapshot.inboxPageId)
+        : [],
+    };
+  }, [snapshot, today]);
+
+  const complete = useCallback(
+    (page: PageModel) => {
+      const done =
+        snapshot.states.find((state) => state.family === "done" && state.isDefault) ??
+        snapshot.states.find((state) => state.family === "done");
+      if (done) void run((repository) => repository.updatePage(page.id, { stateId: done.id }));
+    },
+    [run, snapshot.states],
+  );
+
+  const capture = useCallback(
+    (title: string) => run((repository) => repository.createCapture(title)),
+    [run],
+  );
+
+  const routeThought = useCallback(
+    (page: PageModel, destination: ThoughtDestination) => {
+      const open =
+        snapshot.states.find((state) => state.family === "open" && state.isDefault) ??
+        snapshot.states.find((state) => state.family === "open");
+      const forever =
+        snapshot.states.find((state) => state.family === "forever" && state.isDefault) ??
+        snapshot.states.find((state) => state.family === "forever");
+      const done =
+        snapshot.states.find((state) => state.family === "done" && state.isDefault) ??
+        snapshot.states.find((state) => state.family === "done");
+
+      void run(async (repository) => {
+        if (destination === "close") {
+          if (done) await repository.updatePage(page.id, { stateId: done.id });
+          await repository.archivePage(page.id);
+          return;
+        }
+
+        // Leaving the field means the capture has been clarified and no longer
+        // belongs under the Inbox system Page.
+        await repository.movePage(page.id, null);
+
+        if (destination === "focus") {
+          await repository.updatePage(page.id, {
+            ...(open ? { stateId: open.id } : {}),
+            priority: "do",
+            scheduledAt: today,
+          });
+          return;
+        }
+        if (destination === "later") {
+          await repository.updatePage(page.id, {
+            ...(open ? { stateId: open.id } : {}),
+            priority: "schedule",
+            scheduledAt: null,
+            durationMinutes: null,
+          });
+          return;
+        }
+        await repository.updatePage(page.id, {
+          ...(forever ? { stateId: forever.id } : {}),
+          priority: null,
+          scheduledAt: null,
+          durationMinutes: null,
+        });
+      }).catch(() => undefined);
+    },
+    [run, snapshot.states, today],
+  );
+
+  const hasPlannedWork = scheduled.length > 0 || overdue.length > 0 || inProgress.length > 0;
+
+  return (
+    <>
+      <ScreenTopbar title="Today" />
+      <Page>
+        <ThoughtField
+          pages={captures}
+          onCapture={capture}
+          onOpen={(pageId) => router.push(`/pages/${pageId}`)}
+          onRoute={routeThought}
+        />
+
+        {hasPlannedWork ? (
+          <View style={styles.sections}>
+            {scheduled.length ? (
+              <FocusSection
+                title="Today"
+                icon="sunny-outline"
+                pages={scheduled}
+                onComplete={complete}
+              />
+            ) : null}
+            {overdue.length ? (
+              <FocusSection
+                title="Overdue"
+                icon="time-outline"
+                pages={overdue}
+                tone="danger"
+                onComplete={complete}
+              />
+            ) : null}
+            {inProgress.length ? (
+              <FocusSection
+                title="In progress"
+                icon="pulse-outline"
+                pages={inProgress}
+                onComplete={complete}
+              />
+            ) : null}
+          </View>
+        ) : null}
+      </Page>
+    </>
+  );
+}
+
+function FocusSection({
+  title,
+  icon,
+  pages,
+  onComplete,
+  tone,
+}: {
+  title: string;
+  icon: "sunny-outline" | "time-outline" | "pulse-outline";
+  pages: PageModel[];
+  onComplete(page: PageModel): void;
+  tone?: "danger";
+}) {
+  const { colors } = useTheme();
+
+  return (
+    <View style={styles.section}>
+      <View style={styles.sectionHead}>
+        <Icon name={icon} size={18} color={tone ? colors.danger : colors.accent} />
+        <Text style={[typography.title, { color: colors.text, flex: 1 }]}>{title}</Text>
+        <Text style={[typography.caption, { color: colors.muted }]}>{pages.length}</Text>
+      </View>
+      <View style={[styles.focusList, { borderTopColor: colors.border }]}>
+        {pages.map((page) => (
+          <View key={page.id} style={[styles.focusRow, { borderBottomColor: colors.border }]}>
+            <Pressable
+              accessibilityRole="checkbox"
+              accessibilityLabel={`Complete ${page.title}`}
+              onPress={() => onComplete(page)}
+              style={[styles.check, { borderColor: colors.borderStrong }]}
+            >
+              <View />
+            </Pressable>
+            <Pressable
+              onPress={() => router.push(`/pages/${page.id}`)}
+              style={styles.focusCopy}
+            >
+              <Text
+                numberOfLines={1}
+                style={[typography.body, { color: colors.text, fontWeight: "600" }]}
+              >
+                {page.title || "Untitled"}
+              </Text>
+              <Text style={[typography.caption, { color: colors.muted }]}>
+                {page.scheduledAt?.includes("T") ? page.scheduledAt.slice(11) : "All day"}
+                {page.durationMinutes ? ` · ${page.durationMinutes} min` : ""}
+              </Text>
+            </Pressable>
+            <Icon name="chevron-forward" size={15} color={colors.faint} />
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  sections: {
+    width: "100%",
+    maxWidth: 760,
+    gap: spacing.xxl,
+  },
+  section: { gap: spacing.sm },
+  sectionHead: {
+    minHeight: 36,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  focusList: { borderTopWidth: StyleSheet.hairlineWidth },
+  focusRow: {
+    minHeight: 62,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+  },
+  check: {
+    width: 22,
+    height: 22,
+    borderRadius: radii.full,
+    borderWidth: 1.5,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  focusCopy: {
+    flex: 1,
+    minWidth: 0,
+    gap: 2,
+  },
+});

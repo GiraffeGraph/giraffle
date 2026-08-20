@@ -262,7 +262,8 @@ export class VaultRepository {
       id:String(row.id),title:String(row.title),elements:parse<CanvasElement[]>(String(row.elements_json)),
       appState:parse<Record<string,unknown>>(String(row.app_state_json)),createdAt:Number(row.created_at),updatedAt:Number(row.updated_at),
     }));
-    return { pages,states,categories,canvases,backlinks:backlinkRows.map((row)=>({sourcePageId:row.source_page_id,sourceTitle:row.source_title,targetPageId:row.target_page_id,targetRaw:row.target_raw})),sync:{pending:pendingRow?.count??0,lastSuccessAt:syncRow?.last_success_at??null,lastError:syncRow?.last_error??null,cursor:syncRow?.server_seq??0} };
+    const inboxRow=pageRows.find((row)=>row.system_role==="inbox");
+    return { pages,states,categories,canvases,backlinks:backlinkRows.map((row)=>({sourcePageId:row.source_page_id,sourceTitle:row.source_title,targetPageId:row.target_page_id,targetRaw:row.target_raw})),inboxPageId:inboxRow?String(inboxRow.id):null,sync:{pending:pendingRow?.count??0,lastSuccessAt:syncRow?.last_success_at??null,lastError:syncRow?.last_error??null,cursor:syncRow?.server_seq??0} };
   }
 
   /** Logical, portable state only. Device identity and relay history never enter a backup. */

@@ -21,6 +21,8 @@ export interface AppSnapshot {
   categories: PageCategory[];
   canvases: Canvas[];
   backlinks: Backlink[];
+  /** Quick capture's parent, held by role so renaming the page keeps it working. */
+  inboxPageId: Id | null;
   sync: SyncState;
 }
 
@@ -30,5 +32,6 @@ export const EMPTY_SNAPSHOT: AppSnapshot = {
   categories: [],
   canvases: [],
   backlinks: [],
+  inboxPageId: null,
   sync: { pending: 0, lastSuccessAt: null, lastError: null, cursor: 0 },
 };
