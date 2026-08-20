@@ -220,10 +220,9 @@ export default function PageEditor() {
         <EditableText
           value={page.title}
           onSave={(title) => void run((repository) => repository.updatePage(page.id, { title }))}
-          style={[typography.hero, { color: colors.text, marginBottom: 8 }]}
+          style={[typography.pageTitle, { color: colors.text, marginBottom: 4 }]}
         />
         <PageMetaBar page={page} onOpenPlanning={() => setPlanningSheet(true)} />
-        <ChildPageViews parent={page} />
         <Editor
           document={draft}
           theme={{
@@ -252,6 +251,7 @@ export default function PageEditor() {
           }}
           dom={offlineDomProps({ backgroundColor: colors.background, scrollEnabled: true })}
         />
+        <ChildPageViews parent={page} />
         {backlinks.length ? (
           <View style={[styles.backlinks, { borderTopColor: colors.border }]}>
             <Text style={[typography.label, { color: colors.muted }]}>
@@ -470,11 +470,11 @@ const styles = StyleSheet.create({
     maxWidth: 780,
     alignSelf: "center",
     paddingHorizontal: spacing.xl,
-    paddingTop: spacing.xxl,
-    paddingBottom: spacing.xxxl,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.lg,
   },
   backlinks: {
-    paddingVertical: 16,
+    paddingVertical: 12,
     borderTopWidth: StyleSheet.hairlineWidth,
     gap: 7,
   },

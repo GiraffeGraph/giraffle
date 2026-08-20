@@ -6,7 +6,9 @@ export const spacing = { xxs: 2, xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32, 
 export const radii = { xs: 5, sm: 8, md: 11, lg: 14, sheet: 20, full: 999 } as const;
 export const controls = { compact: 32, default: 40, comfortable: 46 } as const;
 export const typography = {
-  hero: { fontSize: 34, lineHeight: 40, fontWeight: "700" as const, letterSpacing: -1 },
+  // A page title is a label for the document, not a banner: it stays close to
+  // the first line of content so writing starts near the top of the window.
+  pageTitle: { fontSize: 23, lineHeight: 29, fontWeight: "700" as const, letterSpacing: -0.6 },
   heading: { fontSize: 23, lineHeight: 29, fontWeight: "700" as const, letterSpacing: -0.55 },
   title: { fontSize: 15, lineHeight: 21, fontWeight: "600" as const, letterSpacing: -0.12 },
   body: { fontSize: 14, lineHeight: 22, fontWeight: "400" as const },

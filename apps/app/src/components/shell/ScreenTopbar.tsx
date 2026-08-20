@@ -4,11 +4,12 @@ import { Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-na
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Icon } from "@/components/ui/primitives";
 import { useTheme } from "@/design/ThemeProvider";
-import { typography } from "@/design/tokens";
+import { typography, WIDE_LAYOUT_MIN_WIDTH } from "@/design/tokens";
 
 /**
  * One bar per screen: title, that screen's primary action, and search. Keeping
- * them on a single row leaves the vertical space for content.
+ * them on a single row leaves the vertical space for content. Narrow layouts
+ * have no sidebar, so account and settings hang here instead.
  */
 export function ScreenTopbar({
   title,
@@ -24,6 +25,7 @@ export function ScreenTopbar({
   const { width } = useWindowDimensions();
   const path = usePathname();
   const onSearch = path.startsWith("/search");
+  const narrow = width < WIDE_LAYOUT_MIN_WIDTH;
 
   return (
     <View
@@ -56,6 +58,16 @@ export function ScreenTopbar({
           <Icon name="search-outline" size={21} color={colors.secondary} />
         </Pressable>
       )}
+      {narrow && !path.startsWith("/account") ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Settings and account"
+          onPress={() => router.push("/account")}
+          style={({ pressed }) => [styles.button, { opacity: pressed ? 0.55 : 1 }]}
+        >
+          <Icon name="settings-outline" size={21} color={colors.secondary} />
+        </Pressable>
+      ) : null}
     </View>
   );
 }
