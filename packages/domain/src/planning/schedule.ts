@@ -16,6 +16,25 @@ export function addDays(day: string, offset: number): string {
   return dayKey(date);
 }
 
+/** Weeks start on Monday, so a week grid ends on the weekend it belongs to. */
+export function startOfWeek(day: string): string {
+  const date = new Date(`${day}T12:00:00`);
+  return addDays(day, -((date.getDay() + 6) % 7));
+}
+
+export function addMonths(day: string, offset: number): string {
+  const date = new Date(`${day}T12:00:00`);
+  date.setDate(1);
+  date.setMonth(date.getMonth() + offset);
+  return dayKey(date);
+}
+
+/** The six full weeks a month grid draws, including the days either side of it. */
+export function monthCells(day: string): string[] {
+  const start = startOfWeek(`${day.slice(0, 7)}-01`);
+  return Array.from({ length: 42 }, (_, index) => addDays(start, index));
+}
+
 /**
  * A due date is either a bare day (`2026-08-05`) or a day with a local time
  * (`2026-08-05T09:30`). Minutes are null for the bare form, which the grid
