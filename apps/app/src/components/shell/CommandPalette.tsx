@@ -48,6 +48,7 @@ export function CommandPalette({ visible, onClose }: { visible: boolean; onClose
   const [selected, setSelected] = useState(0);
   const [step, setStep] = useState<Step>("main");
   const [pendingPage, setPendingPage] = useState<PageModel | null>(null);
+  const [matches, setMatches] = useState<{ id: string; title: string; snippet: string }[]>([]);
   const input = useRef<TextInput>(null);
   const list = useRef<ScrollView>(null);
   const rowTops = useRef<Record<string, number>>({});
@@ -155,8 +156,47 @@ export function CommandPalette({ visible, onClose }: { visible: boolean; onClose
     ];
   }
 
+  // Titles filter locally and instantly; the words inside a document live in
+  // SQLite's index, so the query goes there too and its hits join the list.
+  useEffect(() => {
+    const needle = query.trim();
+    let live = true;
+    const timer = setTimeout(() => {
+      if (!visible || needle.length < 2) {
+        setMatches([]);
+        return;
+      }
+      void run((repository) => repository.search(needle))
+        .then((found) => {
+          if (live) setMatches(found);
+        })
+        .catch(() => undefined);
+    }, 120);
+    return () => {
+      live = false;
+      clearTimeout(timer);
+    };
+  }, [query, run, visible]);
+
   const normalized = query.trim().toLocaleLowerCase();
-  const shown = actions.filter((action) => !normalized || `${action.title} ${action.detail ?? ""} ${action.keywords}`.toLocaleLowerCase().includes(normalized)).slice(0, 18);
+  const filtered = actions.filter((action) => !normalized || `${action.title} ${action.detail ?? ""} ${action.keywords}`.toLocaleLowerCase().includes(normalized));
+  const listed = new Set(filtered.map((action) => action.key));
+  const inside: Action[] =
+    step === "main"
+      ? matches
+          .filter((match) => !listed.has(`page-${match.id}`))
+          .slice(0, 8)
+          .map((match) => ({
+            key: `found-${match.id}`,
+            title: match.title || "Untitled",
+            detail: match.snippet.replace(/\s+/g, " ").trim(),
+            icon: "search-outline",
+            keywords: match.title,
+            group: "In documents",
+            run: () => finish(() => router.push(`/pages/${match.id}`)),
+          }))
+      : [];
+  const shown = [...filtered, ...inside].slice(0, 18);
   const goBack = () => { setPendingPage(null); enter("main"); };
   // Typing shortens the list under the highlight, so the row that Enter opens is
   // the last one that still exists rather than a gap.
