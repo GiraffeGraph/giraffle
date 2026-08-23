@@ -30,6 +30,23 @@ function nodeToMarkdown(node: BlockNodeContent): string {
       return `${prefix} ${inlineToMarkdown(node.content)}`;
     }
 
+    case "toggle": {
+      const [summary, body] = node.content ?? [];
+      const head = summary && "content" in summary ? inlineToMarkdown(summary.content) : "";
+      const inner =
+        body && "content" in body && body.content
+          ? body.content
+              .map(nodeToMarkdown)
+              .join("\n\n")
+              .split("\n")
+              .map((line) => (line ? `  ${line}` : line))
+              .join("\n")
+          : "";
+      // Markdown has no fold, so a toggle keeps its shape as a list item whose
+      // contents are indented under it.
+      return inner ? `- ${head}\n${inner}` : `- ${head}`;
+    }
+
     case "callout": {
       const emoji = typeof node.attrs?.emoji === "string" ? node.attrs.emoji : "💡";
       // Blocks inside a quote keep the blank line between them, or a reader

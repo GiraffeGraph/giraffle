@@ -14,6 +14,7 @@ import type { DOMProps } from "expo/dom";
 import { useCallback, useEffect, useState } from "react";
 import { BlockControls } from "./block-controls";
 import { Callout } from "./callout";
+import { Toggle, ToggleBody, ToggleSummary } from "./toggle";
 import { assignBlockIds, ID_BEARING_NODES, isIdBearing } from "./editor-document";
 import { EDITOR_STYLES } from "./editor-styles";
 import { SlashMenu } from "./slash-menu";
@@ -201,6 +202,9 @@ export default function Editor({
       BlockId,
       BlockControls,
       Callout,
+      Toggle,
+      ToggleSummary,
+      ToggleBody,
       SlashMenu.configure({ onInsertImage: insertImage }),
       Wikilink,
     ],

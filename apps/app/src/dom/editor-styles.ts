@@ -157,6 +157,34 @@ html, body, #root {
 .giraffle-block-handle { cursor: grab; }
 .giraffle-block-handle:active { cursor: grabbing; }
 .giraffle-drop-line { border-radius: 999px; }
+.giraffle-toggle {
+  display: flex;
+  gap: 4px;
+  margin: 2px 0;
+}
+.giraffle-toggle-mark {
+  flex: none;
+  width: 20px;
+  height: var(--giraffle-doc-leading);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--giraffle-muted);
+  font: inherit;
+  line-height: var(--giraffle-doc-leading);
+  cursor: pointer;
+  transition: transform 120ms ease;
+  transform-origin: 45% 50%;
+}
+.giraffle-toggle[data-open="true"] > .giraffle-toggle-mark { transform: rotate(90deg); }
+.giraffle-toggle-content { flex: 1; min-width: 0; }
+.giraffle-toggle-summary { font-weight: 600; }
+.giraffle-toggle-body { padding-left: 2px; }
+.giraffle-toggle[data-open="false"] .giraffle-toggle-body { display: none; }
+.giraffle-toggle-body > :last-child { margin-bottom: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .giraffle-toggle-mark { transition: none; }
+}
 .giraffle-callout {
   display: flex;
   gap: 10px;

@@ -22,6 +22,7 @@ export const ID_BEARING_NODES = [
   "taskList",
   "taskItem",
   "callout",
+  "toggle",
 ] as const;
 
 const ID_BEARING = new Set<string>(ID_BEARING_NODES);

@@ -151,6 +151,27 @@ export const SLASH_COMMANDS: readonly SlashCommand[] = [
         .run();
     },
   },
+  {
+    id: "toggle",
+    title: "Toggle list",
+    hint: "Fold a section away",
+    keywords: ["collapse", "fold", "details", "accordion"],
+    run: (editor, range, blockId) => {
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .insertContent({
+          type: "toggle",
+          attrs: { open: true, ...withId(blockId) },
+          content: [
+            { type: "toggleSummary" },
+            { type: "toggleBody", content: [{ type: "paragraph" }] },
+          ],
+        })
+        .run();
+    },
+  },
   imageCommand,
 ];
 

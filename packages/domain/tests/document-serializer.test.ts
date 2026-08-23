@@ -106,4 +106,27 @@ describe("document Markdown serializer", () => {
 
     expect(markdown).toBe("> 💡 Note");
   });
+
+  it("writes a toggle as a list item holding its folded contents", () => {
+    const markdown = blocksToMarkdown({
+      type: "doc",
+      content: [
+        {
+          type: "toggle",
+          attrs: { open: false },
+          content: [
+            { type: "toggleSummary", content: [{ type: "text", text: "Why this matters" }] },
+            {
+              type: "toggleBody",
+              content: [
+                { type: "paragraph", content: [{ type: "text", text: "Because it does." }] },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(markdown).toBe("- Why this matters\n  Because it does.");
+  });
 });
