@@ -171,4 +171,35 @@ describe("slash menu", () => {
 
     expect(calls).toContainEqual({ name: "setNode", args: ["paragraph", {}] });
   });
+
+  test("a callout wraps the block it was typed in, keeping its id", () => {
+    const { calls, editor } = recorder();
+    SLASH_COMMANDS.find((command) => command.id === "callout")?.run(
+      editor,
+      { from: 1, to: 9 },
+      "block-7",
+    );
+
+    expect(calls).toContainEqual({ name: "deleteRange", args: [{ from: 1, to: 9 }] });
+    expect(calls).toContainEqual({ name: "wrapIn", args: ["callout", { id: "block-7" }] });
+  });
+
+  test("a toggle arrives with a summary and a body to type into", () => {
+    const { calls, editor } = recorder();
+    SLASH_COMMANDS.find((command) => command.id === "toggle")?.run(
+      editor,
+      { from: 1, to: 8 },
+      "block-9",
+    );
+
+    const inserted = calls.find((call) => call.name === "insertContent");
+    expect(inserted?.args[0]).toEqual({
+      type: "toggle",
+      attrs: { open: true, id: "block-9" },
+      content: [
+        { type: "toggleSummary" },
+        { type: "toggleBody", content: [{ type: "paragraph" }] },
+      ],
+    });
+  });
 });
