@@ -18,7 +18,7 @@
 
 <p align="center">
   <a href="#why-giraffle">Why Giraffle</a> •
-  <a href="#screenshots">Screenshots</a> •
+  <a href="#what-it-looks-like">What it looks like</a> •
   <a href="#features">Features</a> •
   <a href="#running-the-client">Running the Client</a> •
   <a href="#headless-cli">Headless CLI</a> •
@@ -28,9 +28,17 @@
   <a href="#repository-layout">Layout</a>
 </p>
 
-## Screenshots
+## What it looks like
 
-Current screenshots are being refreshed for the universal recursive Page model.
+One sidebar holds the whole workspace: search, Home, Inbox, Plan, Canvas, then your favourites and the page tree, draggable into any shape. A page opens as a document — an icon, a title, its state, priority and date as property rows, then the writing surface. Hovering a block reveals a `+` and a drag handle; `/` opens the block menu; `⌘K` searches titles and the words inside every page.
+
+| Key | Does |
+| --- | --- |
+| `⌘K` | Open the command palette — pages, actions, and text found inside documents |
+| `⌘N` | Make a page and open it |
+| `⌘\` | Collapse or restore the sidebar |
+| `/` | Open the block menu wherever a word begins |
+| `Esc` | Close whatever is open |
 
 ## Why Giraffle
 
@@ -55,10 +63,13 @@ What the relay *does* see: how many records exist, roughly how big they are, whe
 - **Universal pages:** every note, idea, project and finishable action is one recursive Page
 - **Custom states:** user-defined vocabulary mapped to stable Forever, Open and Done semantics
 - **Local categories:** each Page can group only its direct children with its own categories
-- **Planning lenses:** list, calendar and Focus / Plan / Delegate / Drop priority views over the same Pages
+- **Planning views:** table, board, calendar and list over the same Pages, with day, week and month calendar depths
 - **Quick capture:** creates an Open child Page in Inbox; organizing it moves it to one real parent
+- **Block editor:** headings, lists, to-dos, quotes, code, images, callouts and toggle lists, reachable from `/` or a block's own menu
+- **Find by content:** `⌘K` searches page titles and the text inside documents, with the surrounding words
 - **Canvas:** Excalidraw shapes plus searchable live references to canonical Pages
 - **Local first:** encrypted SQLite, device-held keys, offline reads/writes and a password or quick-PIN lock
+- **Lock on your terms:** the lock timeout covers a browser reload too, from a minute to a day, or only when you lock it yourself
 - **Headless CLI:** local agent and terminal control over the same macOS vault and canonical repository used by the UI
 - **Optional sync:** ciphertext-only exchange between devices through a self-hosted blind relay
 - **Encrypted backup:** password-protected full-workspace export and restore with a versioned `.giraffle` file
@@ -123,11 +134,14 @@ From the repository root, `npm run verify` covers the shared packages and headle
 
 Giraffle can be controlled with no visible window. The CLI is a local adapter over the exact same encrypted vault and `VaultRepository` used by the macOS UI: CLI writes appear in the UI, UI writes appear in CLI reads, and every mutation follows the existing sync operation path. If the desktop runtime is not running, the CLI starts it invisibly.
 
-Install the public CLI and the matching desktop release:
+The CLI is not published to npm yet — publishing waits on a signed desktop release, because `giraffle desktop install` opens the release matching the CLI version. Build and link it from this repository:
 
 ```bash
-npm install --global giraffle
-giraffle desktop install       # opens the signed desktop release download
+npm install
+npm --prefix apps/cli install
+npm run cli:build
+npm link --prefix apps/cli
+
 giraffle desktop status
 
 giraffle pages create "Release plan" --markdown "Ship on Friday"
@@ -136,7 +150,7 @@ giraffle pages update PAGE_ID --priority do
 giraffle pages search release --json
 ```
 
-For repository development instead, run `npm install`, `npm --prefix apps/cli install`, `npm run cli:build`, then `npm link --prefix apps/cli`. Without linking, use `npm run cli -- commands` from the repository root.
+Without linking, use `npm run cli -- commands` from the repository root.
 
 ### Automation and agent use
 
@@ -251,7 +265,7 @@ packages/
   protocol/       canonical CBOR, crypto provider, device chain, HLC, sync records
   sync/           key wrapping, checkpoints, Yjs and Excalidraw merge, blob crypto
 tests/vectors/    frozen protocol test vectors, shared by the client and the packages
-public/           logo and screenshots used by this README
+public/           logo used by this README and the web build
 docker-compose.yml  runs the relay
 ```
 
