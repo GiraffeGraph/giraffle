@@ -5,7 +5,7 @@ import { markdownToBlocks } from "@giraffle/domain";
 import { desktopStatus, openDesktopInstaller } from "./transport.js";
 import { executeRemote } from "./transport.js";
 
-const VERSION = "0.12.0";
+const VERSION = "0.13.0";
 
 interface Globals {
   json: boolean;

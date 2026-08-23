@@ -2,13 +2,10 @@
 
 ## Current status
 
-Public distribution is intentionally deferred while the product is still changing.
-
-- The next planned release is `0.12.0`.
-- The existing GitHub `v0.11.0` desktop artifact predates headless CLI support and is not compatible with the new CLI transport.
-- `giraffle@0.12.0` has **not** been published to npm. The attempted publish passed package verification but stopped at npm's OTP requirement.
-- The unsigned local desktop build is suitable only for development.
-- Do not publish the CLI until its matching desktop GitHub release exists: `giraffle desktop install` opens the release matching the CLI version.
+- The current version is `0.13.0`.
+- macOS DMGs and the Android APK are built locally and are **unsigned**: they run on the machine that built them and trigger Gatekeeper elsewhere.
+- `.github/workflows/release-macos.yml` runs on every `v*` tag and stops at the Developer ID import, because `MAC_CERTIFICATE` and the notarization secrets are not configured on this repository. Signing, notarization and the npm publish that follow it therefore never run.
+- `giraffle` has not been published to npm. Publishing the CLI waits on a signed desktop release, because `giraffle desktop install` opens the release matching the CLI version.
 
 ## Infrastructure already prepared
 
