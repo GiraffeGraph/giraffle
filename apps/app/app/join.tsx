@@ -85,7 +85,7 @@ export default function JoinVault() {
     <SafeAreaView style={[styles.fill, { backgroundColor: colors.background }]}>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.fill}>
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.scroll}>
-          <View style={[styles.panel, { borderColor: colors.border, backgroundColor: colors.surface }]}>
+          <View style={styles.panel}>
             <Text style={[typography.title, { color: colors.text }]}>
               {pending ? "Waiting for your other device" : "Join an existing vault"}
             </Text>
@@ -176,10 +176,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignSelf: "center",
     width: "100%",
-    maxWidth: 460,
+    maxWidth: 380,
     padding: spacing.xl,
   },
-  panel: { borderWidth: 1, borderRadius: radii.lg, padding: spacing.xl, gap: spacing.lg },
+  panel: { gap: spacing.lg },
   fingerprint: {
     padding: 16,
     borderWidth: 1,

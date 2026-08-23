@@ -49,12 +49,7 @@ export default function VaultEntry() {
     return (
       <SafeAreaView style={[styles.fill, { backgroundColor: colors.background }]}>
         <View style={styles.center}>
-          <View
-            style={[
-              styles.panel,
-              { borderColor: colors.border, backgroundColor: colors.surface },
-            ]}
-          >
+          <View style={styles.panel}>
             <Text style={[typography.heading, { color: colors.text }]}>
               Giraffle could not open
             </Text>
@@ -133,12 +128,7 @@ export default function VaultEntry() {
     return (
       <SafeAreaView style={[styles.fill, { backgroundColor: colors.background }]}>
         <View style={styles.center}>
-          <View
-            style={[
-              styles.panel,
-              { borderColor: colors.border, backgroundColor: colors.surface },
-            ]}
-          >
+          <View style={styles.panel}>
             <Text style={[typography.heading, { color: colors.text }]}>
               Save your backup code
             </Text>
@@ -191,12 +181,7 @@ export default function VaultEntry() {
             </View>
           </View>
 
-          <View
-            style={[
-              styles.panel,
-              { borderColor: colors.border, backgroundColor: colors.surface },
-            ]}
-          >
+          <View style={styles.panel}>
             <Text style={[typography.title, { color: colors.text }]}>
               {isNewWorkspace ? "Set up Giraffle" : "Open Giraffle"}
             </Text>
@@ -327,7 +312,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignSelf: "center",
     width: "100%",
-    maxWidth: 460,
+    maxWidth: 380,
     padding: spacing.xl,
     gap: spacing.xl,
   },
@@ -336,22 +321,17 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignSelf: "center",
     width: "100%",
-    maxWidth: 460,
+    maxWidth: 380,
     padding: spacing.xl,
     gap: spacing.xl,
   },
-  brand: { flexDirection: "row", alignItems: "center", gap: 12 },
-  logo: { width: 46, height: 46, borderRadius: 12 },
-  panel: {
-    borderWidth: 1,
-    borderRadius: radii.lg,
-    padding: spacing.xl,
-    gap: spacing.lg,
-  },
+  brand: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  logo: { width: 32, height: 32, borderRadius: radii.sm },
+  panel: { gap: spacing.lg },
   pinFields: { gap: spacing.md },
   recovery: {
-    padding: 16,
-    borderWidth: 1,
+    padding: spacing.md,
+    borderWidth: StyleSheet.hairlineWidth,
     borderRadius: radii.sm,
     fontFamily: Platform.select({ ios: "Menlo", android: "monospace" }),
     fontSize: 13,
