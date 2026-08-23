@@ -8,6 +8,7 @@ import {
   type PropsWithChildren,
 } from "react";
 import { AppState, type AppStateStatus } from "react-native";
+import type { UnlockMethod } from "@/infrastructure/secure-storage/vaultKeys.contract";
 import { installHeadlessBridge } from "@/headless/bridge";
 import { createId } from "@/platform/ids";
 import {
@@ -29,7 +30,6 @@ import {
   loadLockTimeout,
   saveLockTimeout,
 } from "@/infrastructure/secure-storage/lockTimeout";
-import { createRecoveryCode } from "@/infrastructure/secure-storage/recoveryCode";
 import {
   forgetUnlockedSession,
   rememberUnlockedSession,
@@ -40,9 +40,11 @@ import {
   clearLocalKeys,
   clearQuickPin,
   clearVaultWrapper,
+  clearRecoveryWrapper,
   createLocalKeys,
   createPassphraseWrapper,
   createQuickPin,
+  createRecoveryWrapper,
   hasLocalVault,
   hasQuickPin,
   hasVaultWrapper,
@@ -63,7 +65,6 @@ import { deviceFingerprint } from "@/sync/deviceIdentity";
 import { claimVaultAccess } from "@/sync/deviceLink";
 import { createSyncEngine, type SyncOutcome } from "@/sync/engine";
 
-type UnlockMethod = "passphrase" | "pin";
 
 const AUTO_SYNC_INTERVAL_MS = 5_000;
 
@@ -295,6 +296,7 @@ export function AppProvider({ children }: PropsWithChildren) {
           await Promise.all([
             clearLocalKeys(),
             clearVaultWrapper(),
+            clearRecoveryWrapper(),
             clearAccessLock(),
             clearSyncConfiguration(),
             deleteEncryptedDatabase(),
@@ -343,8 +345,9 @@ export function AppProvider({ children }: PropsWithChildren) {
       try {
         const vaultId = createId();
         const deviceId = createId();
-        const recovery = createRecoveryCode();
-        recovery.secret.fill(0);
+        const recoveryCode = await stage("recovery-wrapper", () =>
+          createRecoveryWrapper(vaultId, keys.vaultKeys.vaultRootKey),
+        );
         await stage("passphrase-wrapper", () =>
           createPassphraseWrapper(vaultId, passphrase, keys.vaultKeys.vaultRootKey),
         );
@@ -354,13 +357,14 @@ export function AppProvider({ children }: PropsWithChildren) {
           );
           setPinEnabled(true);
         }
-        await connect(keys, vaultId, deviceId, recovery.code);
-        return { vaultId, deviceId, recoveryCode: recovery.code };
+        await connect(keys, vaultId, deviceId, recoveryCode);
+        return { vaultId, deviceId, recoveryCode };
       } catch (cause) {
         clearKeyMaterial(keys);
         await Promise.allSettled([
           clearLocalKeys(),
           clearVaultWrapper(),
+            clearRecoveryWrapper(),
           clearAccessLock(),
           deleteEncryptedDatabase(),
         ]);
@@ -448,6 +452,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     await Promise.allSettled([
       clearLocalKeys(),
       clearVaultWrapper(),
+            clearRecoveryWrapper(),
       clearSyncConfiguration(),
       deleteEncryptedDatabase(),
     ]);
@@ -536,7 +541,9 @@ export function AppProvider({ children }: PropsWithChildren) {
         throw new Error(
           method === "pin"
             ? "PIN did not unlock this vault"
-            : "Passphrase did not unlock this vault",
+            : method === "recovery"
+              ? "Recovery code did not unlock this vault"
+              : "Passphrase did not unlock this vault",
         );
       }
       pinFailures.current = 0;
@@ -642,6 +649,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     const cleanup = await Promise.allSettled([
       clearLocalKeys(),
       clearVaultWrapper(),
+            clearRecoveryWrapper(),
       clearAccessLock(),
       clearSyncConfiguration(),
       deleteEncryptedDatabase(),

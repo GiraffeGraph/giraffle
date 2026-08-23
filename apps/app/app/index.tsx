@@ -17,7 +17,7 @@ import { radii, spacing, typography } from "@/design/tokens";
 import { isValidPin } from "@/infrastructure/secure-storage/vaultKeys";
 import { useApp } from "@/state/AppProvider";
 
-type UnlockMode = "pin" | "passphrase";
+type UnlockMode = "pin" | "passphrase" | "recovery";
 
 export default function VaultEntry() {
   const { colors } = useTheme();
@@ -95,7 +95,7 @@ export default function VaultEntry() {
         const session = await createVault(password, usePin ? currentPin : undefined);
         setRecoveryCode(session.recoveryCode ?? null);
       } else {
-        await unlock(usingPin ? currentPin : password, usingPin ? "pin" : "passphrase");
+        await unlock(usingPin ? currentPin : password, usingPin ? "pin" : unlockMode === "recovery" ? "recovery" : "passphrase");
       }
     } catch (cause) {
       const temporarilyBlocked =
@@ -104,7 +104,8 @@ export default function VaultEntry() {
       const credentialRejected =
         cause instanceof Error &&
         (cause.message === "PIN did not unlock this vault" ||
-          cause.message === "Passphrase did not unlock this vault");
+          cause.message === "Passphrase did not unlock this vault" ||
+          cause.message === "Recovery code did not unlock this vault");
       if (!isNewWorkspace && !temporarilyBlocked && !credentialRejected) {
         console.error("[giraffle:unlock]", cause);
       }
@@ -130,11 +131,13 @@ export default function VaultEntry() {
         <View style={styles.center}>
           <View style={styles.panel}>
             <Text style={[typography.heading, { color: colors.text }]}>
-              Save your backup code
+              Save your recovery code
             </Text>
             <Text style={[typography.body, { color: colors.secondary }]}>
-              Keep this code somewhere safe. You may need it if you lose access
-              to your devices.
+              This code opens the vault on this device if you forget your
+              password. It is sealed to this device, so it cannot recover a
+              device you no longer have — that is what an encrypted backup is
+              for. It is shown once.
             </Text>
             <Text
               selectable
@@ -253,7 +256,7 @@ export default function VaultEntry() {
                 />
                 <Text style={[typography.caption, { color: colors.muted }]}>
                   The PIN is only for faster access on this device. Keep your
-                  full password and backup code.
+                  full password and recovery code.
                 </Text>
               </View>
             ) : null}
@@ -269,16 +272,32 @@ export default function VaultEntry() {
                   setError(null);
                 }}
               />
-            ) : pinEnabled ? (
-              <Button
-                label={usingPin ? "Use full password" : "Use quick PIN"}
-                icon={usingPin ? "key-outline" : "keypad-outline"}
-                onPress={() => {
-                  setUnlockMode(usingPin ? "passphrase" : "pin");
-                  setError(null);
-                }}
-              />
-            ) : null}
+            ) : (
+              <>
+                {pinEnabled ? (
+                  <Button
+                    label={usingPin ? "Use full password" : "Use quick PIN"}
+                    icon={usingPin ? "key-outline" : "keypad-outline"}
+                    onPress={() => {
+                      setUnlockMode(usingPin ? "passphrase" : "pin");
+                      setPassword("");
+                      setError(null);
+                    }}
+                  />
+                ) : null}
+                <Button
+                  label={
+                    unlockMode === "recovery" ? "Use full password" : "Use recovery code"
+                  }
+                  icon={unlockMode === "recovery" ? "key-outline" : "shield-checkmark-outline"}
+                  onPress={() => {
+                    setUnlockMode(unlockMode === "recovery" ? "passphrase" : "recovery");
+                    setPassword("");
+                    setError(null);
+                  }}
+                />
+              </>
+            )}
 
             {usingPin ? null : (
               <Button

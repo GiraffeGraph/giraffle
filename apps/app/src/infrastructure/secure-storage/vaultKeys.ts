@@ -8,6 +8,15 @@ import {
   randomBytes,
   zeroize,
 } from "../crypto/vaultCrypto";
+import {
+  createRecoveryKeyWrapper,
+  decodeRecoveryKeyWrapper,
+  encodeRecoveryKeyWrapper,
+  formatRecoveryCode,
+  openRecoveryKeyWrapper,
+  RECOVERY_SECRET_BYTES,
+} from "@giraffle/sync";
+import { vaultCryptoProvider } from "@/sync/cryptoProvider";
 import { decodeKey, encodeKey } from "./keyEncoding";
 import {
   ARGON2ID_MEMORY_BYTES,
@@ -25,6 +34,7 @@ const VAULT_KEYS = "giraffle.vault-keys.v1";
 const VAULT_MARKER = "giraffle.vault-marker.v1";
 const PASSPHRASE_WRAPPER_KEY = "giraffle.passphrase-wrapper.v1";
 const PIN_WRAPPER_KEY = "giraffle.quick-pin-wrapper.v1";
+const RECOVERY_WRAPPER_KEY = "giraffle.recovery-wrapper.v1";
 
 const KEYCHAIN: SecureStore.SecureStoreOptions = {
   keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
@@ -100,6 +110,21 @@ async function sealVaultRootKey(
     };
   } finally {
     zeroize(key, salt, payload);
+  }
+}
+
+/** The recovery wrapper is the package's, so opening it is the package's job. */
+async function openRecovery(code: string): Promise<Uint8Array | null> {
+  const stored = await SecureStore.getItemAsync(RECOVERY_WRAPPER_KEY, KEYCHAIN);
+  if (!stored) return null;
+  try {
+    return openRecoveryKeyWrapper(
+      vaultCryptoProvider,
+      decodeRecoveryKeyWrapper(decodeKey(stored)),
+      code,
+    );
+  } catch {
+    return null;
   }
 }
 
@@ -228,6 +253,35 @@ export const createQuickPin: VaultKeyStore["createQuickPin"] = async (
  * the matching wrapper proves the human is present — so the keys are released
  * to the caller solely when the two agree on the same Vault Root Key.
  */
+export const hasRecoveryWrapper: VaultKeyStore["hasRecoveryWrapper"] = async () =>
+  (await SecureStore.getItemAsync(RECOVERY_WRAPPER_KEY, KEYCHAIN)) !== null;
+
+export const createRecoveryWrapper: VaultKeyStore["createRecoveryWrapper"] = async (
+  vaultId,
+  vaultRootKey,
+) => {
+  const secret = vaultCryptoProvider.randomBytes(RECOVERY_SECRET_BYTES);
+  try {
+    const wrapper = createRecoveryKeyWrapper(vaultCryptoProvider, {
+      vaultId,
+      vaultRootKey,
+      recoverySecret: secret,
+    });
+    await SecureStore.setItemAsync(
+      RECOVERY_WRAPPER_KEY,
+      encodeKey(encodeRecoveryKeyWrapper(wrapper)),
+      KEYCHAIN,
+    );
+    return formatRecoveryCode(vaultCryptoProvider, secret);
+  } finally {
+    zeroize(secret);
+  }
+};
+
+export const clearRecoveryWrapper: VaultKeyStore["clearRecoveryWrapper"] = async () => {
+  await SecureStore.deleteItemAsync(RECOVERY_WRAPPER_KEY, KEYCHAIN);
+};
+
 export const unlockLocalKeys: VaultKeyStore["unlockLocalKeys"] = async (
   credential,
   method,
@@ -253,7 +307,9 @@ export const unlockLocalKeys: VaultKeyStore["unlockLocalKeys"] = async (
   };
 
   const opened =
-    method === "pin"
+    method === "recovery"
+      ? await openRecovery(credential)
+      : method === "pin"
       ? await openVaultRootKey(
           QUICK_PIN_AAD,
           await SecureStore.getItemAsync(PIN_WRAPPER_KEY, KEYCHAIN),

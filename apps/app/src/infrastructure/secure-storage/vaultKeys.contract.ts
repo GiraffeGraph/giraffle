@@ -12,7 +12,7 @@ export interface LocalKeys {
   vaultKeys: VaultKeys;
 }
 
-export type UnlockMethod = "passphrase" | "pin";
+export type UnlockMethod = "passphrase" | "pin" | "recovery";
 
 /**
  * The one contract `vaultKeys.ts` (Keychain / Keystore) and `vaultKeys.web.ts`
@@ -29,6 +29,8 @@ export interface VaultKeyStore {
   /** Whether a passphrase wrapper exists to unlock that material with. */
   hasVaultWrapper(): Promise<boolean>;
   hasQuickPin(): Promise<boolean>;
+  /** Whether a recovery code can still open this vault. */
+  hasRecoveryWrapper(): Promise<boolean>;
   createLocalKeys(): Promise<LocalKeys>;
   /** Replaces the vault-wide secrets once a trusted device has sealed them here. */
   saveVaultKeys(vaultKeys: VaultKeys): Promise<void>;
@@ -42,12 +44,19 @@ export interface VaultKeyStore {
     pin: string,
     vaultRootKey: Uint8Array,
   ): Promise<void>;
+  /**
+   * Mints the recovery secret, seals the Vault Root Key to it, and returns the
+   * code to show once. The secret exists only inside this call: what is kept is
+   * the wrapper, and what opens it is the code the person wrote down.
+   */
+  createRecoveryWrapper(vaultId: string, vaultRootKey: Uint8Array): Promise<string>;
   /** `null` when the credential does not open this vault. */
   unlockLocalKeys(
     credential: string,
     method: UnlockMethod,
   ): Promise<LocalKeys | null>;
   clearQuickPin(): Promise<void>;
+  clearRecoveryWrapper(): Promise<void>;
   clearVaultWrapper(): Promise<void>;
   clearLocalKeys(): Promise<void>;
   clearKeyMaterial(keys: LocalKeys): void;

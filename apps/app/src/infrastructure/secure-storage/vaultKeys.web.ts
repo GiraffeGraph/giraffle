@@ -1,9 +1,15 @@
 import { decodeCanonical, encodeCanonical } from "@giraffle/protocol";
 import {
   createPassphraseKeyWrapper,
+  createRecoveryKeyWrapper,
   decodePassphraseKeyWrapper,
+  decodeRecoveryKeyWrapper,
   encodePassphraseKeyWrapper,
+  encodeRecoveryKeyWrapper,
+  formatRecoveryCode,
   openPassphraseKeyWrapper,
+  openRecoveryKeyWrapper,
+  RECOVERY_SECRET_BYTES,
 } from "@giraffle/sync";
 import { openOriginByteStore } from "../storage/originByteStore";
 import { vaultCryptoProvider } from "@/sync/cryptoProvider";
@@ -21,6 +27,7 @@ export type { LocalKeys, UnlockMethod, VaultKeys } from "./vaultKeys.contract";
 const KEY_BUNDLE = "vault-keys.v1";
 const PASSPHRASE_WRAPPER = "passphrase-wrapper.v1";
 const PIN_WRAPPER = "quick-pin-wrapper.v1";
+const RECOVERY_WRAPPER = "recovery-wrapper.v1";
 
 const BUNDLE_AAD = encodeCanonical({
   purpose: "giraffle-web-key-bundle",
@@ -177,6 +184,50 @@ export const hasQuickPin: VaultKeyStore["hasQuickPin"] = async () => {
   return (await store.read(PIN_WRAPPER)) !== null;
 };
 
+/** The Vault Root Key is the only way into the bundle, whatever produced it. */
+async function openWithRootKey(vaultRootKey: Uint8Array): Promise<LocalKeys | null> {
+  try {
+    const store = await openOriginByteStore();
+    const sealed = await store.read(KEY_BUNDLE);
+    if (!sealed) return null;
+
+    const keys = openBundle(sealed, vaultRootKey);
+    if (keys) session = keys;
+    return keys;
+  } finally {
+    vaultCryptoProvider.clear(vaultRootKey);
+  }
+}
+
+export const hasRecoveryWrapper: VaultKeyStore["hasRecoveryWrapper"] = async () => {
+  const store = await openOriginByteStore();
+  return (await store.read(RECOVERY_WRAPPER)) !== null;
+};
+
+export const createRecoveryWrapper: VaultKeyStore["createRecoveryWrapper"] = async (
+  vaultId,
+  vaultRootKey,
+) => {
+  const secret = vaultCryptoProvider.randomBytes(RECOVERY_SECRET_BYTES);
+  try {
+    const wrapper = createRecoveryKeyWrapper(vaultCryptoProvider, {
+      vaultId,
+      vaultRootKey,
+      recoverySecret: secret,
+    });
+    const store = await openOriginByteStore();
+    await store.write(RECOVERY_WRAPPER, encodeRecoveryKeyWrapper(wrapper));
+    return formatRecoveryCode(vaultCryptoProvider, secret);
+  } finally {
+    vaultCryptoProvider.clear(secret);
+  }
+};
+
+export const clearRecoveryWrapper: VaultKeyStore["clearRecoveryWrapper"] = async () => {
+  const store = await openOriginByteStore();
+  await store.remove(RECOVERY_WRAPPER);
+};
+
 export const createLocalKeys: VaultKeyStore["createLocalKeys"] = async () => {
   const keys: LocalKeys = {
     databaseKey: vaultCryptoProvider.randomBytes(32),
@@ -223,29 +274,35 @@ export const unlockLocalKeys: VaultKeyStore["unlockLocalKeys"] = async (
 ) => {
   if (method === "pin" && !isValidPin(credential)) return null;
 
+  let vaultRootKey: Uint8Array;
+  if (method === "recovery") {
+    const store = await openOriginByteStore();
+    const sealed = await store.read(RECOVERY_WRAPPER);
+    if (!sealed) return null;
+    try {
+      vaultRootKey = openRecoveryKeyWrapper(
+        vaultCryptoProvider,
+        decodeRecoveryKeyWrapper(sealed),
+        credential,
+      );
+    } catch {
+      return null;
+    }
+    return openWithRootKey(vaultRootKey);
+  }
+
   const wrapper = await readWrapper(
     method === "pin" ? PIN_WRAPPER : PASSPHRASE_WRAPPER,
   );
   if (!wrapper) return null;
 
-  let vaultRootKey: Uint8Array;
   try {
     vaultRootKey = openPassphraseKeyWrapper(vaultCryptoProvider, wrapper, credential);
   } catch {
     return null;
   }
 
-  try {
-    const store = await openOriginByteStore();
-    const sealed = await store.read(KEY_BUNDLE);
-    if (!sealed) return null;
-
-    const keys = openBundle(sealed, vaultRootKey);
-    if (keys) session = keys;
-    return keys;
-  } finally {
-    vaultCryptoProvider.clear(vaultRootKey);
-  }
+  return openWithRootKey(vaultRootKey);
 };
 
 export const clearQuickPin: VaultKeyStore["clearQuickPin"] = async () => {
