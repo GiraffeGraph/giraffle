@@ -17,7 +17,6 @@ export interface ConfirmRequest {
   body?: string;
   /** The word on the button that goes through with it. */
   confirmLabel?: string;
-  cancelLabel?: string;
   tone?: "danger";
   /** A message with nothing to decide shows one button and resolves true. */
   acknowledge?: boolean;
@@ -87,7 +86,7 @@ export function ConfirmProvider({ children }: PropsWithChildren) {
             ) : null}
             <View style={styles.actions}>
               {request?.acknowledge ? null : (
-                <Button label={request?.cancelLabel ?? "Cancel"} onPress={() => close(false)} />
+                <Button label="Cancel" onPress={() => close(false)} />
               )}
               <Button
                 label={request?.confirmLabel ?? (request?.acknowledge ? "OK" : "Confirm")}

@@ -69,7 +69,6 @@
   },
   "devDependencies": {
     "@babel/runtime": "^7.29.7",
-    "@testing-library/react-native": "^14.0.1",
     "@types/jest": "^29.5.14",
     "@types/node": "^22.20.1",
     "@types/react": "~19.2.14",
@@ -82,7 +81,6 @@
     "jest-expo": "~57.0.3",
     "libsodium-wrappers-sumo": "^0.8.4",
     "patch-package": "^8.0.1",
-    "react-test-renderer": "19.2.3",
     "typescript": "~6.0.2"
   },
   "jest": {

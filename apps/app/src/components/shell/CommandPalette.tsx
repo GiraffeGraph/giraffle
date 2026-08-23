@@ -1,4 +1,4 @@
-import { pageAncestors, selectableParentPages, type Page as PageModel } from "@giraffle/domain";
+import { dayKey, pageAncestors, selectableParentPages, type Page as PageModel } from "@giraffle/domain";
 import { addCanvasNode } from "@giraffle/headless";
 import { router } from "expo-router";
 import { Fragment, useEffect, useRef, useState } from "react";
@@ -22,13 +22,6 @@ interface Action { key: string; title: string; detail?: string; icon: IconName; 
 
 /** One result line. Fixed, so the keyboard can put the highlighted row back in view itself. */
 const ROW_HEIGHT = 32;
-
-function localDay(): string {
-  const date = new Date();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${date.getFullYear()}-${month}-${day}`;
-}
 
 const prompts: Record<Step, string> = {
   main: "Open, create, or capture…",
@@ -92,7 +85,7 @@ export function CommandPalette({ visible, onClose }: { visible: boolean; onClose
         const page = pages[index];
         if (!page) return;
         finish(() => void run((repository) => repository.updatePage(page.id, {
-          scheduledAt: localDay(),
+          scheduledAt: dayKey(new Date()),
           ...(openState ? { stateId: openState.id } : {}),
         })));
       },

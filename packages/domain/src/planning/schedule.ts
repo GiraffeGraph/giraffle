@@ -1,6 +1,5 @@
 export const MINUTES_PER_DAY = 24 * 60;
 export const SNAP_MINUTES = 15;
-export const DEFAULT_DURATION_MINUTES = 30;
 
 /** Local calendar day of a date, as the `YYYY-MM-DD` prefix stored in dueDate. */
 export function dayKey(date: Date): string {
@@ -74,11 +73,6 @@ export function formatClock(minutes: number): string {
   const hours = Math.floor(minutes / 60);
   const rest = minutes % 60;
   return `${String(hours).padStart(2, "0")}:${String(rest).padStart(2, "0")}`;
-}
-
-/** Minutes since midnight for right now, used by the current-time line. */
-export function minutesNow(now = new Date()): number {
-  return now.getHours() * 60 + now.getMinutes();
 }
 
 /**

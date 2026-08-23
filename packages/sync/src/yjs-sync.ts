@@ -94,4 +94,3 @@ export function encodeYjsDiff(
   }
 }
 
-export type YjsDocument = Y.Doc;

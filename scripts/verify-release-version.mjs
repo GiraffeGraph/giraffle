@@ -16,4 +16,11 @@ if (!cliSource.includes(`const VERSION = "${expected}";`)) {
   throw new Error(`apps/cli/src/cli.ts does not declare version ${expected}`);
 }
 
+// The native manifest is what a phone shows and what a store compares, and it
+// is the one version this check could not see.
+const appConfig = await readFile(new URL("../apps/app/app.config.ts", import.meta.url), "utf8");
+if (!appConfig.includes(`version: "${expected}"`)) {
+  throw new Error(`apps/app/app.config.ts does not declare version ${expected}`);
+}
+
 console.log(`Release version ${expected} is consistent.`);

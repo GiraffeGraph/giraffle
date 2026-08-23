@@ -57,10 +57,6 @@ export function consumeRateLimit(
   return { allowed: true, retryAfterMs: 0 };
 }
 
-export function resetRateLimit(key: string) {
-  rateLimitStore.delete(key);
-}
-
 export function resetAllRateLimits() {
   rateLimitStore.clear();
 }

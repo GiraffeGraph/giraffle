@@ -5,7 +5,6 @@ This project supports the **Caveman Skill Environment** for token efficiency and
 - **Trigger**: "talk like caveman" or `/caveman [lite|full|ultra]`
 - **Commit Messages**: Auto-applied via `caveman-commit` when generating commit messages.
 - **Code Review**: Use `caveman-review` for concise PR feedback.
-- **Efficiency**: Use `caveman-stats` to see token savings.
 
 # Building and running
 

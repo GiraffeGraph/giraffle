@@ -13,7 +13,6 @@ export const EDITOR_NODE_TYPES = [
   "taskItem",
 ] as const;
 
-export type EditorNodeType = (typeof EDITOR_NODE_TYPES)[number];
 
 export interface BlockMark {
   type: string;

@@ -114,8 +114,10 @@ npm run web            # dev server on 8081
 npm run export:web     # static build into dist/
 ```
 
-A page reload **locks the vault** — keys live in memory only on web, by design.
-Expect to re-enter the passphrase after every reload while testing.
+A reload keeps the vault open for as long as the lock timeout allows: the key
+bundle is sealed under a non-extractable browser key and read back on load.
+Set the timeout in Settings → App lock; "Immediately" is the way to test the
+lock screen itself.
 
 ## Driving a simulator or device
 

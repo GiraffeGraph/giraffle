@@ -13,7 +13,7 @@ import {
   restoreVaultArchive,
 } from "../archive/archivePersistence";
 import type { VaultArchiveData } from "../archive/vaultArchive";
-import { hash, signingPair, agreementPair } from "../crypto/vaultCrypto";
+import { signingPair, agreementPair } from "../crypto/vaultCrypto";
 import type { VaultKeys } from "../secure-storage/vaultKeys.contract";
 import type { VaultDatabase } from "./vaultDatabase";
 
@@ -231,7 +231,7 @@ export class VaultRepository {
       this.database.getAllAsync<Record<string, string | number | null>>("SELECT * FROM page_categories WHERE deleted=0 ORDER BY parent_page_id,position_id,id"),
       this.database.getAllAsync<Record<string, string | number | null>>("SELECT * FROM canvases WHERE deleted=0 ORDER BY updated_at DESC"),
       this.database.getAllAsync<{ source_page_id: string; source_title: string; target_page_id: string; target_raw: string }>("SELECT l.source_page_id,p.title source_title,l.target_page_id,l.target_raw FROM links l JOIN pages p ON p.id=l.source_page_id AND p.deleted=0 JOIN pages target ON target.id=l.target_page_id AND target.deleted=0 WHERE l.target_page_id IS NOT NULL"),
-      this.database.getFirstAsync<{ server_seq: number; last_success_at: number | null; last_error: string | null }>("SELECT server_seq,last_success_at,last_error FROM sync_cursors WHERE vault_id=?",this.vaultId),
+      this.database.getFirstAsync<{ last_error: string | null }>("SELECT last_error FROM sync_cursors WHERE vault_id=?",this.vaultId),
       this.database.getFirstAsync<{ count: number }>("SELECT COUNT(*) count FROM encrypted_outbox"),
     ]);
     const pages: Page[] = pageRows.map((row) => ({
@@ -263,7 +263,7 @@ export class VaultRepository {
       appState:parse<Record<string,unknown>>(String(row.app_state_json)),createdAt:Number(row.created_at),updatedAt:Number(row.updated_at),
     }));
     const inboxRow=pageRows.find((row)=>row.system_role==="inbox");
-    return { pages,states,categories,canvases,backlinks:backlinkRows.map((row)=>({sourcePageId:row.source_page_id,sourceTitle:row.source_title,targetPageId:row.target_page_id,targetRaw:row.target_raw})),inboxPageId:inboxRow?String(inboxRow.id):null,sync:{pending:pendingRow?.count??0,lastSuccessAt:syncRow?.last_success_at??null,lastError:syncRow?.last_error??null,cursor:syncRow?.server_seq??0} };
+    return { pages,states,categories,canvases,backlinks:backlinkRows.map((row)=>({sourcePageId:row.source_page_id,sourceTitle:row.source_title,targetPageId:row.target_page_id,targetRaw:row.target_raw})),inboxPageId:inboxRow?String(inboxRow.id):null,sync:{pending:pendingRow?.count??0,lastError:syncRow?.last_error??null} };
   }
 
   /** Logical, portable state only. Device identity and relay history never enter a backup. */
@@ -882,4 +882,3 @@ export class VaultRepository {
   }
 }
 
-export function recordFingerprint(record: Uint8Array): string { return [...hash(record).slice(0,6)].map((byte)=>byte.toString(16).padStart(2,"0")).join(""); }

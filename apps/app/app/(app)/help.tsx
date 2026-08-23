@@ -10,7 +10,7 @@ const topics: readonly (readonly [string, string])[] = [
     "States and categories",
     "Custom states describe meaning; each page owns optional categories for its direct children.",
   ],
-  ["Plan", "List, calendar and priority are reusable views over the same pages."],
+  ["Plan", "Table, board, calendar and list are four views over the same pages."],
   ["Canvas", "Arrange canonical page references without making copies."],
 ];
 

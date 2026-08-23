@@ -2,20 +2,19 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AppState, TextInput, type StyleProp, type TextStyle } from "react-native";
 import { useTheme } from "@/design/ThemeProvider";
 
+/** The name a page carries until it is given one. */
+const PLACEHOLDER = "Untitled";
+
 export function EditableText({
   value,
   onSave,
   style,
-  placeholder = "Untitled",
-  multiline = false,
   autoFocus = false,
   accessibilityLabel,
 }: {
   value: string;
   onSave: (value: string) => void;
   style?: StyleProp<TextStyle>;
-  placeholder?: string;
-  multiline?: boolean;
   /** A page that has just been created opens with its title ready to type. */
   autoFocus?: boolean;
   accessibilityLabel?: string;
@@ -44,7 +43,7 @@ export function EditableText({
   }, [value]);
 
   const commit = useCallback((updateUi = true) => {
-    const next = draftRef.current.trim() || placeholder;
+    const next = draftRef.current.trim() || PLACEHOLDER;
     if (next !== draftRef.current) {
       draftRef.current = next;
       if (updateUi) setDraft(next);
@@ -53,7 +52,7 @@ export function EditableText({
       lastSubmitted.current = next;
       onSaveRef.current(next);
     }
-  }, [placeholder]);
+  }, []);
 
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (next) => {
@@ -67,12 +66,11 @@ export function EditableText({
 
   return (
     <TextInput
-      accessibilityLabel={accessibilityLabel ?? placeholder}
+      accessibilityLabel={accessibilityLabel ?? PLACEHOLDER}
       autoFocus={autoFocus}
       selectTextOnFocus={autoFocus}
       value={draft}
-      multiline={multiline}
-      blurOnSubmit={!multiline}
+      blurOnSubmit
       onFocus={() => {
         focused.current = true;
       }}
@@ -84,10 +82,8 @@ export function EditableText({
         focused.current = false;
         commit();
       }}
-      onSubmitEditing={() => {
-        if (!multiline) commit();
-      }}
-      placeholder={placeholder}
+      onSubmitEditing={() => commit()}
+      placeholder={PLACEHOLDER}
       placeholderTextColor={colors.faint}
       style={[{ color: colors.text, padding: 0 }, style]}
     />

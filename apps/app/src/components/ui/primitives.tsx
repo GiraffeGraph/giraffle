@@ -123,30 +123,6 @@ export function Field({
   );
 }
 
-export function ScreenHeader({
-  title,
-  subtitle,
-  action,
-}: {
-  title: string;
-  subtitle?: string;
-  action?: ReactNode;
-}) {
-  const { colors } = useTheme();
-
-  return (
-    <View style={[styles.header, { borderBottomColor: colors.border }]}>
-      <View style={styles.headerCopy}>
-        <Text accessibilityRole="header" style={[typography.heading, { color: colors.text }]}>
-          {title}
-        </Text>
-        {subtitle ? <Text style={[typography.body, { color: colors.secondary }]}>{subtitle}</Text> : null}
-      </View>
-      {action}
-    </View>
-  );
-}
-
 export function DividerRow({
   children,
   onPress,
@@ -256,12 +232,10 @@ export function Segment<T extends string>({
   values,
   value,
   onChange,
-  labelFor = (item) => item,
 }: {
   values: readonly T[];
   value: T;
   onChange: (value: T) => void;
-  labelFor?: (value: T) => string;
 }) {
   const { colors } = useTheme();
 
@@ -270,7 +244,7 @@ export function Segment<T extends string>({
       {values.map((item) => (
         <SegmentOption
           key={item}
-          label={labelFor(item)}
+          label={item}
           selected={item === value}
           onPress={() => onChange(item)}
         />

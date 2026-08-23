@@ -61,5 +61,4 @@ export const COMMANDS:readonly CommandDefinition[]=[
   command("canvas_delete",["canvas","delete"],"Delete an existing canvas.",true,"canvas delete <canvas-id>",["canvasId"],z.object({canvasId:id})),
 ];
 
-export type CommandName=(typeof COMMANDS)[number]["name"];
 export function findCommand(first:string,second:string):CommandDefinition|undefined{return COMMANDS.find((entry)=>entry.path[0]===first&&entry.path[1]===second);}

@@ -9,7 +9,6 @@ export interface VersionStamp {
   operationId: string;
 }
 
-export const RECOMMENDED_FUTURE_CLOCK_WARNING_MS = 5 * 60 * 1000;
 
 export class HybridClockError extends Error {
   constructor(message: string) {

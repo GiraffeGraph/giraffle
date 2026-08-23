@@ -265,7 +265,7 @@ packages/
   protocol/       canonical CBOR, crypto provider, device chain, HLC, sync records
   sync/           key wrapping, checkpoints, Yjs and Excalidraw merge, blob crypto
 tests/vectors/    frozen protocol test vectors, shared by the client and the packages
-public/           logo used by this README and the web build
+public/           logo used by this README
 docker-compose.yml  runs the relay
 ```
 

@@ -100,7 +100,6 @@ interface AppContextValue {
   clearActionError(): void;
   lock(): Promise<void>;
   wipe(): Promise<void>;
-  refresh(): Promise<void>;
   createBackup(passphrase: string): Promise<Uint8Array>;
   inspectBackup(bytes: Uint8Array, passphrase: string): Promise<VaultArchiveSummary>;
   restoreBackup(bytes: Uint8Array, passphrase: string): Promise<VaultArchiveSummary>;
@@ -579,9 +578,6 @@ export function AppProvider({ children }: PropsWithChildren) {
     [sessionExpiry],
   );
 
-  const refresh = useCallback(async () => {
-    if (repository) setSnapshot(await repository.snapshot());
-  }, [repository]);
 
   const run = useCallback(
     <T,>(action: (value: VaultRepository) => Promise<T>): Promise<T> => {
@@ -683,7 +679,6 @@ export function AppProvider({ children }: PropsWithChildren) {
     clearActionError: () => setActionError(null),
     lock,
     wipe,
-    refresh,
     createBackup,
     inspectBackup,
     restoreBackup,

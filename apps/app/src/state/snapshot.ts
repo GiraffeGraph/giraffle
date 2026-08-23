@@ -3,9 +3,7 @@ import type { Backlink, Canvas, Id, Page, PageCategory, PageState } from "@giraf
 /** Progress of the blind sync relay exchange, surfaced in settings. */
 export interface SyncState {
   pending: number;
-  lastSuccessAt: number | null;
   lastError: string | null;
-  cursor: number;
 }
 
 export interface VaultSession {
@@ -33,5 +31,5 @@ export const EMPTY_SNAPSHOT: AppSnapshot = {
   canvases: [],
   backlinks: [],
   inboxPageId: null,
-  sync: { pending: 0, lastSuccessAt: null, lastError: null, cursor: 0 },
+  sync: { pending: 0, lastError: null },
 };

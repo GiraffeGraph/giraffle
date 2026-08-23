@@ -5,7 +5,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   name: "Giraffle",
   slug: "giraffle",
   scheme: "giraffle",
-  version: "0.11.0",
+  version: "0.13.0",
   orientation: "default",
   userInterfaceStyle: "automatic",
   icon: "./assets/icon.png",
