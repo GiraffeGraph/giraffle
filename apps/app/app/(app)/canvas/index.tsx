@@ -1,29 +1,31 @@
 import { router } from "expo-router";
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { ScreenTopbar } from "@/components/shell/ScreenTopbar";
 import { Page } from "@/components/ui/Page";
 import { Button, DividerRow, EmptyState, Icon } from "@/components/ui/primitives";
 import { useTheme } from "@/design/ThemeProvider";
 import { typography } from "@/design/tokens";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 import { useApp } from "@/state/AppProvider";
 
 export default function CanvasList() {
   const { colors } = useTheme();
   const { snapshot, run } = useApp();
+  const confirm = useConfirm();
   const create = () => {
     void run((repository) => repository.createCanvas())
       .then((id) => router.push(`/canvas/${id}`))
       .catch(() => undefined);
   };
   const confirmDelete = (id: string, title: string) => {
-    Alert.alert("Delete canvas?", `“${title}” will no longer be available.`, [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: () => void run((repository) => repository.deleteCanvas(id)),
-      },
-    ]);
+    void confirm({
+      title: "Delete canvas?",
+      body: `“${title}” will no longer be available.`,
+      confirmLabel: "Delete",
+      tone: "danger",
+    }).then((ok) => {
+      if (ok) void run((repository) => repository.deleteCanvas(id)).catch(() => undefined);
+    });
   };
 
   return (

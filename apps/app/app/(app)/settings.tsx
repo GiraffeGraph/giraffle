@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { Alert, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { AccessLockSection } from "@/components/settings/AccessLockSection";
 import { DataBackupSection } from "@/components/settings/DataBackupSection";
 import { DeviceConnectionSection } from "@/components/settings/DeviceConnectionSection";
@@ -8,6 +8,7 @@ import { Page } from "@/components/ui/Page";
 import { DividerRow, Icon } from "@/components/ui/primitives";
 import { useTheme, type ThemePreference } from "@/design/ThemeProvider";
 import { spacing, typography } from "@/design/tokens";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 import { useApp } from "@/state/AppProvider";
 
 const appearanceOptions: readonly {
@@ -23,6 +24,7 @@ const appearanceOptions: readonly {
 export default function Settings() {
   const { colors, preference, setPreference } = useTheme();
   const { lock, wipe } = useApp();
+  const confirm = useConfirm();
 
   return (
     <>
@@ -74,14 +76,14 @@ export default function Settings() {
         </DividerRow>
         <DividerRow
           onPress={() =>
-            Alert.alert(
-              "Delete all local data?",
-              "This removes the encrypted vault, quick PIN, and unsynced changes from this device. This cannot be undone.",
-              [
-                { text: "Cancel", style: "cancel" },
-                { text: "Delete", style: "destructive", onPress: () => void wipe() },
-              ],
-            )
+            void confirm({
+              title: "Delete all local data?",
+              body: "This removes the encrypted vault, quick PIN, and unsynced changes from this device. This cannot be undone.",
+              confirmLabel: "Delete",
+              tone: "danger",
+            }).then((ok) => {
+              if (ok) void wipe();
+            })
           }
         >
           <Icon name="trash-outline" size={16} color={colors.danger} />

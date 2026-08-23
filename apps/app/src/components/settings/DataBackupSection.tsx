@@ -1,6 +1,5 @@
 import { useState } from "react";
 import {
-  Alert,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -20,6 +19,7 @@ import {
   type PickedArchiveFile,
 } from "@/infrastructure/archive/archiveFile";
 import type { VaultArchiveSummary } from "@/infrastructure/archive/vaultArchive";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 import { useApp } from "@/state/AppProvider";
 
 type Mode = "export" | "import-password" | "import-confirm" | null;
@@ -36,6 +36,7 @@ export function DataBackupSection() {
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
   const { snapshot, createBackup, inspectBackup, restoreBackup } = useApp();
+  const tell = useConfirm();
   const isWideWeb = Platform.OS === "web" && width >= 768;
   const [mode, setMode] = useState<Mode>(null);
   const [passphrase, setPassphrase] = useState("");
@@ -58,10 +59,11 @@ export function DataBackupSection() {
 
   const beginImport = async () => {
     if (snapshot.pages.length > 0 || snapshot.canvases.length > 0) {
-      Alert.alert(
-        "Empty workspace required",
-        "Backups are restored into a new empty workspace. They are never merged with existing data.",
-      );
+      await tell({
+        title: "Empty workspace required",
+        body: "Backups are restored into a new empty workspace. They are never merged with existing data.",
+        acknowledge: true,
+      });
       return;
     }
     setBusy(true);
@@ -73,7 +75,11 @@ export function DataBackupSection() {
       setError(null);
       setMode("import-password");
     } catch (cause) {
-      Alert.alert("Backup could not be opened", message(cause));
+      await tell({
+        title: "Backup could not be opened",
+        body: message(cause),
+        acknowledge: true,
+      });
     } finally {
       setBusy(false);
     }
@@ -98,7 +104,11 @@ export function DataBackupSection() {
       bytes = await createBackup(passphrase);
       await writer(bytes);
       resetAfterSuccess();
-      Alert.alert("Backup ready", "The encrypted workspace backup was created.");
+      await tell({
+        title: "Backup ready",
+        body: "The encrypted workspace backup was created.",
+        acknowledge: true,
+      });
     } catch (cause) {
       setError(message(cause));
     } finally {
@@ -131,10 +141,11 @@ export function DataBackupSection() {
     try {
       const restored = await restoreBackup(picked.bytes, passphrase);
       resetAfterSuccess();
-      Alert.alert(
-        "Backup restored",
-        `${restored.pages} pages, ${restored.categories} categories and ${restored.canvases} canvases were imported.`,
-      );
+      await tell({
+        title: "Backup restored",
+        body: `${restored.pages} pages, ${restored.categories} categories and ${restored.canvases} canvases were imported.`,
+        acknowledge: true,
+      });
     } catch (cause) {
       setError(message(cause));
     } finally {

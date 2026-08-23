@@ -1,30 +1,28 @@
 import { router } from "expo-router";
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { ScreenTopbar } from "@/components/shell/ScreenTopbar";
 import { Page } from "@/components/ui/Page";
 import { Button, DividerRow, EmptyState, Icon } from "@/components/ui/primitives";
 import { useTheme } from "@/design/ThemeProvider";
 import { typography } from "@/design/tokens";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 import { useApp } from "@/state/AppProvider";
 
 export default function Archive() {
   const { colors } = useTheme();
   const { snapshot, run } = useApp();
+  const confirm = useConfirm();
   const pages = snapshot.pages.filter((page) => page.isArchived);
 
   const confirmDelete = (pageId: string, title: string) => {
-    Alert.alert(
-      "Delete page permanently?",
-      `“${title}” and every page inside it will no longer be available. This cannot be undone.`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: () => void run((repository) => repository.deletePage(pageId)),
-        },
-      ],
-    );
+    void confirm({
+      title: "Delete page permanently?",
+      body: `“${title}” and every page inside it will no longer be available. This cannot be undone.`,
+      confirmLabel: "Delete",
+      tone: "danger",
+    }).then((ok) => {
+      if (ok) void run((repository) => repository.deletePage(pageId)).catch(() => undefined);
+    });
   };
 
   return (

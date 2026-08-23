@@ -8,7 +8,7 @@ import {
 import { router, useLocalSearchParams } from "expo-router";
 import { File } from "expo-file-system";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Alert, AppState, Linking, Modal, Platform, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
+import { AppState, Linking, Modal, Platform, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ChildPageViews } from "@/components/pages/ChildPageViews";
 import { PageMetaBar } from "@/components/pages/PageMetaBar";
@@ -21,6 +21,7 @@ import { useTheme } from "@/design/ThemeProvider";
 import { layout, radii, spacing, typography, WIDE_LAYOUT_MIN_WIDTH } from "@/design/tokens";
 import Editor, { type EditorAttachment } from "@/dom/Editor";
 import { offlineDomProps } from "@/dom/offline";
+import { useConfirm, type ConfirmRequest } from "@/components/ui/ConfirmProvider";
 import { useApp } from "@/state/AppProvider";
 
 type SaveState = "saved" | "saving" | "error";
@@ -31,12 +32,19 @@ const ICON_CHOICES = ["📄", "📝", "✅", "📌", "💡", "🎯", "📚", "�
 /** Attachments live inside the encrypted document, so they stay small. */
 const MAX_ATTACHMENT_BYTES = 2 * 1024 * 1024;
 
-async function pickAttachment(accept: string[]): Promise<EditorAttachment | null> {
+async function pickAttachment(
+  accept: string[],
+  tell: (request: ConfirmRequest) => Promise<boolean>,
+): Promise<EditorAttachment | null> {
   const picked = await File.pickFileAsync({ mimeTypes: accept });
   if (picked.canceled) return null;
   const file = picked.result;
   if (file.size !== null && file.size > MAX_ATTACHMENT_BYTES) {
-    Alert.alert("Image too large", "Pick an image under 2 MB so the page stays quick to sync.");
+    await tell({
+      title: "Image too large",
+      body: "Pick an image under 2 MB so the page stays quick to sync.",
+      acknowledge: true,
+    });
     return null;
   }
   const base64 = await file.base64();
@@ -51,6 +59,7 @@ export default function PageEditor() {
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
   const { snapshot, run } = useApp();
+  const confirm = useConfirm();
   const page = snapshot.pages.find((item) => item.id === id);
   const [iconHovered, setIconHovered] = useState(false);
   // The editor reserves a margin for its block controls only where a pointer can
@@ -237,7 +246,7 @@ export default function PageEditor() {
           onFocusChange={(focused) => {
             if (!focused) flush();
           }}
-          onRequestAttachment={pickAttachment}
+          onRequestAttachment={(accept) => pickAttachment(accept, confirm)}
           onOpenLink={(target) => {
             const next = snapshot.pages.find(
               (item) => item.title.toLocaleLowerCase() === target.toLocaleLowerCase(),
@@ -412,6 +421,7 @@ function PageMenu({
 }) {
   const { colors } = useTheme();
   const { run } = useApp();
+  const confirm = useConfirm();
   const action = (work: () => Promise<unknown>) => {
     close();
     void work().catch(() => undefined);
@@ -476,21 +486,17 @@ function PageMenu({
         <DividerRow
           onPress={() => {
             close();
-            Alert.alert(
-              "Delete page permanently?",
-              "This page and every page inside it will no longer be available. This cannot be undone.",
-              [
-                { text: "Cancel", style: "cancel" },
-                {
-                  text: "Delete",
-                  style: "destructive",
-                  onPress: () =>
-                    void run((repository) => repository.deletePage(pageId))
-                      .then(() => router.replace("/pages"))
-                      .catch(() => undefined),
-                },
-              ],
-            );
+            void confirm({
+              title: "Delete page permanently?",
+              body: "This page and every page inside it will no longer be available. This cannot be undone.",
+              confirmLabel: "Delete",
+              tone: "danger",
+            }).then((ok) => {
+              if (!ok) return;
+              void run((repository) => repository.deletePage(pageId))
+                .then(() => router.replace("/pages"))
+                .catch(() => undefined);
+            });
           }}
         >
           <Icon name="trash-outline" color={colors.danger} />
