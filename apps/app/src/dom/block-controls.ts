@@ -57,6 +57,62 @@ function blockPosition(view: EditorView, element: HTMLElement): number | null {
   return null;
 }
 
+interface BlockAction {
+  label: string;
+  run: (view: EditorView, position: number) => void;
+}
+
+/** Keeping the id means sync reads a retyped block as the same block. */
+function idOf(view: EditorView, position: number): Record<string, unknown> {
+  const node = view.state.doc.nodeAt(position);
+  const id = node?.attrs.id;
+  return typeof id === "string" ? { id } : {};
+}
+
+function turnInto(type: string, attrs: Record<string, unknown> = {}): BlockAction["run"] {
+  return (view, position) => {
+    const target = view.state.schema.nodes[type];
+    const node = view.state.doc.nodeAt(position);
+    if (!target || !node) return;
+    view.dispatch(
+      view.state.tr.setNodeMarkup(position, target, { ...attrs, ...idOf(view, position) }),
+    );
+    view.focus();
+  };
+}
+
+const BLOCK_ACTIONS: readonly BlockAction[] = [
+  {
+    label: "Delete",
+    run: (view, position) => {
+      const node = view.state.doc.nodeAt(position);
+      if (!node) return;
+      view.dispatch(view.state.tr.delete(position, position + node.nodeSize));
+      view.focus();
+    },
+  },
+  {
+    label: "Duplicate",
+    run: (view, position) => {
+      const node = view.state.doc.nodeAt(position);
+      if (!node) return;
+      // The copy arrives without an id, so the block id extension mints it one.
+      const copy = node.type.create({ ...node.attrs, id: null }, node.content, node.marks);
+      view.dispatch(view.state.tr.insert(position + node.nodeSize, copy));
+      view.focus();
+    },
+  },
+];
+
+const TURN_INTO: readonly BlockAction[] = [
+  { label: "Text", run: turnInto("paragraph") },
+  { label: "Heading 1", run: turnInto("heading", { level: 1 }) },
+  { label: "Heading 2", run: turnInto("heading", { level: 2 }) },
+  { label: "Heading 3", run: turnInto("heading", { level: 3 }) },
+  { label: "Quote", run: turnInto("blockquote") },
+  { label: "Code", run: turnInto("codeBlock") },
+];
+
 function blockControlsView(view: EditorView): PluginView {
   const host = view.dom.parentElement;
   if (!host) return {};
@@ -65,7 +121,7 @@ function blockControlsView(view: EditorView): PluginView {
   controls.className = "giraffle-block-controls";
   controls.contentEditable = "false";
   const insert = button("+", "Insert a block below");
-  const handle = button("⠿", "Drag to move this block, click to select it");
+  const handle = button("⠿", "Drag to move this block, click for its menu");
   handle.className = "giraffle-block-handle";
   handle.draggable = true;
   controls.append(insert, handle);
@@ -122,6 +178,61 @@ function blockControlsView(view: EditorView): PluginView {
     view.focus();
   };
 
+  const menu = document.createElement("div");
+  menu.className = "giraffle-block-menu";
+  menu.hidden = true;
+  host.append(menu);
+
+  const closeMenu = () => {
+    menu.hidden = true;
+  };
+
+  const row = (label: string, run: () => void): HTMLButtonElement => {
+    const element = button(label, label);
+    element.className = "giraffle-block-menu-item";
+    element.addEventListener("mousedown", (event) => event.preventDefault());
+    element.addEventListener("click", () => {
+      closeMenu();
+      run();
+    });
+    return element;
+  };
+
+  const openMenu = () => {
+    const position = positionOfBlock();
+    if (position === null || !view.state.doc.nodeAt(position)) return;
+    selectBlock();
+
+    menu.replaceChildren();
+    for (const action of BLOCK_ACTIONS) {
+      menu.append(row(action.label, () => action.run(view, position)));
+    }
+    const label = document.createElement("div");
+    label.className = "giraffle-block-menu-label";
+    label.textContent = "Turn into";
+    menu.append(label);
+    for (const action of TURN_INTO) {
+      menu.append(row(action.label, () => action.run(view, position)));
+    }
+
+    menu.hidden = false;
+    const anchor = handle.getBoundingClientRect();
+    const below = anchor.bottom + 4;
+    const flip = below + menu.offsetHeight > window.innerHeight;
+    menu.style.left = `${Math.max(8, anchor.left)}px`;
+    menu.style.top = `${flip ? Math.max(8, anchor.top - menu.offsetHeight - 4) : below}px`;
+  };
+
+  const dismiss = (event: MouseEvent) => {
+    if (menu.hidden) return;
+    if (event.target instanceof Node && menu.contains(event.target)) return;
+    closeMenu();
+  };
+
+  const escape = (event: KeyboardEvent) => {
+    if (event.key === "Escape") closeMenu();
+  };
+
   const startDrag = (event: DragEvent) => {
     const position = positionOfBlock();
     const transfer = event.dataTransfer;
@@ -153,20 +264,28 @@ function blockControlsView(view: EditorView): PluginView {
   // where it was while the button is clicked.
   insert.addEventListener("mousedown", (event) => event.preventDefault());
   insert.addEventListener("click", insertBelow);
-  handle.addEventListener("click", selectBlock);
+  handle.addEventListener("click", openMenu);
   handle.addEventListener("dragstart", startDrag);
   handle.addEventListener("dragend", endDrag);
   host.addEventListener("mousemove", track);
   host.addEventListener("mouseleave", hide);
+  document.addEventListener("mousedown", dismiss);
+  document.addEventListener("keydown", escape);
 
   return {
     update: () => {
-      if (block && !block.isConnected) hide();
+      if (block && !block.isConnected) {
+        hide();
+        closeMenu();
+      }
     },
     destroy: () => {
       host.removeEventListener("mousemove", track);
       host.removeEventListener("mouseleave", hide);
+      document.removeEventListener("mousedown", dismiss);
+      document.removeEventListener("keydown", escape);
       controls.remove();
+      menu.remove();
     },
   };
 }

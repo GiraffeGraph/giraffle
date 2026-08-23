@@ -157,6 +157,39 @@ html, body, #root {
 .giraffle-block-handle { cursor: grab; }
 .giraffle-block-handle:active { cursor: grabbing; }
 .giraffle-drop-line { border-radius: 999px; }
+.giraffle-block-menu {
+  position: fixed;
+  z-index: 60;
+  width: 184px;
+  padding: 4px;
+  border: 1px solid color-mix(in srgb, var(--giraffle-ink) 12%, transparent);
+  border-radius: var(--giraffle-doc-sheet-radius);
+  background: var(--giraffle-bg);
+  box-shadow: 0 10px 28px color-mix(in srgb, var(--giraffle-ink) 18%, transparent);
+  font-size: 14px;
+  line-height: 20px;
+}
+.giraffle-block-menu[hidden] { display: none; }
+.giraffle-block-menu-item {
+  display: block;
+  width: 100%;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: var(--giraffle-doc-radius);
+  background: transparent;
+  color: var(--giraffle-ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.giraffle-block-menu-item:hover { background: color-mix(in srgb, var(--giraffle-ink) 6%, transparent); }
+.giraffle-block-menu-label {
+  padding: 8px 8px 4px;
+  color: var(--giraffle-muted);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
 .giraffle-slash-menu {
   position: fixed;
   z-index: 60;
