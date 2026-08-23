@@ -8,11 +8,11 @@ import {
 import { router, useLocalSearchParams } from "expo-router";
 import { File } from "expo-file-system";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AppState, Linking, Modal, Platform, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
+import { AppState, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ChildPageViews } from "@/components/pages/ChildPageViews";
 import { PageMetaBar } from "@/components/pages/PageMetaBar";
-import { MenuRow } from "@/components/shell/AppShell";
+import { PageRowMenu } from "@/components/shell/AppShell";
 import { ScreenTopbar } from "@/components/shell/ScreenTopbar";
 import { PagePlanningSheet, type PlanningField } from "@/components/pages/PagePlanningSheet";
 import { EditableText } from "@/components/ui/EditableText";
@@ -298,18 +298,15 @@ export default function PageEditor() {
           onClose={() => setPlanningField(null)}
         />
       ) : null}
-      <PageMenu
-        visible={menu}
-        close={() => setMenu(false)}
-        pageId={page.id}
-        pinned={page.isPinned}
-        archived={page.isArchived}
-        markdown={blocksToMarkdown(draft)}
-        onMove={() => {
-          setMenu(false);
-          setMoveSheet(true);
-        }}
-      />
+      {menu ? (
+        <PageRowMenu
+          page={page}
+          close={() => setMenu(false)}
+          markdown={blocksToMarkdown(draft)}
+          onMove={() => setMoveSheet(true)}
+          onDeleted={() => router.replace("/pages")}
+        />
+      ) : null}
       <MoveSheet
         visible={moveSheet}
         close={() => setMoveSheet(false)}
@@ -412,124 +409,6 @@ function PageIcon({
         </View>
       ) : null}
     </View>
-  );
-}
-
-function PageMenu({
-  visible,
-  close,
-  pageId,
-  pinned,
-  archived,
-  markdown,
-  onMove,
-}: {
-  visible: boolean;
-  close: () => void;
-  pageId: string;
-  pinned: boolean;
-  archived: boolean;
-  markdown: string;
-  onMove: () => void;
-}) {
-  const { colors } = useTheme();
-  const { run } = useApp();
-  const confirm = useConfirm();
-  const { width } = useWindowDimensions();
-  const wide = width >= WIDE_LAYOUT_MIN_WIDTH;
-  const action = (work: () => Promise<unknown>) => {
-    close();
-    void work().catch(() => undefined);
-  };
-  const rows = (
-    <>
-      <MenuRow
-        icon="pin-outline"
-        label={`${pinned ? "Unpin" : "Pin"} page`}
-        onPress={() =>
-          action(() => run((repository) => repository.updatePage(pageId, { isPinned: !pinned })))
-        }
-      />
-      <MenuRow
-        icon="add-outline"
-        label="Add page inside"
-        onPress={() =>
-          action(async () => {
-            const childId = await run((repository) => repository.createPage({ parentId: pageId }));
-            router.push(`/pages/${childId}`);
-          })
-        }
-      />
-      <MenuRow icon="git-branch-outline" label="Move page…" onPress={onMove} />
-      <MenuRow
-        icon="share-outline"
-        label="Export Markdown"
-        onPress={() =>
-          action(() => Share.share({ message: markdown, title: "Giraffle Markdown export" }))
-        }
-      />
-      <MenuRow
-        icon="archive-outline"
-        label={archived ? "Restore" : "Move to archive"}
-        onPress={() =>
-          action(async () => {
-            await run((repository) => repository.updatePage(pageId, { isArchived: !archived }));
-            router.replace(archived ? `/pages/${pageId}` : "/pages");
-          })
-        }
-      />
-      <MenuRow
-        icon="trash-outline"
-        label="Delete permanently"
-        tone="danger"
-        onPress={() => {
-          close();
-          void confirm({
-            title: "Delete page permanently?",
-            body: "This page and every page inside it will no longer be available. This cannot be undone.",
-            confirmLabel: "Delete",
-            tone: "danger",
-          }).then((ok) => {
-            if (!ok) return;
-            void run((repository) => repository.deletePage(pageId))
-              .then(() => router.replace("/pages"))
-              .catch(() => undefined);
-          });
-        }}
-      />
-    </>
-  );
-
-  return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType={wide ? "fade" : "slide"}
-      onRequestClose={close}
-    >
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Close menu"
-        style={[styles.scrim, { backgroundColor: wide ? "transparent" : colors.scrim }]}
-        onPress={close}
-      />
-      {wide ? (
-        <View pointerEvents="box-none" style={styles.menuCentre}>
-          <View
-            style={[styles.menu, { backgroundColor: colors.surfaceStrong, borderColor: colors.border }]}
-          >
-            {rows}
-          </View>
-        </View>
-      ) : (
-        <SafeAreaView
-          edges={["bottom"]}
-          style={[styles.sheet, { backgroundColor: colors.surfaceStrong }]}
-        >
-          {rows}
-        </SafeAreaView>
-      )}
-    </Modal>
   );
 }
 
