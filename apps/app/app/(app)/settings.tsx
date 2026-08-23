@@ -5,7 +5,7 @@ import { DataBackupSection } from "@/components/settings/DataBackupSection";
 import { DeviceConnectionSection } from "@/components/settings/DeviceConnectionSection";
 import { ScreenTopbar } from "@/components/shell/ScreenTopbar";
 import { Page } from "@/components/ui/Page";
-import { Button, DividerRow, Icon } from "@/components/ui/primitives";
+import { DividerRow, Icon } from "@/components/ui/primitives";
 import { useTheme, type ThemePreference } from "@/design/ThemeProvider";
 import { spacing, typography } from "@/design/tokens";
 import { useApp } from "@/state/AppProvider";
@@ -53,26 +53,26 @@ export default function Settings() {
 
       <DataBackupSection />
 
-      <View style={styles.safety}>
-        <Text style={[typography.label, styles.sectionLabel, { color: colors.faint }]}>Your devices</Text>
-        <Button
-          label="Devices"
-          icon="phone-portrait-outline"
-          onPress={() => router.push("/devices")}
-        />
+      <View>
+        <Text style={[typography.label, styles.sectionLabel, { color: colors.faint }]}>
+          Your devices
+        </Text>
+        <DividerRow onPress={() => router.push("/devices")}>
+          <Icon name="phone-portrait-outline" size={16} color={colors.faint} />
+          <Text style={[typography.body, { color: colors.text, flex: 1 }]}>Devices</Text>
+          <Icon name="chevron-forward" size={15} color={colors.faint} />
+        </DividerRow>
       </View>
 
-      <View style={styles.safety}>
-        <Text style={[typography.label, styles.sectionLabel, { color: colors.faint }]}>On this device</Text>
-        <Button
-          label="Lock Giraffle"
-          icon="lock-closed-outline"
-          onPress={() => void lock()}
-        />
-        <Button
-          label="Delete all local data"
-          icon="trash-outline"
-          tone="danger"
+      <View>
+        <Text style={[typography.label, styles.sectionLabel, { color: colors.faint }]}>
+          On this device
+        </Text>
+        <DividerRow onPress={() => void lock()}>
+          <Icon name="lock-closed-outline" size={16} color={colors.faint} />
+          <Text style={[typography.body, { color: colors.text, flex: 1 }]}>Lock Giraffle</Text>
+        </DividerRow>
+        <DividerRow
           onPress={() =>
             Alert.alert(
               "Delete all local data?",
@@ -83,7 +83,12 @@ export default function Settings() {
               ],
             )
           }
-        />
+        >
+          <Icon name="trash-outline" size={16} color={colors.danger} />
+          <Text style={[typography.body, { color: colors.danger, flex: 1 }]}>
+            Delete all local data
+          </Text>
+        </DividerRow>
       </View>
     </Page>
     </>
@@ -97,5 +102,4 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     letterSpacing: 0.6,
   },
-  safety: { gap: spacing.sm },
 });
