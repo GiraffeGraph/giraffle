@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { ScreenTopbar } from "@/components/shell/ScreenTopbar";
 import { Page } from "@/components/ui/Page";
-import { Button, DividerRow, EmptyState, Icon } from "@/components/ui/primitives";
+import { Button, DividerRow, EmptyState, Icon, type IconName } from "@/components/ui/primitives";
 import { useTheme } from "@/design/ThemeProvider";
 import { spacing, typography } from "@/design/tokens";
 import { loadSyncConfiguration } from "@/infrastructure/sync/syncClient";
@@ -13,6 +13,12 @@ const STATUS_COPY: Record<string, string> = {
   pending: "Waiting for approval",
   active: "Connected",
   revoked: "Removed",
+};
+
+const STATUS_ICON: Record<string, IconName> = {
+  pending: "time-outline",
+  active: "checkmark-circle-outline",
+  revoked: "close-circle-outline",
 };
 
 export default function Devices() {
@@ -95,19 +101,33 @@ export default function Devices() {
         }
       />
       <Page>
-        <View style={styles.section}>
-          <Text style={[typography.label, { color: colors.muted }]}>This device</Text>
-          <Text selectable style={[typography.title, { color: colors.text }]}>
-            {thisDevice?.fingerprint ?? "Not connected yet"}
+        <View>
+          <Text style={[typography.label, styles.sectionLabel, { color: colors.faint }]}>
+            This device
           </Text>
-          <Text style={[typography.body, { color: colors.secondary }]}>
-            {"Read this number aloud when connecting another device. Your vault id is "}
-            <Text selectable style={{ color: colors.text }}>{session?.vaultId ?? ""}</Text>.
+          <DividerRow>
+            <Icon name="finger-print-outline" size={16} color={colors.faint} />
+            <Text style={[typography.body, { color: colors.text, flex: 1 }]}>Fingerprint</Text>
+            <Text selectable style={[typography.body, { color: colors.muted }]}>
+              {thisDevice?.fingerprint ?? "Not connected yet"}
+            </Text>
+          </DividerRow>
+          <DividerRow>
+            <Icon name="cube-outline" size={16} color={colors.faint} />
+            <Text style={[typography.body, { color: colors.text, flex: 1 }]}>Vault id</Text>
+            <Text selectable numberOfLines={1} style={[typography.body, { color: colors.muted }]}>
+              {session?.vaultId ?? ""}
+            </Text>
+          </DividerRow>
+          <Text style={[typography.caption, styles.hint, { color: colors.muted }]}>
+            Read the fingerprint aloud when connecting another device.
           </Text>
         </View>
 
-        <View style={styles.section}>
-          <Text style={[typography.label, { color: colors.muted }]}>All devices</Text>
+        <View>
+          <Text style={[typography.label, styles.sectionLabel, { color: colors.faint }]}>
+            All devices
+          </Text>
           {devices.length === 0 ? (
             <EmptyState
               icon="phone-portrait-outline"
@@ -118,21 +138,28 @@ export default function Devices() {
             devices.map((device) => (
               <DividerRow key={device.deviceId}>
                 <Icon
-                  name={device.status === "active" ? "checkmark-circle-outline" : device.status === "pending" ? "time-outline" : "close-circle-outline"}
-                  color={device.status === "active" ? colors.accent : colors.secondary}
+                  name={STATUS_ICON[device.status] ?? "ellipse-outline"}
+                  size={16}
+                  color={device.status === "active" ? colors.accent : colors.faint}
                 />
-                <View style={styles.row}>
-                  <Text style={[typography.body, { color: colors.text }]}>{device.name}</Text>
-                  <Text selectable style={[typography.caption, { color: colors.muted }]}>
-                    {`${STATUS_COPY[device.status] ?? device.status} · ${device.fingerprint}`}
-                  </Text>
-                </View>
+                <Text numberOfLines={1} style={[typography.body, { color: colors.text, flex: 1 }]}>
+                  {device.name}
+                </Text>
+                <Text selectable style={[typography.caption, { color: colors.muted }]}>
+                  {`${STATUS_COPY[device.status] ?? device.status} · ${device.fingerprint}`}
+                </Text>
                 {device.status === "pending" ? (
-                  <Button label="Approve" tone="accent" disabled={busy} onPress={() => approve(device)} />
+                  <Button
+                    label="Approve"
+                    accessibilityLabel={`Approve ${device.name}`}
+                    disabled={busy}
+                    onPress={() => approve(device)}
+                  />
                 ) : device.status === "active" && !device.isThisDevice ? (
                   <Button
                     label="Remove"
                     tone="danger"
+                    accessibilityLabel={`Remove ${device.name}`}
                     disabled={busy}
                     onPress={() =>
                       session && repository
@@ -149,13 +176,8 @@ export default function Devices() {
             ))
           )}
           {approvalTarget ? (
-            <View
-              style={[
-                styles.confirmation,
-                { borderColor: colors.border, backgroundColor: colors.surface },
-              ]}
-            >
-              <Text style={[typography.label, { color: colors.text }]}>Approve this device?</Text>
+            <View style={styles.approval}>
+              <Text style={[typography.title, { color: colors.text }]}>Approve this device?</Text>
               <Text style={[typography.body, { color: colors.secondary }]}>Only continue if the other device shows exactly this number:</Text>
               <Text selectable style={[styles.fingerprint, typography.title, { color: colors.text }]}>
                 {approvalTarget.fingerprint}
@@ -201,15 +223,14 @@ export default function Devices() {
 }
 
 const styles = StyleSheet.create({
-  section: { gap: spacing.sm },
-  row: { flex: 1, gap: 2 },
-  confirmation: {
-    marginTop: spacing.sm,
-    padding: spacing.lg,
-    borderWidth: 1,
-    borderRadius: 12,
-    gap: spacing.sm,
+  sectionLabel: {
+    marginTop: spacing.xxl,
+    marginBottom: spacing.xs,
+    textTransform: "uppercase",
+    letterSpacing: 0.6,
   },
+  hint: { marginTop: spacing.sm },
+  approval: { marginTop: spacing.lg, gap: spacing.sm },
   fingerprint: { letterSpacing: 1 },
   actions: { flexDirection: "row", justifyContent: "flex-end", gap: spacing.sm, flexWrap: "wrap" },
 });
