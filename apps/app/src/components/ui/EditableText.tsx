@@ -8,6 +8,7 @@ export function EditableText({
   style,
   placeholder = "Untitled",
   multiline = false,
+  autoFocus = false,
   accessibilityLabel,
 }: {
   value: string;
@@ -15,6 +16,8 @@ export function EditableText({
   style?: StyleProp<TextStyle>;
   placeholder?: string;
   multiline?: boolean;
+  /** A page that has just been created opens with its title ready to type. */
+  autoFocus?: boolean;
   accessibilityLabel?: string;
 }) {
   const { colors } = useTheme();
@@ -65,6 +68,8 @@ export function EditableText({
   return (
     <TextInput
       accessibilityLabel={accessibilityLabel ?? placeholder}
+      autoFocus={autoFocus}
+      selectTextOnFocus={autoFocus}
       value={draft}
       multiline={multiline}
       blurOnSubmit={!multiline}

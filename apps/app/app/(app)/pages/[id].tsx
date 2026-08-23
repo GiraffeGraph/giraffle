@@ -175,6 +175,12 @@ export default function PageEditor() {
   }
 
   const backlinks = snapshot.backlinks.filter((link) => link.targetPageId === page.id);
+  // A page that still carries its given name and holds nothing has just been
+  // made, and the first thing to do with it is name it.
+  const untouched =
+    (page.title === "" || page.title === "Untitled") &&
+    (draft?.content?.length ?? 0) <= 1 &&
+    (draft?.content?.[0]?.content?.length ?? 0) === 0;
 
 
   return (
@@ -226,6 +232,7 @@ export default function PageEditor() {
           />
           <EditableText
             value={page.title}
+            autoFocus={untouched}
             accessibilityLabel="Page title"
             onSave={(title) => void run((repository) => repository.updatePage(page.id, { title }))}
             style={[typography.pageTitle, { color: colors.text }]}
