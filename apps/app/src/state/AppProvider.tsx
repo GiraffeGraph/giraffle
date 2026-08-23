@@ -110,7 +110,11 @@ interface AppContextValue {
 const AppContext = createContext<AppContextValue | null>(null);
 
 async function clearAccessLock(): Promise<void> {
-  await Promise.all([clearQuickPin(), clearLockTimeout()]);
+  await Promise.all([
+    clearQuickPin(),
+    clearLockTimeout(),
+    forgetUnlockedSession(),
+  ]);
 }
 
 function errorMessage(cause: unknown, fallback: string): string {

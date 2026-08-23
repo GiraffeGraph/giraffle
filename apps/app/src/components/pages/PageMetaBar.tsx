@@ -1,13 +1,14 @@
-import type{Page}from"@giraffle/domain";import{useState}from"react";import{Pressable,StyleSheet,Text,View}from"react-native";import{Icon,type IconName}from"@/components/ui/primitives";import{useTheme}from"@/design/ThemeProvider";import{radii,spacing,typography}from"@/design/tokens";import{useApp}from"@/state/AppProvider";
+import type{Page}from"@giraffle/domain";import{useState}from"react";import{Pressable,StyleSheet,Text,View}from"react-native";import{Icon,type IconName}from"@/components/ui/primitives";import{useTheme}from"@/design/ThemeProvider";import{radii,spacing,typography}from"@/design/tokens";import type{PlanningField}from"@/components/pages/PagePlanningSheet";
+import{useApp}from"@/state/AppProvider";
 const priorityLabels:Record<string,string>={do:"Focus",schedule:"Plan",delegate:"Delegate",eliminate:"Drop"};
 /** "2026-08-17T09:30" reads as a machine value; a page shows it the way a person says it. */
 const scheduleLabel=(value:string,durationMinutes:number|null):string=>{const[day,time]=value.split("T");const date=new Date(`${day}T12:00:00`);const shown=Number.isNaN(date.getTime())?day:date.toLocaleDateString(undefined,{month:"short",day:"numeric"});return[shown,time?time.slice(0,5):null,durationMinutes?`${durationMinutes}m`:null].filter(Boolean).join(" · ");};
 /** A property keeps its row whether or not it is set, so the block never reflows under the title. */
 function Row({icon,label,value,onPress}:{icon:IconName;label:string;value:string|null;onPress():void}){const{colors}=useTheme();const[hovered,setHovered]=useState(false);return <Pressable accessibilityRole="button" accessibilityLabel={`${label}: ${value??"empty"} — plan this page`} onHoverIn={()=>setHovered(true)} onHoverOut={()=>setHovered(false)} onPress={onPress} style={({pressed})=>[styles.row,{backgroundColor:pressed||hovered?colors.hover:"transparent"}]}><View style={styles.label}><Icon name={icon} size={14} color={colors.muted}/><Text numberOfLines={1} style={[typography.body,{flex:1,color:colors.muted}]}>{label}</Text></View><Text numberOfLines={1} style={[typography.body,{flex:1,color:value?colors.text:colors.faint}]}>{value??"Empty"}</Text></Pressable>;}
-export function PageMetaBar({page,onOpenPlanning}:{page:Page;onOpenPlanning():void}){const{snapshot}=useApp();const state=snapshot.states.find((item)=>item.id===page.stateId);
+export function PageMetaBar({page,onOpenPlanning}:{page:Page;onOpenPlanning(field:PlanningField):void}){const{snapshot}=useApp();const state=snapshot.states.find((item)=>item.id===page.stateId);
 return <View style={styles.block}>
-<Row icon={state?.family==="done"?"checkmark-circle-outline":state?.family==="open"?"ellipse-outline":"bookmark-outline"} label="State" value={state?.title??null} onPress={onOpenPlanning}/>
-<Row icon="flag-outline" label="Priority" value={page.priority?priorityLabels[page.priority]??page.priority:null} onPress={onOpenPlanning}/>
-<Row icon="calendar-outline" label="Date" value={page.scheduledAt?scheduleLabel(page.scheduledAt,page.durationMinutes):null} onPress={onOpenPlanning}/>
+<Row icon={state?.family==="done"?"checkmark-circle-outline":state?.family==="open"?"ellipse-outline":"bookmark-outline"} label="State" value={state?.title??null} onPress={()=>onOpenPlanning("state")}/>
+<Row icon="flag-outline" label="Priority" value={page.priority?priorityLabels[page.priority]??page.priority:null} onPress={()=>onOpenPlanning("priority")}/>
+<Row icon="calendar-outline" label="Date" value={page.scheduledAt?scheduleLabel(page.scheduledAt,page.durationMinutes):null} onPress={()=>onOpenPlanning("schedule")}/>
 </View>}
 const styles=StyleSheet.create({block:{marginTop:spacing.sm,marginBottom:spacing.md},row:{minHeight:30,paddingHorizontal:spacing.xs,borderRadius:radii.sm,flexDirection:"row",alignItems:"center",gap:spacing.sm},label:{width:110,flexDirection:"row",alignItems:"center",gap:spacing.sm}});
