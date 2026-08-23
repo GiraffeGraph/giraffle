@@ -157,6 +157,22 @@ html, body, #root {
 .giraffle-block-handle { cursor: grab; }
 .giraffle-block-handle:active { cursor: grabbing; }
 .giraffle-drop-line { border-radius: 999px; }
+.giraffle-callout {
+  display: flex;
+  gap: 10px;
+  margin: 6px 0;
+  padding: 12px 14px;
+  border-radius: var(--giraffle-doc-sheet-radius);
+  background: color-mix(in srgb, var(--giraffle-ink) 5%, transparent);
+}
+.giraffle-callout-mark {
+  flex: none;
+  font-size: 18px;
+  line-height: var(--giraffle-doc-leading);
+  user-select: none;
+}
+.giraffle-callout-body { flex: 1; min-width: 0; }
+.giraffle-callout-body > :last-child { margin-bottom: 0; }
 .giraffle-block-menu {
   position: fixed;
   z-index: 60;

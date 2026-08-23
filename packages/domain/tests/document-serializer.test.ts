@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { markdownToBlocks } from "@giraffle/domain";
+import { blocksToMarkdown, markdownToBlocks } from "@giraffle/domain";
 
 describe("document Markdown serializer", () => {
   it("parses pasted markdown blocks into Tiptap nodes", () => {
@@ -76,5 +76,34 @@ describe("document Markdown serializer", () => {
         },
       ],
     });
+  });
+
+  it("writes a callout as a quote carrying its mark", () => {
+    const markdown = blocksToMarkdown({
+      type: "doc",
+      content: [
+        {
+          type: "callout",
+          attrs: { emoji: "⚠️" },
+          content: [
+            { type: "paragraph", content: [{ type: "text", text: "Back up first." }] },
+            { type: "paragraph", content: [{ type: "text", text: "Then restore." }] },
+          ],
+        },
+      ],
+    });
+
+    expect(markdown).toBe("> ⚠️ Back up first.\n> \n> Then restore.");
+  });
+
+  it("falls back to a default mark when a callout carries none", () => {
+    const markdown = blocksToMarkdown({
+      type: "doc",
+      content: [
+        { type: "callout", content: [{ type: "paragraph", content: [{ type: "text", text: "Note" }] }] },
+      ],
+    });
+
+    expect(markdown).toBe("> 💡 Note");
   });
 });

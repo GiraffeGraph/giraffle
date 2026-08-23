@@ -13,6 +13,7 @@ import { StarterKit } from "@tiptap/starter-kit";
 import type { DOMProps } from "expo/dom";
 import { useCallback, useEffect, useState } from "react";
 import { BlockControls } from "./block-controls";
+import { Callout } from "./callout";
 import { assignBlockIds, ID_BEARING_NODES, isIdBearing } from "./editor-document";
 import { EDITOR_STYLES } from "./editor-styles";
 import { SlashMenu } from "./slash-menu";
@@ -199,6 +200,7 @@ export default function Editor({
       }),
       BlockId,
       BlockControls,
+      Callout,
       SlashMenu.configure({ onInsertImage: insertImage }),
       Wikilink,
     ],

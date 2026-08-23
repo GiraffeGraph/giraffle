@@ -137,6 +137,20 @@ export const SLASH_COMMANDS: readonly SlashCommand[] = [
       editor.chain().focus().deleteRange(range).setNode("codeBlock", withId(blockId)).run();
     },
   },
+  {
+    id: "callout",
+    title: "Callout",
+    hint: "Set something aside",
+    keywords: ["note", "aside", "warning", "tip"],
+    run: (editor, range, blockId) => {
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .wrapIn("callout", withId(blockId))
+        .run();
+    },
+  },
   imageCommand,
 ];
 

@@ -30,6 +30,17 @@ function nodeToMarkdown(node: BlockNodeContent): string {
       return `${prefix} ${inlineToMarkdown(node.content)}`;
     }
 
+    case "callout": {
+      const emoji = typeof node.attrs?.emoji === "string" ? node.attrs.emoji : "💡";
+      // Blocks inside a quote keep the blank line between them, or a reader
+      // runs two paragraphs together.
+      const inner = (node.content ?? []).map(nodeToMarkdown).join("\n\n");
+      return inner
+        .split("\n")
+        .map((line, index) => (index === 0 ? `> ${emoji} ${line}` : `> ${line}`))
+        .join("\n");
+    }
+
     case "bulletList":
       return (node.content ?? [])
         .map((item) => {
