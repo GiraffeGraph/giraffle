@@ -4,3 +4,5 @@ declare module "*.wasm" {
   const uri: string;
   export default uri;
 }
+
+declare module "@excalidraw/excalidraw/index.css";
