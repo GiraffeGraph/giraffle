@@ -77,6 +77,7 @@ export default function Canvas({
   const [seed] = useState(() => normalizeReferenceLinks(elements));
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const appliedReference = useRef<string | null>(null);
+  const initiallyFit = useRef(false);
   const published = useRef<CanvasElement[]>(seed);
 
   const publish = useCallback(
@@ -118,6 +119,20 @@ export default function Canvas({
     if (!api) return;
     api.updateScene({ appState: { viewBackgroundColor: theme.bg } });
   }, [api, theme.bg]);
+
+  useEffect(() => {
+    if (!api || !seed.length || initiallyFit.current) return;
+    initiallyFit.current = true;
+    const frame = requestAnimationFrame(() =>
+      api.scrollToContent(seed as never, {
+        fitToViewport: true,
+        viewportZoomFactor: 0.12,
+        maxZoom: 1,
+        animate: false,
+      }),
+    );
+    return () => cancelAnimationFrame(frame);
+  }, [api, seed]);
 
   useEffect(() => {
     if (!api || sceneRevision <= 0) return;

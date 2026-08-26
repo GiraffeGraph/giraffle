@@ -30,7 +30,7 @@
 
 ## What it looks like
 
-One sidebar holds the whole workspace: search, Home, Inbox, Plan, Canvas, then your favourites and the page tree, draggable into any shape. A page opens as a document — an icon, a title, its state, priority and date as property rows, then the writing surface. Hovering a block reveals a `+` and a drag handle; `/` opens the block menu; `⌘K` searches titles and the words inside every page.
+One sidebar holds the whole workspace: search, Today, Calendar, Inbox, Plan, Canvas, then your favourites and the page tree, draggable into any shape. Calendar gives every scheduled Page a day, week and month home, with an hourly timeline, quick capture, direct rescheduling and private device reminders. A page opens as a document — an icon, a title, its state, priority and date as property rows, then the writing surface. Hovering a block reveals a `+` and a drag handle; `/` opens the block menu; `⌘K` searches titles and the words inside every page.
 
 | Key | Does |
 | --- | --- |
@@ -63,7 +63,7 @@ What the relay *does* see: how many records exist, roughly how big they are, whe
 - **Universal pages:** every note, idea, project and finishable action is one recursive Page
 - **Custom states:** user-defined vocabulary mapped to stable Forever, Open and Done semantics
 - **Local categories:** each Page can group only its direct children with its own categories
-- **Planning views:** table, board, calendar and list over the same Pages, with day, week and month calendar depths
+- **Planning views:** table and state board over the same Pages, plus a first-class day, week and month Calendar with timed overlap layout, continuous virtualized month scrolling, trackpad/swipe date navigation, drag-to-reschedule, duration resizing, editable recurring series, event colors, local reminders, `.ics` files and optional two-way Google Calendar sync on macOS
 - **Quick capture:** creates an Open child Page in Inbox; organizing it moves it to one real parent
 - **Block editor:** headings, lists, to-dos, quotes, code, images, callouts and toggle lists, reachable from `/` or a block's own menu
 - **Find by content:** `⌘K` searches page titles and the text inside documents, with the surrounding words
@@ -120,6 +120,19 @@ npm start            # dev server for an already-installed dev client
 ```
 
 The client needs native modules (encrypted SQLite, libsodium, secure storage), so `npm run ios` / `npm run android` build a development client rather than running in Expo Go.
+
+### Google Calendar on macOS
+
+Google Calendar sync is an optional, single-account connection for the primary user's own Google account and primary calendar. It has no multi-user, team, account-switching or public OAuth service layer. Giraffle Pages remain canonical: Google events are imported as Pages with their schedule, description and color, local Page changes are exported, and deleting an event in Google removes its schedule without deleting the Page. The downloaded Desktop OAuth credential and refresh token are read only by the Electron main process and encrypted with `safeStorage` (macOS Keychain); the renderer receives only connection status. Only event IDs, sync cursors and timestamps are kept in local app storage. The integration requests Google’s narrow `calendar.events.owned` scope and uses incremental sync tokens, ETags and bounded retry handling.
+
+To configure an open-source build:
+
+1. Enable the [Google Calendar API](https://console.cloud.google.com/apis/library/calendar-json.googleapis.com) in a Google Cloud project.
+2. Configure an External OAuth consent screen and authorize only your own Google account. While its publishing status is **Testing**, add that account as a test user.
+3. Create an OAuth client with application type **Desktop app**.
+4. Download the OAuth JSON and choose **Settings → Your Google Calendar → Import OAuth JSON**. Giraffle validates that it is a Desktop credential, stores its client values encrypted in the Mac’s secure storage, and never copies the source JSON into the vault or repository.
+
+The authorization flow follows Google’s [OAuth 2.0 for desktop apps](https://developers.google.com/identity/protocols/oauth2/native-app) guidance with PKCE and a random loopback callback. Synchronization follows the Calendar API’s [incremental sync](https://developers.google.com/workspace/calendar/api/guides/sync), [event](https://developers.google.com/workspace/calendar/api/v3/reference/events) and [extended property](https://developers.google.com/workspace/calendar/api/guides/extended-properties) contracts. Google expires refresh tokens after seven days while an External consent screen remains in Testing with Calendar access. For a durable personal connection, move that private project to Production, accept the one-time unverified-app warning yourself, and do not distribute its client ID as a public service; broad public distribution is the case that would require verification.
 
 ### Checks
 

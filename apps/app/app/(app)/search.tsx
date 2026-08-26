@@ -16,7 +16,7 @@ interface SearchResult {
 
 export default function Search() {
   const { colors } = useTheme();
-  const { repository } = useApp();
+  const { repository, snapshot } = useApp();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [searching, setSearching] = useState(false);
@@ -54,7 +54,12 @@ export default function Search() {
 
   // An empty query has no results by definition, so derive rather than store it.
   const normalizedQuery = query.trim();
-  const visibleResults = normalizedQuery ? results : [];
+  const visibleResults = normalizedQuery
+    ? results.filter((result) => {
+        const page = snapshot.pages.find((candidate) => candidate.id === result.id);
+        return page && !page.isArchived && page.id !== snapshot.inboxPageId;
+      })
+    : [];
   const isSearching = normalizedQuery ? searching : false;
 
   return (
@@ -98,12 +103,15 @@ export default function Search() {
             >
               <Icon name="document-text-outline" />
               <View style={{ flex: 1 }}>
-                <Text style={[typography.title, { color: colors.text }]}>{result.title}</Text>
-                <Text numberOfLines={2} style={[typography.caption, { color: colors.secondary }]}>
-                  {result.snippet}
+                <Text style={[typography.title, { color: colors.text }]}>
+                  {result.title || "Untitled"}
                 </Text>
+                {result.snippet.trim() ? (
+                  <Text numberOfLines={2} style={[typography.caption, { color: colors.secondary }]}>
+                    {result.snippet}
+                  </Text>
+                ) : null}
               </View>
-              <Icon name="chevron-forward" />
             </DividerRow>
           ))}
         </View>

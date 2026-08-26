@@ -34,6 +34,8 @@ export interface Page {
   priority: PagePriority | null;
   scheduledAt: string | null;
   durationMinutes: number | null;
+  /** Hex color used by calendar lenses and external calendar adapters. */
+  calendarColor: string | null;
   description: string | null;
   childView: ChildView;
   isPinned: boolean;

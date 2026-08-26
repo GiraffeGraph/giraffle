@@ -5,7 +5,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   name: "Giraffle",
   slug: "giraffle",
   scheme: "giraffle",
-  version: "0.13.0",
+  version: "0.14.0",
   orientation: "default",
   userInterfaceStyle: "automatic",
   icon: "./assets/icon.png",
@@ -39,6 +39,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     ["expo-splash-screen", { image: "./assets/splash.png", imageWidth: 160, backgroundColor: "#f5efe5", dark: { backgroundColor: "#191919" } }],
     ["expo-secure-store", { configureAndroidBackup: true, faceIDPermission: "Unlock your encrypted Giraffle vault." }],
     ["expo-sqlite", { useSQLCipher: true, enableFTS: true }],
+    ["expo-notifications", { color: "#c8891d" }],
     ["react-native-libsodium", {}],
     "./plugins/withoutAssetSourcemaps"
   ],

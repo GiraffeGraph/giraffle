@@ -10,9 +10,11 @@ import {
 } from "react";
 import {
   Animated,
+  Platform,
   StyleSheet,
   View,
   type LayoutChangeEvent,
+  type PointerEvent as ReactNativePointerEvent,
   type StyleProp,
   type ViewStyle,
 } from "react-native";
@@ -179,6 +181,7 @@ export function DragSortItem({
   blockedIds = [],
   containerOnly = false,
   disabled = false,
+  activationDelay = 220,
   onDrop,
   style,
   children,
@@ -187,6 +190,8 @@ export function DragSortItem({
   blockedIds?: readonly string[];
   containerOnly?: boolean;
   disabled?: boolean;
+  /** Keep touch scrolling safe by default; pointer-first boards can opt into immediate dragging. */
+  activationDelay?: number;
   onDrop(sourceId: string, target: DropTarget): void;
   /**
    * This wrapper is the real flex child, so any sizing the parent layout
@@ -206,6 +211,7 @@ export function DragSortItem({
     cancel,
   } = useDragSort();
   const viewRef = useRef<View>(null);
+  const pointerCleanup = useRef<(() => void) | null>(null);
   const [translateX] = useState(() => new Animated.Value(0));
   const [translateY] = useState(() => new Animated.Value(0));
   const [scale] = useState(() => new Animated.Value(1));
@@ -255,11 +261,94 @@ export function DragSortItem({
     return () => unregister(id);
   }, [id, measureInWindow, registerMeasurement, unregister]);
 
+  useEffect(() => () => pointerCleanup.current?.(), []);
+
+  /**
+   * Pointer-first clients should drag as soon as the mouse moves, not after a
+   * touch-style hold. The window listeners also keep the drag alive when the
+   * pointer outruns the row that started it.
+   */
+  const startWebPointer = useCallback(
+    (event: ReactNativePointerEvent) => {
+      if (Platform.OS !== "web" || disabled || event.nativeEvent.button !== 0) return;
+      pointerCleanup.current?.();
+      const originX = event.nativeEvent.clientX;
+      const originY = event.nativeEvent.clientY;
+      let dragging = false;
+
+      const cleanup = () => {
+        window.removeEventListener("pointermove", move);
+        window.removeEventListener("pointerup", finish);
+        window.removeEventListener("pointercancel", finish);
+        pointerCleanup.current = null;
+      };
+      const move = (pointer: globalThis.PointerEvent) => {
+        const x = pointer.clientX - originX;
+        const y = pointer.clientY - originY;
+        if (!dragging && Math.hypot(x, y) < 4) return;
+        if (!dragging) {
+          dragging = true;
+          translateX.setValue(0);
+          translateY.setValue(0);
+          Animated.spring(scale, {
+            toValue: 1.025,
+            stiffness: 300,
+            damping: 22,
+            mass: 0.6,
+            useNativeDriver: true,
+          }).start();
+          begin(id, blockedIds);
+        }
+        pointer.preventDefault();
+        translateX.setValue(x);
+        translateY.setValue(y);
+        update(pointer.clientX, pointer.clientY);
+      };
+      const finish = (pointer: globalThis.PointerEvent) => {
+        cleanup();
+        if (!dragging) return;
+        pointer.preventDefault();
+        const target = end();
+        if (target) onDrop(id, target);
+        settle();
+        cancel();
+
+        // A Pressable lives inside most draggable rows. Swallow only the click
+        // synthesized from this pointer-up so dropping never opens the page.
+        const suppress = (click: MouseEvent) => {
+          click.preventDefault();
+          click.stopPropagation();
+        };
+        window.addEventListener("click", suppress, { capture: true, once: true });
+        setTimeout(() => window.removeEventListener("click", suppress, true), 0);
+      };
+
+      pointerCleanup.current = cleanup;
+      window.addEventListener("pointermove", move, { passive: false });
+      window.addEventListener("pointerup", finish, { passive: false });
+      window.addEventListener("pointercancel", finish, { passive: false });
+    },
+    [
+      begin,
+      blockedIds,
+      cancel,
+      disabled,
+      end,
+      id,
+      onDrop,
+      scale,
+      settle,
+      translateX,
+      translateY,
+      update,
+    ],
+  );
+
   const gesture = useMemo(
     () =>
       Gesture.Pan()
-        .activateAfterLongPress(220)
-        .enabled(!disabled)
+        .activateAfterLongPress(activationDelay)
+        .enabled(!disabled && Platform.OS !== "web")
         .onStart(() => {
           translateX.setValue(0);
           translateY.setValue(0);
@@ -287,6 +376,7 @@ export function DragSortItem({
         })
         .runOnJS(true),
     [
+      activationDelay,
       begin,
       blockedIds,
       cancel,
@@ -308,6 +398,7 @@ export function DragSortItem({
         ref={viewRef}
         collapsable={false}
         onLayout={measure}
+        onPointerDown={startWebPointer}
         style={[
           style,
           active ? styles.lifted : null,

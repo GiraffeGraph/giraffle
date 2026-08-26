@@ -19,6 +19,7 @@ function page(id: string, title: string, parentId: string | null): Page {
     priority: null,
     scheduledAt: null,
     durationMinutes: null,
+    calendarColor: null,
     description: null,
     childView: "list",
     isPinned: false,

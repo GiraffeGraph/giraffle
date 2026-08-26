@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   addDays,
   addMonths,
+  addMonthsClamped,
   clampMinutes,
   dayKey,
   formatClock,
@@ -22,9 +23,12 @@ describe("page schedule", () => {
     expect(parseDue("2026-08-05T09:30")).toEqual({ day: "2026-08-05", minutes: 570 });
   });
 
-  it("ignores anything that is not a due date", () => {
+  it("ignores malformed and impossible schedules", () => {
     expect(parseDue(null)).toBeNull();
     expect(parseDue("tomorrow")).toBeNull();
+    expect(parseDue("2026-02-30")).toBeNull();
+    expect(parseDue("2026-08-05T25:70")).toBeNull();
+    expect(parseDue("2026-08-05T09:30:45")).toBeNull();
   });
 
   it("formats back into the stored shape", () => {
@@ -66,10 +70,16 @@ describe("calendar grids", () => {
     expect(startOfWeek("2026-08-23")).toBe("2026-08-17");
   });
 
-  it("steps months from the first, so a long month cannot overshoot", () => {
+  it("steps calendar navigation from the first, so a long month cannot overshoot", () => {
     expect(addMonths("2026-01-31", 1)).toBe("2026-02-01");
     expect(addMonths("2026-03-15", -1)).toBe("2026-02-01");
     expect(addMonths("2026-12-09", 1)).toBe("2027-01-01");
+  });
+
+  it("moves recurring dates by month without losing their day", () => {
+    expect(addMonthsClamped("2026-08-21", 1)).toBe("2026-09-21");
+    expect(addMonthsClamped("2026-01-31", 1)).toBe("2026-02-28");
+    expect(addMonthsClamped("2024-01-31", 1)).toBe("2024-02-29");
   });
 
   it("draws six whole weeks around the month", () => {

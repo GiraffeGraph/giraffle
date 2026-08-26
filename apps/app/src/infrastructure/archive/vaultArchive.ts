@@ -1,5 +1,5 @@
 import { decodeCanonical,encodeCanonical,E2EE_CRYPTO_SUITE } from "@giraffle/protocol";
-import { extractCanvasReferences,type Canvas,type Page,type PageCategory,type PageState } from "@giraffle/domain";
+import { extractCanvasReferences,parseDue,type Canvas,type Page,type PageCategory,type PageState } from "@giraffle/domain";
 import { z } from "zod";
 import { ARGON2ID_MEMORY_BYTES,ARGON2ID_OPERATIONS } from "../secure-storage/vaultKeys.contract";
 import { vaultCryptoProvider } from "@/sync/cryptoProvider";
@@ -16,7 +16,7 @@ export interface VaultArchiveSummary{exportedAt:number;sourceVaultId:string;page
 
 const id=z.string().min(1).max(256);const timestamp=z.number().int().nonnegative().safe();const position=z.string().min(1).max(512);
 const document=z.object({type:z.literal("doc"),content:z.array(z.unknown()).max(500_000)}).passthrough();
-const page=z.object({id,title:z.string().max(2_000_000),icon:z.string().max(256).nullable(),parentId:id.nullable(),position,stateId:id,categoryId:id.nullable(),priority:z.enum(["do","schedule","delegate","eliminate"]).nullable(),scheduledAt:z.string().max(64).nullable(),durationMinutes:z.number().int().positive().max(525_600).nullable(),description:z.string().max(2_000_000).nullable(),childView:z.enum(["list","category","priority"]),isPinned:z.boolean(),isArchived:z.boolean(),document,createdAt:timestamp,updatedAt:timestamp}).strict();
+const page=z.object({id,title:z.string().max(2_000_000),icon:z.string().max(256).nullable(),parentId:id.nullable(),position,stateId:id,categoryId:id.nullable(),priority:z.enum(["do","schedule","delegate","eliminate"]).nullable(),scheduledAt:z.string().max(64).refine((value)=>parseDue(value)!==null).nullable(),durationMinutes:z.number().int().positive().max(1_440).nullable(),calendarColor:z.string().regex(/^#[0-9a-f]{6}$/i).nullable(),description:z.string().max(2_000_000).nullable(),childView:z.enum(["list","category","priority"]),isPinned:z.boolean(),isArchived:z.boolean(),document,createdAt:timestamp,updatedAt:timestamp}).strict();
 const state=z.object({id,title:z.string().max(220),family:z.enum(["forever","open","done"]),color:z.string().max(64).nullable(),icon:z.string().max(256).nullable(),position,isDefault:z.boolean()}).strict();
 const category=z.object({id,parentId:id.nullable(),title:z.string().max(220),color:z.string().max(64).nullable(),position,stateIdOnEnter:id.nullable()}).strict();
 const canvasElement=z.object({id,type:z.string().min(1).max(128),version:z.number().int().nonnegative().safe(),versionNonce:z.number().int().nonnegative().safe(),isDeleted:z.boolean()}).passthrough();
@@ -29,7 +29,7 @@ function ids<T extends{id:string}>(items:readonly T[],label:string){const result
 function validate(data:VaultArchiveData){
   const pageIds=ids(data.pages,"page"),stateIds=ids(data.states,"state"),categoryIds=ids(data.categories,"category"),canvasIds=ids(data.canvases,"canvas");void canvasIds;
   const parents=new Map(data.pages.map((item)=>[item.id,item.parentId]));
-  for(const item of data.pages){if(item.parentId&&!pageIds.has(item.parentId))throw new Error(`Page ${item.id} refers to a missing parent`);if(!stateIds.has(item.stateId))throw new Error(`Page ${item.id} refers to a missing state`);if(item.categoryId&&!categoryIds.has(item.categoryId))throw new Error(`Page ${item.id} refers to a missing category`);const seen=new Set<string>();let current:string|null=item.id;while(current){if(seen.has(current))throw new Error("Backup contains a page cycle");seen.add(current);current=parents.get(current)??null;}}
+  for(const item of data.pages){if(item.parentId&&!pageIds.has(item.parentId))throw new Error(`Page ${item.id} refers to a missing parent`);if(!stateIds.has(item.stateId))throw new Error(`Page ${item.id} refers to a missing state`);if(item.categoryId&&!categoryIds.has(item.categoryId))throw new Error(`Page ${item.id} refers to a missing category`);const due=parseDue(item.scheduledAt);if(item.durationMinutes!==null&&(!due||due.minutes===null))throw new Error(`Page ${item.id} has a duration without a time`);const seen=new Set<string>();let current:string|null=item.id;while(current){if(seen.has(current))throw new Error("Backup contains a page cycle");seen.add(current);current=parents.get(current)??null;}}
   const categoriesById=new Map(data.categories.map((item)=>[item.id,item]));
   for(const item of data.categories){if(item.parentId&&!pageIds.has(item.parentId))throw new Error(`Category ${item.id} refers to a missing parent`);if(item.stateIdOnEnter&&!stateIds.has(item.stateIdOnEnter))throw new Error(`Category ${item.id} refers to a missing state`);}
   for(const item of data.pages){if(item.categoryId&&categoriesById.get(item.categoryId)?.parentId!==item.parentId)throw new Error(`Page ${item.id} has a category owned by another parent`);}

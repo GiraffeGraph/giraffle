@@ -2,9 +2,9 @@
 
 ## Current status
 
-- The current version is `0.13.0`.
+- The current version is `0.14.0`.
 - macOS DMGs and the Android APK are built locally and are **unsigned**: they run on the machine that built them and trigger Gatekeeper elsewhere.
-- `.github/workflows/release-macos.yml` runs on every `v*` tag and stops at the Developer ID import, because `MAC_CERTIFICATE` and the notarization secrets are not configured on this repository. Signing, notarization and the npm publish that follow it therefore never run.
+- `.github/workflows/release-macos.yml` runs on every `v*` tag. It signs and notarizes when the Apple secrets are configured; otherwise it deliberately publishes an unsigned DMG. npm publishing is skipped unless `NPM_TOKEN` is configured.
 - `giraffle` has not been published to npm. Publishing the CLI waits on a signed desktop release, because `giraffle desktop install` opens the release matching the CLI version.
 
 ## Infrastructure already prepared

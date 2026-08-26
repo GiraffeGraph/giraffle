@@ -1,4 +1,4 @@
-import { EDITOR_NODE_TYPES } from "@giraffle/domain";
+import { EDITOR_NODE_TYPES, isDayKey, parseDue } from "@giraffle/domain";
 import { z } from "zod";
 
 const jsonSchema:z.ZodType<unknown>=z.lazy(()=>z.union([z.string(),z.number(),z.boolean(),z.null(),z.array(jsonSchema),z.record(z.string(),jsonSchema)]));
@@ -9,9 +9,10 @@ export const BlockSchema:z.ZodType<unknown>=z.lazy(()=>z.object({type:z.enum(EDI
 const id=z.string().min(1).max(256);
 const nullableId=id.nullable();
 const title=z.string().min(1).max(220);
-const day=z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Expected YYYY-MM-DD");
-const scheduledAt=z.string().min(10).max(40).nullable();
+const day=z.string().refine(isDayKey, "Expected a valid YYYY-MM-DD date");
+const scheduledAt=z.string().min(10).max(40).refine((value)=>parseDue(value)!==null,"Expected YYYY-MM-DD or YYYY-MM-DDTHH:mm").nullable();
 const duration=z.number().int().min(1).max(1_440).nullable();
+const calendarColor=z.string().regex(/^#[0-9a-f]{6}$/i).nullable();
 const family=z.enum(["forever","open","done"]);
 const priority=z.enum(["do","schedule","delegate","eliminate"]);
 const childView=z.enum(["list","category","priority"]);
@@ -30,9 +31,9 @@ export const COMMANDS:readonly CommandDefinition[]=[
   command("pages_export",["pages","export"],"Render a page document as Markdown.",false,"pages export <page-id>",["pageId"],z.object({pageId:id})),
   command("pages_backlinks",["pages","backlinks"],"List pages that link to a page.",false,"pages backlinks <page-id>",["pageId"],z.object({pageId:id})),
   command("pages_children",["pages","children"],"List direct children of a page or workspace root.",false,"pages children [parent-id]",["parentId"],z.object({parentId:nullableId.default(null),includeArchived:z.boolean().default(false)})),
-  command("pages_create",["pages","create"],"Create a recursive page.",true,"pages create <title> [page options]",["title"],z.object({title,parentId:nullableId.default(null),stateId:id.optional(),categoryId:nullableId.optional(),priority:priority.nullable().optional(),scheduledAt:scheduledAt.optional(),durationMinutes:duration.optional(),description:z.string().max(10_000).nullable().optional(),childView:childView.optional(),icon:z.string().max(20).nullable().optional(),isPinned:z.boolean().default(false),blocks:z.array(BlockSchema).max(200).optional()})),
+  command("pages_create",["pages","create"],"Create a recursive page.",true,"pages create <title> [page options]",["title"],z.object({title,parentId:nullableId.default(null),stateId:id.optional(),categoryId:nullableId.optional(),priority:priority.nullable().optional(),scheduledAt:scheduledAt.optional(),durationMinutes:duration.optional(),calendarColor:calendarColor.optional(),description:z.string().max(10_000).nullable().optional(),childView:childView.optional(),icon:z.string().max(20).nullable().optional(),isPinned:z.boolean().default(false),blocks:z.array(BlockSchema).max(200).optional()})),
   command("pages_capture",["pages","capture"],"Capture an open page in Inbox.",true,"pages capture <title>",["title"],z.object({title})),
-  command("pages_update",["pages","update"],"Update page content and planning metadata.",true,"pages update <page-id> [field options]",["pageId"],z.object({pageId:id,title:title.optional(),icon:z.string().max(20).nullable().optional(),stateId:id.optional(),categoryId:nullableId.optional(),priority:priority.nullable().optional(),scheduledAt:scheduledAt.optional(),durationMinutes:duration.optional(),description:z.string().max(10_000).nullable().optional(),childView:childView.optional(),isPinned:z.boolean().optional(),isArchived:z.boolean().optional()})),
+  command("pages_update",["pages","update"],"Update page content and planning metadata.",true,"pages update <page-id> [field options]",["pageId"],z.object({pageId:id,title:title.optional(),icon:z.string().max(20).nullable().optional(),stateId:id.optional(),categoryId:nullableId.optional(),priority:priority.nullable().optional(),scheduledAt:scheduledAt.optional(),durationMinutes:duration.optional(),calendarColor:calendarColor.optional(),description:z.string().max(10_000).nullable().optional(),childView:childView.optional(),isPinned:z.boolean().optional(),isArchived:z.boolean().optional()})),
   command("pages_append",["pages","append"],"Append blocks to a page document.",true,"pages append <page-id> --blocks JSON",["pageId"],z.object({pageId:id,blocks:z.array(BlockSchema).min(1).max(100)})),
   command("pages_move",["pages","move"],"Move a page to one parent; its old category is cleared.",true,"pages move <page-id> [--parent-id ID|null] [--after-page-id ID|null]",["pageId"],z.object({pageId:id,parentId:nullableId.default(null),afterPageId:nullableId.default(null)})),
   command("pages_delete",["pages","delete"],"Delete a page and its descendants.",true,"pages delete <page-id>",["pageId"],z.object({pageId:id})),

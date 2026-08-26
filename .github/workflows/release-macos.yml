@@ -13,6 +13,9 @@ jobs:
   release:
     runs-on: macos-15
     timeout-minutes: 60
+    env:
+      HAS_APPLE_SIGNING: ${{ secrets.MAC_CERTIFICATE != '' && secrets.MAC_CERTIFICATE_PASSWORD != '' && secrets.KEYCHAIN_PASSWORD != '' && secrets.APPLE_API_KEY != '' && secrets.APPLE_API_KEY_ID != '' && secrets.APPLE_API_ISSUER != '' }}
+      HAS_NPM_TOKEN: ${{ secrets.NPM_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -43,6 +46,7 @@ jobs:
           npm --prefix apps/app test
 
       - name: Import Developer ID certificate
+        if: env.HAS_APPLE_SIGNING == 'true'
         env:
           MAC_CERTIFICATE: ${{ secrets.MAC_CERTIFICATE }}
           MAC_CERTIFICATE_PASSWORD: ${{ secrets.MAC_CERTIFICATE_PASSWORD }}
@@ -60,19 +64,26 @@ jobs:
           security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
 
       - name: Build, sign and notarize desktop
+        if: env.HAS_APPLE_SIGNING == 'true'
         env:
           APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
           APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
           APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
         run: npm --prefix apps/app run desktop:mac:signed
 
+      - name: Build unsigned desktop
+        if: env.HAS_APPLE_SIGNING != 'true'
+        run: npm --prefix apps/app run desktop:mac
+
       - name: Verify macOS artifact
         run: |
           APP="apps/app/release/macos/mac-universal/Giraffle.app"
           DMG="apps/app/release/macos/Giraffle-${GITHUB_REF_NAME#v}-macOS-universal.dmg"
-          codesign --verify --deep --strict --verbose=2 "$APP"
-          spctl --assess --type execute --verbose=2 "$APP"
-          xcrun stapler validate "$APP"
+          if [ "$HAS_APPLE_SIGNING" = "true" ]; then
+            codesign --verify --deep --strict --verbose=2 "$APP"
+            spctl --assess --type execute --verbose=2 "$APP"
+            xcrun stapler validate "$APP"
+          fi
           test -f "$DMG"
           shasum -a 256 "$DMG" > "$DMG.sha256"
 
@@ -88,6 +99,7 @@ jobs:
           fi
 
       - name: Publish CLI to npm
+        if: env.HAS_NPM_TOKEN == 'true'
         working-directory: apps/cli
         run: npm publish --access public --provenance
         env:

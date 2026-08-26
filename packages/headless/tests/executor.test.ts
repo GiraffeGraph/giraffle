@@ -27,7 +27,7 @@ class FakeRepository implements HeadlessRepository{
   async saveCanvas(id:string,elements:Canvas["elements"],appState:Record<string,unknown>={}){Object.assign(this.canvas(id),{elements:structuredClone(elements),appState:structuredClone(appState),updatedAt:Date.now()});}
   async renameCanvas(id:string,title:string){this.canvas(id).title=title;}
   async deleteCanvas(id:string){this.state.canvases=this.state.canvases.filter((canvas)=>canvas.id!==id);}
-  private makePage(id:string,title:string,parentId:string|null,stateId:string,childView:ChildView):Page{return{id,title,icon:null,parentId,position:`b${this.sequence}`,stateId,categoryId:null,priority:null,scheduledAt:null,durationMinutes:null,description:null,childView,isPinned:false,isArchived:false,document:structuredClone(EMPTY_DOCUMENT),createdAt:Date.now(),updatedAt:Date.now()};}
+  private makePage(id:string,title:string,parentId:string|null,stateId:string,childView:ChildView):Page{return{id,title,icon:null,parentId,position:`b${this.sequence}`,stateId,categoryId:null,priority:null,scheduledAt:null,durationMinutes:null,calendarColor:null,description:null,childView,isPinned:false,isArchived:false,document:structuredClone(EMPTY_DOCUMENT),createdAt:Date.now(),updatedAt:Date.now()};}
   private next(){return`id-${++this.sequence}`;}
   private page(id:string){return this.state.pages.find((page)=>page.id===id)!;}
   private canvas(id:string){return this.state.canvases.find((canvas)=>canvas.id===id)!;}

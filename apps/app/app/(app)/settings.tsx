@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { AccessLockSection } from "@/components/settings/AccessLockSection";
 import { DataBackupSection } from "@/components/settings/DataBackupSection";
 import { DeviceConnectionSection } from "@/components/settings/DeviceConnectionSection";
+import { GoogleCalendarSection } from "@/components/settings/GoogleCalendarSection";
 import { ScreenTopbar } from "@/components/shell/ScreenTopbar";
 import { Page } from "@/components/ui/Page";
 import { DividerRow, Icon } from "@/components/ui/primitives";
@@ -10,6 +11,7 @@ import { useTheme, type ThemePreference } from "@/design/ThemeProvider";
 import { spacing, typography } from "@/design/tokens";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
 import { useApp } from "@/state/AppProvider";
+import { version } from "../../package.json";
 
 const appearanceOptions: readonly {
   value: ThemePreference;
@@ -55,6 +57,8 @@ export default function Settings() {
 
       <DataBackupSection />
 
+      <GoogleCalendarSection />
+
       <View>
         <Text style={[typography.label, styles.sectionLabel, { color: colors.faint }]}>
           Your devices
@@ -92,6 +96,18 @@ export default function Settings() {
           </Text>
         </DividerRow>
       </View>
+
+      <View>
+        <Text style={[typography.label, styles.sectionLabel, { color: colors.faint }]}>About</Text>
+        <DividerRow onPress={() => router.push("/help")}>
+          <Icon name="help-circle-outline" size={16} color={colors.faint} />
+          <Text style={[typography.body, { color: colors.text, flex: 1 }]}>Help</Text>
+          <Icon name="chevron-forward" size={15} color={colors.faint} />
+        </DividerRow>
+        <Text style={[typography.caption, styles.version, { color: colors.muted }]}>
+          Version {version}
+        </Text>
+      </View>
     </Page>
     </>
   );
@@ -104,4 +120,5 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     letterSpacing: 0.6,
   },
+  version: { paddingTop: spacing.sm },
 });

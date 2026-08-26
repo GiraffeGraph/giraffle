@@ -6,6 +6,7 @@ import { Button, Icon, type IconName } from "@/components/ui/primitives";
 import { useTheme } from "@/design/ThemeProvider";
 import { controls, layout, radii, spacing, typography, WIDE_LAYOUT_MIN_WIDTH } from "@/design/tokens";
 import { useApp } from "@/state/AppProvider";
+import { useUndo } from "@/components/ui/UndoProvider";
 
 /** Which property was pressed. A page's plan is edited one field at a time. */
 export type PlanningField = "state" | "priority" | "schedule";
@@ -24,7 +25,7 @@ const moveMonth = (value: Date, amount: number) => new Date(value.getFullYear(),
 const monthCells = (month: Date) => {
   const first = new Date(month.getFullYear(), month.getMonth(), 1);
   const start = new Date(first);
-  start.setDate(1 - first.getDay());
+  start.setDate(1 - ((first.getDay() + 6) % 7));
   return Array.from({ length: 42 }, (_, index) => {
     const value = new Date(start);
     value.setDate(start.getDate() + index);
@@ -50,15 +51,34 @@ export function PagePlanningSheet({
 }) {
   const { colors } = useTheme();
   const { snapshot, run } = useApp();
+  const commit = useUndo();
   const { width } = useWindowDimensions();
   const wide = width >= WIDE_LAYOUT_MIN_WIDTH;
   const scheduled = parse(page.scheduledAt);
   const [month, setMonth] = useState(() =>
     scheduled.day ? new Date(`${scheduled.day}T12:00:00`) : new Date(),
   );
-
-  const write = (patch: Partial<Pick<Page, "stateId" | "priority" | "scheduledAt" | "durationMinutes">>) =>
-    void run((repository) => repository.updatePage(page.id, patch)).catch(() => undefined);
+  type PlanningPatch = Partial<
+    Pick<Page, "stateId" | "priority" | "scheduledAt" | "durationMinutes">
+  >;
+  const write = (patch: PlanningPatch) => {
+    const previous: PlanningPatch = {};
+    if ("stateId" in patch) previous.stateId = page.stateId;
+    if ("priority" in patch) previous.priority = page.priority;
+    if ("scheduledAt" in patch) previous.scheduledAt = page.scheduledAt;
+    if ("durationMinutes" in patch) previous.durationMinutes = page.durationMinutes;
+    const label =
+      "stateId" in patch
+        ? "State changed"
+        : "priority" in patch
+          ? "Priority changed"
+          : "Schedule changed";
+    void commit({
+      label,
+      action: () => run((repository) => repository.updatePage(page.id, patch)),
+      undo: () => run((repository) => repository.updatePage(page.id, previous)),
+    });
+  };
 
   const pickDay = (value: string) => {
     write({ scheduledAt: value ? (scheduled.time ? `${value}T${scheduled.time}` : value) : null });
@@ -66,7 +86,12 @@ export function PagePlanningSheet({
 
   const pickTime = (value: string) => {
     if (!scheduled.day) return;
-    write({ scheduledAt: value ? `${scheduled.day}T${value}` : scheduled.day });
+    const normalized = value.trim();
+    if (normalized && !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(normalized)) return;
+    write({
+      scheduledAt: normalized ? `${scheduled.day}T${normalized}` : scheduled.day,
+      ...(normalized ? {} : { durationMinutes: null }),
+    });
   };
 
   const body =
@@ -153,7 +178,7 @@ export function PagePlanningSheet({
         </View>
 
         <View style={styles.week}>
-          {["S", "M", "T", "W", "T", "F", "S"].map((label, index) => (
+          {["M", "T", "W", "T", "F", "S", "S"].map((label, index) => (
             <Text
               key={`${label}-${index}`}
               style={[typography.caption, styles.dayLabel, { color: colors.faint }]}
@@ -215,9 +240,11 @@ export function PagePlanningSheet({
           ) : (
             <TextInput
               accessibilityLabel="Time"
-              value={scheduled.time}
+              key={`${page.id}-${scheduled.time}-${visible}`}
+              defaultValue={scheduled.time}
               editable={Boolean(scheduled.day)}
-              onChangeText={pickTime}
+              onEndEditing={(event) => pickTime(event.nativeEvent.text)}
+              onSubmitEditing={(event) => pickTime(event.nativeEvent.text)}
               placeholder="09:30"
               keyboardType="numbers-and-punctuation"
               placeholderTextColor={colors.faint}
@@ -226,12 +253,17 @@ export function PagePlanningSheet({
           )}
         </View>
 
+        {scheduled.time ? (
+          <Button label="Make all-day" onPress={() => pickTime("")} />
+        ) : null}
+
         <View style={styles.timeRow}>
           <Text style={[typography.body, { color: colors.muted, flex: 1 }]}>Duration</Text>
           {[15, 30, 60, 90].map((value) => (
             <Button
               key={value}
               label={`${value}m`}
+              disabled={!scheduled.time}
               tone={page.durationMinutes === value ? "accent" : "quiet"}
               onPress={() => write({ durationMinutes: page.durationMinutes === value ? null : value })}
             />
@@ -330,7 +362,7 @@ const styles = StyleSheet.create({
   scrim: { position: "absolute", inset: 0 },
   centre: { flex: 1, alignItems: "center", justifyContent: "center", padding: spacing.lg },
   panel: {
-    width: 300,
+    width: 336,
     paddingVertical: spacing.xs,
     borderWidth: StyleSheet.hairlineWidth,
     borderRadius: radii.md,
@@ -338,7 +370,7 @@ const styles = StyleSheet.create({
   sheet: { marginTop: "auto", borderTopLeftRadius: radii.sheet, borderTopRightRadius: radii.sheet, paddingTop: spacing.xs },
   rows: { paddingVertical: spacing.xxs },
   choice: {
-    height: 32,
+    minHeight: controls.comfortable,
     paddingHorizontal: spacing.sm,
     marginHorizontal: spacing.xs,
     borderRadius: radii.sm,
@@ -355,7 +387,7 @@ const styles = StyleSheet.create({
   grid: { flexDirection: "row", flexWrap: "wrap" },
   day: {
     width: `${100 / 7}%`,
-    aspectRatio: 1.15,
+    minHeight: 40,
     borderRadius: radii.sm,
     alignItems: "center",
     justifyContent: "center",

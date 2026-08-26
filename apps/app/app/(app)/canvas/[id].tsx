@@ -56,6 +56,7 @@ export default function CanvasEditor() {
   const activePages = snapshot.pages.filter(
     (page) =>
       !page.isArchived &&
+      page.id !== snapshot.inboxPageId &&
       (!normalizedQuery || page.title.toLocaleLowerCase().includes(normalizedQuery)),
   );
   const saveScene = (elements: CanvasElement[], appState: Record<string, unknown>) => {
@@ -74,13 +75,6 @@ export default function CanvasEditor() {
         if (saveRevision.current === revision) setSaveState("error");
       });
   };
-  const status =
-    saveState === "saved"
-      ? { label: "Saved locally", color: colors.success }
-      : saveState === "saving"
-        ? { label: "Saving…", color: colors.muted }
-        : { label: "Not saved", color: colors.danger };
-
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       <View style={[styles.bar, { paddingTop: insets.top, borderBottomColor: colors.border }]}>
@@ -100,22 +94,22 @@ export default function CanvasEditor() {
               if (pending) saveScene(pending.elements, pending.appState);
             }}
           />
-        ) : (
+        ) : saveState === "saving" ? (
           <Text
             accessibilityLiveRegion="polite"
-            style={[typography.caption, { color: status.color }]}
+            style={[typography.caption, { color: colors.muted }]}
           >
-            {status.label}
+            Saving…
           </Text>
-        )}
+        ) : null}
         <Button
           icon="scan-outline"
           accessibilityLabel="Fit canvas content"
           onPress={() => setFitRequest((value) => value + 1)}
         />
         <Button
-          label="Add"
           icon="add"
+          accessibilityLabel="Add page to canvas"
           onPress={() => {
             setPickerQuery("");
             setPicker(true);
@@ -180,7 +174,6 @@ export default function CanvasEditor() {
           <ScrollView keyboardShouldPersistTaps="handled">
             {activePages.length ? (
               <View>
-                <Text style={[styles.sectionLabel, typography.label, { color: colors.muted }]}>Pages</Text>
                 {activePages.map((page) => {
                   return (
                     <DividerRow
@@ -253,6 +246,5 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   searchInput: { flex: 1, minWidth: 0 },
-  sectionLabel: { paddingTop: spacing.md, paddingBottom: spacing.xs },
   pickerEmpty: { gap: spacing.lg, paddingVertical: spacing.lg },
 });

@@ -1,17 +1,15 @@
 import { dayKey, parseDue, type Page as PageModel } from "@giraffle/domain";
 import { router } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { ScreenTopbar } from "@/components/shell/ScreenTopbar";
 import { Page } from "@/components/ui/Page";
 import { Icon } from "@/components/ui/primitives";
+import { useUndo } from "@/components/ui/UndoProvider";
 import { useTheme } from "@/design/ThemeProvider";
 import { controls, radii, spacing, typography } from "@/design/tokens";
 import { useApp } from "@/state/AppProvider";
 
-const RECENT_LIMIT = 6;
-
-/** Where a clarified capture goes, in the order a person decides it. */
 const destinations = [
   { id: "focus", label: "Focus", icon: "flash-outline" },
   { id: "later", label: "Later", icon: "time-outline" },
@@ -21,38 +19,28 @@ const destinations = [
 
 type Destination = (typeof destinations)[number]["id"];
 
-const greeting = (): string => {
-  const hour = new Date().getHours();
-  if (hour < 12) return "Good morning";
-  return hour < 18 ? "Good afternoon" : "Good evening";
-};
-
-const when = (value: number): string => {
-  const minutes = Math.floor(Math.max(0, Date.now() - value) / 60_000);
-  if (minutes < 1) return "just now";
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return days === 1 ? "yesterday" : `${days}d ago`;
-};
-
 const clock = (page: PageModel): string => {
   const due = parseDue(page.scheduledAt);
   if (!due) return "";
-  const time = due.minutes === null ? "All day" : (page.scheduledAt?.slice(11, 16) ?? "");
+  const time = due.minutes === null
+    ? "All day"
+    : new Date(2000, 0, 1, Math.floor(due.minutes / 60), due.minutes % 60).toLocaleTimeString(
+        undefined,
+        { hour: "numeric", minute: "2-digit" },
+      );
   return page.durationMinutes ? `${time} · ${page.durationMinutes}m` : time;
 };
 
+const bySchedule = (left: PageModel, right: PageModel) =>
+  (left.scheduledAt ?? "").localeCompare(right.scheduledAt ?? "");
+
 export default function Today() {
-  const { colors } = useTheme();
   const { snapshot, run } = useApp();
+  const commit = useUndo();
   const today = dayKey(new Date());
 
-  const { scheduled, overdue, inProgress, captures, recent } = useMemo(() => {
+  const { scheduled, overdue, inProgress, captures } = useMemo(() => {
     const family = new Map(snapshot.states.map((state) => [state.id, state.family]));
-    // A custom open state is a stage deliberately chosen by the user. It reads
-    // as work in flight without depending on the state's custom title.
     const staged = new Set(
       snapshot.states
         .filter((state) => state.family === "open" && !state.isDefault)
@@ -60,21 +48,26 @@ export default function Today() {
     );
     const pages = snapshot.pages.filter((page) => !page.isArchived);
     const open = pages.filter((page) => family.get(page.stateId) === "open");
-
-    return {
-      scheduled: open.filter((page) => parseDue(page.scheduledAt)?.day === today),
-      overdue: open.filter((page) => {
+    const scheduledToday = open
+      .filter((page) => parseDue(page.scheduledAt)?.day === today)
+      .sort(bySchedule);
+    const late = open
+      .filter((page) => {
         const due = parseDue(page.scheduledAt)?.day;
         return due ? due < today : false;
-      }),
-      inProgress: open.filter((page) => staged.has(page.stateId)),
+      })
+      .sort(bySchedule);
+    const alreadyShown = new Set([...scheduledToday, ...late].map((page) => page.id));
+
+    return {
+      scheduled: scheduledToday,
+      overdue: late,
+      inProgress: open.filter(
+        (page) => staged.has(page.stateId) && !alreadyShown.has(page.id),
+      ),
       captures: snapshot.inboxPageId
         ? pages.filter((page) => page.parentId === snapshot.inboxPageId)
         : [],
-      recent: [...pages]
-        .filter((page) => page.id !== snapshot.inboxPageId)
-        .sort((a, b) => b.updatedAt - a.updatedAt)
-        .slice(0, RECENT_LIMIT),
     };
   }, [snapshot, today]);
 
@@ -83,9 +76,15 @@ export default function Today() {
       const done =
         snapshot.states.find((state) => state.family === "done" && state.isDefault) ??
         snapshot.states.find((state) => state.family === "done");
-      if (done) void run((repository) => repository.updatePage(page.id, { stateId: done.id }));
+      if (!done) return;
+      void commit({
+        label: "Marked complete",
+        action: () => run((repository) => repository.updatePage(page.id, { stateId: done.id })),
+        undo: () =>
+          run((repository) => repository.updatePage(page.id, { stateId: page.stateId })),
+      });
     },
-    [run, snapshot.states],
+    [commit, run, snapshot.states],
   );
 
   const capture = useCallback(
@@ -105,74 +104,80 @@ export default function Today() {
         snapshot.states.find((state) => state.family === "done" && state.isDefault) ??
         snapshot.states.find((state) => state.family === "done");
 
-      void run(async (repository) => {
-        if (destination === "close") {
-          if (done) await repository.updatePage(page.id, { stateId: done.id });
-          await repository.archivePage(page.id);
-          return;
-        }
+      const action = async () =>
+        run(async (repository) => {
+          if (destination === "close") {
+            if (done) await repository.updatePage(page.id, { stateId: done.id });
+            await repository.archivePage(page.id);
+            return;
+          }
 
-        // Leaving the field means the capture has been clarified, so it moves
-        // out from under the Inbox system Page.
-        await repository.movePage(page.id, null);
+          await repository.movePage(page.id, null);
 
-        if (destination === "focus") {
+          if (destination === "focus") {
+            await repository.updatePage(page.id, {
+              ...(open ? { stateId: open.id } : {}),
+              priority: "do",
+              scheduledAt: today,
+            });
+            return;
+          }
+
+          if (destination === "later") {
+            await repository.updatePage(page.id, {
+              ...(open ? { stateId: open.id } : {}),
+              priority: "schedule",
+            });
+            return;
+          }
+
           await repository.updatePage(page.id, {
-            ...(open ? { stateId: open.id } : {}),
-            priority: "do",
-            scheduledAt: today,
+            ...(forever ? { stateId: forever.id } : {}),
+            priority: null,
+            scheduledAt: null,
+            durationMinutes: null,
           });
-          return;
-        }
-
-        if (destination === "later") {
-          await repository.updatePage(page.id, {
-            ...(open ? { stateId: open.id } : {}),
-            priority: "schedule",
-          });
-          return;
-        }
-
-        await repository.updatePage(page.id, {
-          ...(forever ? { stateId: forever.id } : {}),
-          priority: null,
-          scheduledAt: null,
-          durationMinutes: null,
         });
-      }).catch(() => undefined);
-    },
-    [run, snapshot.states, today],
-  );
 
-  const quiet = !scheduled.length && !overdue.length && !inProgress.length && !recent.length;
+      void commit({
+        label:
+          destination === "close"
+            ? "Moved to archive"
+            : `Moved to ${destinations.find((item) => item.id === destination)?.label ?? destination}`,
+        action,
+        undo: () =>
+          run(async (repository) => {
+            if (destination === "close") await repository.archivePage(page.id, false);
+            else await repository.movePage(page.id, page.parentId);
+            await repository.updatePage(page.id, {
+              stateId: page.stateId,
+              categoryId: page.categoryId,
+              priority: page.priority,
+              scheduledAt: page.scheduledAt,
+              durationMinutes: page.durationMinutes,
+            });
+          }),
+      });
+    },
+    [commit, run, snapshot.states, today],
+  );
 
   return (
     <>
-      <ScreenTopbar title="Home" />
+      <ScreenTopbar title="Today" />
       <Page>
-        <Text
-          accessibilityRole="header"
-          style={[styles.greeting, typography.pageTitle, { color: colors.text }]}
-        >
-          {greeting()}
-        </Text>
-
         <Composer onCapture={capture} />
-
         <View style={styles.sections}>
-          <Inbox pages={captures} onRoute={routeThought} />
           <Agenda title="Today" pages={scheduled} onComplete={complete} />
           <Agenda title="Overdue" pages={overdue} tone="danger" onComplete={complete} />
+          <Inbox pages={captures} onRoute={routeThought} />
           <Agenda title="In progress" pages={inProgress} onComplete={complete} />
-          <Recent pages={recent} />
-          {quiet ? <Quiet /> : null}
         </View>
       </Page>
     </>
   );
 }
 
-/** One line to catch a thought before it goes anywhere. */
 function Composer({ onCapture }: { onCapture(title: string): Promise<unknown> }) {
   const { colors } = useTheme();
   const [draft, setDraft] = useState("");
@@ -196,7 +201,7 @@ function Composer({ onCapture }: { onCapture(title: string): Promise<unknown> })
         editable={!busy}
         onChangeText={setDraft}
         onSubmitEditing={submit}
-        placeholder="What's on your mind?"
+        placeholder="Capture…"
         placeholderTextColor={colors.faint}
         returnKeyType="done"
         style={[styles.composerInput, typography.body, { color: colors.text }]}
@@ -216,7 +221,6 @@ function Composer({ onCapture }: { onCapture(title: string): Promise<unknown> })
   );
 }
 
-/** Captures wait here until they are told where they belong. */
 function Inbox({
   pages,
   onRoute,
@@ -224,74 +228,124 @@ function Inbox({
   pages: PageModel[];
   onRoute(page: PageModel, destination: Destination): void;
 }) {
-  const { colors } = useTheme();
-  const [hoveredId, setHoveredId] = useState<string | null>(null);
   if (!pages.length) return null;
 
   return (
     <View style={styles.section}>
       <SectionLabel title="Inbox" count={pages.length} />
       {pages.map((page) => (
-        <View
-          key={page.id}
-          style={[
-            styles.row,
-            { backgroundColor: hoveredId === page.id ? colors.hover : "transparent" },
-          ]}
-          onPointerEnter={() => setHoveredId(page.id)}
-          onPointerLeave={() => setHoveredId((value) => (value === page.id ? null : value))}
-        >
-          <View style={styles.icon}>
-            <Icon name="ellipse-outline" size={13} color={colors.faint} />
-          </View>
-          <Pressable
-            accessibilityRole="link"
-            accessibilityLabel={`Open ${page.title || "Untitled"}`}
-            onPress={() => router.push(`/pages/${page.id}`)}
-            style={styles.rowCopy}
-          >
-            <Text numberOfLines={1} style={[typography.body, { color: colors.text }]}>
-              {page.title || "Untitled"}
-            </Text>
-          </Pressable>
-          <View style={styles.actions}>
-            {destinations.map((destination) => (
-              <Pressable
-                key={destination.id}
-                accessibilityRole="button"
-                accessibilityLabel={`${destination.label}: ${page.title || "Untitled"}`}
-                onPress={() => onRoute(page, destination.id)}
-                style={({ pressed }) => [
-                  styles.action,
-                  { backgroundColor: pressed ? colors.pressed : "transparent" },
-                ]}
-              >
-                <Icon
-                  name={destination.icon}
-                  size={15}
-                  color={destination.id === "close" ? colors.danger : colors.muted}
-                />
-              </Pressable>
-            ))}
-          </View>
-        </View>
+        <InboxRow key={page.id} page={page} onRoute={onRoute} />
       ))}
     </View>
   );
 }
 
-function SectionLabel({ title, count }: { title: string; count?: number }) {
+function InboxRow({
+  page,
+  onRoute,
+}: {
+  page: PageModel;
+  onRoute(page: PageModel, destination: Destination): void;
+}) {
   const { colors } = useTheme();
+  const [hovered, setHovered] = useState(false);
+  const [open, setOpen] = useState(false);
+  const title = page.title || "Untitled";
+  const showMenu = Platform.OS !== "web" || hovered || open;
 
   return (
-    <View style={styles.sectionHead}>
-      <Text style={[typography.label, styles.sectionTitle, { color: colors.faint }]}>{title}</Text>
-      {count ? <Text style={[typography.caption, { color: colors.faint }]}>{count}</Text> : null}
+    <View
+      style={[
+        styles.row,
+        styles.inboxRow,
+        { backgroundColor: hovered ? colors.hover : "transparent", zIndex: open ? 3 : 0 },
+      ]}
+      onPointerEnter={() => setHovered(true)}
+      onPointerLeave={() => {
+        setHovered(false);
+        if (Platform.OS === "web") setOpen(false);
+      }}
+    >
+      <View style={styles.icon}>
+        <Icon name="ellipse-outline" size={13} color={colors.faint} />
+      </View>
+      <Pressable
+        accessibilityRole="link"
+        accessibilityLabel={`Open ${title}`}
+        onPress={() => router.push(`/pages/${page.id}`)}
+        style={styles.rowCopy}
+      >
+        <Text numberOfLines={1} style={[typography.body, { color: colors.text }]}>
+          {title}
+        </Text>
+      </Pressable>
+      <View style={styles.moreSlot}>
+        {showMenu ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Organize ${title}`}
+            onPress={() => setOpen((value) => !value)}
+            style={({ pressed }) => [
+              styles.action,
+              { backgroundColor: pressed ? colors.pressed : "transparent" },
+            ]}
+          >
+            <Icon name="ellipsis-horizontal" size={16} color={colors.muted} />
+          </Pressable>
+        ) : null}
+      </View>
+      {open ? (
+        <View
+          style={[
+            styles.inboxMenu,
+            { backgroundColor: colors.surfaceStrong, borderColor: colors.borderStrong },
+          ]}
+        >
+          {destinations.map((destination) => (
+            <Pressable
+              key={destination.id}
+              accessibilityRole="button"
+              accessibilityLabel={`${destination.label}: ${title}`}
+              onPress={() => {
+                setOpen(false);
+                onRoute(page, destination.id);
+              }}
+              style={({ pressed }) => [
+                styles.menuRow,
+                { backgroundColor: pressed ? colors.hover : "transparent" },
+              ]}
+            >
+              <Icon
+                name={destination.icon}
+                size={15}
+                color={destination.id === "close" ? colors.danger : colors.faint}
+              />
+              <Text
+                style={[
+                  typography.body,
+                  { color: destination.id === "close" ? colors.danger : colors.text },
+                ]}
+              >
+                {destination.label}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
     </View>
   );
 }
 
-/** A row a person can finish without leaving the page they landed on. */
+function SectionLabel({ title, count }: { title: string; count: number }) {
+  const { colors } = useTheme();
+  return (
+    <View style={styles.sectionHead}>
+      <Text style={[typography.label, styles.sectionTitle, { color: colors.faint }]}>{title}</Text>
+      <Text style={[typography.caption, { color: colors.faint }]}>{count}</Text>
+    </View>
+  );
+}
+
 function Agenda({
   title,
   pages,
@@ -303,94 +357,60 @@ function Agenda({
   onComplete(page: PageModel): void;
   tone?: "danger";
 }) {
-  const { colors } = useTheme();
   if (!pages.length) return null;
 
   return (
     <View style={styles.section}>
       <SectionLabel title={title} count={pages.length} />
       {pages.map((page) => (
-        <Row
+        <AgendaRow
           key={page.id}
           page={page}
           trailing={clock(page)}
           {...(tone ? { tone } : {})}
-          onPress={() => router.push(`/pages/${page.id}`)}
-          leading={
-            <Pressable
-              accessibilityRole="checkbox"
-              accessibilityState={{ checked: false }}
-              accessibilityLabel={`Complete ${page.title || "Untitled"}`}
-              onPress={() => onComplete(page)}
-              style={[styles.check, { borderColor: colors.borderStrong }]}
-            />
-          }
+          onComplete={() => onComplete(page)}
         />
       ))}
     </View>
   );
 }
 
-function Recent({ pages }: { pages: PageModel[] }) {
-  if (!pages.length) return null;
-
-  return (
-    <View style={styles.section}>
-      <SectionLabel title="Recently visited" />
-      {pages.map((page) => (
-        <Row
-          key={page.id}
-          page={page}
-          trailing={when(page.updatedAt)}
-          onPress={() => router.push(`/pages/${page.id}`)}
-        />
-      ))}
-    </View>
-  );
-}
-
-function Row({
+function AgendaRow({
   page,
   trailing,
-  leading,
   tone,
-  onPress,
+  onComplete,
 }: {
   page: PageModel;
   trailing: string;
-  leading?: React.ReactNode;
   tone?: "danger";
-  onPress(): void;
+  onComplete(): void;
 }) {
   const { colors } = useTheme();
   const [hovered, setHovered] = useState(false);
+  const title = page.title || "Untitled";
 
   return (
     <View
-      style={[
-        styles.row,
-        { backgroundColor: hovered ? colors.hover : "transparent" },
-      ]}
+      style={[styles.row, { backgroundColor: hovered ? colors.hover : "transparent" }]}
       onPointerEnter={() => setHovered(true)}
       onPointerLeave={() => setHovered(false)}
     >
-      {leading ?? (
-        <View style={styles.icon}>
-          {page.icon ? (
-            <Text style={styles.emoji}>{page.icon}</Text>
-          ) : (
-            <Icon name="document-text-outline" size={15} color={colors.faint} />
-          )}
-        </View>
-      )}
+      <Pressable
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked: false }}
+        accessibilityLabel={`Complete ${title}`}
+        onPress={onComplete}
+        style={[styles.check, { borderColor: colors.borderStrong }]}
+      />
       <Pressable
         accessibilityRole="link"
-        accessibilityLabel={`Open ${page.title || "Untitled"}`}
-        onPress={onPress}
+        accessibilityLabel={`Open ${title}`}
+        onPress={() => router.push(`/pages/${page.id}`)}
         style={styles.rowCopy}
       >
         <Text numberOfLines={1} style={[typography.body, { color: colors.text }]}>
-          {page.title || "Untitled"}
+          {title}
         </Text>
       </Pressable>
       {trailing ? (
@@ -402,20 +422,8 @@ function Row({
   );
 }
 
-/** A first-run workspace has nothing to show, and says so in one line. */
-function Quiet() {
-  const { colors } = useTheme();
-
-  return (
-    <Text style={[typography.body, styles.quiet, { color: colors.muted }]}>
-      Nothing scheduled. Write a thought above, or start a page from the sidebar.
-    </Text>
-  );
-}
-
 const styles = StyleSheet.create({
-  greeting: { marginTop: spacing.xxl, marginBottom: spacing.xl },
-  sections: { marginTop: spacing.xxl, gap: spacing.xl },
+  sections: { gap: spacing.xl },
   section: { gap: spacing.xxs },
   sectionHead: {
     height: controls.compact,
@@ -425,16 +433,16 @@ const styles = StyleSheet.create({
   },
   sectionTitle: { textTransform: "uppercase", letterSpacing: 0.6 },
   row: {
-    minHeight: 32,
+    minHeight: controls.default,
     paddingHorizontal: spacing.xs,
     borderRadius: radii.sm,
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.sm,
   },
+  inboxRow: { position: "relative" },
   rowCopy: { flex: 1, minWidth: 0 },
   icon: { width: 20, alignItems: "center" },
-  emoji: { fontSize: 15 },
   check: {
     width: 16,
     height: 16,
@@ -442,7 +450,6 @@ const styles = StyleSheet.create({
     borderRadius: radii.xs,
     borderWidth: 1.5,
   },
-  quiet: { paddingVertical: spacing.sm },
   composer: {
     minHeight: controls.comfortable,
     paddingHorizontal: spacing.md,
@@ -460,12 +467,29 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  actions: { flexDirection: "row", gap: spacing.xxs },
+  moreSlot: { width: controls.compact, height: controls.compact },
   action: {
     width: controls.compact,
     height: controls.compact,
     borderRadius: radii.sm,
     alignItems: "center",
     justifyContent: "center",
+  },
+  inboxMenu: {
+    position: "absolute",
+    top: controls.default - 2,
+    right: 0,
+    width: 152,
+    padding: spacing.xxs,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radii.md,
+  },
+  menuRow: {
+    minHeight: controls.default,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radii.sm,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
   },
 });

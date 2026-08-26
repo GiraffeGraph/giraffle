@@ -23,6 +23,7 @@ import { layout, radii, spacing, typography, WIDE_LAYOUT_MIN_WIDTH } from "@/des
 import Editor, { type EditorAttachment } from "@/dom/Editor";
 import { offlineDomProps } from "@/dom/offline";
 import { useConfirm, type ConfirmRequest } from "@/components/ui/ConfirmProvider";
+import { useUndo } from "@/components/ui/UndoProvider";
 import { useApp } from "@/state/AppProvider";
 
 type SaveState = "saved" | "saving" | "error";
@@ -188,13 +189,6 @@ export default function PageEditor() {
       <ScreenTopbar
         pageId={page.id}
         onOpenMenu={() => setMenu(true)}
-        action={
-          <Button
-            icon="options-outline"
-            accessibilityLabel="Page planning"
-            onPress={() => setPlanningField("schedule")}
-          />
-        }
         aside={
           saveState === "error" ? (
             <Button
@@ -425,10 +419,23 @@ function MoveSheet({
 }) {
   const { colors } = useTheme();
   const { run } = useApp();
+  const commit = useUndo();
   const options = selectableParentPages(pages, page.id);
   const move = (parentId: string | null) => {
     close();
-    void run((repository) => repository.movePage(page.id, parentId)).catch(() => undefined);
+    const previousParent = page.parentId;
+    const previousCategory = page.categoryId;
+    void commit({
+      label: "Page moved",
+      action: () => run((repository) => repository.movePage(page.id, parentId)),
+      undo: () =>
+        run(async (repository) => {
+          await repository.movePage(page.id, previousParent);
+          if (previousCategory) {
+            await repository.updatePage(page.id, { categoryId: previousCategory });
+          }
+        }),
+    });
   };
 
   return (

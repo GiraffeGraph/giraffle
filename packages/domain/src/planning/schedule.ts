@@ -28,6 +28,15 @@ export function addMonths(day: string, offset: number): string {
   return dayKey(date);
 }
 
+/** Moves an event by whole months while preserving its day where possible. */
+export function addMonthsClamped(day: string, offset: number): string {
+  const source = new Date(`${day}T12:00:00`);
+  const targetMonth = new Date(source.getFullYear(), source.getMonth() + offset, 1, 12);
+  const lastDay = new Date(targetMonth.getFullYear(), targetMonth.getMonth() + 1, 0, 12).getDate();
+  targetMonth.setDate(Math.min(source.getDate(), lastDay));
+  return dayKey(targetMonth);
+}
+
 /** The six full weeks a month grid draws, including the days either side of it. */
 export function monthCells(day: string): string[] {
   const start = startOfWeek(`${day.slice(0, 7)}-01`);
@@ -39,17 +48,24 @@ export function monthCells(day: string): string[] {
  * (`2026-08-05T09:30`). Minutes are null for the bare form, which the grid
  * shows in its all-day strip.
  */
+export function isDayKey(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(`${value}T12:00:00`);
+  return !Number.isNaN(date.getTime()) && dayKey(date) === value;
+}
+
 export function parseDue(due: string | null): { day: string; minutes: number | null } | null {
   if (!due) return null;
 
-  const day = due.slice(0, 10);
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return null;
+  const bare = /^(\d{4}-\d{2}-\d{2})$/.exec(due);
+  if (bare?.[1] && isDayKey(bare[1])) return { day: bare[1], minutes: null };
 
-  const time = /^\d{4}-\d{2}-\d{2}T(\d{2}):(\d{2})/.exec(due);
-  if (!time) return { day, minutes: null };
-
-  const minutes = Number(time[1]) * 60 + Number(time[2]);
-  return { day, minutes: clampMinutes(minutes) };
+  const timed = /^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})$/.exec(due);
+  if (!timed?.[1] || !isDayKey(timed[1])) return null;
+  const hours = Number(timed[2]);
+  const minutes = Number(timed[3]);
+  if (hours > 23 || minutes > 59) return null;
+  return { day: timed[1], minutes: hours * 60 + minutes };
 }
 
 export function formatDue(day: string, minutes: number | null): string {

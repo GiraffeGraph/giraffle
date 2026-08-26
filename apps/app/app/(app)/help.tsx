@@ -10,7 +10,11 @@ const topics: readonly (readonly [string, string])[] = [
     "States and categories",
     "Custom states describe meaning; each page owns optional categories for its direct children.",
   ],
-  ["Plan", "Table, board, calendar and list are four views over the same pages."],
+  ["Plan", "Table and board are two planning views over the same pages."],
+  [
+    "Calendar",
+    "Day, week, and continuous month views show every scheduled page. Scroll or swipe through dates, drag to reschedule, resize duration, and choose event colors. On Mac, connect your primary Google Calendar from Settings for optional two-way sync.",
+  ],
   ["Canvas", "Arrange canonical page references without making copies."],
 ];
 

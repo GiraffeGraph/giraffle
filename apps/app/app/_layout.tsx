@@ -3,6 +3,7 @@ import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ConfirmProvider } from "@/components/ui/ConfirmProvider";
+import { UndoProvider } from "@/components/ui/UndoProvider";
 import { ThemeProvider, useTheme } from "@/design/ThemeProvider";
 import { AppProvider } from "@/state/AppProvider";
 
@@ -24,7 +25,9 @@ export default function RootLayout() {
         <ThemeProvider>
           <ConfirmProvider>
             <AppProvider>
-              <Routes />
+              <UndoProvider>
+                <Routes />
+              </UndoProvider>
             </AppProvider>
           </ConfirmProvider>
         </ThemeProvider>

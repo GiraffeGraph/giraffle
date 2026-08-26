@@ -24,7 +24,7 @@ interface Action { key: string; title: string; detail?: string; icon: IconName; 
 const ROW_HEIGHT = 32;
 
 const prompts: Record<Step, string> = {
-  main: "Open, create, or capture…",
+  main: "Search pages or commands…",
   "schedule-page": "Choose a Page for today…",
   "state-page": "Choose a Page…",
   "state-target": "Choose its new state…",
@@ -59,13 +59,14 @@ export function CommandPalette({ visible, onClose }: { visible: boolean; onClose
   const close = () => { setStep("main"); setPendingPage(null); resetSearch(); onClose(); };
   const finish = (work: () => void) => { close(); work(); };
   const pages = snapshot.pages
-    .filter((page) => !page.isArchived)
+    .filter((page) => !page.isArchived && page.id !== snapshot.inboxPageId)
     .sort((left, right) => right.updatedAt - left.updatedAt);
+  const pageIds = new Set(pages.map((page) => page.id));
   const openState = snapshot.states.find((state) => state.family === "open" && state.isDefault)
     ?? snapshot.states.find((state) => state.family === "open");
   /** Where the Page sits, which is what tells two same-named Pages apart. */
   const trail = (page: PageModel) =>
-    pageAncestors(snapshot.pages, page.id).map((crumb) => crumb.title || "Untitled").join(" / ") || "Workspace";
+    pageAncestors(snapshot.pages, page.id).map((crumb) => crumb.title || "Untitled").join(" / ");
 
   const choosePage = (next: Step): Action[] => pages.map((page) => ({
     key: `choose-${page.id}`,
@@ -135,16 +136,11 @@ export function CommandPalette({ visible, onClose }: { visible: boolean; onClose
     const createPage = () => void run((repository) => repository.createPage()).then((id) => router.push(`/pages/${id}`));
     const capture = () => void run((repository) => repository.createCapture(query.trim() || "Untitled")).then((id) => router.push(`/pages/${id}`));
     actions = [
-      { key: "today", title: "Open Today", detail: "Your daily focus", icon: "sunny-outline", keywords: "today daily plan", group: "Actions", run: () => finish(() => router.navigate("/today")) },
-      { key: "capture", title: query.trim() ? `Capture “${query.trim()}”` : "Quick capture", detail: "Add an open Page to Inbox", icon: "flash-outline", keywords: "capture inbox new", group: "Actions", run: () => finish(capture) },
-      { key: "new-page", title: "New Page", detail: "Create at workspace root", icon: "document-outline", keywords: "page create new", group: "Actions", run: () => finish(createPage) },
-      { key: "schedule", title: "Plan a Page for today", detail: "Schedule and open it", icon: "calendar-outline", keywords: "schedule today page", group: "Actions", run: () => enter("schedule-page") },
-      { key: "state", title: "Change Page state", detail: "Open, done, forever, or custom", icon: "options-outline", keywords: "state status page", group: "Actions", run: () => enter("state-page") },
-      { key: "move", title: "Move a Page", detail: "Choose its one real parent", icon: "git-branch-outline", keywords: "move parent organize", group: "Actions", run: () => enter("move-page") },
-      { key: "canvas-page", title: "Add Page to Canvas", detail: "Create a linked visual tile", icon: "shapes-outline", keywords: "canvas add page", group: "Actions", run: () => enter("canvas-page") },
-      { key: "new-canvas", title: "New Canvas", detail: "Start a visual map", icon: "map-outline", keywords: "canvas create new", group: "Actions", run: () => finish(() => void run((repository) => repository.createCanvas()).then((id) => router.push(`/canvas/${id}`))) },
-      { key: "search", title: "Full-text search", detail: "Search inside Page documents", icon: "search-outline", keywords: "find search content", group: "Actions", run: () => finish(() => router.push("/search")) },
-      { key: "account", title: "Settings & account", detail: "Appearance, backup, sync, and lock", icon: "settings-outline", keywords: "settings account backup theme lock", group: "Actions", run: () => finish(() => router.push("/account")) },
+      { key: "today", title: "Today", icon: "calendar-outline", keywords: "today daily plan", group: "Actions", run: () => finish(() => router.navigate("/today")) },
+      { key: "calendar", title: "Calendar", icon: "grid-outline", keywords: "calendar schedule day week month", group: "Actions", run: () => finish(() => router.navigate("/calendar" as never)) },
+      { key: "capture", title: query.trim() ? `Capture “${query.trim()}”` : "Quick capture", icon: "flash-outline", keywords: "capture inbox new", group: "Actions", run: () => finish(capture) },
+      { key: "new-page", title: "New page", icon: "document-outline", keywords: "page create new", group: "Actions", run: () => finish(createPage) },
+      { key: "settings", title: "Settings", icon: "settings-outline", keywords: "settings backup theme sync lock", group: "Actions", run: () => finish(() => router.push("/settings")) },
       ...pages.slice(0, 40).map((page): Action => ({ key: `page-${page.id}`, title: page.title || "Untitled", detail: trail(page), icon: page.isPinned ? "pin-outline" : "document-text-outline", keywords: `page open ${page.title}`, group: "Pages", run: () => finish(() => router.push(`/pages/${page.id}`)) })),
     ];
   }
@@ -177,7 +173,7 @@ export function CommandPalette({ visible, onClose }: { visible: boolean; onClose
   const inside: Action[] =
     step === "main"
       ? matches
-          .filter((match) => !listed.has(`page-${match.id}`))
+          .filter((match) => pageIds.has(match.id) && !listed.has(`page-${match.id}`))
           .slice(0, 8)
           .map((match) => ({
             key: `found-${match.id}`,
@@ -274,6 +270,6 @@ const styles = StyleSheet.create({
   row: { height: ROW_HEIGHT, paddingHorizontal: spacing.sm, borderRadius: radii.sm, flexDirection: "row", alignItems: "center", gap: spacing.sm },
   title: { flexShrink: 1, minWidth: 0 },
   detail: { flex: 1, minWidth: 0 },
-  key: { paddingHorizontal: spacing.xs, paddingVertical: spacing.xxs, borderWidth: StyleSheet.hairlineWidth, borderRadius: radii.xs },
+  key: { marginLeft: "auto", paddingHorizontal: spacing.xs, paddingVertical: spacing.xxs, borderWidth: StyleSheet.hairlineWidth, borderRadius: radii.xs },
   empty: { paddingHorizontal: spacing.sm, paddingVertical: spacing.sm },
 });

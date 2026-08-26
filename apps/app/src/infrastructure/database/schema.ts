@@ -38,6 +38,7 @@ CREATE TABLE pages(
   priority TEXT,
   scheduled_at TEXT,
   duration_minutes INTEGER,
+  calendar_color TEXT,
   description TEXT,
   child_view TEXT NOT NULL DEFAULT 'list',
   system_role TEXT,

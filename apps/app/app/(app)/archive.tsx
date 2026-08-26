@@ -1,12 +1,13 @@
 import { router } from "expo-router";
 import { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { ScreenTopbar } from "@/components/shell/ScreenTopbar";
 import { Page } from "@/components/ui/Page";
 import { Button, DividerRow, EmptyState, Icon } from "@/components/ui/primitives";
 import { useTheme } from "@/design/ThemeProvider";
 import { spacing, typography } from "@/design/tokens";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
+import { useUndo } from "@/components/ui/UndoProvider";
 import { useApp } from "@/state/AppProvider";
 
 /**
@@ -29,13 +30,14 @@ function ArchivedRow({
   const { colors } = useTheme();
   const [hovered, setHovered] = useState(false);
 
+  const showActions = Platform.OS !== "web" || hovered;
+
   return (
-    <DividerRow style={{ backgroundColor: hovered ? colors.hover : "transparent" }}>
+    <View onPointerEnter={() => setHovered(true)} onPointerLeave={() => setHovered(false)}>
+      <DividerRow style={{ backgroundColor: hovered ? colors.hover : "transparent" }}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`Open ${title}`}
-        onHoverIn={() => setHovered(true)}
-        onHoverOut={() => setHovered(false)}
         onPress={onOpen}
         style={({ pressed }) => [styles.pageLink, { opacity: pressed ? 0.55 : 1 }]}
       >
@@ -48,20 +50,26 @@ function ArchivedRow({
           {title}
         </Text>
       </Pressable>
-      <Button label="Restore" accessibilityLabel={`Restore ${title}`} onPress={onRestore} />
-      <Button
-        icon="trash-outline"
-        tone="danger"
-        accessibilityLabel={`Delete ${title} permanently`}
-        onPress={onDelete}
-      />
-    </DividerRow>
+      {showActions ? (
+        <>
+          <Button label="Restore" accessibilityLabel={`Restore ${title}`} onPress={onRestore} />
+          <Button
+            icon="trash-outline"
+            tone="danger"
+            accessibilityLabel={`Delete ${title} permanently`}
+            onPress={onDelete}
+          />
+        </>
+      ) : null}
+      </DividerRow>
+    </View>
   );
 }
 
 export default function Archive() {
   const { snapshot, run } = useApp();
   const confirm = useConfirm();
+  const commit = useUndo();
   const pages = snapshot.pages.filter((page) => page.isArchived);
 
   const confirmDelete = (pageId: string, title: string) => {
@@ -95,7 +103,13 @@ export default function Archive() {
                 title={title}
                 icon={page.icon}
                 onOpen={() => router.push(`/pages/${page.id}`)}
-                onRestore={() => void run((repository) => repository.restorePage(page.id))}
+                onRestore={() =>
+                  void commit({
+                    label: "Page restored",
+                    action: () => run((repository) => repository.restorePage(page.id)),
+                    undo: () => run((repository) => repository.archivePage(page.id, true)),
+                  })
+                }
                 onDelete={() => confirmDelete(page.id, title)}
               />
             );

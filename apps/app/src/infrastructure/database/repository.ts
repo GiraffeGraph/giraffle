@@ -1,4 +1,4 @@
-import { DEFAULT_STATE_IDS, documentPlainText, extractCanvasReferences, parseWikilinks, positionBetween, EMPTY_DOCUMENT, type Canvas, type CanvasElement, type ChildView, type Page, type PageCategory, type PagePriority, type PageState, type PageStateFamily, type TiptapDocument } from "@giraffle/domain";
+import { DEFAULT_STATE_IDS, documentPlainText, extractCanvasReferences, parseDue, parseWikilinks, positionBetween, EMPTY_DOCUMENT, type Canvas, type CanvasElement, type ChildView, type Page, type PageCategory, type PagePriority, type PageState, type PageStateFamily, type TiptapDocument } from "@giraffle/domain";
 import { createSyncRecord, decodeSignedSyncRecord, encodeSignedSyncRecord, hashSignedSyncRecord, observeHybridClock, openSyncRecord, tickHybridClock, type SignedSyncRecordV1, type SyncOperationV1, type VersionStamp } from "@giraffle/protocol";
 import { applyYjsUpdate, mergeExcalidrawElements, mergeLwwRegister, resolveTreeParentAssignments, type TreeParentAssignment, type VersionedExcalidrawElement } from "@giraffle/sync";
 import * as Y from "yjs";
@@ -37,7 +37,7 @@ function canonicalData(data: MutationData): MutationData {
 
 /** The fields a mutation asserts; each one is an independently merged register. */
 const MUTATION_FIELDS: Record<string, readonly string[]> = {
-  "page.create": ["presence", "title", "icon", "parentId", "position", "stateId", "categoryId", "priority", "scheduledAt", "durationMinutes", "description", "childView", "isPinned", "isArchived"],
+  "page.create": ["presence", "title", "icon", "parentId", "position", "stateId", "categoryId", "priority", "scheduledAt", "durationMinutes", "calendarColor", "description", "childView", "isPinned", "isArchived"],
   "page.move": ["parentId", "position"],
   "page.document": ["document"],
   "page.delete": ["presence"],
@@ -101,7 +101,13 @@ export class VaultRepository {
 
   async initialize(): Promise<void> {
     const existing = await this.database.getFirstAsync<{ id: string }>("SELECT id FROM vault_metadata LIMIT 1");
-    if (existing) return;
+    if (existing) {
+      const columns = await this.database.getAllAsync<{ name: string }>("PRAGMA table_info(pages)");
+      if (!columns.some((column) => column.name === "calendar_color")) {
+        await this.database.execAsync("ALTER TABLE pages ADD COLUMN calendar_color TEXT");
+      }
+      return;
+    }
     const now = Date.now();
     const sign = signingPair(this.keys.signingSeed);
     const agreement = agreementPair(this.keys.agreementSeed);
@@ -242,6 +248,7 @@ export class VaultRepository {
       priority:row.priority as PagePriority|null,
       scheduledAt:row.scheduled_at===null?null:String(row.scheduled_at),
       durationMinutes:row.duration_minutes===null?null:Number(row.duration_minutes),
+      calendarColor:row.calendar_color===null?null:String(row.calendar_color),
       description:row.description===null?null:String(row.description),
       childView:(row.child_view??"list") as ChildView,
       isPinned:bool(Number(row.is_pinned)), isArchived:bool(Number(row.is_archived)),
@@ -361,23 +368,30 @@ export class VaultRepository {
     });
   }
 
-  async updatePage(id:string,patch:Partial<Pick<Page,"title"|"icon"|"stateId"|"categoryId"|"priority"|"scheduledAt"|"durationMinutes"|"description"|"childView"|"isPinned"|"isArchived">>):Promise<void>{
+  async updatePage(id:string,patch:Partial<Pick<Page,"title"|"icon"|"stateId"|"categoryId"|"priority"|"scheduledAt"|"durationMinutes"|"calendarColor"|"description"|"childView"|"isPinned"|"isArchived">>):Promise<void>{
+    if(patch.calendarColor!==undefined&&patch.calendarColor!==null&&!/^#[0-9a-f]{6}$/i.test(patch.calendarColor))throw new Error("Calendar color must be a hex color");
+    const suppliedSchedule=patch.scheduledAt===undefined||patch.scheduledAt===null?null:parseDue(patch.scheduledAt);
+    if(patch.scheduledAt!==undefined&&patch.scheduledAt!==null&&!suppliedSchedule)throw new Error("Invalid calendar schedule");
+    if(patch.durationMinutes!==undefined&&patch.durationMinutes!==null&&(!Number.isInteger(patch.durationMinutes)||patch.durationMinutes<1||patch.durationMinutes>1440))throw new Error("Duration must be between 1 and 1440 minutes");
+    if(suppliedSchedule?.minutes===null&&patch.durationMinutes===undefined)patch={...patch,durationMinutes:null};
     const data:MutationData={...patch};
     await this.mutate(id,"page.metadata",data,async(tx,now)=>{
       const current=await tx.getFirstAsync<Record<string,string|number|null>>("SELECT * FROM pages WHERE id=? AND deleted=0",id);
       if(!current)throw new Error("Page not found");
+      const effectiveSchedule=patch.scheduledAt===undefined?(current.scheduled_at===null?null:parseDue(String(current.scheduled_at))):suppliedSchedule;
+      if(patch.durationMinutes!==undefined&&patch.durationMinutes!==null&&(!effectiveSchedule||effectiveSchedule.minutes===null))throw new Error("A duration requires a timed calendar item");
       if(patch.categoryId!==undefined&&patch.categoryId!==null){
         const category=await tx.getFirstAsync<{parent_page_id:string|null;state_id_on_enter:string|null}>("SELECT parent_page_id,state_id_on_enter FROM page_categories WHERE id=? AND deleted=0",patch.categoryId);
         if(!category||category.parent_page_id!==(current.parent_page_id??null))throw new Error("Category belongs to another page");
         if(category.state_id_on_enter){patch={...patch,stateId:category.state_id_on_enter};data.stateId=category.state_id_on_enter;}
       }
-      await tx.runAsync("UPDATE pages SET title=?,icon=?,state_id=?,category_id=?,priority=?,scheduled_at=?,duration_minutes=?,description=?,child_view=?,is_pinned=?,is_archived=?,updated_at=? WHERE id=?",
+      await tx.runAsync("UPDATE pages SET title=?,icon=?,state_id=?,category_id=?,priority=?,scheduled_at=?,duration_minutes=?,calendar_color=?,description=?,child_view=?,is_pinned=?,is_archived=?,updated_at=? WHERE id=?",
         patch.title??String(current.title),patch.icon===undefined?(current.icon??null):patch.icon,
         patch.stateId??String(current.state_id??DEFAULT_STATE_IDS.forever),patch.categoryId===undefined?(current.category_id??null):patch.categoryId,
         patch.priority===undefined?(current.priority??null):patch.priority,patch.scheduledAt===undefined?(current.scheduled_at??null):patch.scheduledAt,
-        patch.durationMinutes===undefined?(current.duration_minutes??null):patch.durationMinutes,patch.description===undefined?(current.description??null):patch.description,
-        patch.childView??String(current.child_view??"list"),patch.isPinned===undefined?Number(current.is_pinned??0):Number(patch.isPinned),
-        patch.isArchived===undefined?Number(current.is_archived??0):Number(patch.isArchived),now,id);
+        patch.durationMinutes===undefined?(current.duration_minutes??null):patch.durationMinutes,patch.calendarColor===undefined?(current.calendar_color??null):patch.calendarColor,
+        patch.description===undefined?(current.description??null):patch.description,patch.childView??String(current.child_view??"list"),
+        patch.isPinned===undefined?Number(current.is_pinned??0):Number(patch.isPinned),patch.isArchived===undefined?Number(current.is_archived??0):Number(patch.isArchived),now,id);
       if(patch.title!==undefined)await tx.runAsync("UPDATE page_fts SET title=? WHERE page_id=?",patch.title,id);
     });
   }
@@ -532,10 +546,32 @@ export class VaultRepository {
     return this.createPage({title,parentId:await this.inboxPageId(),stateId:DEFAULT_STATE_IDS.open});
   }
 
-  async createScheduledPage(input:{title:string;scheduledAt:string;durationMinutes:number}):Promise<string>{
+  async createScheduledPage(input:{title:string;scheduledAt:string;durationMinutes:number|null;calendarColor?:string|null;description?:string|null}):Promise<string>{
     const id=await this.createCapture(input.title);
-    await this.updatePage(id,{scheduledAt:input.scheduledAt,durationMinutes:input.durationMinutes});
+    await this.updatePage(id,{scheduledAt:input.scheduledAt,durationMinutes:input.durationMinutes,calendarColor:input.calendarColor??null,description:input.description??null});
     return id;
+  }
+
+  private async googleCalendarPageId():Promise<string>{
+    const existing=await this.database.getFirstAsync<{id:string;is_archived:number}>("SELECT id,is_archived FROM pages WHERE deleted=0 AND system_role='google-calendar' LIMIT 1");
+    if(existing){if(existing.is_archived===1)await this.restorePage(existing.id);return existing.id;}
+    const id=await this.createPage({title:"Google Calendar",stateId:DEFAULT_STATE_IDS.forever});
+    await this.database.runAsync("UPDATE pages SET system_role='google-calendar' WHERE id=?",id);
+    return id;
+  }
+
+  async createGoogleCalendarPage(input:{title:string;scheduledAt:string;durationMinutes:number|null;calendarColor?:string|null;description?:string|null}):Promise<string>{
+    const id=await this.createPage({title:input.title,parentId:await this.googleCalendarPageId(),stateId:DEFAULT_STATE_IDS.forever});
+    await this.updatePage(id,{scheduledAt:input.scheduledAt,durationMinutes:input.durationMinutes,calendarColor:input.calendarColor??null,description:input.description??null});
+    return id;
+  }
+
+  async organizeGoogleCalendarPage(id:string):Promise<void>{
+    const parentId=await this.googleCalendarPageId();
+    const page=await this.database.getFirstAsync<{parent_id:string|null;state_id:string}>("SELECT parent_id,state_id FROM pages WHERE id=? AND deleted=0",id);
+    if(!page)throw new Error("Page not found");
+    if(page.parent_id!==parentId)await this.movePage(id,parentId);
+    if(page.state_id!==DEFAULT_STATE_IDS.forever)await this.updatePage(id,{stateId:DEFAULT_STATE_IDS.forever});
   }
 
   // Excalidraw coordinates are floats and canonical CBOR carries only safe
@@ -742,7 +778,7 @@ export class VaultRepository {
     ]);
     if (!supportedKinds.has(kind)) return;
 
-    const columns: Record<string,string>={title:"title",icon:"icon",parentId:"parent_page_id",position:"position_id",stateId:"state_id",categoryId:"category_id",priority:"priority",scheduledAt:"scheduled_at",durationMinutes:"duration_minutes",description:"description",childView:"child_view",isPinned:"is_pinned",isArchived:"is_archived"};
+    const columns: Record<string,string>={title:"title",icon:"icon",parentId:"parent_page_id",position:"position_id",stateId:"state_id",categoryId:"category_id",priority:"priority",scheduledAt:"scheduled_at",durationMinutes:"duration_minutes",calendarColor:"calendar_color",description:"description",childView:"child_view",isPinned:"is_pinned",isArchived:"is_archived"};
     let touchedTree = false;
 
     for (const targetId of targets) {

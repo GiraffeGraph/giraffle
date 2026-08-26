@@ -1,12 +1,14 @@
-const { app, BrowserWindow, Menu, ipcMain, protocol, session, shell } = require("electron");
+const { app, BrowserWindow, dialog, Menu, ipcMain, protocol, safeStorage, session, shell } = require("electron");
 const { readFile, stat } = require("node:fs/promises");
 const path = require("node:path");
 const { startHeadlessServer } = require("./headless-server.cjs");
+const { createGoogleCalendarIntegration } = require("./google-calendar.cjs");
 
 const SCHEME = "giraffle-app";
 const APP_ORIGIN = `${SCHEME}://app`;
 let quitting = false;
 let headlessServer = null;
+let googleCalendar = null;
 let rendererSender = null;
 const headlessQueue = [];
 const pendingHeadless = new Map();
@@ -285,6 +287,29 @@ if (!app.requestSingleInstanceLock()) {
   app.whenReady().then(() => {
     installApplicationProtocol();
     installMenu();
+    googleCalendar = createGoogleCalendarIntegration({
+      userData: app.getPath("userData"),
+      safeStorage,
+      openExternal: (url) => shell.openExternal(url),
+    });
+    ipcMain.handle("giraffle-google-calendar:status", () => googleCalendar.status());
+    ipcMain.handle("giraffle-google-calendar:configure", async (event) => {
+      const owner = BrowserWindow.fromWebContents(event.sender);
+      const options = {
+        title: "Choose Google Desktop OAuth credentials",
+        properties: ["openFile"],
+        filters: [{ name: "Google OAuth JSON", extensions: ["json"] }],
+      };
+      const selection = owner
+        ? await dialog.showOpenDialog(owner, options)
+        : await dialog.showOpenDialog(options);
+      if (selection.canceled || !selection.filePaths[0]) return { canceled: true, status: await googleCalendar.status() };
+      const source = await readFile(selection.filePaths[0], "utf8");
+      return { canceled: false, status: await googleCalendar.configureCredentialJson(source) };
+    });
+    ipcMain.handle("giraffle-google-calendar:connect", () => googleCalendar.connect());
+    ipcMain.handle("giraffle-google-calendar:disconnect", () => googleCalendar.disconnect());
+    ipcMain.handle("giraffle-google-calendar:request", (_event, request) => googleCalendar.request(request));
     session.defaultSession.setPermissionRequestHandler((_webContents, _permission, callback) => callback(false));
     session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
       if (!isApplicationUrl(details.url)) {

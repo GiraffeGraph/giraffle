@@ -2,15 +2,17 @@ import { Ionicons } from "@expo/vector-icons";
 import { useState, type ComponentProps, type ReactNode } from "react";
 import {
   ActivityIndicator,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
   type TextInputProps,
   type ViewStyle,
 } from "react-native";
-import { controls, radii, spacing, typography } from "@/design/tokens";
+import { controls, radii, spacing, typography, WIDE_LAYOUT_MIN_WIDTH } from "@/design/tokens";
 import { useTheme } from "@/design/ThemeProvider";
 
 export type IconName = ComponentProps<typeof Ionicons>["name"];
@@ -44,7 +46,10 @@ export function Button({
   accessibilityLabel?: string;
 }) {
   const { colors } = useTheme();
+  const { width } = useWindowDimensions();
   const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const touchSized = Platform.OS !== "web" || width < WIDE_LAYOUT_MIN_WIDTH;
   const foreground =
     tone === "accent" ? colors.accentInk : tone === "danger" ? colors.danger : colors.text;
 
@@ -56,9 +61,12 @@ export function Button({
       disabled={disabled}
       onHoverIn={() => setHovered(true)}
       onHoverOut={() => setHovered(false)}
+      onFocus={() => setFocused(true)}
+      onBlur={() => setFocused(false)}
       onPress={onPress}
       style={({ pressed }) => [
         styles.button,
+        touchSized ? styles.touchButton : null,
         {
           backgroundColor:
             tone === "accent"
@@ -68,6 +76,7 @@ export function Button({
                 : hovered
                   ? colors.hover
                   : "transparent",
+          borderColor: focused ? colors.accent : "transparent",
           opacity: disabled ? 0.42 : pressed ? 0.82 : 1,
         },
       ]}
@@ -134,6 +143,7 @@ export function DividerRow({
 }) {
   const { colors } = useTheme();
   const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
   const content = (
     <View style={[styles.row, { borderBottomColor: colors.border }, style]}>{children}</View>
   );
@@ -145,9 +155,11 @@ export function DividerRow({
       accessibilityRole="button"
       onHoverIn={() => setHovered(true)}
       onHoverOut={() => setHovered(false)}
+      onFocus={() => setFocused(true)}
+      onBlur={() => setFocused(false)}
       onPress={onPress}
       style={({ pressed }) => ({
-        backgroundColor: pressed || hovered ? colors.hover : "transparent",
+        backgroundColor: pressed || hovered ? colors.hover : focused ? colors.selected : "transparent",
       })}
     >
       {content}
@@ -199,7 +211,9 @@ function SegmentOption({
   onPress(): void;
 }) {
   const { colors } = useTheme();
+  const { width } = useWindowDimensions();
   const [hovered, setHovered] = useState(false);
+  const touchSized = Platform.OS !== "web" || width < WIDE_LAYOUT_MIN_WIDTH;
 
   return (
     <Pressable
@@ -210,6 +224,7 @@ function SegmentOption({
       onPress={onPress}
       style={({ pressed }) => [
         styles.segmentItem,
+        touchSized ? styles.touchSegmentItem : null,
         {
           borderBottomColor: selected ? colors.text : "transparent",
           backgroundColor: pressed || hovered ? colors.hover : "transparent",
@@ -257,6 +272,7 @@ const styles = StyleSheet.create({
   button: {
     minHeight: controls.compact,
     minWidth: controls.compact,
+    borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: spacing.sm,
     borderRadius: radii.sm,
     flexDirection: "row",
@@ -264,6 +280,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 6,
   },
+  touchButton: { minHeight: controls.comfortable, minWidth: controls.comfortable },
   buttonText: { ...typography.title, fontWeight: "500" },
   field: { gap: 6 },
   inputShell: {
@@ -316,4 +333,5 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     justifyContent: "center",
   },
+  touchSegmentItem: { height: controls.comfortable, minWidth: controls.comfortable },
 });

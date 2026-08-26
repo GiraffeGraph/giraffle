@@ -10,28 +10,9 @@ import { controls, layout, radii, spacing, typography, WIDE_LAYOUT_MIN_WIDTH } f
 import { useApp } from "@/state/AppProvider";
 
 /**
- * How long ago the page was touched, at the coarseness a person actually cares
- * about: minutes while the edit is still in mind, then hours, then a date.
- */
-function editedLabel(updatedAt: number): string {
-  const minutes = Math.floor((Date.now() - updatedAt) / 60_000);
-  if (minutes < 1) return "Edited just now";
-  if (minutes < 60) return `Edited ${minutes}m ago`;
-  if (minutes < 60 * 24) return `Edited ${Math.floor(minutes / 60)}h ago`;
-
-  const edited = new Date(updatedAt);
-  const sameYear = edited.getFullYear() === new Date().getFullYear();
-  return `Edited ${edited.toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    ...(sameYear ? {} : { year: "numeric" }),
-  })}`;
-}
-
-/**
  * The trail to whatever is on screen, plus that screen's primary action. A page
- * gives `pageId` and the bar derives its own ancestors, its edit recency and the
- * actions that belong to it; screens that are not a page pass a plain `title`
+ * gives `pageId` and the bar derives its own ancestors and the actions that
+ * belong to it; screens that are not a page pass a plain `title`
  * and read as a single crumb. Narrow layouts have no sidebar, so account and
  * settings hang here instead.
  */
@@ -105,33 +86,42 @@ export function ScreenTopbar({
             {title}
           </Text>
         ) : (
-          trail.map((crumb, index) => (
-            <View key={crumb.id} style={styles.crumb}>
-              {index === 0 ? null : (
-                <Text style={[typography.body, { color: colors.faint }]}>/</Text>
-              )}
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={crumb.title || "Untitled"}
-                onPress={() => router.push(`/pages/${crumb.id}`)}
-                style={({ pressed }) => [
-                  styles.crumbButton,
-                  { backgroundColor: pressed ? colors.hover : "transparent" },
-                ]}
-              >
+          trail.map((crumb, index) => {
+            const current = index === trail.length - 1;
+            const label = (
+              <>
                 {crumb.icon ? <Text style={styles.crumbIcon}>{crumb.icon}</Text> : null}
                 <Text
                   numberOfLines={1}
-                  style={[
-                    typography.body,
-                    { color: index === trail.length - 1 ? colors.text : colors.muted },
-                  ]}
+                  style={[typography.body, { color: current ? colors.text : colors.muted }]}
                 >
                   {crumb.title || "Untitled"}
                 </Text>
-              </Pressable>
-            </View>
-          ))
+              </>
+            );
+            return (
+              <View key={crumb.id} style={styles.crumb}>
+                {index === 0 ? null : (
+                  <Text style={[typography.body, { color: colors.faint }]}>/</Text>
+                )}
+                {current ? (
+                  <View style={styles.crumbButton}>{label}</View>
+                ) : (
+                  <Pressable
+                    accessibilityRole="link"
+                    accessibilityLabel={`Open ${crumb.title || "Untitled"}`}
+                    onPress={() => router.push(`/pages/${crumb.id}`)}
+                    style={({ pressed }) => [
+                      styles.crumbButton,
+                      { backgroundColor: pressed ? colors.hover : "transparent" },
+                    ]}
+                  >
+                    {label}
+                  </Pressable>
+                )}
+              </View>
+            );
+          })
         )}
       </View>
 
@@ -140,11 +130,6 @@ export function ScreenTopbar({
 
       {page ? (
         <>
-          {narrow ? null : (
-            <Text numberOfLines={1} style={[typography.caption, { color: colors.muted }]}>
-              {editedLabel(page.updatedAt)}
-            </Text>
-          )}
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={page.isPinned ? "Unpin this page" : "Pin this page"}
@@ -180,11 +165,11 @@ export function ScreenTopbar({
         </>
       ) : null}
 
-      {narrow && !path.startsWith("/account") ? (
+      {narrow && !path.startsWith("/settings") ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Settings and account"
-          onPress={() => router.push("/account")}
+          accessibilityLabel="Settings"
+          onPress={() => router.push("/settings")}
           style={({ pressed }) => [styles.button, { opacity: pressed ? 0.55 : 1 }]}
         >
           <Icon name="settings-outline" size={21} color={colors.secondary} />
